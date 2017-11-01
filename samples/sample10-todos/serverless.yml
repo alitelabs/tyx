@@ -1,0 +1,88 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample10
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128 
+  timeout: 10 
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    LOG_LEVEL: INFO
+  
+  # permissions for all functions
+  iamRoleStatements: 
+    - Effect: Allow
+      Action: # Gives permission to DynamoDB tables in a specific region
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:DescribeStream
+        - dynamodb:ListStreams
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:*"
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "arn:aws:lambda:${opt:region, self:provider.region}:*:*"
+
+functions:
+  todos-function:
+    handler: functions/todo.handler
+    events:
+      - http:
+          path: api/todos
+          method: GET
+          cors: true
+      - http:
+          path: api/todos
+          method: POST
+          cors: true
+      - http:
+          path: api/todos/{id}
+          method: PUT
+          cors: true
+      - http:
+          path: api/todos/{id}
+          method: DELETE
+          cors: true
+
+resources:
+  Resources:
+    StorageTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: tyx-sample10-todos
+        AttributeDefinitions:
+          - AttributeName: _id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: _id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+plugins:
+    - serverless-s3-deploy
+custom:
+  assets:
+    auto: true    
+    targets:
+      - bucket: tyx-sample10-bucket
+        acl: public-read
+        files:
+        - source: ./public
+          globs: '**/*'
+          

@@ -1,0 +1,10 @@
+{
+  "name": "tyx-sample8-config",
+  "description": "TyX Samples",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "uuid": "^3.0.1",
+    "sha256": "^0.2.0"
+  }
+}

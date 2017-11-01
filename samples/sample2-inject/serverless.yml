@@ -1,0 +1,26 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample2
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128
+  timeout: 5
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    LOG_LEVEL: INFO
+
+functions:
+  factory-function:
+    handler: functions/factory.handler
+    events:
+      - http:
+          path: product
+          method: GET
+          cors: true

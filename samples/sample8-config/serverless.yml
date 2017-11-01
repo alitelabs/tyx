@@ -1,0 +1,33 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample8
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128
+  timeout: 10
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    LOG_LEVEL: DEBUG
+
+functions:
+  timestamp-function:
+    handler: functions/timestamp.handler
+    environment:
+      TIMESTAMP_SECRET: F72001057DDA40D3B7B81E7BF06CF495
+      TIMESTAMP_STRENGTH: 3
+    events:
+      - http:
+          path: issue
+          method: POST
+          cors: true
+      - http:
+          path: verify
+          method: POST
+          cors: true

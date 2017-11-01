@@ -1,0 +1,25 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/.DS_Store": true
+        // "**/build": true
+        // "**/*.js": { "when": "$(basename).ts"},
+        // "**/*.js.map": { "when": "$(basename)"}
+    },
+    "editor.tabSize": 4,
+    "editor.detectIndentation": true,
+    "typescriptHero.resolver.stringQuoteStyle": "\"",
+    "cSpell.words": [
+        "APPID",
+        "Multipart",
+        "Params",
+        "Serverless",
+        "deserialize",
+        "microservice",
+        "nginx",
+        "proxied"
+    ]
+}

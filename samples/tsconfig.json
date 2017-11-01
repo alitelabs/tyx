@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "lib": ["es6"],
+
+        "target": "es6",
+        "module": "commonjs",
+        "moduleResolution": "node",
+            
+        "alwaysStrict": true,
+        "forceConsistentCasingInFileNames": true,
+        
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "sourceMap": true,
+        "noImplicitAny": false,
+        "declaration": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "stripInternal": true,
+        "pretty": true,
+        "strictNullChecks": false,
+        "noUnusedLocals": true,
+        "baseUrl": ".",
+        "paths": {
+            "tyx": ["../src/", "node_modules/"]
+        }
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

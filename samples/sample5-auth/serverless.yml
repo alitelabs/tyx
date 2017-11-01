@@ -1,0 +1,55 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample5
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128
+  timeout: 10
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    REST_SECRET: 3B2709157BD8444BAD42DE246D41BB35
+    REST_TIMEOUT: 2h
+    LOG_LEVEL: DEBUG
+
+functions:
+  login-function:
+    handler: functions/login.handler
+    events:
+      - http:
+          path: login
+          method: POST
+          cors: true
+  factory-function:
+    handler: functions/factory.handler
+    events:
+      - http:
+          path: reset
+          method: POST
+          cors: true
+      - http:
+          path: product
+          method: POST
+          cors: true
+      - http:
+          path: product/{id}
+          method: DELETE
+          cors: true
+      - http:
+          path: product/{id}
+          method: PUT
+          cors: true
+      - http:
+          path: product/{id}
+          method: GET
+          cors: true
+      - http:
+          path: status
+          method: GET
+          cors: true

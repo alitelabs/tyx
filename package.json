@@ -1,0 +1,54 @@
+{
+  "name": "tyx",
+  "description": "TyX Core Framework, Serverless back-end framework in TypeScript for AWS Lambda",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "author": {
+    "name": "Alite Labs",
+    "email": "labs@alite-international.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alitelabs/tyx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alitelabs/tyx/issues"
+  },
+  "tags": [
+    "aws",
+    "lambda",
+    "typescript",
+    "serverless"
+  ],
+  "dependencies": {
+    "aws-serverless-express": "^3.0.2",
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3",
+    "jsonwebtoken": "^7.4.1",
+    "reflect-metadata": "^0.1.10",
+    "uuid": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/aws-serverless-express": "^2.1.0",
+    "@types/body-parser": "^1.16.3",
+    "@types/express": "^4.0.35",
+    "@types/jsonwebtoken": "^7.2.0",
+    "@types/node": "^7.0.33",
+    "@types/uuid": "^2.0.30",
+    "aws-sdk": "^2.67.0",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-install": "^1.1.0",
+    "gulp-replace": "^0.6.1",
+    "gulp-shell": "^0.6.3",
+    "gulp-sourcemaps": "^2.6.1",
+    "gulp-typescript": "^3.2.2",
+    "gulpclass": "^0.1.2",
+    "serverless-s3-deploy": "^0.5.0",
+    "sha256": "^0.2.0",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.5.2"
+  }
+}

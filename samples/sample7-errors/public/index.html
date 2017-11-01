@@ -1,0 +1,226 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>Sample7-Errors</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.js" integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE=" crossorigin="anonymous"></script>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
+        crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-jsonview/1.2.3/jquery.jsonview.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jsonview/1.2.3/jquery.jsonview.js"></script>
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        body {
+            padding-top: 50px;
+        }
+
+        #todo-list {
+            margin-bottom: 30px;
+        }
+
+        #todo-form {
+            margin-bottom: 50px;
+        }
+
+        .red {
+            color: red;
+        }
+
+        .error {
+            color: red;
+            float: left;
+            font-size: 12px;
+        }
+
+        .green {
+            color: green;
+        }
+
+        .table tbody tr td:first-child {
+            width: 40%;
+        }
+    </style>
+
+
+    <script>
+        function calculate() {
+            clearErrors();
+            $("#monthly").html("");
+            $("#total").html("");
+            $("#totalinterest").html("");
+            $("#responseData").html("");
+            $("#status").html("&nbsp");
+
+            var method = $("#method").val();
+            var amount = $("#amount").val();
+            var interestRate = $("#interestRate").val();
+            var nMonths = $("#nMonths").val();
+            var precision = $("#precision").val();
+
+            $.ajax({
+                url: "https://qolryk5brg.execute-api.us-east-1.amazonaws.com/demo/" + method,
+                type: "POST",
+                data: JSON.stringify({
+                    amount: amount,
+                    nMonths: nMonths,
+                    interestRate: interestRate,
+                    precision: precision
+                }),
+                contentType: "application/json",
+                dataType: "json"
+            }).done(function (data, status, xhr) {
+                $("#monthly").html(data.monthlyPayment);
+                $("#total").html(data.total);
+                $("#totalinterest").html(data.totalInterest);
+                $("#responseData").JSONView(data, { collapsed: true, recursive_collapser: true });
+                $("#status").html("Response code: <span class='" + getCssClass(xhr.status) + "'>" + xhr.status + " " + xhr.statusText + "</span>");
+            }).fail(function (data) {
+                let response = data.responseJSON;
+                $("#status").html("Response code: <span class='" + getCssClass(data.status) + "'>" + data.status + " " + data.statusText + "</span>");
+                $("#responseData").JSONView(response, { collapsed: true, recursive_collapser: true });
+                console.log(JSON.stringify(response));
+
+                setErrorResult(response);
+            });
+        }
+
+        function setErrorResult(data) {
+            $("#calculateError").html(data.message);
+
+            if (data.details !== undefined && Array.isArray(data.details)) {
+                data.details.forEach(function (item) {
+                    $("#" + item.code + "Error").html(item.message);
+                });
+            }
+        }
+
+        function clearErrors() {
+            $(".error").html('&nbsp');
+        }
+
+        function getCssClass(status) {
+            var statusCode = parseInt(status, 10);
+            return statusCode >= 200 && statusCode < 300 ? 'green' : 'red';
+        }
+    </script>
+
+</head>
+<!-- SET THE CONTROLLER -->
+
+<body>
+    <div class="container">
+
+        <!-- HEADER AND TODO COUNT -->
+        <div class="jumbotron text-center">
+            <h1>Sample7-Errors</h1>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Enter Loan Data:</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Calculator:</td>
+                            <td>
+                                <select id="method" name="method" >
+                                   <option value="mortgage" selected>Mortgage</option>
+                                   <option value="missing">Missing</option>
+                                   <option value="unhandled">Unhandled</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Amount of the loan ($):</td>
+                            <td>
+                                <input id="amount">
+                                <div>
+                                    <span id="amountError" class="error">&nbsp</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Annual interest (%):</td>
+                            <td>
+                                <input id="interestRate">
+                                <div>
+                                    <span id="interestRateError" class="error">&nbsp</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Repayment period (months):</td>
+                            <td>
+                                <input id="nMonths">
+                                <div>
+                                    <span id="nMonthsError" class="error">&nbsp</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Precision:</td>
+                            <td>
+                                <input id="precision">
+                                <div>
+                                    <span id="precisionError" class="error">&nbsp</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Approximate Payments:</th>
+                            <td>
+                                <button onclick="calculate();">Calculate</button>
+                                <div>
+                                    <span id="calculateError" class="error">&nbsp</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Monthly payment:</td>
+                            <td>$
+                                <span class="output" id="monthly"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total payment:</td>
+                            <td>$
+                                <span class="output" id="total"></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Total interest:</td>
+                            <td>$
+                                <span class="output" id="totalinterest"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <div>
+                    <b>
+                        <span id="status">&nbsp</span>
+                    </b>
+                </div>
+                <b>Response Data JSON:</b>
+                <div id="responseData"></div>
+            </div>
+        </div>
+</body>
+
+</html>

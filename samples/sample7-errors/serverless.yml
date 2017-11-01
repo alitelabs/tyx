@@ -1,0 +1,47 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample7
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128
+  timeout: 10
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    INTERNAL_SECRET: 7B2A62EF85274FA0AA97A1A33E09C95F
+    INTERNAL_TIMEOUT: 5s
+    LOG_LEVEL: DEBUG
+  
+  # permissions for all functions
+  iamRoleStatements: 
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "arn:aws:lambda:${opt:region, self:provider.region}:*:*"
+
+functions:
+  mortgage-function:
+    handler: functions/mortgage.handler
+  unhandled-function:
+    handler: functions/unhandled.handler
+  calculator-function:
+    handler: functions/calculator.handler
+    events:
+      - http:
+          path: mortgage
+          method: POST
+          cors: true
+      - http:
+          path: missing
+          method: POST
+          cors: true
+      - http:
+          path: unhandled
+          method: POST
+          cors: true

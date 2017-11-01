@@ -1,0 +1,35 @@
+#################################################################################
+# TyX Sample
+#################################################################################
+
+service: tyx-sample4
+
+provider:
+  name: aws
+  region: us-east-1
+  stage: demo
+  runtime: nodejs6.10
+  memorySize: 128
+  timeout: 10
+  
+  environment:
+    STAGE: ${self:service}-${opt:stage, self:provider.stage}
+    INTERNAL_SECRET: EBF525EBD6D74AD89F2A9FEB14E969D7
+    REMOTE_SECRET_TYX_SAMPLE3: D718F4BBCC7345749378EF88E660F701
+    REMOTE_STAGE_TYX_SAMPLE3: tyx-sample3-demo
+    LOG_LEVEL: DEBUG
+  
+  iamRoleStatements: 
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "arn:aws:lambda:${opt:region, self:provider.region}:*:*"
+
+functions:
+  factory-function:
+    handler: functions/factory.handler
+    events:
+      - http:
+          path: product
+          method: GET
+          cors: true
