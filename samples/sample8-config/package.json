@@ -1,7 +1,7 @@
 {
   "name": "tyx-sample8-config",
   "description": "TyX Samples",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "uuid": "^3.0.1",

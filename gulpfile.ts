@@ -127,6 +127,16 @@ export class Gulpfile {
     }
 
     /**
+     * Copies README.md into the package.
+     */
+    @Task()
+    public packageCopyReadme() {
+        return gulp.src("./README.md")
+            // .pipe(replace(/```typescript([\s\S]*?)```/g, "```javascript$1```"))
+            .pipe(gulp.dest("./build/package"));
+    }
+
+    /**
      * Compiles all sources to the package directory.
      */
     @MergedTask()
@@ -154,7 +164,8 @@ export class Gulpfile {
             "packageCompile",
             [
                 "packageReplaceReferences",
-                "packagePreparePackageFile"
+                "packagePreparePackageFile",
+                "packageCopyReadme"
             ]
         ];
     }
