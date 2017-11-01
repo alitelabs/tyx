@@ -21,11 +21,11 @@ export function Get(route: string, adapter?: RestAdapter) {
 }
 
 export function Post(route: string, model?: boolean | string, adapter?: RestAdapter) {
-    return Rest("POST", route, model, 201, adapter);
+    return Rest("POST", route, model, 200, adapter);
 }
 
 export function Put(route: string, model?: boolean | string, adapter?: RestAdapter) {
-    return Rest("PUT", route, model, 201, adapter);
+    return Rest("PUT", route, model, 200, adapter);
 }
 
 export function Delete(route: string, model?: boolean | string, adapter?: RestAdapter) {
@@ -90,7 +90,6 @@ export function BodyParam(param: string) {
 }
 
 export function HeaderParam(param: string) {
-    // TODO: Case insensitive header names
     return ArgBinding(HeaderParam.name, param, (ctx, call) => call.headers[("" + param).toLowerCase()]);
 }
 
