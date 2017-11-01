@@ -113,6 +113,7 @@ export class Gulpfile {
     public packageReplaceReferences() {
         return gulp.src("./build/package/**/*.d.ts")
             .pipe(replace(`/// <reference types="node" />`, ""))
+            .pipe(replace(`/// <reference types="express" />`, ""))
             .pipe(gulp.dest("./build/package"));
     }
 
