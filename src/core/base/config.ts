@@ -13,7 +13,6 @@ export const Configuration = "config";
 export interface Configuration {
     appId: string;
     stage: string;
-    database: string;
 
     logLevel: LogLevel;
     resources: Record<string, string>;
@@ -45,11 +44,9 @@ export abstract class BaseConfiguration implements Configuration {
         this._appId = appId;
     }
 
-    get appId() { return this._appId; }
+    get appId(): string { return this._appId; }
 
-    get stage() { return this.config.STAGE || "local"; }
-
-    get database() { return this.config.DATABASE; }
+    get stage(): string { return this.config.STAGE || "local"; }
 
     get logLevel(): LogLevel {
         switch (this.config.LOG_LEVEL) {
@@ -65,29 +62,29 @@ export abstract class BaseConfiguration implements Configuration {
         }
     }
 
-    get aliases() {
+    get aliases(): Record<string, string> {
         let cfg = this.config.RESOURCES;
         if (!cfg) return {};
         let res = Utils.parseMap(cfg, "$");
         return res;
     }
 
-    get resources() {
+    get resources(): Record<string, string> {
         let aliases = this.aliases;
         let res = {};
         for (let rsrc in aliases) res[aliases[rsrc]] = rsrc;
         return res;
     }
 
-    get restSecret() { return this.config.REST_SECRET || undefined; }
+    get restSecret(): string { return this.config.REST_SECRET || undefined; }
 
-    get restTimeout() { return this.config.REST_TIMEOUT || "10min"; }
+    get restTimeout(): string { return this.config.REST_TIMEOUT || "10min"; }
 
-    get internalSecret() { return this.config.INTERNAL_SECRET || undefined; }
+    get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
 
-    get internalTimeout() { return this.config.INTERNAL_TIMEOUT || "5s"; }
+    get internalTimeout(): string { return this.config.INTERNAL_TIMEOUT || "5s"; }
 
-    get remoteTimeout() { return this.config.REMOTE_TIMEOUT || "5s"; }
+    get remoteTimeout(): string { return this.config.REMOTE_TIMEOUT || "5s"; }
 
     public remoteSecret(appId: string): string {
         appId = appId && appId.split("-").join("_").toUpperCase();

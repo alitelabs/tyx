@@ -529,8 +529,7 @@ export class ContainerInstance implements Container {
         }
     }
 
-    public async activate(ctx?: Context): Promise<Context> {
-        if (arguments.length === 0) ctx = await this.security.localAuth();
+    public async activate(ctx: Context): Promise<Context> {
         for (let sid in this._services) {
             let service = this._services[sid];
             try {

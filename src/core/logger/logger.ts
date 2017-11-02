@@ -41,6 +41,8 @@ export interface Logger {
 }
 
 export namespace Logger {
+    export const sys: Logger = new ConsoleLogger("tyx", "log");
+
     export function get(logName: string, emitter?: any): Logger {
         return new ConsoleLogger(logName, emitter);
     }

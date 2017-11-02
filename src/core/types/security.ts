@@ -14,7 +14,6 @@ export interface IssueRequest {
     subject: "event" | "remote" | "user:internal" | "user:external" | "user:public" | string;
     userId: string;
     role: string;
-    ipAddress?: string;
 }
 
 export interface AuthInfo {

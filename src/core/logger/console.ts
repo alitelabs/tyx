@@ -1,8 +1,6 @@
 import { Logger, LogLevel } from "./logger";
 
 export class ConsoleLogger implements Logger {
-    public static sys: Logger = new ConsoleLogger("tyx", "log");
-
     protected _logName: string;
     protected _logEmitter: string;
 
