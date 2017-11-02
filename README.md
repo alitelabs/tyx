@@ -2589,7 +2589,7 @@ abstract class BaseSecurity implements Security {
 }
 ```
 
-### 9.7. Logger
+### 9.6. Logger
 
 The `Logger` interface in TyX is currently implemented to emit to `console`, in the future it is to be extended to use provided log writers as registered service.
 
@@ -2630,7 +2630,7 @@ namespace Logger {
 
 > TODO: Logger example
 
-### 9.6. Express Service
+### 9.7. Express Service
 
 See example [2.6. Express service](#26-express-service).
 
