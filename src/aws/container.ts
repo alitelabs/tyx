@@ -192,7 +192,7 @@ export class LambdaContainer extends ContainerPool {
         };
     }
 
-    protected async handler(event: LambdaEvent, context: LambdaContext) {
+    private async handler(event: LambdaEvent, context: LambdaContext) {
 
         LogLevel.set(this.config().logLevel);
         this.log.debug("Lambda Event: %j", event);
@@ -232,12 +232,36 @@ export class LambdaContainer extends ContainerPool {
         }
     }
 
-    protected async remote(event: LambdaCall, context: LambdaContext): Promise<any> {
+    private async rest(event: LambdaApiEvent, context: LambdaContext): Promise<RestResult> {
+        let restCall: RestCall = {
+            type: "rest",
+            requestId: context && context.awsRequestId || Utils.uuid(),
+            sourceIp: (event.requestContext
+                && event.requestContext.identity
+                && event.requestContext.identity.sourceIp) || "255.255.255.255",
+
+            application: undefined,
+            service: undefined,
+            method: undefined,
+
+            httpMethod: event.httpMethod as HttpMethod,
+            resource: event.resource,
+            path: event.path,
+            pathParameters: event.pathParameters || {},
+            queryStringParameters: event.queryStringParameters || {},
+            headers: RestUtils.canonicalHeaders(event.headers || {}),
+            body: event.body,
+            isBase64Encoded: event.isBase64Encoded || false
+        };
+        return super.restCall(restCall);
+    }
+
+    private async remote(event: LambdaCall, context: LambdaContext): Promise<any> {
         event.requestId = context && context.awsRequestId || Utils.uuid();
         return super.remoteCall(event);
     }
 
-    protected async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
+    private async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
         this.log.info("S3 Event: %j", event);
 
         let requestId = context && context.awsRequestId || Utils.uuid();
@@ -276,7 +300,7 @@ export class LambdaContainer extends ContainerPool {
         return result;
     }
 
-    protected async dynamo(event: LambdaDynamoEvent, context: LambdaContext): Promise<EventResult> {
+    private async dynamo(event: LambdaDynamoEvent, context: LambdaContext): Promise<EventResult> {
         this.log.info("Dynamo Event: %j", event);
 
         let requestId = context && context.awsRequestId || Utils.uuid();
@@ -314,32 +338,5 @@ export class LambdaContainer extends ContainerPool {
         }
         return result;
     }
-
-    protected async rest(event: LambdaApiEvent, context: LambdaContext): Promise<RestResult> {
-        let restCall: RestCall = {
-            type: "rest",
-            requestId: context && context.awsRequestId || Utils.uuid(),
-            sourceIp: (event.requestContext
-                && event.requestContext.identity
-                && event.requestContext.identity.sourceIp) || "255.255.255.255",
-
-            application: undefined,
-            service: undefined,
-            method: undefined,
-
-            httpMethod: event.httpMethod as HttpMethod,
-            resource: event.resource,
-            path: event.path,
-            pathParameters: event.pathParameters || {},
-            queryStringParameters: event.queryStringParameters || {},
-            headers: RestUtils.canonicalHeaders(event.headers || {}),
-            body: event.body,
-            isBase64Encoded: event.isBase64Encoded || false
-        };
-        return super.restCall(restCall);
-    }
-
-
-
 }
 

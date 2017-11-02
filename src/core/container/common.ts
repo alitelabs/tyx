@@ -2,7 +2,6 @@ import "../env";
 
 import {
     Context,
-    IssueRequest,
     RestCall,
     RestResult,
     RemoteCall,
@@ -64,11 +63,10 @@ export interface Container {
     prepare(): Container;
 
     metadata(): ContainerMetadata;
-    issueToken(req: IssueRequest): string;
 
+    restCall(call: RestCall): Promise<RestResult>;
     remoteCall(call: RemoteCall): Promise<any>;
     eventCall(call: EventCall): Promise<EventResult>;
-    restCall(call: RestCall): Promise<RestResult>;
 }
 
 export interface HttpResponse {

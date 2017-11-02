@@ -1,7 +1,6 @@
 import "../env";
 
 import {
-    IssueRequest,
     RestCall,
     RestResult,
     RemoteCall,
@@ -119,11 +118,6 @@ export class ContainerPool implements Container {
     public dispose(): void {
         if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
         this._pool = [this._head];
-    }
-
-    public issueToken(req: IssueRequest): string {
-        if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
-        return this._head.issueToken(req);
     }
 
     public async remoteCall(call: RemoteCall): Promise<any> {

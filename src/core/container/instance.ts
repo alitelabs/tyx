@@ -2,7 +2,6 @@ import "../env";
 
 import {
     Context,
-    IssueRequest,
     HttpCode,
     RestCall,
     RestResult,
@@ -354,11 +353,6 @@ export class ContainerInstance implements Container {
     }
 
     // --------------------------------------------------
-
-    public issueToken(req: IssueRequest): string {
-        if (this._state < ContainerState.Ready) throw new InternalServerError("Invalid container state");
-        return this.security.issueToken(req);
-    }
 
     public async remoteCall(call: RemoteCall): Promise<any> {
         if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");

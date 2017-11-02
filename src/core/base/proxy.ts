@@ -26,10 +26,9 @@ import {
 
 export abstract class BaseProxy implements Proxy {
 
+    public readonly log: Logger;
     protected config: Configuration;
     protected security: Security;
-
-    public readonly log: Logger;
 
     constructor() {
         this.log = Logger.get(ProxyMetadata.service(this), this);

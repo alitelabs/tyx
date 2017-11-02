@@ -49,7 +49,7 @@ export class ExpressContainer extends ContainerPool {
     }
 
     public start(port?: number): Server {
-        port = port || 5055;
+        port = port || 5000;
 
         this.prepare();
 
@@ -119,7 +119,7 @@ export class ExpressContainer extends ContainerPool {
         return this.server;
     }
 
-    protected async handle(resource: string, req: Request, res: Response) {
+    private async handle(resource: string, req: Request, res: Response) {
         LogLevel.set(this.config().logLevel);
         this.log.info("%s: %s", req.method, req.url);
 
@@ -172,5 +172,4 @@ export class ExpressContainer extends ContainerPool {
         super.dispose();
         this.server.close();
     }
-
 }
