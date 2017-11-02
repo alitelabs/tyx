@@ -40,14 +40,6 @@ export abstract class BaseProxy implements Proxy {
         this.security = security;
     }
 
-    public static get metadata(): ProxyMetadata {
-        return ProxyMetadata.get(this);
-    }
-
-    public get metadata(): ProxyMetadata {
-        return ProxyMetadata.get(this) as ProxyMetadata;
-    }
-
     protected async proxy(method: Function, params: IArguments): Promise<any> {
         let startTime = this.log.time();
         try {

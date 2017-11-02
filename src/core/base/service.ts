@@ -16,12 +16,4 @@ export abstract class BaseService implements Service {
     constructor() {
         this.log = Logger.get(ServiceMetadata.service(this), this);
     }
-
-    public static get metadata() {
-        return ServiceMetadata.get(this);
-    }
-
-    public get metadata() {
-        return ServiceMetadata.get(this);
-    }
 }
