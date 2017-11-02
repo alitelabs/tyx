@@ -55,14 +55,18 @@ Declarative dependency injection and event binding.
       - [8.5. @Query decorator](#85-query-decorator)
       - [8.6. @Command decorator](#86-command-decorator)
       - [8.7. @Invoke decorator](#87-invoke-decorator)
-  * [9. Interfaces and Classes](#9-interfaces-and-classes)
+  * [9. Base Interfaces and Classes](#9-base-interfaces-and-classes)
       - [9.1. Service](#91-service)
       - [9.2. Proxy](#92-proxy)
-      - [9.3. Containers](#93-containers)
+      - [9.3. Container](#93-container)
       - [9.4. Configuration](#94-configuration)
       - [9.5. Security](#95-security)
-      - [9.6. Logger](#96-logger)
-      - [9.7. Express Service](#97-express-service)
+  * [10. Lambda Base Classes](#10-lambda-base-classes)
+      - [10.1. LambdaContainer](#101-lambdacontainer)
+      - [10.2. LambdaProxy](#102-lambdaproxy)
+  * [11. Express Base Classes](#11-express-base-classes)
+      - [11.1. ExpressContainer](#111-expresscontainer)
+      - [11.2. ExpressService](#112-expressservice)      
       
 
 ## 1. Installation
@@ -419,12 +423,12 @@ functions:
 
 ### 2.3. Function per service
 
-Decoupling the service API and implementation in the previous example allows to split the services into their own dedicated functions. This is useful when service functions need to have fine tuned settings; starting from the basic, memory and timeout, environment variables (configuration) up to IAM role configuration.
+Decoupling the service API and implementation in the previous example is allows to split the services into their own dedicated functions. This is useful when service functions need to have fine tuned settings; starting from the trivial, memory and timeout, environment variables (configuration) up to IAM role configuration.
 
-When deploying services in dedicated functions service-to-service communication is no longer a method call inside the same Node.js process. To allow transparent dependency injection TyX provides for proxy service implementation that using direct Lambda to Lambda function invocations supported by AWS SDK.
+When deploying services in dedicated functions service-to-service communication is no longer a method call inside the same JavaScript VM. To allow transparent dependency injection TyX provides for proxy service implementation that relays on direct Lambda to Lambda function invocations supported by AWS SDK.
 
 #### API definition
-Identical to example [2.2. Dependency injection](#22-dependency-injection)
+Identical to example [2.2. Dependency injection]((#example-inject))
 
 #### Services implementation
 
@@ -630,7 +634,7 @@ Building upon the previous example this one demonstrates a remote call via `Lamb
 When remote function-to-function calls are used `REMOTE_SECRET_(APPID)` and `REMOTE_STAGE_(APPID)` configuration variables must be set. The first is a secret key that both the invoking and invoked function must share so `LambdaContainer` can authorize the calls; the second is `(service)-(stage)` prefix that Serverless Framework prepends to function names by default. 
 
 #### API definition
-Identical to example [2.2. Dependency injection](#22-dependency-injection)
+Identical to sample [2.2. Dependency injection]((#example-inject-api))
 
 #### Services implementation
 
@@ -2382,258 +2386,4 @@ Method allowed only to specified roles. Use this decorator in cases when the use
 
 ```typescript
 @Invoke<R extends Roles>(roles: R)
-```
-
-The `Roles` interface defines the built-in reserved roles. When using `@Query`, `@Command` and `@Invoke` the reserved roles should not be explicitly specified, by default they are set as `Public: false`, `Internal: true`, `Remote: true`.
-
-```typescript
-export interface Roles {
-    Public?: boolean;
-    Internal?: boolean;
-    Remote?: boolean;
-    Application?: never;
-    [role: string]: boolean;
-}
-```
-
-## 9. Interfaces and Classes
-
-### 9.1. Service
-
-Services can implement the provided interface to provide implementation of life-cycle handlers `activate` and `release` as well as the logger instance. Before a service method corresponding to the Lambda triggering event is executed all services registered in the container that provide implementation of `activate` are invoked to prepare for event processing. At this point the service can initialize any resources or connections. After completion of the event processing `release` is called so services can dispose or close any resources or connections that were initialized in `activate` or in business logic of the service methods (lazy initialization). The service public API and implementation must not provide methods or properties with these names for other purposes.
-
-```typescript
-interface Service {
-    log?: Logger;
-    activate?(ctx?: Context): Promise<void>;
-    release?(ctx?: Context): Promise<void>;
-}
-```
-
-`BaseService` class is provided that initialize the logger in its constructor.
-
-### 9.2. Proxy
-
-The is a `Proxy` interface that simply extends `Service` without additional behavior. Implementation of proxies is supported by two classes, `BaseProxy` and `LambdaProxy`.
-
-`BaseProxy` is intended as internal base class in the framework.
-
-```typescript
-abstract class BaseProxy implements Proxy {
-    public readonly log: Logger;
-    protected config: Configuration;
-    protected security: Security;
-    public initialize(config: Configuration, security: Security): void;
-    protected proxy(method: Function, params: IArguments): Promise<any>;
-    protected abstract token(call: RemoteCall): Promise<string>;
-    protected abstract invoke(call: RemoteCall): Promise<any>;
-}
-```
-
-`LambdaProxy` is implementation over AWS SDK support for Lambda function invocation.
-
-```typescript
-abstract class LambdaProxy extends BaseProxy {
-    private lambda;
-    constructor();
-    protected token(call: RemoteCall): Promise<string>;
-    protected invoke(call: RemoteCall): Promise<any>;
-}
-```
-
-It is used in all of the provided examples, with following pattern:
-
-```typescript
-@Proxy(ExampleApi)
-export class ExampleProxy extends LambdaProxy implements ExampleApi {
-    public async serviceMethod(arg1: string, arg2: any): Promise<ReturnType> {
-        return this.proxy(this.serviceMethod, arguments);
-    }
-}
-```
-
-### 9.3. Containers
-
-Containers implement the following interface:
-
-```typescript
-interface Container {
-    register(resource: Object, name?: string): this;
-    register(service: Service): this;
-    register(proxy: Proxy): this;
-    register(type: Function, ...args: any[]): this;
-    publish(service: Function, ...args: any[]): this;
-    publish(service: Service): this;
-
-    metadata(): ContainerMetadata;
-    state(): ContainerState;
-    prepare(): Container;
-
-    restCall(call: RestCall): Promise<RestResult>;
-    remoteCall(call: RemoteCall): Promise<any>;
-    eventCall(call: EventCall): Promise<EventResult>;
-}
-```
-
-`ContainerPool` is the base class for exposed container implementations `LambdaContainer` and `ExpressContainer`:
-
-```typescript
-class ContainerPool implements Container {
-    // Only the additional members given
-
-    protected log: Logger;
-
-    constructor(application: string, name?: string);
-
-    public config(): Configuration;
-    public security(): Security;
-
-    public dispose(): void;
-}
-```
-
-`LambdaContainer` provides only an additional method to export the Lambda handler function:
-
-```typescript
-class LambdaContainer extends ContainerPool {
-    constructor(applicationId: string);
-    public export(): LambdaHandler;
-}
-```
-
-`ExpressContainer` provides additional methods to `start` and `stop` the Express server; default port is 5000.
-
-```typescript
-class ExpressContainer extends ContainerPool {
-    constructor(application: string, basePath?: string);
-    start(port?: number): Server;
-    stop(): void;
-}
-```
-
-### 9.4. Configuration
-
-The `Configuration` interface and the provided `BaseConfiguration` represent the built-in configuration service.
-
-```typescript
-interface Configuration {
-    appId: string;
-    stage: string;
-
-    logLevel: LogLevel;
-    resources: Record<string, string>;
-    aliases: Record<string, string>;
-
-    restSecret: string;
-    restTimeout: string;
-    internalSecret: string;
-    internalTimeout: string;
-    remoteTimeout: string;
-
-    remoteSecret(appId: string): string;
-    remoteStage(appId: string): string;
-}
-```
-
-```typescript
-abstract class BaseConfiguration implements Configuration {
-    protected config: Record<string, any>;
-
-    constructor(config?: Record<string, any>);
-    public init(appId: string): void;
-
-    public readonly appId: string;
-    public readonly stage: string;
-    
-    public readonly logLevel: LogLevel;
-    public readonly aliases: Record<string, string>;
-    public readonly resources: Record<string, string>;
-
-    public readonly restSecret: string;
-    public readonly restTimeout: string;
-    public readonly internalSecret: string;
-    public readonly internalTimeout: string;
-    public readonly remoteTimeout: string;
-
-    public remoteSecret(appId: string): string;
-    public remoteStage(appId: string): string;
-}
-```
-
-### 9.5. Security
-
-The `Security` interface and the provided `BaseSecurity` implement the TyX token based authorization. 
-
-```typescript
-interface Security extends Service {
-    restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context>;
-    remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context>;
-    eventAuth(call: EventCall, permission: PermissionMetadata): Promise<Context>;
-    issueToken(req: IssueRequest): string;
-}
-```
-
-```typescript
-abstract class BaseSecurity implements Security {
-    public readonly log: Logger;
-    protected abstract config: Configuration;
-
-    public restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context>;
-    public remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context>;
-    public eventAuth(call: EventCall, permission: PermissionMetadata): Promise<Context>;
-    public issueToken(req: IssueRequest): string;
-
-    protected verify(requestId: string, token: string, permission: PermissionMetadata): Promise<Context>;
-    protected secret(subject: string, issuer: string, audience: string): string;
-    protected timeout(subject: string, issuer: string, audience: string): string;
-}
-```
-
-### 9.7. Logger
-
-The `Logger` interface in TyX is currently implemented to emit to `console`, in the future it is to be extended to use provided log writers as registered service.
-
-```typescript
-enum LogLevel {
-    ALL = 0,
-    TRACE = 0,
-    DEBUG = 1,
-    INFO = 2,
-    WARN = 3,
-    ERROR = 4,
-    FATAL = 5,
-    OFF = 6,
-}
-namespace LogLevel {
-    function bellow(level: LogLevel): boolean;
-    function set(level: LogLevel): void;
-}
-
-interface Logger {
-    todo(message: any, ...args: any[]): void;
-    fatal(message: any, ...args: any[]): any;
-    error(message: any, ...args: any[]): any;
-    info(message: any, ...args: any[]): void;
-    warn(message: any, ...args: any[]): void;
-    debug(message: any, ...args: any[]): void;
-    trace(message: any, ...args: any[]): void;
-    time(): [number, number];
-    timeEnd(start: [number, number], message: any, ...args: any[]): void;
-}
-namespace Logger {
-    const sys: Logger;
-    function get(logName: string, emitter?: any): Logger;
-}
-```
-
-### 9.6. Express Service
-
-See example [2.6. Express service](#26-express-service).
-
-```typescript
-abstract class ExpressService extends BaseService {
-    protected process(ctx: Context, call: RestCall): Promise<RestResult>;
-    protected abstract setup(app: Express, ctx: Context, call: RestCall): void;
-    public release(): Promise<void>;
-}
 ```

@@ -17,7 +17,7 @@ import express = require("express");
 
 export abstract class ExpressService extends BaseService {
 
-    private server: Server;
+    protected server: Server;
 
     protected async process(ctx: Context, call: RestCall): Promise<RestResult> {
         let rsrc = call.resource;
