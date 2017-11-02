@@ -5,68 +5,68 @@ Declarative dependency injection and event binding.
 
 # Table of Contents
 
-  * [1. Installation](#installation)
-  * [2. Examples of Usage](#example-of-usage)
-      - [2.1. Simple service](#example-notes)
-      - [2.2. Dependency injection](#example-inject)
-      - [2.3. Function per service](#example-proxy)
-      - [2.4. Remote service](#example-remote)
-      - [2.5. Authorization](#example-auth)
-      - [2.6. Express service](#example-express)
-      - [2.7. Error handling](#example-errors)
-      - [2.8. Configuration](#example-config)
-  * [3. Concepts Overview](#concepts)
-      - [3.1. Serverless Environment](#concepts-serverless)
-      - [3.2. Service](#concepts-service)
-      - [3.3. Events](#concepts-events)
-      - [3.4. Container](#concepts-container)
-      - [3.5. Proxy](#concepts-proxy)
-  * [4. Data Structures](#data)
-      - [4.1. Call Object](#data-call-object)
-      - [4.2. Context Object](#data-context-object)
-  * [5. Service Decorators](#service-decorators)
-      - [5.1. @Service decorator](#service-decorators-service)
-      - [5.2. @Inject decorator](#service-decorators-inject)
-      - [5.3. @Proxy decorator](#service-decorators-proxy)
-  * [6. HTTP/REST Decorators](#rest-decorators)
-      - [6.1. @Get decorator](#rest-decorators-get)
-      - [6.2. @Post decorator](#rest-decorators-post)
-      - [6.3. @Put decorator](#rest-decorators-put)
-      - [6.4. @Delete decorator](#rest-decorators-delete)
-      - [6.5. @Patch decorator](#rest-decorators)
-      - [6.6. @ContentType decorator](#rest-content-type)
-      - [6.7. RestAdapter function](#rest-adapter)
-  * [7. Method Argument Decorators](#arg-decorators)
-      - [7.1. @PathParam decorator](#arg-decorators-path-param)
-      - [7.2. @PathParams decorator](#arg-decorators-path-params)
-      - [7.3. @QueryParam decorator](#arg-decorators-query-param)
-      - [7.4. @QueryParams decorator](#arg-decorators-query-params)
-      - [7.5. @HeaderParam decorator](#arg-decorators-header-params)
-      - [7.6. @Body decorator](#arg-decorators-body)
-      - [7.7. @BodyParam decorator](#arg-decorators-body-param)
-      - [7.8. @ContextObject decorator](#arg-decorators-context-object)
-      - [7.9. @ContextParam decorator](#arg-decorators-context-param)
-      - [7.10. @CallObject decorator](#arg-decorators-call-object)
-  * [8. Authorization Decorators](#authorization-decorators)
-      - [8.1. @Public decorator](#authorization-decorators-public)
-      - [8.2. @Private decorator](#authorization-decorators-private)
-      - [8.3. @Internal decorator](#authorization-decorators-internal)
-      - [8.4. @Remote decorator](#authorization-decorators-remote)
-      - [8.5. @Query decorator](#authorization-decorators-query)
-      - [8.6. @Command decorator](#authorization-decorators-command)
-      - [8.7. @Invoke decorator](#authorization-decorators-invoke)
-  * [9. Base Interfaces and Classes](#base)
-      - [9.1. Service](#base-service)
-      - [9.2. Proxy](#base-proxy)
-      - [9.3. Container](#base-container)
-      - [9.4. Configuration](#base-configuration)
-      - [9.5. Security](#base-security)
-  * [10. Lambda Base Classes](#lambda)
-      - [10.1. LambdaContainer](#lambda-container)
-      - [10.2. LambdaProxy](#lambda-proxy)
-  * [11. Express Base Classes](#express)
-      - [11.1. ExpressContainer](#express-container)
-      - [11.2. ExpressService](#express-service)      
+  * [1. Installation](#1-installation)
+  * [2. Examples of Usage](#2-examples-of-usage)
+      - [2.1. Simple service](#21-simple-service)
+      - [2.2. Dependency injection](#22-dependency-injection)
+      - [2.3. Function per service](#23-function-per-service)
+      - [2.4. Remote service](#24-remote-service)
+      - [2.5. Authorization](#25-authorization)
+      - [2.6. Express service](#26-express-service)
+      - [2.7. Error handling](#27-error-handling)
+      - [2.8. Configuration](#28-configuration)
+  * [3. Concepts Overview](#3-concepts-overview)
+      - [3.1. Serverless Environment](#31-serverless-environment)
+      - [3.2. Service](#32-service)
+      - [3.3. Events](#33-events)
+      - [3.4. Container](#34-container)
+      - [3.5. Proxy](#35-proxy)
+  * [4. Data Structures](#4-data-structures)
+      - [4.1. Call Object](#41-call-object)
+      - [4.2. Context Object](#42-context-object)
+  * [5. Service Decorators](#5-service-decorators)
+      - [5.1. @Service decorator](#51-service-decorator)
+      - [5.2. @Inject decorator](#52-inject-decorator)
+      - [5.3. @Proxy decorator](#53-proxy-decorator)
+  * [6. HTTP/REST Decorators](#6-httprest-decorators)
+      - [6.1. @Get decorator](#61-get-decorator)
+      - [6.2. @Post decorator](#62-post-decorator)
+      - [6.3. @Put decorator](#63-put-decorator)
+      - [6.4. @Delete decorator](#64-delete-decorator)
+      - [6.5. @Patch decorator](#65-patch-decorator)
+      - [6.6. @ContentType decorator](#66-contenttype-decorator)
+      - [6.7. RestAdapter function](#67-restadapter-function)
+  * [7. Method Argument Decorators](#7-method-argument-decorators)
+      - [7.1. @PathParam decorator](#71-pathparam-decorator)
+      - [7.2. @PathParams decorator](#72-pathparams-decorator)
+      - [7.3. @QueryParam decorator](#73-queryparam-decorator)
+      - [7.4. @QueryParams decorator](#74-queryparams-decorator)
+      - [7.5. @HeaderParam decorator](#75-headerparam-decorator)
+      - [7.6. @Body decorator](#76-body-decorator)
+      - [7.7. @BodyParam decorator](#77-bodyparam-decorator)
+      - [7.8. @ContextObject decorator](#78-contextobject-decorator)
+      - [7.9. @ContextParam decorator](#79-contextparam-decorator)
+      - [7.10. @CallObject decorator](#710-callobject-decorator)
+  * [8. Authorization Decorators](#8-authorization-decorators)
+      - [8.1. @Public decorator](#81-public-decorator)
+      - [8.2. @Private decorator](#82-private-decorator)
+      - [8.3. @Internal decorator](#83-internal-decorator)
+      - [8.4. @Remote decorator](#84-remote-decorator)
+      - [8.5. @Query decorator](#85-query-decorator)
+      - [8.6. @Command decorator](#86-command-decorator)
+      - [8.7. @Invoke decorator](#87-invoke-decorator)
+  * [9. Base Interfaces and Classes](#9-base-interfaces-and-classes)
+      - [9.1. Service](#91-service)
+      - [9.2. Proxy](#92-proxy)
+      - [9.3. Container](#93-container)
+      - [9.4. Configuration](#94-configuration)
+      - [9.5. Security](#95-security)
+  * [10. Lambda Base Classes](#10-lambda-base-classes)
+      - [10.1. LambdaContainer](#101-lambdacontainer)
+      - [10.2. LambdaProxy](#102-lambdaproxy)
+  * [11. Express Base Classes](#11-express-base-classes)
+      - [11.1. ExpressContainer](#111-expresscontainer)
+      - [11.2. ExpressService](#112-expressservice)      
       
 
 ## 1. Installation
@@ -1828,9 +1828,9 @@ signed timestamp is received:
 
 ## 3. Concepts Overview
 
-TyX Core Framework aims to provide a programming model for back-end serverless solutions by leveraging TypeScript support for object oriented programming. TyX addresses how to write and structure the application back-end in services deployed as Lambda functions. 
+TyX Core Framework aims to provide a programming model for back-end serverless solutions by leveraging TypeScript support for object oriented programming. TyX addresses how to write and structure the application back-end into services deployed as Lambda functions. 
 
-Decorators are extensively used while inheritance from base classes is minimized. Services so written are abstracted from details how HTTP events arrive, how the response is propagated back and the internal routing in case of multiple events being served by the hosting Lambda function. These responsibilities are handled by a Container specific to the hosting environment (Lambda). As proof-of-concept and to serve as development tool an Express based container is provided allowing to run the unmodified services code locally.
+Decorators are extensively used while inheritance from base classes is minimized. Services so written are abstracted from details how HTTP events arrive, how the response is propagated back and the internal routing in case of multiple events being served by the hosting Lambda function. These responsibilities are handled by a Container specific to the hosting environment (Lambda). As proof-of-concept and to serve as development tool an Express based container is provided allowing to run the unmodified services code.
 
 TyX was developed with intent to be used together with [Serverless Framework](https://serverless.com/framework/) that provides rapid deployment. There is no direct dependency on the Serverless Framework so developers can opt for alternative deployment tools.
 
@@ -2169,7 +2169,26 @@ Decorate the service method to respond on HTTP PATCH on the specified route. Arg
 @Patch(route: string, model?: boolean | string, adapter?: RestAdapter)
 ```
 
-### 6.6. `RestAdapter` function
+### 6.6. `@ContentType` decorator
+
+Override the default content type `application/json` for the response.
+
+```typescript
+@ContentType(type: string)
+```
+
+Special type `RAW` allows the method to provide a complete response corresponding to the following interface:
+
+```typescript
+interface RestResult {
+    statusCode: HttpCode;
+    contentType?: string;
+    headers?: Record<string, string>;
+    body: any;
+}
+```
+
+### 6.7. `RestAdapter` function
 
 It is preferred to use [7. Method Argument Decorators] however a custom function can be provided to convert the context and call objects to method arguments. When a `RestAdapter` is provided argument decorators are not evaluated.
 
@@ -2210,25 +2229,6 @@ public async startProduction(
     role: string,
     productId: string,
     order: any): Promise<Confirmation> {
-}
-```
-
-### 6.7. `@ContentType` decorator
-
-Override the default content type `application/json` for the response.
-
-```typescript
-@ContentType(type: string)
-```
-
-Special type `RAW` allows the method to provide a complete response corresponding to the following interface:
-
-```typescript
-interface RestResult {
-    statusCode: HttpCode;
-    contentType?: string;
-    headers?: Record<string, string>;
-    body: any;
 }
 ```
 
@@ -2330,6 +2330,8 @@ saveNote(@CallObject() call: RestCall) { ... }
 
 ## 8. Authorization Decorators
 
+Authorization decorators allow access control at service method level. At most one of the decorators should be specified, when none is present the method is not available to process any events.  
+
 ### 8.1. `@Public` decorator
 
 Allow public access to the service method via HTTP/REST decorated routes.
@@ -2340,7 +2342,7 @@ Allow public access to the service method via HTTP/REST decorated routes.
 
 ### 8.2. `@Private` decorator
 
-Service method is only allowed to be called within the container.
+Service method is only allowed to be called within the container. HTTP/REST decorators should not be used in combination.
 
 ```typescript
 @Private()
@@ -2348,7 +2350,7 @@ Service method is only allowed to be called within the container.
 
 ### 8.3. `@Internal` decorator
 
-Proxy calls allowed only from services from the same application as decorated service method.
+Proxy calls allowed only from services from the same application. HTTP/REST decorators should not be used in combination.
 
 ```typescript
 @Internal()
@@ -2356,7 +2358,7 @@ Proxy calls allowed only from services from the same application as decorated se
 
 ### 8.4. `@Remote` decorator
 
-Remote proxy calls allowed from services of other applications. 
+Remote proxy calls allowed from services of other applications. HTTP/REST decorators should not be used in combination.
 
 ```typescript
 @Remote()
@@ -2364,7 +2366,7 @@ Remote proxy calls allowed from services of other applications.
 
 ### 8.5. `@Query` decorator
 
-Method allowed only to specific roles. This decorator should used on methods retrieving data.
+Method allowed only to specified roles. This decorator should used on methods retrieving data, in combination with HTTP/REST decorators.
 
 ```typescript
 @Query<R extends Roles>(roles: R)
@@ -2372,7 +2374,7 @@ Method allowed only to specific roles. This decorator should used on methods ret
 
 ### 8.6. `@Command` decorator
 
-Method allowed only to specific roles. This decorator should used on methods manipulating data or having other side effects.
+Method allowed only to specified roles. This decorator should used on methods manipulating data or having other side effects, in combination with HTTP/REST decorators.
 
 ```typescript
 @Command<R extends Roles>(roles: R)
@@ -2380,7 +2382,7 @@ Method allowed only to specific roles. This decorator should used on methods man
 
 ### 8.7. `@Invoke` decorator
 
-Method allowed only to specific roles. Use this decorator in cases when the user action fulfilled by the service method is neither query or command.
+Method allowed only to specified roles. Use this decorator in cases when the user action fulfilled by the service method is neither query or command.
 
 ```typescript
 @Invoke<R extends Roles>(roles: R)
