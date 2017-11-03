@@ -14,10 +14,6 @@ import {
     RestMetadata
 } from "../metadata";
 
-import {
-    InternalServerError
-} from "../errors";
-
 /////////// Method Decorators //////////////////////////////////////////////////////////////////
 
 export function Get(route: string, adapter?: RestAdapter) {
@@ -62,10 +58,10 @@ function Rest(verb: HttpMethod, resource: string, model: boolean | string, code:
         let metadata = ServiceMetadata.get(type);
         if (model) {
             let modelRoute = `${route}:${model}`;
-            if (metadata.restMetadata[modelRoute]) throw new InternalServerError(`Duplicate route: ${modelRoute}`);
+            if (metadata.restMetadata[modelRoute]) throw new Error(`Duplicate route: ${modelRoute}`);
             metadata.restMetadata[modelRoute] = restMeta;
         } else {
-            if (metadata.restMetadata[route]) throw new InternalServerError(`Duplicate route: ${route}`);
+            if (metadata.restMetadata[route]) throw new Error(`Duplicate route: ${route}`);
             metadata.restMetadata[route] = restMeta;
         }
     };
