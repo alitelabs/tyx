@@ -252,7 +252,7 @@ export class ContainerInstance implements Container {
     }
 
     private restHandler(service: Service, metadata: RestMetadata, bindings: BindingMetadata): RestHandler {
-        let fun: RestHandler = async function (ctx: Context, call: RestCall): Promise<[number, any, string]> {
+        let fun: RestHandler = async (ctx: Context, call: RestCall): Promise<[number, any, string]> => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {

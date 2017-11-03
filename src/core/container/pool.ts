@@ -35,6 +35,10 @@ import {
     ContainerState
 } from "./common";
 
+import {
+    InternalServerError
+} from "../errors";
+
 
 export class ContainerPool implements Container {
     protected log: Logger;
@@ -65,7 +69,7 @@ export class ContainerPool implements Container {
     public register(proxy: Proxy): this;
     public register(type: Function, ...args: any[]): this;
     public register(target: Object | Service | Proxy | Function, ...args: any[]): this {
-        if (this._state !== ContainerState.Pending) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
         this._registers.push({ target, args });
         return this;
     }
@@ -73,7 +77,7 @@ export class ContainerPool implements Container {
     public publish(service: Function, ...args: any[]): this;
     public publish(service: Service): this;
     public publish(service: Service | Function, ...args: any[]): this {
-        if (this._state !== ContainerState.Pending) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
         this._publishes.push({ service, args });
         return this;
     }
@@ -116,24 +120,24 @@ export class ContainerPool implements Container {
     }
 
     public dispose(): void {
-        if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         this._pool = [this._head];
     }
 
     public async remoteCall(call: RemoteCall): Promise<any> {
-        if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
         return instance.remoteCall(call);
     }
 
     public async eventCall(call: EventCall): Promise<EventResult> {
-        if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
         return instance.eventCall(call);
     }
 
     public async restCall(call: RestCall): Promise<RestResult> {
-        if (this._state !== ContainerState.Ready) throw new Error("Invalid container state");
+        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
         return instance.restCall(call);
     }

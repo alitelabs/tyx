@@ -81,7 +81,7 @@ async function post(path: string, body: any, token?: string): Promise<any> {
             res.setEncoding("utf8");
             res.on("data", function (data) {
                 let ct = res.headers["content-type"];
-                if (res.statusCode === 201)
+                if (res.statusCode === 200)
                     resoleve(parse(data, ct));
                 else
                     reject(parse(data, ct, res.statusCode));
@@ -107,7 +107,7 @@ async function put(path: string, domain: string, body: any, token?: string): Pro
             res.setEncoding("utf8");
             res.on("data", function (data) {
                 let ct = res.headers["content-type"];
-                if (res.statusCode === 201)
+                if (res.statusCode === 200)
                     resoleve(parse(data, ct));
                 else
                     reject(parse(data, ct, res.statusCode));
