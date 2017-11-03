@@ -3,9 +3,8 @@ import "../env";
 import {
     Context,
     IssueRequest,
-    AuthInfo,
-    RestCall,
     WebToken,
+    RestCall,
     RemoteCall,
     EventCall
 } from "../types";
@@ -196,56 +195,6 @@ export abstract class BaseSecurity implements Security {
         if (!timeout) throw new Unauthorized(`Can not resolve token timeout for subject: [${subject}], issuer: [${issuer}], audience: [${audience}]`);
         return timeout;
     }
-}
-
-export abstract class DelegateSecurity extends BaseSecurity {
-
-    public async delegateToken(jwt: WebToken): Promise<AuthInfo> {
-        let auth = this.toAuth(jwt);
-
-        auth = await this.validate(auth);
-        auth.subject = auth.subject || "user:public";
-        auth.role = auth.role || null;
-
-        let token = await this.issueToken(auth);
-        let dt = JWT.decode(token) as WebToken;
-        this.log.debug("Delegate token: %j", dt);
-
-        let session = this.toAuth(dt);
-        session.email = auth.email;
-        session.name = auth.name;
-        session = await this.persist(session);
-
-        return session;
-    }
-
-    private toAuth(jwt: WebToken) {
-        let auth: AuthInfo = {
-            tokenId: jwt.jti,
-
-            issuer: jwt.iss,
-            audience: jwt.aud,
-            subject: jwt.sub as any,
-            remote: jwt.iss !== jwt.aud,
-
-            userId: jwt.oid,
-            role: jwt.role,
-            email: jwt.email,
-            name: jwt.name,
-            ipAddress: jwt.ipaddr,
-
-            issued: jwt.iat && new Date(jwt.iat * 1000),
-            expires: jwt.exp && new Date(jwt.exp * 1000)
-
-            // accessToken: jwt.access_token,
-            // idToken: jwt.id_token,
-            // refreshToken: jwt.refresh_token
-        };
-        return auth;
-    }
-
-    protected abstract async validate(auth: AuthInfo): Promise<AuthInfo>;
-    protected abstract async persist(auth: AuthInfo): Promise<AuthInfo>;
 }
 
 @Service(Security)
