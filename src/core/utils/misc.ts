@@ -1,7 +1,5 @@
 import "../env";
 
-import { Context } from "../types/common";
-
 import uuidr = require("uuid");
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
@@ -80,30 +78,4 @@ export function parseMap(map: string, prefix?: string) {
         res[prefix + key] = value;
     }
     return res;
-}
-
-export function dummyContext(): Context {
-    let requestId = uuid();
-    let ctx: Context = {
-        requestId,
-        token: null,
-        permission: {
-            service: "*",
-            method: "*",
-            name: "local",
-            roles: { Internal: true, Remote: true },
-        },
-        auth: {
-            tokenId: requestId,
-            subject: "local",
-            issuer: this.config.appId,
-            audience: this.config.appId,
-            remote: false,
-            userId: null,
-            role: "Internal",
-            issued: new Date(),
-            expires: new Date(Date.now() + 60000)
-        }
-    };
-    return ctx;
 }
