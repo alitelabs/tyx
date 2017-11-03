@@ -235,7 +235,7 @@ export class ContainerInstance implements Container {
     }
 
     private remoteHandler(service: Service, metadata: RemoteMetadata): RemoteHandler {
-        let fun: RemoteHandler = async function (ctx: Context, call: RemoteCall): Promise<any> {
+        let fun: RemoteHandler = async (ctx: Context, call: RemoteCall): Promise<any>  => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
@@ -286,7 +286,7 @@ export class ContainerInstance implements Container {
     }
 
     private eventHandler(service: Service, metadata: EventMetadata): EventHandler {
-        let handler: EventHandler = async function (ctx: Context, call: EventCall): Promise<any> {
+        let handler: EventHandler = async (ctx: Context, call: EventCall): Promise<any> => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
