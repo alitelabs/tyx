@@ -14,6 +14,10 @@ import {
 } from "../core/logger";
 
 import {
+    InternalServerError
+} from "../core/errors";
+
+import {
     Utils
 } from "../core/utils";
 
@@ -105,7 +109,7 @@ export class ExpressContainer extends ContainerPool {
                 case "DELETE":
                     this.application.delete(path, adapter);
                     break;
-                default: throw new Error(`Unsupported http method: ${httpMethod}`);
+                default: throw new InternalServerError(`Unsupported http method: ${httpMethod}`);
             }
         }
 
