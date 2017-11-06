@@ -22,7 +22,7 @@ export class ApiError extends Error {
     public reason: ApiErrorData;
     public details: ApiErrorData[];
 
-    protected constructor(code?: HttpCode, message?: string, cause?: any) {
+    public constructor(code?: HttpCode, message?: string, cause?: any) {
         super(message);
 
         let F = (this as any).constructor;

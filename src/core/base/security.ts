@@ -118,6 +118,7 @@ export abstract class BaseSecurity implements Security {
             {
                 oid: req.userId,
                 role: req.role,
+                scope: req.scope
                 // email: auth.email,
                 // name: auth.name,
                 // ipaddr: req.ipAddress
@@ -164,6 +165,7 @@ export abstract class BaseSecurity implements Security {
                 remote: decoded.iss !== decoded.aud,
                 userId: decoded.oid,
                 role: decoded.role,
+                scope: decoded.scope,
                 email: decoded.email,
                 name: decoded.name,
                 ipAddress: decoded.ipaddr,

@@ -226,6 +226,7 @@ export class ContainerInstance implements Container {
         let events = Object.keys(eventMetadata);
         events.forEach(event => {
             let metas = eventMetadata[event];
+            this._metadata.eventMetadata[event] = this._metadata.eventMetadata[event] || [];
             this._metadata.eventMetadata[event] = this._metadata.eventMetadata[event].concat(metas);
             let handlers = metas.map(m => this.eventHandler(service as Service, m));
             this._eventHandlers[event] = this._eventHandlers[event] || [];

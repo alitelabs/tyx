@@ -14,6 +14,7 @@ export interface IssueRequest {
     subject: "event" | "remote" | "user:internal" | "user:external" | "user:public" | string;
     userId: string;
     role: string;
+    scope?: string;
 }
 
 export interface AuthInfo {
@@ -26,12 +27,16 @@ export interface AuthInfo {
 
     userId: string;
     role: string;
+    scope?: string;
+
     email?: string;
     name?: string;
     ipAddress?: string;
 
     issued?: Date;
     expires?: Date;
+
+    token?: string;
 }
 
 /**
@@ -71,14 +76,11 @@ export interface WebToken {
 
     // Session param
     role?: string;
+    scope?: string;
 
     // Unknown params
     idp?: string;
     amr?: string[];
     platf?: string;
     uti?: string;
-
-    access_token?: string;
-    id_token?: string;
-    refresh_token?: string;
 }
