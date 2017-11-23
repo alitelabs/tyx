@@ -429,14 +429,11 @@ export class ContainerInstance implements Container {
                 let target = metas[i];
                 if (!Utils.wildcardMatch(target.actionFilter, call.action) || !Utils.wildcardMatch(target.objectFilter, call.object)) continue;
 
-                let serviceId = this._application + ":" + target.service;
-                // let service = this._services[serviceId];
-
                 call.application = this._application;
                 call.service = target.service;
                 call.method = target.method;
 
-                let permissionId = serviceId + "." + call.method;
+                let permissionId = call.service + "." + call.method;
                 let permission = permissionId && this._metadata.permissions[permissionId];
                 if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
@@ -496,7 +493,7 @@ export class ContainerInstance implements Container {
             call.service = target.service;
             call.method = target.method;
 
-            let permissionId = target.service + "." + call.method;
+            let permissionId = call.service + "." + call.method;
             let permission = permissionId && this._metadata.permissions[permissionId];
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
