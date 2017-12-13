@@ -18,9 +18,10 @@ export interface EventCall extends Call {
 }
 
 export interface EventRecord {
-    eventSource: string;
-    eventVersion: string;
-    eventName: string;
+    eventSource?: string;
+    eventVersion?: string;
+    eventName?: string;
+    [prop: string]: any;
 }
 
 export interface EventResult {

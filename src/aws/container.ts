@@ -105,6 +105,12 @@ export interface LambdaDynamoRecord extends LambdaEventRecord {
     };
 }
 
+export interface LambdaScheduleEvent {
+    source: string;
+    action: string;
+    [prop: string]: string;
+}
+
 export interface LambdaApiEvent {
     resource: string;
     path: string;
@@ -167,7 +173,7 @@ export interface LambdaCallback {
     (err: LambdaError, response?: HttpResponse | Object): void;
 }
 
-export type LambdaEvent = LambdaCall & LambdaApiEvent & LambdaS3Event & LambdaDynamoEvent;
+export type LambdaEvent = LambdaCall & LambdaApiEvent & LambdaS3Event & LambdaDynamoEvent & LambdaScheduleEvent;
 
 export interface LambdaHandler {
     (
@@ -213,6 +219,13 @@ export class LambdaContainer extends ContainerPool {
                 this.log.error(err);
                 throw InternalServerError.wrap(err);
             }
+        } else if (event.source === "schedule" && event.action) {
+            try {
+                return await this.schedule(event, context);
+            } catch (err) {
+                this.log.error(err);
+                throw InternalServerError.wrap(err);
+            }
         } else if (event.Records && event.Records[0] && event.Records[0].eventSource === "aws:s3") {
             try {
                 return await this.s3(event, context);
@@ -227,7 +240,7 @@ export class LambdaContainer extends ContainerPool {
                 this.log.error(err);
                 throw InternalServerError.wrap(err);
             }
-        }  else {
+        } else {
             throw new BadRequest("Invalid event");
         }
     }
@@ -297,6 +310,33 @@ export class LambdaContainer extends ContainerPool {
             this.log.info("S3 Call [%s:%s]: %j", call.resource, call.object, call);
             result = await super.eventCall(call);
         }
+        return result;
+    }
+
+    private async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {
+        this.log.info("Schedule Event: %j", event);
+
+        let requestId = context && context.awsRequestId || Utils.uuid();
+        let time = new Date().toISOString();
+
+        let call: EventCall = {
+            type: "event",
+            source: "aws:cloudwatch",
+            application: undefined,
+            service: undefined,
+            method: undefined,
+            requestId,
+            resource: "events",
+            action: event.action,
+            time,
+            object: null,
+            records: [
+              event
+            ]
+        };
+
+        this.log.info("Schedule Call [%s:%s]: %j", call.resource, call.object, call);
+        let result = await super.eventCall(call);
         return result;
     }
 
