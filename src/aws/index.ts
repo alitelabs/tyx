@@ -26,6 +26,7 @@ export {
     S3ObjectCreated,
     DynamoDbInsert,
     DynamoDbModify,
-    DynamoDbRemove
+    DynamoDbRemove,
+    Schedule
 } from "./events";
 
