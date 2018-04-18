@@ -106,7 +106,7 @@ export interface LambdaDynamoRecord extends LambdaEventRecord {
 }
 
 export interface LambdaScheduleEvent {
-    source: string;
+    type: string;
     action: string;
     [prop: string]: string;
 }
@@ -200,7 +200,7 @@ export class LambdaContainer extends ContainerPool {
 
     private async handler(event: LambdaEvent, context: LambdaContext) {
 
-        LogLevel.set(this.config().logLevel);
+        LogLevel.set(this.config.logLevel);
         this.log.debug("Lambda Event: %j", event);
         this.log.debug("Lambda Context: %j", context);
 
@@ -219,7 +219,7 @@ export class LambdaContainer extends ContainerPool {
                 this.log.error(err);
                 throw InternalServerError.wrap(err);
             }
-        } else if (event.source === "schedule" && event.action) {
+        } else if (event.type === "schedule" && event.action) {
             try {
                 return await this.schedule(event, context);
             } catch (err) {

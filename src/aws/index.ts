@@ -29,4 +29,3 @@ export {
     DynamoDbRemove,
     Schedule
 } from "./events";
-

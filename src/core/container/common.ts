@@ -51,6 +51,9 @@ export enum ContainerState {
 }
 
 export interface Container {
+    state: ContainerState;
+    metadata: ContainerMetadata;
+
     register(resource: Object, name?: string): this;
     register(service: Service): this;
     register(proxy: Proxy): this;
@@ -59,10 +62,7 @@ export interface Container {
     publish(service: Function, ...args: any[]): this;
     publish(service: Service): this;
 
-    state(): ContainerState;
     prepare(): Container;
-
-    metadata(): ContainerMetadata;
 
     restCall(call: RestCall): Promise<RestResult>;
     remoteCall(call: RemoteCall): Promise<any>;

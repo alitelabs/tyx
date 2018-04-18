@@ -62,40 +62,39 @@ import { Utils } from "../utils";
 
 
 export class ContainerInstance implements Container {
-    private _application: string;
-    private _name: string;
+    private application: string;
+    private name: string;
 
-    protected log: Logger;
+    private log: Logger;
 
-    protected config: Configuration;
-    protected security: Security;
+    private config: Configuration;
+    private security: Security;
 
-    private _state: ContainerState;
+    private istate: ContainerState;
+    private imetadata: ContainerMetadata;
 
-    private _resources: Record<string, any>;
-    private _services: Record<string, Service>;
-    private _proxies: Record<string, Proxy>;
+    private resources: Record<string, any>;
+    private services: Record<string, Service>;
+    private proxies: Record<string, Proxy>;
 
-    private _metadata: ContainerMetadata;
-
-    private _remoteHandlers: Record<string, RemoteHandler>;
-    private _restHandlers: Record<string, RestHandler>;
-    private _eventHandlers: Record<string, EventHandler[]>;
+    private remoteHandlers: Record<string, RemoteHandler>;
+    private restHandlers: Record<string, RestHandler>;
+    private eventHandlers: Record<string, EventHandler[]>;
 
     constructor(application: string, name: string, index?: string) {
-        this._application = application;
-        this._name = name || ContainerInstance.name;
-        if (index !== undefined) this._name += ":" + index;
+        this.application = application;
+        this.name = name || ContainerInstance.name;
+        if (index !== undefined) this.name += ":" + index;
 
-        this.log = Logger.get(this._application, this._name);
-        this._state = ContainerState.Pending;
-        this._resources = {};
-        this._services = {};
-        this._proxies = {};
-        this._remoteHandlers = {};
-        this._restHandlers = {};
-        this._eventHandlers = {};
-        this._metadata = {
+        this.log = Logger.get(this.application, this.name);
+        this.istate = ContainerState.Pending;
+        this.resources = {};
+        this.services = {};
+        this.proxies = {};
+        this.remoteHandlers = {};
+        this.restHandlers = {};
+        this.eventHandlers = {};
+        this.imetadata = {
             permissions: {},
             restMetadata: {},
             remoteMetadata: {},
@@ -103,20 +102,20 @@ export class ContainerInstance implements Container {
         };
     }
 
-    public state(): ContainerState {
-        return this._state;
+    public get state() {
+        return this.istate;
     }
 
-    public metadata(): ContainerMetadata {
-        return this._metadata;
+    public get metadata() {
+        return this.metadata;
     }
 
     public get<T>(type: ObjectType<T> | string): T {
         if (type === Configuration) return this.config as any;
         if (type === Security) return this.config as any;
-        if (typeof type === "string") return this._services[type] || this._proxies[type] || this._resources[type];
-        if (ServiceMetadata.has(type)) return this._services[ServiceMetadata.service(type)] as any;
-        if (ProxyMetadata.has(type)) return this._proxies[ProxyMetadata.service(type)] as any;
+        if (typeof type === "string") return this.services[type] || this.proxies[type] || this.resources[type];
+        if (ServiceMetadata.has(type)) return this.services[ServiceMetadata.service(type)] as any;
+        if (ProxyMetadata.has(type)) return this.proxies[ProxyMetadata.service(type)] as any;
         return null;
     }
 
@@ -125,7 +124,7 @@ export class ContainerInstance implements Container {
     public register(proxy: Proxy): this;
     public register(type: Function, ...args: any[]): this;
     public register(target: Object | Service | Proxy | Function, ...args: any[]): this {
-        if (this._state !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         let name = undefined;
 
@@ -145,18 +144,18 @@ export class ContainerInstance implements Container {
             id = name;
         } else if (ProxyMetadata.has(target)) {
             name = ProxyMetadata.service(target);
-            id = ProxyMetadata.id(target, this._application);
+            id = ProxyMetadata.id(target, this.application);
         } else {
             id = name = target.constructor.name;
         }
 
-        if (this._services[id] || this._proxies[id] || this._resources[id]) throw new InternalServerError(`Duplicate registration [${id}]`);
+        if (this.services[id] || this.proxies[id] || this.resources[id]) throw new InternalServerError(`Duplicate registration [${id}]`);
 
         if (name === Configuration) {
             if (!ServiceMetadata.has(target)) throw new InternalServerError(`Configuration must be a service`);
             this.config = target as Configuration;
             if (target instanceof BaseConfiguration) {
-                target.init(this._application);
+                target.init(this.application);
             }
         }
         if (name === Security) {
@@ -165,13 +164,13 @@ export class ContainerInstance implements Container {
         }
 
         if (ServiceMetadata.has(target)) {
-            this._services[id] = target;
+            this.services[id] = target;
             this.log.info("Service: %s", id);
         } else if (ProxyMetadata.has(target)) {
-            this._proxies[id] = target;
+            this.proxies[id] = target;
             this.log.info("Proxy: %s", id);
         } else {
-            this._resources[id] = target;
+            this.resources[id] = target;
             this.log.info("Resource: %s", id);
         }
         return this;
@@ -180,7 +179,7 @@ export class ContainerInstance implements Container {
     public publish(service: Function, ...args: any[]): this;
     public publish(service: Service): this;
     public publish(service: Service | Function, ...args: any[]): this {
-        if (this._state !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         // Call constructor
         if (service instanceof Function) {
@@ -198,7 +197,7 @@ export class ContainerInstance implements Container {
         permissions.forEach(method => {
             let meta = permissionMetadata[method];
             let key = meta.service + "." + method;
-            this._metadata.permissions[key] = meta;
+            this.imetadata.permissions[key] = meta;
         });
 
         let remoteMetadata = ServiceMetadata.remoteMetadata(service);
@@ -206,9 +205,9 @@ export class ContainerInstance implements Container {
         remotes.forEach(name => {
             let meta = remoteMetadata[name];
             let key = meta.service + "." + name;
-            if (this._metadata.remoteMetadata[key]) throw new InternalServerError(`Duplicate service method [${key}]`);
-            this._metadata.remoteMetadata[key] = meta;
-            this._remoteHandlers[key] = this.remoteHandler(service as Service, meta);
+            if (this.imetadata.remoteMetadata[key]) throw new InternalServerError(`Duplicate service method [${key}]`);
+            this.imetadata.remoteMetadata[key] = meta;
+            this.remoteHandlers[key] = this.remoteHandler(service as Service, meta);
         });
 
         let restMetadata = ServiceMetadata.restMetadata(service);
@@ -216,21 +215,21 @@ export class ContainerInstance implements Container {
         let routes = Object.keys(restMetadata);
         routes.forEach(route => {
             let meta = restMetadata[route];
-            if (this._metadata.restMetadata[route]) throw new InternalServerError(`Duplicate REST route [${route}]`);
-            this._metadata.restMetadata[route] = meta;
+            if (this.imetadata.restMetadata[route]) throw new InternalServerError(`Duplicate REST route [${route}]`);
+            this.imetadata.restMetadata[route] = meta;
             let bindings = bindMetadata[meta.method];
-            this._restHandlers[route] = this.restHandler(service as Service, meta, bindings);
+            this.restHandlers[route] = this.restHandler(service as Service, meta, bindings);
         });
 
         let eventMetadata = ServiceMetadata.eventMetadata(service);
         let events = Object.keys(eventMetadata);
         events.forEach(event => {
             let metas = eventMetadata[event];
-            this._metadata.eventMetadata[event] = this._metadata.eventMetadata[event] || [];
-            this._metadata.eventMetadata[event] = this._metadata.eventMetadata[event].concat(metas);
+            this.imetadata.eventMetadata[event] = this.imetadata.eventMetadata[event] || [];
+            this.imetadata.eventMetadata[event] = this.imetadata.eventMetadata[event].concat(metas);
             let handlers = metas.map(m => this.eventHandler(service as Service, m));
-            this._eventHandlers[event] = this._eventHandlers[event] || [];
-            this._eventHandlers[event] = this._eventHandlers[event].concat(handlers);
+            this.eventHandlers[event] = this.eventHandlers[event] || [];
+            this.eventHandlers[event] = this.eventHandlers[event].concat(handlers);
         });
         return this;
     }
@@ -309,7 +308,7 @@ export class ContainerInstance implements Container {
     }
 
     public prepare(): this {
-        if (this._state !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         if (!this.config) {
             this.register(new DefaultConfiguration());
@@ -320,20 +319,20 @@ export class ContainerInstance implements Container {
             this.log.warn("Using default security service!");
         }
 
-        for (let sid in this._services) {
-            let service = this._services[sid];
+        for (let sid in this.services) {
+            let service = this.services[sid];
             this.inject(service);
         }
 
-        for (let pid in this._proxies) {
-            let proxy = this._proxies[pid];
+        for (let pid in this.proxies) {
+            let proxy = this.proxies[pid];
             if (proxy instanceof BaseProxy) {
                 proxy.initialize(this.config, this.security);
             }
             this.inject(proxy);
         }
 
-        this._state = ContainerState.Ready;
+        this.istate = ContainerState.Ready;
 
         return this;
     }
@@ -343,8 +342,8 @@ export class ContainerInstance implements Container {
         for (let pid in dependencies) {
             let dep = dependencies[pid];
             let localId = dep.resource;
-            let proxyId = (dep.application || this._application) + ":" + localId;
-            let resolved = this._proxies[proxyId] || this._services[localId] || this._resources[localId];
+            let proxyId = (dep.application || this.application) + ":" + localId;
+            let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
             let depId = (dep.application ? dep.application + ":" : "") + localId;
             if (!resolved)
                 throw new InternalServerError(`Unresolved dependency [${depId}] on [${service.constructor.name}.${pid}]`);
@@ -356,27 +355,27 @@ export class ContainerInstance implements Container {
     // --------------------------------------------------
 
     public async remoteCall(call: RemoteCall): Promise<any> {
-        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
 
-        this._state = ContainerState.Reserved;
+        this.istate = ContainerState.Reserved;
         try {
             this.log.debug("Remote Call: %j", call);
 
-            if (call.application !== this._application) {
+            if (call.application !== this.application) {
                 throw this.log.error(new NotFound(`Application not found [${call.application}]`));
             }
 
-            let service = this._services[call.service];
+            let service = this.services[call.service];
             if (!service) throw this.log.error(new NotFound(`Service not found [${call.service}]`));
 
             let permissionId = call.service + "." + call.method;
-            let permission = permissionId && this._metadata.permissions[permissionId];
+            let permission = permissionId && this.imetadata.permissions[permissionId];
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
-            let caller: RemoteHandler = this._remoteHandlers[permissionId];
+            let caller: RemoteHandler = this.remoteHandlers[permissionId];
             if (!caller) throw this.log.error(new NotFound(`Method not found [${permissionId}]`));
 
-            this._state = ContainerState.Busy;
+            this.istate = ContainerState.Busy;
             let ctx = await this.security.remoteAuth(call, permission);
             // let ctx = await this.security.localAuth();
 
@@ -390,14 +389,14 @@ export class ContainerInstance implements Container {
                 await this.release(ctx);
             }
         } finally {
-            this._state = ContainerState.Ready;
+            this.istate = ContainerState.Ready;
         }
     }
 
     public async eventCall(call: EventCall): Promise<EventResult> {
-        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
 
-        this._state = ContainerState.Reserved;
+        this.istate = ContainerState.Reserved;
         try {
             call.type = "event";
             this.log.debug("Event Call: %j", call);
@@ -405,12 +404,12 @@ export class ContainerInstance implements Container {
             let key = `${call.source} ${call.resource}`;
             let alias = this.config.resources && this.config.resources[call.resource];
 
-            let metas = this._metadata.eventMetadata[key];
-            let handlers = this._eventHandlers && this._eventHandlers[key];
+            let metas = this.imetadata.eventMetadata[key];
+            let handlers = this.eventHandlers && this.eventHandlers[key];
             if (!handlers && alias) {
                 let key2 = `${call.source} ${alias}`;
-                metas = this._metadata.eventMetadata[key2];
-                handlers = this._eventHandlers && this._eventHandlers[key2];
+                metas = this.imetadata.eventMetadata[key2];
+                handlers = this.eventHandlers && this.eventHandlers[key2];
             }
             if (!handlers) throw this.log.error(new NotFound(`Event handler not found [${key}] [${call.object}]`));
 
@@ -423,18 +422,18 @@ export class ContainerInstance implements Container {
                 returns: []
             };
 
-            this._state = ContainerState.Busy;
+            this.istate = ContainerState.Busy;
             for (let i = 0; i < handlers.length; i++) {
                 let handler = handlers[i];
                 let target = metas[i];
                 if (!Utils.wildcardMatch(target.actionFilter, call.action) || !Utils.wildcardMatch(target.objectFilter, call.object)) continue;
 
-                call.application = this._application;
+                call.application = this.application;
                 call.service = target.service;
                 call.method = target.method;
 
                 let permissionId = call.service + "." + call.method;
-                let permission = permissionId && this._metadata.permissions[permissionId];
+                let permission = permissionId && this.imetadata.permissions[permissionId];
                 if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
                 let ctx = await this.security.eventAuth(call, permission);
@@ -468,14 +467,14 @@ export class ContainerInstance implements Container {
             result.status = result.status || "NOP";
             return result;
         } finally {
-            this._state = ContainerState.Ready;
+            this.istate = ContainerState.Ready;
         }
     }
 
     public async restCall(call: RestCall): Promise<RestResult> {
-        if (this._state !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
+        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
 
-        this._state = ContainerState.Reserved;
+        this.istate = ContainerState.Reserved;
         try {
             call.type = "rest";
             this.log.debug("REST Event: %j", call);
@@ -484,20 +483,20 @@ export class ContainerInstance implements Container {
 
             let key = `${call.httpMethod} ${call.resource}`;
             if (call.contentType.domainModel) key += `:${call.contentType.domainModel}`;
-            let rester = this._restHandlers && this._restHandlers[key];
+            let rester = this.restHandlers && this.restHandlers[key];
             if (!rester) throw this.log.error(new NotFound(`Route not found [${key}]`));
 
-            let target = this._metadata.restMetadata[key];
+            let target = this.imetadata.restMetadata[key];
 
-            call.application = this._application;
+            call.application = this.application;
             call.service = target.service;
             call.method = target.method;
 
             let permissionId = call.service + "." + call.method;
-            let permission = permissionId && this._metadata.permissions[permissionId];
+            let permission = permissionId && this.imetadata.permissions[permissionId];
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
-            this._state = ContainerState.Busy;
+            this.istate = ContainerState.Busy;
             let ctx = await this.security.restAuth(call, permission);
 
             try {
@@ -523,13 +522,13 @@ export class ContainerInstance implements Container {
                 await this.release(ctx);
             }
         } finally {
-            this._state = ContainerState.Ready;
+            this.istate = ContainerState.Ready;
         }
     }
 
     public async activate(ctx: Context): Promise<Context> {
-        for (let sid in this._services) {
-            let service = this._services[sid];
+        for (let sid in this.services) {
+            let service = this.services[sid];
             try {
                 if (service.activate) await service.activate(ctx);
             } catch (e) {
@@ -543,8 +542,8 @@ export class ContainerInstance implements Container {
     }
 
     public async release(ctx: Context): Promise<void> {
-        for (let sid in this._services) {
-            let service = this._services[sid];
+        for (let sid in this.services) {
+            let service = this.services[sid];
             try {
                 if (service.release) await service.release(ctx);
             } catch (e) {

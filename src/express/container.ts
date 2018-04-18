@@ -44,7 +44,7 @@ import BodyParser = require("body-parser");
 export class ExpressContainer extends ContainerPool {
 
     private server: Server;
-    private application: Express;
+    private app: Express;
     private basePath: string;
 
     constructor(application: string, basePath?: string) {
@@ -57,9 +57,9 @@ export class ExpressContainer extends ContainerPool {
 
         this.prepare();
 
-        this.application = express();
-        this.application.use(BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
-        this.application.use((req, res, next) => {
+        this.app = express();
+        this.app.use(BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
+        this.app.use((req, res, next) => {
             res.header("access-control-allow-origin", "*");
             res.header("access-control-allow-methods", "GET,PUT,POST,DELETE,PATCH");
             res.header("access-control-allow-headers", "Origin, Content-Type, Accept, Authorization");
@@ -69,7 +69,7 @@ export class ExpressContainer extends ContainerPool {
         let used = {};
         let paths = [];
 
-        let restMetadata = this.metadata().restMetadata;
+        let restMetadata = this.metadata.restMetadata;
         for (let hd in restMetadata) {
             let target = restMetadata[hd];
             let httpMethod = target.verb;
@@ -95,25 +95,25 @@ export class ExpressContainer extends ContainerPool {
 
             switch (httpMethod) {
                 case "GET":
-                    this.application.get(path, adapter);
+                    this.app.get(path, adapter);
                     break;
                 case "POST":
-                    this.application.post(path, adapter);
+                    this.app.post(path, adapter);
                     break;
                 case "PUT":
-                    this.application.put(path, adapter);
+                    this.app.put(path, adapter);
                     break;
                 case "PATCH":
-                    this.application.patch(path, adapter);
+                    this.app.patch(path, adapter);
                     break;
                 case "DELETE":
-                    this.application.delete(path, adapter);
+                    this.app.delete(path, adapter);
                     break;
                 default: throw new InternalServerError(`Unsupported http method: ${httpMethod}`);
             }
         }
 
-        this.server = createServer(this.application);
+        this.server = createServer(this.app);
         this.server.listen(port);
 
         this.log.info("Server initialized.");
@@ -124,7 +124,7 @@ export class ExpressContainer extends ContainerPool {
     }
 
     private async handle(resource: string, req: Request, res: Response) {
-        LogLevel.set(this.config().logLevel);
+        LogLevel.set(this.config.logLevel);
         this.log.info("%s: %s", req.method, req.url);
 
         if (Buffer.isBuffer(req.body))
@@ -151,7 +151,7 @@ export class ExpressContainer extends ContainerPool {
             path: req.path,
             pathParameters: req.params || {},
             queryStringParameters: req.query || {},
-            headers: req.headers || {},
+            headers: req.headers as Record<string, string> || {},
             body: req.body,
             isBase64Encoded: false // TODO
         };

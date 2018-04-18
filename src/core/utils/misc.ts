@@ -3,7 +3,7 @@ import "../env";
 import uuidr = require("uuid");
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
-export function getArgs(func: Function): string[] {
+export function getArgs(func: (...args: any[]) => any): string[] {
     return (func + "")
         .replace(/[/][/].*$/mg, "") // strip single-line comments
         .replace(/\s+/g, "") // strip white space
@@ -51,15 +51,15 @@ export function isBase64(str) {
         (firstPaddingChar === len - 2 && str[firstPaddingIndex + 1] === "=");
 }
 
-const prefix = Buffer.from("1F8B", "hex");
+const gzipPrefix = Buffer.from("1F8B", "hex");
 
 export function isGzip(buf) {
     // 1f 8b;
     if (typeof buf === "string") {
-        return buf.startsWith(prefix.toString());
+        return buf.startsWith(gzipPrefix.toString());
     }
     if (typeof buf === "object" && buf instanceof Buffer) {
-        return (buf[0] === prefix[0] && buf[1] === prefix[1]);
+        return (buf[0] === gzipPrefix[0] && buf[1] === gzipPrefix[1]);
     }
     return false;
 }
@@ -72,8 +72,9 @@ export function parseMap(map: string, prefix?: string) {
     prefix = prefix || "";
     let res = {};
     let parts = map.split(";").map(x => x.trim()).filter(x => x);
-    for (let part of parts) {
-        let key: string, value: string;
+    for (const part of parts) {
+        let key: string;
+        let value: string;
         [key, value] = part.split("=").map(x => x.trim()).filter(x => x);
         res[prefix + key] = value;
     }
