@@ -107,7 +107,7 @@ export class ContainerInstance implements Container {
     }
 
     public get metadata() {
-        return this.metadata;
+        return this.imetadata;
     }
 
     public get<T>(type: ObjectType<T> | string): T {
