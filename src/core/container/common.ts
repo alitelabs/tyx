@@ -86,6 +86,7 @@ export namespace HttpResponse {
             headers: {
                 "access-control-allow-origin": "*",
                 "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH",
+                "access-control-allow-headers": "Content-Type, Content-Encoding",
                 "content-type": json ? "application/json; charset=utf-8" : "text/plain; charset=utf-8"
             },
             body
