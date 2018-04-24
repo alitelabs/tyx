@@ -84,14 +84,14 @@ export namespace HttpResponse {
         let response: HttpResponse = {
             statusCode: code,
             headers: {
-                "access-control-allow-origin": "*",
-                "access-control-allow-methods": "GET, POST, PUT, DELETE, PATCH",
-                "access-control-allow-headers": "Content-Type, Content-Encoding",
-                "content-type": json ? "application/json; charset=utf-8" : "text/plain; charset=utf-8"
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH",
+                "Access-Control-Allow-Headers": "Content-Type, Content-Encoding",
+                "Content-Type": json ? "application/json; charset=utf-8" : "text/plain; charset=utf-8"
             },
             body
         };
-        if (!body) delete response.headers["content-type"];
+        if (!body) delete response.headers["Content-Type"];
 
         return response;
     }
@@ -99,7 +99,8 @@ export namespace HttpResponse {
     export function result(rest: RestResult): HttpResponse {
         let res = create(rest.statusCode, rest.body, true);
         Object.assign(res.headers, rest.headers || {});
-        if (rest.contentType) res.headers["content-type"] = `${rest.contentType}; charset=utf-8`;
+        if (rest.contentType) res.headers["Content-Type"] = `${rest.contentType}; charset=utf-8`;
+        if (rest.ctx && rest.ctx.renewed && rest.ctx.token) res.headers["Token"] = rest.ctx.token;
         return res;
     }
 

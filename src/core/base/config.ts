@@ -20,6 +20,7 @@ export interface Configuration {
 
     restSecret: string;
     restTimeout: string;
+    restLifetime: string;
     internalSecret: string;
     internalTimeout: string;
     remoteTimeout: string;
@@ -79,6 +80,8 @@ export abstract class BaseConfiguration implements Configuration {
     get restSecret(): string { return this.config.REST_SECRET || undefined; }
 
     get restTimeout(): string { return this.config.REST_TIMEOUT || "10min"; }
+
+    get restLifetime(): string { return this.config.REST_LIFETIME || "1h"; }
 
     get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
 

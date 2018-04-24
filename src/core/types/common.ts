@@ -10,6 +10,7 @@ export type HttpCode = 200 | 201 | 202 | 400 | 401 | 403 | 405 | 404 | 409 | 500
 export interface Context {
     requestId: string;
     token: string;
+    renewed: boolean;
     auth: AuthInfo;
     permission: PermissionMetadata;
 }

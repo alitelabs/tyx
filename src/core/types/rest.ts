@@ -46,6 +46,7 @@ export interface RestResult {
     contentType?: string;
     headers?: Record<string, string>;
     body: any;
+    ctx: Context;
 }
 
 export interface RestAdapter {

@@ -15,6 +15,7 @@ export interface IssueRequest {
     userId: string;
     role: string;
     scope?: string;
+    serial?: number | Date;
 }
 
 export interface AuthInfo {
@@ -33,6 +34,7 @@ export interface AuthInfo {
     name?: string;
     ipAddress?: string;
 
+    serial?: Date;
     issued?: Date;
     expires?: Date;
 
@@ -46,6 +48,9 @@ export interface AuthInfo {
 export interface WebToken {
     // Tooken ID
     jti: string;
+
+    // First issue
+    ist: number;
 
     // Identifies the token issuer
     iss: string;

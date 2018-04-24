@@ -60,9 +60,9 @@ export class ExpressContainer extends ContainerPool {
         this.app = express();
         this.app.use(BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
         this.app.use((req, res, next) => {
-            res.header("access-control-allow-origin", "*");
-            res.header("access-control-allow-methods", "GET,PUT,POST,DELETE,PATCH");
-            res.header("access-control-allow-headers", "Origin, Content-Type, Accept, Authorization");
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH");
+            res.header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Encoding, Accept, Authorization");
             next();
         });
 
@@ -161,7 +161,8 @@ export class ExpressContainer extends ContainerPool {
             for (let header in result.headers) {
                 res.setHeader(header, result.headers[header]);
             }
-            if (result.contentType) res.setHeader("content-type", result.contentType);
+            if (result.contentType) res.setHeader("Content-Type", result.contentType);
+            if (result.ctx && result.ctx.renewed && result.ctx.token) res.setHeader("Token", result.ctx.token);
             res.status(result.statusCode).send(result.body);
         } catch (err) {
             let result = HttpResponse.error(err);

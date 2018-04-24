@@ -6,7 +6,8 @@ import {
     WebToken,
     RestCall,
     RemoteCall,
-    EventCall
+    EventCall,
+    AuthInfo
 } from "../types";
 
 import {
@@ -34,6 +35,8 @@ import { Utils } from "../utils";
 
 import JWT = require("jsonwebtoken");
 
+import MS = require("ms");
+
 export const Security = "security";
 
 export interface Security extends Service {
@@ -60,6 +63,7 @@ export abstract class BaseSecurity implements Security {
             let ctx: Context = {
                 requestId: call.requestId,
                 token,
+                renewed: false,
                 permission,
                 auth: {
                     tokenId: call.requestId,
@@ -75,7 +79,13 @@ export abstract class BaseSecurity implements Security {
             };
             return ctx;
         }
-        return await this.verify(call.requestId, token, permission);
+        let ctx = await this.verify(call.requestId, token, permission);
+        token = this.renew(ctx.auth);
+        if (token) {
+            ctx.token = token;
+            ctx.renewed = true;
+        }
+        return ctx;
     }
 
     public async remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context> {
@@ -93,6 +103,7 @@ export abstract class BaseSecurity implements Security {
         let ctx: Context = {
             requestId: call.requestId,
             token: null,
+            renewed: false,
             permission,
             auth: {
                 tokenId: call.requestId,
@@ -114,11 +125,13 @@ export abstract class BaseSecurity implements Security {
         req.audience = req.audience || this.config.appId;
         let secret = this.secret(req.subject, this.config.appId, req.audience);
         let timeout = this.timeout(req.subject, this.config.appId, req.audience);
+        let serial = (req.serial instanceof Date) ? req.serial.getTime() : +req.serial || Date.now();
         let token = JWT.sign(
             {
                 oid: req.userId,
                 role: req.role,
-                scope: req.scope
+                scope: req.scope,
+                ist: Math.floor(serial / 1000)
                 // email: auth.email,
                 // name: auth.name,
                 // ipaddr: req.ipAddress
@@ -153,9 +166,11 @@ export abstract class BaseSecurity implements Security {
 
         if (decoded.role !== "Application" && permission.roles[decoded.role] !== true)
             throw new Unauthorized(`Role [${decoded.role}] not authorized to access method [${permission.method}]`);
+
         let ctx: Context = {
             requestId,
             token,
+            renewed: false,
             permission,
             auth: {
                 tokenId: decoded.jti,
@@ -169,11 +184,27 @@ export abstract class BaseSecurity implements Security {
                 email: decoded.email,
                 name: decoded.name,
                 ipAddress: decoded.ipaddr,
+                serial: new Date(decoded.ist * 1000),
                 issued: new Date(decoded.iat * 1000),
                 expires: new Date(decoded.exp * 1000)
             }
         };
         return ctx;
+    }
+
+    protected renew(auth: AuthInfo): string {
+        // Only for tokens issued by application
+        if (auth.issuer !== this.config.appId || !this.config.restLifetime) return null;
+        // Limited to REST users
+        if (auth.subject !== "user:internal" && auth.subject !== "user:external") return null;
+        // Do not renew to offen
+        let untilExp = auth.expires.getTime() - Date.now();
+        if (untilExp > MS(this.config.restTimeout) / 2) return null;
+        // Limit to max renew period
+        if (auth.expires.getTime() - auth.serial.getTime() > MS(this.config.restLifetime)) return null;
+
+        let token = this.issueToken(auth);
+        return token;
     }
 
     protected secret(subject: string, issuer: string, audience: string): string {

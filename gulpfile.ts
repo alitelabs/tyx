@@ -16,7 +16,7 @@ import path = require("path");
 export class Gulpfile {
 
     @Task()
-    public clean(cb: Function) {
+    public clean(cb: any) {
         return del(["./build/**"], cb);
     }
 
@@ -26,7 +26,7 @@ export class Gulpfile {
     }
 
     @Task()
-    public compileSamples() {
+    public compileSamples(): any {
         let folders = this.getFolders("./samples");
 
         let tasks = folders.map(function (sampleFolder) {
@@ -50,7 +50,7 @@ export class Gulpfile {
     }
 
     @Task()
-    public installModules() {
+    public installModules(): any {
         let folders = this.getFolders("./build/samples");
 
         let tasks = folders.map(function (sampleFolder) {
@@ -60,17 +60,17 @@ export class Gulpfile {
                 .pipe(gulp.dest(installPath))
                 .pipe(install({
                     npm: ""
-                }))
+                } as any))
                 .pipe(install({
                     npm: " --save ../../package/"
-                }));
+                } as any));
         });
 
         return mergeStream(tasks);
     }
 
     @Task()
-    public copyServerlessFiles() {
+    public copyServerlessFiles(): any {
         let folders = this.getFolders("./samples");
 
         let tasks = folders.map(function (sampleFolder) {
@@ -84,7 +84,7 @@ export class Gulpfile {
     }
 
     @Task()
-    public copyPublicFiles() {
+    public copyPublicFiles(): any {
         let folders = this.getFolders("./samples");
 
         let tasks = folders.map(function (sampleFolder) {

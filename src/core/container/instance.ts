@@ -511,7 +511,7 @@ export class ContainerInstance implements Container {
                 if (result[2] === "RAW") { // TODO: Verbatim response ...
                     return result[1];
                 } else {
-                    let resp: RestResult = { statusCode: result[0] as HttpCode, body: result[1], contentType: result[2] };
+                    let resp: RestResult = { statusCode: result[0] as HttpCode, body: result[1], contentType: result[2], ctx };
                     this.log.debug("Response: %j", resp);
                     return resp;
                 }
