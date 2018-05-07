@@ -101,7 +101,7 @@ export abstract class BaseSecurity implements Security {
             };
             return ctx;
         }
-        let ctx = await this.verify(call.requestId, token, permission);
+        let ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
         token = this.renew(ctx.auth);
         if (token) {
             ctx.token = token;
@@ -113,7 +113,7 @@ export abstract class BaseSecurity implements Security {
     public async remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context> {
         if (!permission.roles.Remote && !permission.roles.Internal)
             throw new Forbidden(`Remote calls not allowed for method [${permission.method}]`);
-        let ctx = await this.verify(call.requestId, call.token, permission);
+        let ctx = await this.verify(call.requestId, call.token, permission, null);
         if (ctx.auth.remote && !permission.roles.Remote)
             throw new Unauthorized(`Internal call allowed only for method [${permission.method}]`);
         return ctx;
@@ -169,7 +169,7 @@ export abstract class BaseSecurity implements Security {
         return token;
     }
 
-    protected async verify(requestId: string, token: string, permission: PermissionMetadata): Promise<Context> {
+    protected async verify(requestId: string, token: string, permission: PermissionMetadata, ipAddress: string): Promise<Context> {
         let decoded: WebToken, secret: string;
         try {
             if (token && token.startsWith("Bearer")) token = token.substring(6).trim();
@@ -182,6 +182,9 @@ export abstract class BaseSecurity implements Security {
             if (e.message === "jwt expired") throw new Unauthorized(`Token: expired [${Date.now()}] > [${decoded.exp * 1000}]`);
             throw new BadRequest("Token: " + e.message, e);
         }
+
+        if (ipAddress && decoded.ipaddr !== ipAddress)
+            throw new Unauthorized(`Invalid request IP address`);
 
         if (decoded.role !== "Application" && permission.roles[decoded.role] !== true)
             throw new Unauthorized(`Role [${decoded.role}] not authorized to access method [${permission.method}]`);
