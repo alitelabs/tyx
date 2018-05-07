@@ -4,6 +4,7 @@ export interface Roles {
     Public?: boolean;
     Internal?: boolean;
     Remote?: boolean;
+    Debug?: boolean;
     Application?: never;
     [role: string]: boolean;
 }
@@ -11,7 +12,7 @@ export interface Roles {
 export interface IssueRequest {
     tokenId?: string;
     audience?: string;
-    subject: "event" | "remote" | "user:internal" | "user:external" | "user:public" | string;
+    subject: "event" | "remote" | "user:internal" | "user:external" | string;
     userId: string;
     role: string;
     scope?: string;
@@ -23,7 +24,7 @@ export interface AuthInfo {
 
     issuer?: string;
     audience?: string;
-    subject: "event" | "remote" | "user:internal" | "user:external" | "user:public" | string;
+    subject: "event" | "remote" | "user:internal" | "user:external" | "user:public" | "user:debug" | string;
     remote?: boolean;
 
     userId: string;

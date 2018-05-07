@@ -18,6 +18,10 @@ export function Public() {
     return Permission(Public.name, { Public: true });
 }
 
+export function Debug() {
+    return Permission(Debug.name, { Debug: true });
+}
+
 export function Private() {
     return Permission(Private.name, { Internal: false, Remote: false });
 }

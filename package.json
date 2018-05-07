@@ -1,7 +1,7 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "license": "MIT",
   "readmeFilename": "README.md",
@@ -23,7 +23,8 @@
     "serverless"
   ],
   "scripts": {
-    "package": "./node_modules/.bin/gulp package"
+    "package": "npx gulp package",
+    "publish": "cd build/package && npm publish"
   },
   "dependencies": {
     "aws-serverless-express": "^3.2.0",
