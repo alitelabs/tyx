@@ -17,6 +17,8 @@ export interface IssueRequest {
     role: string;
     scope?: string;
     serial?: number | Date;
+    email?: string;
+    ipAddress?: string;
 }
 
 export interface AuthInfo {

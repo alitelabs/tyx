@@ -57,7 +57,7 @@ export abstract class BaseSecurity implements Security {
 
     public async restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context> {
         let token = call.headers && (call.headers["Authorization"] || call.headers["authorization"]);
-        if (!permission.roles.Public && !token) throw new Unauthorized("Missing authorization token");
+        if (!permission.roles.Public && !permission.roles.Debug && !token) throw new Unauthorized("Missing authorization token");
         if (permission.roles.Public) {
             if (token) this.log.debug("Ignore token on public permission");
             let ctx: Context = {
@@ -153,19 +153,16 @@ export abstract class BaseSecurity implements Security {
                 oid: req.userId,
                 role: req.role,
                 scope: req.scope,
-                ist: Math.floor(serial / 1000)
-                // email: auth.email,
-                // name: auth.name,
-                // ipaddr: req.ipAddress
+                ist: Math.floor(serial / 1000),
+                email: req.email,
+                ipaddr: req.ipAddress
             } as any,
             secret,
             {
                 jwtid: req.tokenId,
-                // TODO: Use application URL
                 issuer: this.config.appId,
                 audience: req.audience,
                 subject: req.subject,
-                // TODO: Expires based on jwt input
                 expiresIn: timeout
             }
         );
