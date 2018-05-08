@@ -9,17 +9,18 @@ import {
     ServiceMetadata
 } from "../metadata";
 
-export function Event(source: string, resource: string, actionFilter: string, objectFilter: string, adapter: EventAdapter, permission?: Function) {
+export function Event(source: string, resource: string, actionFilter: string | boolean, objectFilter: string, adapter: EventAdapter, permission?: Function) {
     return function (type: any, propertyKey: string, descriptor: PropertyDescriptor) {
         let route = `${source} ${resource}`;
+        actionFilter = actionFilter === true ? propertyKey : actionFilter;
         let eventMetadata: EventMetadata = {
             route,
             service: undefined,
             method: propertyKey,
             source,
             resource,
-            objectFilter: objectFilter || "*",
             actionFilter: actionFilter || "*",
+            objectFilter: objectFilter || "*",
             adapter
         };
 

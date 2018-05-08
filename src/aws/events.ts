@@ -27,6 +27,6 @@ export function DynamoDbRemove(database: string, adapter?: EventAdapter) {
     return Event("aws:dynamodb", database, "REMOVE", null, adapter, Internal);
 }
 
-export function Schedule(action: string, adapter?: EventAdapter) {
+export function Schedule(action?: string, adapter?: EventAdapter) {
     return Event("aws:cloudwatch", "events", action, null, adapter, Internal);
 }
