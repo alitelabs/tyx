@@ -183,7 +183,7 @@ export abstract class BaseSecurity implements Security {
             throw new BadRequest("Token: " + e.message, e);
         }
 
-        if (ipAddress && decoded.ipaddr !== ipAddress)
+        if (decoded.role !== "Application" && ipAddress && decoded.ipaddr !== ipAddress)
             throw new Unauthorized(`Invalid request IP address`);
 
         if (decoded.role !== "Application" && permission.roles[decoded.role] !== true)
