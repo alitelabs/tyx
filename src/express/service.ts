@@ -23,9 +23,6 @@ export abstract class ExpressService extends BaseService {
         let rsrc = call.resource;
         if (rsrc.indexOf("{") > 0) rsrc = rsrc.substring(0, rsrc.indexOf("{") - 1);
         call.path = call.path.substring(call.path.indexOf(rsrc));
-        for (let p in call.queryStringParameters) {
-            call.queryStringParameters[p] = encodeURIComponent(call.queryStringParameters[p]);
-        }
 
         let app: Express = express();
         // app.use(bodyParser.json());

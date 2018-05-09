@@ -64,6 +64,7 @@ export class ExpressContainer extends ContainerPool {
             res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH");
             res.header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Encoding, Accept, Authorization");
             res.header("Access-Control-Expose-Headers", "Token");
+            res.header("Connection", "close");
             next();
         });
 
