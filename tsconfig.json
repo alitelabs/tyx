@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        
         "outDir": "build/compiled",
         
         "target": "es2017",
@@ -10,7 +9,6 @@
             
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true,
-        
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "sourceMap": true,
