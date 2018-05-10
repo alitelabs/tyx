@@ -1,10 +1,11 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "private": true,
   "license": "MIT",
   "readmeFilename": "README.md",
+  "main": "dist/index.js",
   "author": {
     "name": "Alite Labs",
     "email": "labs@alite-international.com"

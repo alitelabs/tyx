@@ -138,6 +138,17 @@ export class Gulpfile {
     }
 
     /**
+     * Copies src into the package.
+     */
+    @Task()
+    public packageSource() {
+        return gulp.src("./src/**/*")
+            // .pipe(replace(/```typescript([\s\S]*?)```/g, "```javascript$1```"))
+            .pipe(gulp.dest("./build/package/src"));
+    }
+
+
+    /**
      * Compiles all sources to the package directory.
      */
     @MergedTask()
@@ -148,10 +159,10 @@ export class Gulpfile {
             .pipe(tsProject());
 
         return [
-            tsResult.dts.pipe(gulp.dest("./build/package")),
+            tsResult.dts.pipe(gulp.dest("./build/package/lib")),
             tsResult.js
                 .pipe(sourcemaps.write(".", { sourceRoot: "", includeContent: true }))
-                .pipe(gulp.dest("./build/package"))
+                .pipe(gulp.dest("./build/package/lib"))
         ];
     }
 
@@ -166,7 +177,8 @@ export class Gulpfile {
             [
                 "packageReplaceReferences",
                 "packagePreparePackageFile",
-                "packageCopyReadme"
+                "packageCopyReadme",
+                "packageSource"
             ]
         ];
     }
@@ -179,6 +191,17 @@ export class Gulpfile {
         return gulp.src("package.json", { read: false })
             .pipe(shell([
                 "cd ./build/package && npm publish"
+            ]));
+    }
+
+    /**
+     * Publishes a package to npm from ./build/package directory with @beta tag.
+     */
+    @Task()
+    public packagePublishBeta() {
+        return gulp.src("package.json", { read: false })
+            .pipe(shell([
+                "cd ./build/package && npm publish --tag beta"
             ]));
     }
 
@@ -199,6 +222,14 @@ export class Gulpfile {
     @SequenceTask()
     public publish() {
         return ["package", "packagePublish"];
+    }
+
+    /**
+     * Creates a package and publishes it to npm with @next tag.
+     */
+    @SequenceTask("publish-beta")
+    public publishBeta() {
+        return ["package", "packagePublishBeta"];
     }
 
     /**
