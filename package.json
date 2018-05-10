@@ -1,11 +1,10 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.16",
+  "version": "0.1.18",
   "private": true,
   "license": "MIT",
   "readmeFilename": "README.md",
-  "main": "dist/index.js",
   "author": {
     "name": "Alite Labs",
     "email": "labs@alite-international.com"
@@ -23,6 +22,11 @@
     "typescript",
     "serverless"
   ],
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "typescript": {
+    "definition": "lib/index.d.ts"
+  },
   "scripts": {
     "package": "npx gulp package"
   },
@@ -50,7 +54,7 @@
     "@types/ms": "^0.7.30",
     "@types/node": "^9.6.14",
     "@types/uuid": "^2.0.30",
-    "aws-sdk": "^2.235.1",
+    "aws-sdk": "^2.236.1",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
     "gulp-install": "^1.1.0",
