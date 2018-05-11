@@ -56,7 +56,8 @@ export abstract class BaseSecurity implements Security {
     protected abstract config: Configuration;
 
     public async restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context> {
-        let token = call.headers && (call.headers["Authorization"] || call.headers["authorization"]);
+        let token = call.headers && (call.headers["Authorization"] || call.headers["authorization"])
+            || call.queryStringParameters && (call.queryStringParameters["authorization"] || call.queryStringParameters["token"]);
         if (!permission.roles.Public && !permission.roles.Debug && !token) throw new Unauthorized("Missing authorization token");
         if (permission.roles.Public) {
             if (token) this.log.debug("Ignore token on public permission");
@@ -82,23 +83,33 @@ export abstract class BaseSecurity implements Security {
             if (token) this.log.debug("Ignore token on debug permission");
             if (call.sourceIp !== "127.0.0.1" && call.sourceIp !== "::1")
                 throw new Forbidden("Debug access only available on localhost");
-            let ctx: Context = {
-                requestId: call.requestId,
-                token,
-                renewed: false,
-                permission,
-                auth: {
-                    tokenId: call.requestId,
-                    subject: "user:debug",
-                    issuer: this.config.appId,
-                    audience: this.config.appId,
-                    remote: false,
-                    userId: null,
-                    role: "Debug",
-                    issued: new Date(),
-                    expires: new Date(Date.now() + 60000)
+            let ctx: Context;
+            if (token) {
+                ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
+                token = this.renew(ctx.auth);
+                if (token) {
+                    ctx.token = token;
+                    ctx.renewed = true;
                 }
-            };
+            } else {
+                ctx = {
+                    requestId: call.requestId,
+                    token,
+                    renewed: false,
+                    permission,
+                    auth: {
+                        tokenId: call.requestId,
+                        subject: "user:debug",
+                        issuer: this.config.appId,
+                        audience: this.config.appId,
+                        remote: false,
+                        userId: null,
+                        role: "Debug",
+                        issued: new Date(),
+                        expires: new Date(Date.now() + 60000)
+                    }
+                };
+            }
             return ctx;
         }
         let ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
