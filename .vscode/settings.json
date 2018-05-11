@@ -21,5 +21,18 @@
         "microservice",
         "nginx",
         "proxied"
-    ]
+    ],
+    "gitlens.gitExplorer.files.layout": "list",
+    "gitlens.codeLens.enabled": false,
+    "editor.formatOnSave": true,
+    "[typescript]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true,
+        }
+    },
+    "[typescriptreact]": {
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        }
+    }
 }
