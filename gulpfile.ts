@@ -1,6 +1,6 @@
 ///<reference path="node_modules/@types/node/index.d.ts"/>
 
-import { Gulpclass, Task, SequenceTask, MergedTask } from "gulpclass";
+import { Gulpclass, MergedTask, SequenceTask, Task } from "gulpclass";
 import gulp = require("gulp");
 import del = require("del");
 import replace = require("gulp-replace");
@@ -144,7 +144,7 @@ export class Gulpfile {
     public packageSource() {
         return gulp.src("./src/**/*")
             // .pipe(replace(/```typescript([\s\S]*?)```/g, "```javascript$1```"))
-            .pipe(gulp.dest("./build/package/src"));
+            .pipe(gulp.dest("./build/package"));
     }
 
 
@@ -159,10 +159,10 @@ export class Gulpfile {
             .pipe(tsProject());
 
         return [
-            tsResult.dts.pipe(gulp.dest("./build/package/lib")),
+            tsResult.dts.pipe(gulp.dest("./build/package")),
             tsResult.js
                 .pipe(sourcemaps.write(".", { sourceRoot: "", includeContent: true }))
-                .pipe(gulp.dest("./build/package/lib"))
+                .pipe(gulp.dest("./build/package"))
         ];
     }
 
