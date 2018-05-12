@@ -14,7 +14,7 @@
                 "${workspaceRoot}/build/compiled/**/*.js"
             ],
             "sourceMaps": true,
-            "preLaunchTask": "tsc",
+            "preLaunchTask": "build",
             "protocol": "legacy"
         },
         {

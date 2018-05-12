@@ -42,11 +42,11 @@ export interface RestMultipart {
 }
 
 export interface RestResult {
+    // ctx: Context;
     statusCode: HttpCode;
     contentType?: string;
     headers?: Record<string, string>;
     body: any;
-    ctx: Context;
 }
 
 export interface RestAdapter {

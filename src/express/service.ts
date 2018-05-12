@@ -37,8 +37,7 @@ export abstract class ExpressService extends BaseService {
                 succeed: (input) => resolve({
                     statusCode: input.statusCode,
                     headers: input.headers,
-                    body: input.body,
-                    ctx
+                    body: input.body
                 }),
                 fail: (err) => reject(err)
             } as any);

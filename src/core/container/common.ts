@@ -100,8 +100,7 @@ export namespace HttpResponse {
     export function result(rest: RestResult): HttpResponse {
         let res = create(rest.statusCode, rest.body, true);
         Object.assign(res.headers, rest.headers || {});
-        if (rest.contentType) res.headers["Content-Type"] = `${rest.contentType}; charset=utf-8`;
-        if (rest.ctx && rest.ctx.renewed && rest.ctx.token) res.headers["Token"] = rest.ctx.token;
+        if (rest.contentType) res.headers["Content-Type"] = rest.contentType;
         return res;
     }
 

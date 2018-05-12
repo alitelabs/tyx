@@ -3,6 +3,7 @@ import "../env";
 import {
     HttpCode,
     HttpMethod,
+    RestResult,
     RestAdapter,
     RestBinder,
     ContextBinder,
@@ -134,6 +135,13 @@ function ArgBinding(type: string, param: string, binder: RestBinder) {
             binder
         };
     };
+}
+
+export interface RestResponse extends RestResult {
+}
+
+export function RestResponse() {
+    return ContentType("RAW");
 }
 
 export function ContentType(type: string) {

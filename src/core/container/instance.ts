@@ -235,7 +235,7 @@ export class ContainerInstance implements Container {
     }
 
     private remoteHandler(service: Service, metadata: RemoteMetadata): RemoteHandler {
-        let fun: RemoteHandler = async (ctx: Context, call: RemoteCall): Promise<any>  => {
+        let fun: RemoteHandler = async (ctx: Context, call: RemoteCall): Promise<any> => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
@@ -509,11 +509,11 @@ export class ContainerInstance implements Container {
 
                 let result: [number, any, string] = await rester(ctx, call);
                 if (result[2] === "RAW") { // TODO: Verbatim response ...
-                    return result[1];
+                    return this.enrich(result[1], ctx, call);
                 } else {
-                    let resp: RestResult = { statusCode: result[0] as HttpCode, body: result[1], contentType: result[2], ctx };
+                    let resp: RestResult = { statusCode: result[0] as HttpCode, body: result[1], contentType: result[2] };
                     this.log.debug("Response: %j", resp);
-                    return resp;
+                    return this.enrich(resp, ctx, call);
                 }
             } catch (e) {
                 this.log.error(e);
@@ -524,6 +524,14 @@ export class ContainerInstance implements Container {
         } finally {
             this.istate = ContainerState.Ready;
         }
+    }
+
+    private enrich(result: RestResult, ctx: Context, call: RestCall): RestResult {
+        if (ctx && ctx.renewed && ctx.token) {
+            result.headers = result.headers || {};
+            result.headers["Token"] = ctx.token;
+        }
+        return result;
     }
 
     public async activate(ctx: Context): Promise<Context> {

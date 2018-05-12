@@ -164,7 +164,6 @@ export class ExpressContainer extends ContainerPool {
                 res.setHeader(header, result.headers[header]);
             }
             if (result.contentType) res.setHeader("Content-Type", result.contentType);
-            if (result.ctx && result.ctx.renewed && result.ctx.token) res.setHeader("Token", result.ctx.token);
             res.status(result.statusCode).send(result.body);
         } catch (err) {
             let result = HttpResponse.error(err);
