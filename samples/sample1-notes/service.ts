@@ -1,4 +1,4 @@
-import { Service, Public, PathParam, QueryParam, Body, Get, Post, Put, Delete } from "../../src";
+import { Body, Delete, Get, PathParam, Post, Public, Put, QueryParam, Service } from "../../src";
 
 @Service()
 export class NoteService {

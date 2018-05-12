@@ -1,40 +1,13 @@
+import { Inject, Service } from "../decorators";
 import "../env";
-
-import {
-    Context,
-    IssueRequest,
-    WebToken,
-    RestCall,
-    RemoteCall,
-    EventCall,
-    AuthInfo
-} from "../types";
-
-import {
-    PermissionMetadata
-} from "../metadata";
-
-import {
-    Service,
-    Inject
-} from "../decorators";
-
-import {
-    Configuration
-} from "./config";
-
-import {
-    Forbidden,
-    Unauthorized,
-    BadRequest
-} from "../errors";
-
+import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
-
+import { PermissionMetadata } from "../metadata";
+import { AuthInfo, Context, EventCall, IssueRequest, RemoteCall, RestCall, WebToken } from "../types";
 import { Utils } from "../utils";
+import { Configuration } from "./config";
 
 import JWT = require("jsonwebtoken");
-
 import MS = require("ms");
 
 export const Security = "security";
@@ -81,36 +54,37 @@ export abstract class BaseSecurity implements Security {
             };
             return ctx;
         } else if (permission.roles.Debug) {
-            if (token) this.log.debug("Ignore token on debug permission");
             if (call.sourceIp !== "127.0.0.1" && call.sourceIp !== "::1")
-                throw new Forbidden("Debug access only available on localhost");
+                throw new Forbidden("Debug role only valid for localhost");
             let ctx: Context;
-            if (token) {
+            if (token) try {
                 ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
                 token = this.renew(ctx.auth);
                 if (token) {
                     ctx.token = token;
                     ctx.renewed = true;
                 }
-            } else {
-                ctx = {
-                    requestId: call.requestId,
-                    token,
-                    renewed: false,
-                    permission,
-                    auth: {
-                        tokenId: call.requestId,
-                        subject: "user:debug",
-                        issuer: this.config.appId,
-                        audience: this.config.appId,
-                        remote: false,
-                        userId: null,
-                        role: "Debug",
-                        issued: new Date(),
-                        expires: new Date(Date.now() + 60000)
-                    }
-                };
+                return ctx;
+            } catch (err) {
+                this.log.debug("Ignore invalid token on debug permission", err);
             }
+            ctx = {
+                requestId: call.requestId,
+                token,
+                renewed: false,
+                permission,
+                auth: {
+                    tokenId: call.requestId,
+                    subject: "user:debug",
+                    issuer: this.config.appId,
+                    audience: this.config.appId,
+                    remote: false,
+                    userId: null,
+                    role: "Debug",
+                    issued: new Date(),
+                    expires: new Date(Date.now() + 60000)
+                }
+            };
             return ctx;
         }
         let ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
