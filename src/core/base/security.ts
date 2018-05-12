@@ -57,7 +57,8 @@ export abstract class BaseSecurity implements Security {
 
     public async restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context> {
         let token = call.headers && (call.headers["Authorization"] || call.headers["authorization"])
-            || call.queryStringParameters && (call.queryStringParameters["authorization"] || call.queryStringParameters["token"]);
+            || call.queryStringParameters && (call.queryStringParameters["authorization"] || call.queryStringParameters["token"])
+            || call.pathParameters && call.pathParameters["authorization"];
         if (!permission.roles.Public && !permission.roles.Debug && !token) throw new Unauthorized("Missing authorization token");
         if (permission.roles.Public) {
             if (token) this.log.debug("Ignore token on public permission");
