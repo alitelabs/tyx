@@ -47,10 +47,10 @@ export function IntColumn(options?: number | ColumnOptions) {
     if (typeof options === "number") {
         op = { type: "int", length: options };
     } else if (typeof options === "object") {
-        op = { type: "int", length: 11 };
+        op = { type: "int" };
         Object.assign(op, options);
     } else {
-        op = { type: "int", length: 11 };
+        op = { type: "int" };
     }
     return Column(op);
 }
@@ -60,10 +60,10 @@ export function LongColumn(options?: number | ColumnOptions) {
     if (typeof options === "number") {
         op = { type: "bigint", length: options };
     } else if (typeof options === "object") {
-        op = { type: "bigint", length: 18 };
+        op = { type: "bigint" };
         Object.assign(op, options);
     } else {
-        op = { type: "bigint", length: 18 };
+        op = { type: "bigint" };
     }
     return Column(op);
 }
@@ -100,10 +100,10 @@ export function LongVersionColumn(options?: ColumnOptions) {
     if (typeof options === "number") {
         op = { type: "bigint", length: options };
     } else if (typeof options === "object") {
-        op = { type: "bigint", length: 18 };
+        op = { type: "bigint" };
         Object.assign(op, options);
     } else {
-        op = { type: "bigint", length: 18 };
+        op = { type: "bigint" };
     }
     return VersionColumn(op);
 }
