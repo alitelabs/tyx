@@ -167,6 +167,49 @@ export class Gulpfile {
     }
 
     /**
+     * Compiles all sources to the package directory.
+     */
+    @MergedTask()
+    public localCompile() {
+        const tsProject = ts.createProject("tsconfig.json", { typescript: require("typescript") });
+        const tsResult = gulp.src(["./src/**/*.ts", "./node_modules/@types/**/*.ts"])
+            .pipe(sourcemaps.init())
+            .pipe(tsProject());
+
+        return [
+            tsResult.dts.pipe(gulp.dest("./build/local")),
+            tsResult.js
+                .pipe(sourcemaps.write(".", { sourceRoot: "", includeContent: true }))
+                .pipe(gulp.dest("./build/local"))
+        ];
+    }
+
+    /**
+     * Change the "private" state of the packaged package.json file to public.
+     */
+    @Task()
+    public localPreparePackage() {
+        return gulp.src("package.json")
+            // .pipe(replace("\"private\": true,", "\"private\": false,"))
+            .pipe(gulp.dest("./build/local"));
+        // .pipe(install({
+        //     npm: " --production"
+        // } as any));
+    }
+
+    /**
+     * Creates a package that can be published to npm.
+     */
+    @SequenceTask()
+    public local() {
+        return [
+            "clean",
+            "localCompile",
+            "localPreparePackage"
+        ];
+    }
+
+    /**
      * Creates a package that can be published to npm.
      */
     @SequenceTask()

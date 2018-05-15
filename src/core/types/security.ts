@@ -42,6 +42,7 @@ export interface AuthInfo {
     expires?: Date;
 
     token?: string;
+    renewed?: boolean;
 }
 
 /**

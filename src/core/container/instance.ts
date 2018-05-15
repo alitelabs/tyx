@@ -1,64 +1,21 @@
+import { BaseConfiguration, BaseProxy, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../base";
+import { Proxy, Service } from "../decorators";
 import "../env";
+import { Forbidden, InternalServerError, NotFound } from "../errors";
+import { Logger } from "../logger";
+import { BindingMetadata, ContainerMetadata, EventMetadata, Metadata, ProxyMetadata, RemoteMetadata, RestMetadata, ServiceMetadata } from "../metadata";
+import { Context, EventCall, EventResult, HttpCode, RemoteCall, RestCall, RestResult } from "../types";
+import { RestUtils, Utils } from "../utils";
+import { Container, ContainerState, EventHandler, ObjectType, RemoteHandler, RestHandler } from "./common";
 
-import {
-    Context,
-    HttpCode,
-    RestCall,
-    RestResult,
-    RemoteCall,
-    EventCall,
-    EventResult
-} from "../types";
 
-import {
-    Metadata,
-    ServiceMetadata,
-    ProxyMetadata,
-    RemoteMetadata,
-    RestMetadata,
-    BindingMetadata,
-    EventMetadata,
-    ContainerMetadata
-} from "../metadata";
 
-import {
-    Service,
-    Proxy
-} from "../decorators";
 
-import {
-    Configuration,
-    Security,
-    BaseConfiguration,
-    DefaultConfiguration,
-    DefaultSecurity,
-    BaseProxy
-} from "../base";
 
-import {
-    NotFound,
-    Forbidden,
-    InternalServerError
-} from "../errors";
 
-import {
-    RestUtils
-} from "../utils";
 
-import {
-    Logger
-} from "../logger";
 
-import {
-    Container,
-    ContainerState,
-    RemoteHandler,
-    RestHandler,
-    EventHandler,
-    ObjectType
-} from "./common";
 
-import { Utils } from "../utils";
 
 
 export class ContainerInstance implements Container {
@@ -507,14 +464,19 @@ export class ContainerInstance implements Container {
                 this.log.debug("REST Context: %j", ctx);
                 this.log.debug("REST Call: %j", call);
 
-                let result: [number, any, string] = await rester(ctx, call);
-                if (result[2] === "RAW") { // TODO: Verbatim response ...
-                    return this.enrich(result[1], ctx, call);
+                let response: [number, any, string] = await rester(ctx, call);
+                let result: RestResult;
+                if (response[2] === "RAW") {
+                    result = response[1];
                 } else {
-                    let resp: RestResult = { statusCode: result[0] as HttpCode, body: result[1], contentType: result[2] };
-                    this.log.debug("Response: %j", resp);
-                    return this.enrich(resp, ctx, call);
+                    result = { statusCode: response[0] as HttpCode, body: response[1], contentType: response[2] };
                 }
+                if (ctx && ctx.auth.renewed && ctx.auth.token) {
+                    result.headers = result.headers || {};
+                    result.headers["Token"] = ctx.auth.token;
+                }
+                this.log.debug("Response: %j", result);
+                return result;
             } catch (e) {
                 this.log.error(e);
                 throw InternalServerError.wrap(e);
@@ -524,14 +486,6 @@ export class ContainerInstance implements Container {
         } finally {
             this.istate = ContainerState.Ready;
         }
-    }
-
-    private enrich(result: RestResult, ctx: Context, call: RestCall): RestResult {
-        if (ctx && ctx.renewed && ctx.token) {
-            result.headers = result.headers || {};
-            result.headers["Token"] = ctx.token;
-        }
-        return result;
     }
 
     public async activate(ctx: Context): Promise<Context> {

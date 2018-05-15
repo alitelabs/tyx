@@ -1,12 +1,14 @@
 {
     "compilerOptions": {
-        "outDir": "build/compiled",
-        
         "target": "es2017",
-        "lib": ["es2015", "es2016", "es2017"],
+        "lib": [
+            "es2015",
+            "es2016",
+            "es2017"
+        ],
         "module": "commonjs",
         "moduleResolution": "node",
-            
+        // "skipLibCheck": true,
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true,
         "emitDecoratorMetadata": true,
@@ -19,10 +21,15 @@
         "stripInternal": true,
         "pretty": true,
         "strictNullChecks": false,
-        "noUnusedLocals": true
+        "noUnusedLocals": true,
+        "outDir": "lib"
     },
+    "include": [
+        "src/**/*"
+    ],
     "exclude": [
         "node_modules",
-        "build"
+        "build",
+        "gulp.ts"
     ]
 }

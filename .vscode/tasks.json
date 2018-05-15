@@ -5,6 +5,12 @@
             "identifier": "build",
             "type": "npm",
             "script": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
             "problemMatcher": [
                 "$tsc"
             ],

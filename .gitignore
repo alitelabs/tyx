@@ -1,5 +1,6 @@
 node_modules/
 build/
+lib/
 .serverless/
 **/*.js
 **/*.js.map

@@ -28,7 +28,8 @@
     "definition": "index.d.ts"
   },
   "scripts": {
-    "build": "npx typescript"
+    "clean": "rm -rf build/",
+    "build": "npx tsc && cp package.json lib/package.json"
   },
   "dependencies": {
     "aws-serverless-express": "^3.2.0",

@@ -32,67 +32,47 @@ export abstract class BaseSecurity implements Security {
         let token = call.headers && (call.headers["Authorization"] || call.headers["authorization"])
             || call.queryStringParameters && (call.queryStringParameters["authorization"] || call.queryStringParameters["token"])
             || call.pathParameters && call.pathParameters["authorization"];
-        if (!permission.roles.Public && !permission.roles.Debug && !token) throw new Unauthorized("Missing authorization token");
-        if (permission.roles.Public) {
-            if (token) this.log.debug("Ignore token on public permission");
-            let ctx: Context = {
-                requestId: call.requestId,
-                token,
-                renewed: false,
-                permission,
-                auth: {
-                    tokenId: call.requestId,
-                    subject: "user:public",
-                    issuer: this.config.appId,
-                    audience: this.config.appId,
-                    remote: false,
-                    userId: null,
-                    role: "Public",
-                    issued: new Date(),
-                    expires: new Date(Date.now() + 60000)
-                }
-            };
+
+        if (!permission.roles.Public && !permission.roles.Debug) {
+            if (!token) throw new Unauthorized("Missing authorization token");
+            let ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
+            ctx.auth = this.renew(ctx.auth);
             return ctx;
-        } else if (permission.roles.Debug) {
+        }
+
+        if (permission.roles.Public && token) this.log.debug("Ignore token on public permission");
+
+        let ctx: Context = {
+            requestId: call.requestId,
+            permission,
+            auth: {
+                tokenId: call.requestId,
+                subject: "user:public",
+                issuer: this.config.appId,
+                audience: this.config.appId,
+                remote: false,
+                userId: null,
+                role: "Public",
+                issued: new Date(),
+                expires: new Date(Date.now() + 60000),
+                token,
+                renewed: false
+            }
+        };
+
+        if (permission.roles.Debug) {
             if (call.sourceIp !== "127.0.0.1" && call.sourceIp !== "::1")
                 throw new Forbidden("Debug role only valid for localhost");
-            let ctx: Context;
+            ctx.auth.subject = "user:debug";
+            ctx.auth.role = "Debug";
             if (token) try {
                 ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
-                token = this.renew(ctx.auth);
-                if (token) {
-                    ctx.token = token;
-                    ctx.renewed = true;
-                }
-                return ctx;
+                ctx.auth = this.renew(ctx.auth);
             } catch (err) {
                 this.log.debug("Ignore invalid token on debug permission", err);
             }
-            ctx = {
-                requestId: call.requestId,
-                token,
-                renewed: false,
-                permission,
-                auth: {
-                    tokenId: call.requestId,
-                    subject: "user:debug",
-                    issuer: this.config.appId,
-                    audience: this.config.appId,
-                    remote: false,
-                    userId: null,
-                    role: "Debug",
-                    issued: new Date(),
-                    expires: new Date(Date.now() + 60000)
-                }
-            };
-            return ctx;
         }
-        let ctx = await this.verify(call.requestId, token, permission, call.sourceIp);
-        token = this.renew(ctx.auth);
-        if (token) {
-            ctx.token = token;
-            ctx.renewed = true;
-        }
+
         return ctx;
     }
 
@@ -110,8 +90,6 @@ export abstract class BaseSecurity implements Security {
             throw new Forbidden(`Internal events not allowed for method [${permission.method}]`);
         let ctx: Context = {
             requestId: call.requestId,
-            token: null,
-            renewed: false,
             permission,
             auth: {
                 tokenId: call.requestId,
@@ -122,7 +100,9 @@ export abstract class BaseSecurity implements Security {
                 userId: null, // TODO: Callee
                 role: "Internal",
                 issued: new Date(),
-                expires: new Date(Date.now() + 60000)
+                expires: new Date(Date.now() + 60000),
+                token: null,
+                renewed: false,
             }
         };
         return ctx;
@@ -156,63 +136,72 @@ export abstract class BaseSecurity implements Security {
     }
 
     protected async verify(requestId: string, token: string, permission: PermissionMetadata, ipAddress: string): Promise<Context> {
-        let decoded: WebToken, secret: string;
+        let jwt: WebToken, secret: string;
         try {
             if (token && token.startsWith("Bearer")) token = token.substring(6).trim();
-            decoded = JWT.decode(token) as WebToken;
-            secret = decoded && this.secret(decoded.sub, decoded.iss, decoded.aud) || "NULL";
-            decoded = JWT.verify(token, secret) as WebToken;
+            jwt = JWT.decode(token) as WebToken;
+            secret = jwt && this.secret(jwt.sub, jwt.iss, jwt.aud) || "NULL";
+            jwt = JWT.verify(token, secret) as WebToken;
         } catch (e) {
-            this.log.error("Token [%s]: %j", secret, decoded);
+            this.log.error("Token [%s]: %j", secret, jwt);
             this.log.error(e);
-            if (e.message === "jwt expired") throw new Unauthorized(`Token: expired [${Date.now()}] > [${decoded.exp * 1000}]`);
+            if (e.message === "jwt expired") throw new Unauthorized(`Token: expired [${new Date(jwt.exp * 1000).toISOString()}] < [${new Date().toISOString()}]`);
             throw new BadRequest("Token: " + e.message, e);
         }
 
-        if (decoded.role !== "Application" && ipAddress && decoded.ipaddr !== ipAddress)
-            throw new Unauthorized(`Invalid request IP address`);
+        if (jwt.aud !== this.config.appId)
+            throw new Unauthorized(`Invalid audience: ${jwt.aud}`);
 
-        if (decoded.role !== "Application" && permission.roles[decoded.role] !== true)
-            throw new Unauthorized(`Role [${decoded.role}] not authorized to access method [${permission.method}]`);
+        if (jwt.role !== "Application" && ipAddress && jwt.ipaddr !== ipAddress)
+            throw new Unauthorized(`Invalid request IP address: ${jwt.ipaddr}`);
+
+        if (jwt.role !== "Application" && permission.roles[jwt.role] !== true)
+            throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.method}]`);
+
+        let expiry = new Date(jwt.iss).getTime() + MS(this.timeout(jwt.sub, jwt.iss, jwt.aud));
+        // Check age of application token
+        if (expiry < Date.now())
+            throw new Unauthorized(`Token: expired [${new Date(expiry).toISOString()}]`);
 
         let ctx: Context = {
             requestId,
-            token,
-            renewed: false,
             permission,
             auth: {
-                tokenId: decoded.jti,
-                subject: decoded.sub,
-                issuer: decoded.iss,
-                audience: decoded.aud,
-                remote: decoded.iss !== decoded.aud,
-                userId: decoded.oid,
-                role: decoded.role,
-                scope: decoded.scope,
-                email: decoded.email,
-                name: decoded.name,
-                ipAddress: decoded.ipaddr,
-                serial: new Date(decoded.ist * 1000),
-                issued: new Date(decoded.iat * 1000),
-                expires: new Date(decoded.exp * 1000)
+                tokenId: jwt.jti,
+                subject: jwt.sub,
+                issuer: jwt.iss,
+                audience: jwt.aud,
+                remote: jwt.iss !== jwt.aud,
+                userId: jwt.oid,
+                role: jwt.role,
+                scope: jwt.scope,
+                email: jwt.email,
+                name: jwt.name,
+                ipAddress: jwt.ipaddr,
+                serial: new Date(jwt.ist * 1000),
+                issued: new Date(jwt.iat * 1000),
+                expires: new Date(jwt.exp * 1000),
+                token,
+                renewed: false
             }
         };
         return ctx;
     }
 
-    protected renew(auth: AuthInfo): string {
+    protected renew(auth: AuthInfo): AuthInfo {
+        auth.renewed = false;
         // Only for tokens issued by application
-        if (auth.issuer !== this.config.appId || !this.config.restLifetime) return null;
+        if (auth.issuer !== this.config.appId || !this.config.restLifetime) return auth;
         // Limited to REST users
-        if (auth.subject !== "user:internal" && auth.subject !== "user:external") return null;
+        if (auth.subject !== "user:internal" && auth.subject !== "user:external") return auth;
         // Do not renew to offen
         let untilExp = auth.expires.getTime() - Date.now();
-        if (untilExp > MS(this.config.restTimeout) / 2) return null;
+        if (untilExp > MS(this.config.restTimeout) / 2) return auth;
         // Limit to max renew period
-        if (auth.expires.getTime() - auth.serial.getTime() > MS(this.config.restLifetime)) return null;
-
-        let token = this.issueToken(auth);
-        return token;
+        if (auth.expires.getTime() - auth.serial.getTime() > MS(this.config.restLifetime)) return auth;
+        auth.token = this.issueToken(auth);
+        auth.renewed = true;
+        return auth;
     }
 
     protected secret(subject: string, issuer: string, audience: string): string {
