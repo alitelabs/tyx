@@ -1,21 +1,16 @@
-import "../env";
-
+import { Service } from "../decorators";
 import { Metadata } from "./common";
-import { PermissionMetadata } from "./security";
-import { RemoteMetadata } from "./remote";
-import { RestMetadata, BindingMetadata } from "./rest";
 import { EventMetadata } from "./event";
-
-import {
-    Service
-} from "../decorators";
+import { BindingMetadata, HttpMetadata } from "./http";
+import { RemoteMetadata } from "./remote";
+import { PermissionMetadata } from "./security";
 
 export interface ServiceMetadata extends Metadata {
     service: string;
 
     permissions: Record<string, PermissionMetadata>;
     remoteMetadata: Record<string, RemoteMetadata>;
-    restMetadata: Record<string, RestMetadata>;
+    httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
 
     bindingMetadata: Record<string, BindingMetadata>;
@@ -32,7 +27,7 @@ export namespace ServiceMetadata {
         if (init !== false) {
             meta.permissions = meta.permissions || {};
             meta.remoteMetadata = meta.remoteMetadata || {};
-            meta.restMetadata = meta.restMetadata || {};
+            meta.httpMetadata = meta.httpMetadata || {};
             meta.eventMetadata = meta.eventMetadata || {};
             meta.bindingMetadata = meta.bindingMetadata || {};
         }
@@ -47,8 +42,8 @@ export namespace ServiceMetadata {
         return get(target).remoteMetadata || {};
     }
 
-    export function restMetadata(target: Function | Object) {
-        return get(target).restMetadata || {};
+    export function httpMetadata(target: Function | Object) {
+        return get(target).httpMetadata || {};
     }
 
     export function eventMetadata(target: Function | Object) {

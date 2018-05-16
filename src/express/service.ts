@@ -1,7 +1,7 @@
 import {
     Context,
-    RestCall,
-    RestResult
+    HttpRequest,
+    HttpResponse
 } from "../core/types";
 
 import {
@@ -19,21 +19,21 @@ export abstract class ExpressService extends BaseService {
 
     private server: Server;
 
-    protected async process(ctx: Context, call: RestCall): Promise<RestResult> {
-        let rsrc = call.resource;
+    protected async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+        let rsrc = req.resource;
         if (rsrc.indexOf("{") > 0) rsrc = rsrc.substring(0, rsrc.indexOf("{") - 1);
-        call.path = call.path.substring(call.path.indexOf(rsrc));
+        req.path = req.path.substring(req.path.indexOf(rsrc));
 
         let app: Express = express();
         // app.use(bodyParser.json());
         // app.use(awsServerlessExpressMiddleware.eventContext());
 
-        this.setup(app, ctx, call);
+        this.setup(app, ctx, req);
 
         // TODO: Complete response
-        return new Promise<RestResult>((resolve, reject) => {
+        return new Promise<HttpResponse>((resolve, reject) => {
             this.server = awsServerlessExpress.createServer(app);
-            awsServerlessExpress.proxy(this.server, call, {
+            awsServerlessExpress.proxy(this.server, req, {
                 succeed: (input) => resolve({
                     statusCode: input.statusCode,
                     headers: input.headers,
@@ -44,7 +44,7 @@ export abstract class ExpressService extends BaseService {
         });
     }
 
-    protected abstract setup(app: Express, ctx: Context, call: RestCall): void;
+    protected abstract setup(app: Express, ctx: Context, req: HttpRequest): void;
 
     public async release(): Promise<void> {
         if (this.server) this.server.close();

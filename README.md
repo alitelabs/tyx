@@ -22,20 +22,20 @@ Declarative dependency injection and event binding.
       - [3.4. Container](#34-container)
       - [3.5. Proxy](#35-proxy)
   * [4. Data Structures](#4-data-structures)
-      - [4.1. Call Object](#41-call-object)
+      - [4.1. Request Object](#41-request-object)
       - [4.2. Context Object](#42-context-object)
   * [5. Service Decorators](#5-service-decorators)
       - [5.1. @Service decorator](#51-service-decorator)
       - [5.2. @Inject decorator](#52-inject-decorator)
       - [5.3. @Proxy decorator](#53-proxy-decorator)
-  * [6. HTTP/REST Decorators](#6-httprest-decorators)
+  * [6. HTTP Decorators](#6-http-decorators)
       - [6.1. @Get decorator](#61-get-decorator)
       - [6.2. @Post decorator](#62-post-decorator)
       - [6.3. @Put decorator](#63-put-decorator)
       - [6.4. @Delete decorator](#64-delete-decorator)
       - [6.5. @Patch decorator](#65-patch-decorator)
       - [6.6. @ContentType decorator](#66-contenttype-decorator)
-      - [6.7. RestAdapter function](#67-restadapter-function)
+      - [6.7. HttpAdapter function](#67-httpadapter-function)
   * [7. Method Argument Decorators](#7-method-argument-decorators)
       - [7.1. @PathParam decorator](#71-pathparam-decorator)
       - [7.2. @PathParams decorator](#72-pathparams-decorator)
@@ -46,7 +46,7 @@ Declarative dependency injection and event binding.
       - [7.7. @BodyParam decorator](#77-bodyparam-decorator)
       - [7.8. @ContextObject decorator](#78-contextobject-decorator)
       - [7.9. @ContextParam decorator](#79-contextparam-decorator)
-      - [7.10. @CallObject decorator](#710-callobject-decorator)
+      - [7.10. @RequestObject decorator](#710-requestobject-decorator)
   * [8. Authorization Decorators](#8-authorization-decorators)
       - [8.1. @Public decorator](#81-public-decorator)
       - [8.2. @Private decorator](#82-private-decorator)
@@ -363,7 +363,7 @@ export class FactoryService implements FactoryApi {
 
 #### Lambda function
 
-The container can host multiple services but only those provided with `publish()` are exposed for external calls. Both `register()` and `publish()` should be called with the service constructor function (class), followed by any constructor arguments if required.
+The container can host multiple services but only those provided with `publish()` are exposed for external requests. Both `register()` and `publish()` should be called with the service constructor function (class), followed by any constructor arguments if required.
 
 ```typescript
 let container = new LambdaContainer("tyx-sample2")
@@ -518,7 +518,7 @@ export class ItemProxy extends LambdaProxy implements ItemApi {
 
 #### Lambda functions
 
-The argument passed to `LambdaContainer` is application id and should correspond to the `service` setting in `serverless.yml`. Function-to-function calls within the same application are considered internal, while between different applications as remote. TyX has an authorization mechanism that distinguishes these two cases requiring additional settings. This example is about internal calls, next one covers remote calls. When internal function-to-function calls are used `INTERNAL_SECRET` configuration variable must be set; this is a secret key that both the invoking and invoked function must share so `LambdaContainer` can authorize the calls.
+The argument passed to `LambdaContainer` is application id and should correspond to the `service` setting in `serverless.yml`. Function-to-function requests within the same application are considered internal, while between different applications as remote. TyX has an authorization mechanism that distinguishes these two cases requiring additional settings. This example is about internal calls, next one covers remote calls. When internal function-to-function calls are used `INTERNAL_SECRET` configuration variable must be set; this is a secret key that both the invoking and invoked function must share so `LambdaContainer` can authorize the requests.
 
 - Box function
 ```typescript
@@ -581,8 +581,8 @@ export const Config = {
 
 #### Serverless file
 
-Since internal function-to-function calls are use `INTERNAL_SECRET` is set; this should be an application specific random value (e.g. UUID).
-The additional setting `REMOTE_SECRET_TYX_SAMPLE4` is to allow remote calls from the next example.
+Since internal function-to-function requests are use `INTERNAL_SECRET` is set; this should be an application specific random value (e.g. UUID).
+The additional setting `REMOTE_SECRET_TYX_SAMPLE4` is to allow remote requests from the next example.
 
 It is necessary to allow the IAM role to `lambda:InvokeFunction`, of course it is recommended to be more specific about the Resource than in this example.
 
@@ -625,7 +625,7 @@ functions:
 
 ### 2.4. Remote service
 
-Building upon the previous example this one demonstrates a remote call via `LambdaProxy`. The call is considered remote because involved services are deployed as separate serverless project - the previous example.  
+Building upon the previous example this one demonstrates a remote request via `LambdaProxy`. The request is considered remote because involved services are deployed as separate serverless project - the previous example.  
 
 When remote function-to-function calls are used `REMOTE_SECRET_(APPID)` and `REMOTE_STAGE_(APPID)` configuration variables must be set. The first is a secret key that both the invoking and invoked function must share so `LambdaContainer` can authorize the calls; the second is `(service)-(stage)` prefix that Serverless Framework prepends to function names by default. 
 
@@ -714,7 +714,7 @@ express.start(5000);
 
 #### Serverless file
 
-The environment variables provide the remote secret and stage for application `tyx-sample3`. In the previous example there is a matching `REMOTE_SECRET_TYX_SAMPLE4` with the same value as `REMOTE_SECRET_TYX_SAMPLE3` here, this pairs the applications. When a remote call is being prepared the secret for the target application is being used; when a remote a call is received the secret corresponding to the calling application is used to authorize the call.
+The environment variables provide the remote secret and stage for application `tyx-sample3`. In the previous example there is a matching `REMOTE_SECRET_TYX_SAMPLE4` with the same value as `REMOTE_SECRET_TYX_SAMPLE3` here, this pairs the applications. When a remote request is being prepared the secret for the target application is being used; when a remote request is received the secret corresponding to the requesting application is used to authorize the request.
 
 ```yaml
 service: tyx-sample4
@@ -751,7 +751,7 @@ functions:
 
 ### 2.5. Authorization
 
-TyX supports role-based authorization allowing to control access on service method level. There is no build-in authentication support, for the purpose of this example a hard-coded login service is used. The authorization is using JSON Web Token that are issued and validated by a build-in `Security` service. The container instantiate the default security service if non is registered and use it to validate all calls to non-public service methods.
+TyX supports role-based authorization allowing to control access on service method level. There is no build-in authentication support, for the purpose of this example a hard-coded login service is used. The authorization is using JSON Web Token that are issued and validated by a build-in `Security` service. The container instantiate the default security service if non is registered and use it to validate all requests to non-public service methods.
 
 Apart from the `@Public()` permission decorator `@Query<R>()` and `@Command<R>()` are provided to decorate service methods reflecting if the execution results in data retrieval or manipulation (changes).
 
@@ -1014,7 +1014,7 @@ express.start(5000);
 
 #### Serverless file
 
-When using authorization it is necessary to provide a `REST_SECRET` that is used to sign and verify the web tokens as well as `REST_TIMEOUT` how long the tokens are valid.
+When using authorization it is necessary to provide a `HTTP_SECRET` that is used to sign and verify the web tokens as well as `HTTP_TIMEOUT` how long the tokens are valid.
 
 ```yaml
 service: tyx-sample5
@@ -1029,8 +1029,8 @@ provider:
   
   environment:
     STAGE: ${self:service}-${opt:stage, self:provider.stage}
-    REST_SECRET: 3B2709157BD8444BAD42DE246D41BB35
-    REST_TIMEOUT: 2h
+    HTTP_SECRET: 3B2709157BD8444BAD42DE246D41BB35
+    HTTP_TIMEOUT: 2h
     LOG_LEVEL: DEBUG
   
 functions:
@@ -1117,16 +1117,16 @@ Express is an established node.js web framework and there is a wealth of third p
 
 #### API definition
 
-Service methods delegating to Express must have a signature `method(ctx: Context, call: RestCall): Promise<RestResult>`, the service can have ordinary methods as well.
+Service methods delegating to Express must have a signature `method(ctx: Context, req: HttpRequest): Promise<HttpResponse>`, the service can have ordinary methods as well.
 
 ```typescript
 export const ExampleApi = "example";
 
 export interface ExampleApi {
     hello(): string;
-    onGet(ctx: Context, call: RestCall): Promise<RestResult>;
-    onPost(ctx: Context, call: RestCall): Promise<RestResult>;
-    other(ctx: Context, call: RestCall): Promise<RestResult>;
+    onGet(ctx: Context, req: HttpRequest): Promise<HttpResponse>;
+    onPost(ctx: Context, req: HttpRequest): Promise<HttpResponse>;
+    other(ctx: Context, req: HttpRequest): Promise<HttpResponse>;
 }
 ```
 
@@ -1134,7 +1134,7 @@ export interface ExampleApi {
 
 Multiple routes delegated to Express for processing can be declared with decorators over a single method, such as `other()` in the example or over dedicated methods such as `onGet()` and `onPost()` to allow for logic preceding or following the Express processing. Presence of `@ContentType("RAW")` is required to pass the result verbatim to the user (`statusCode`, `headers`, `body` as generated by Express) otherwise the returned object will be treated as a json body. 
 
-The base class requires to implement the abstract method `setup(app: Express, ctx: Context, call: RestCall): void` that setup the Express app to be used for request processing. Each instance of the express app is used for a single request, no state can be maintained inside Lambda functions.
+The base class requires to implement the abstract method `setup(app: Express, ctx: Context, req: HttpRequest): void` that setup the Express app to be used for request processing. Each instance of the express app is used for a single request, no state can be maintained inside Lambda functions.
 
 ```typescript
 import BodyParser = require("body-parser");
@@ -1152,46 +1152,46 @@ export class ExampleService extends ExpressService implements ExampleApi {
     @Public()
     @Get("/app")
     @ContentType("RAW")
-    public async onGet(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
-        return super.process(ctx, call);
+    public async onGet(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+        return super.process(ctx, req);
     }
 
     @Public()
     @Post("/app")
     @ContentType("RAW")
-    public async onPost(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
-        return super.process(ctx, call);
+    public async onPost(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+        return super.process(ctx, req);
     }
 
     @Public()
     @Put("/app")
     @Delete("/app/{id}")
     @ContentType("RAW")
-    public async other(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
-        return super.process(ctx, call);
+    public async other(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+        return super.process(ctx, req);
     }
 
-    protected setup(app: Express, ctx: Context, call: RestCall): void {
+    protected setup(app: Express, ctx: Context, req: HttpRequest): void {
         app.register(BodyParser.json());
 
-        app.get("/app", (req, res) => this.flush(req, res, ctx, call));
-        app.post("/app", (req, res) => this.flush(req, res, ctx, call));
-        app.put("/app", (req, res) => this.flush(req, res, ctx, call));
-        app.delete("/app/:id", (req, res) => this.flush(req, res, ctx, call));
+        app.get("/app", (xreq, xres) => this.flush(xreq, xres, ctx, req));
+        app.post("/app", (xreq, xres) => this.flush(xreq, xres, ctx, req));
+        app.put("/app", (xreq, xres) => this.flush(xreq, xres, ctx, req));
+        app.delete("/app/:id", (xreq, xres) => this.flush(xreq, xres, ctx, req));
     }
 
-    private flush(req: Request, res: Response, ctx: Context, call: RestCall) {
+    private flush(xreq: Request, xres: Response, ctx: Context, req: HttpRequest) {
         let result = {
             msg: `Express ${req.method} method`,
-            path: req.path,
-            method: req.method,
-            headers: req.headers,
-            params: req.params,
-            query: req.query,
-            body: req.body,
-            lambda: { ctx, call }
+            path: xreq.path,
+            method: xreq.method,
+            headers: xreq.headers,
+            params: xreq.params,
+            query: xreq.query,
+            body: xreq.body,
+            lambda: { ctx, req }
         };
-        res.send(result);
+        xres.send(result);
     }
 }
 ```
@@ -1850,7 +1850,7 @@ Services for private (in-container) use not exposing any event bindings can be a
 
 ### 3.3. Events
 
-Events trigger an execution of a Lambda function; TyX resolves the service and method bound to the event and together with the event data forms a Call object representing the event and pass it to method invocation. Using the provided decorators event data elements can be mapped to method arguments or even pass the complete Call object.
+Events trigger an execution of a Lambda function; TyX resolves the service and method bound to the event and together with the event data forms a Request object representing the event and pass it to method invocation. Using the provided decorators event data elements can be mapped to method arguments or even pass the complete Request object.
 
 Serverless Framework provides a declarative approach (`serverless.yml`) to define event mappings per function. TyX support the standard HTTP events and follows the ApiGateway path syntax. In experimental stage are event bindings for S3, DynamoDB and Kinesis Stream events.  
 
@@ -1871,7 +1871,7 @@ export const handler: LambdaHandler = container.export();
 
 Registering services requires that class (constructor) is provided optionally together with arguments to be used to call the constructor. TyX only support property injection so services are preferred to provide default constructors. It is allowed to register specific instances (objects) as well. For a class to be considered a service it must have the `@Service` decorator and optionally implement the `Service` interface. 
 
-The container is implemented as a pool with record of the service registrations; while a container instance actually instantiate the services and resolve dependencies. So to process an event the container pool (e.g. `LambdaContainer`) will identify the event type, construct the Call object and prepare a container instance, then pass the processing to the instance. Instances are reused, once the event processing is finalized and the result is propagated back the instance is marked as ready to process the next incoming event. 
+The container is implemented as a pool with record of the service registrations; while a container instance actually instantiate the services and resolve dependencies. So to process an event the container pool (e.g. `LambdaContainer`) will identify the event type, construct the Request object and prepare a container instance, then pass the processing to the instance. Instances are reused, once the event processing is finalized and the result is propagated back the instance is marked as ready to process the next incoming event. 
 
 In AWS Lambda execution environment the function instance is not reused until previous execution is complete and Node.js event loop is empty (by default), so the container pool will ever have a single instance in it. This requires that any resources that may keep the event loop busy are created before event processing and closed/released after its completion, e.g. database connections. For this purpose the `Service` interface defines two optional methods `activate` and `release`; all services implementing the methods are activated before and released after each event processing cycle.
 
@@ -1890,16 +1890,16 @@ Proxies are useful in case of integration between two applications when a subset
 
 ## 4. Data Structures
 
-Service implementations and the supporting decorators are presented with two core data structure, the Call Object and the Context Object
+Service implementations and the supporting decorators are presented with two core data structure, the Request Object and the Context Object
 
-### 4.1. Call Object
+### 4.1. Request Object
 
-The `RestCall` object is an based on HTTP event as received from API Gateway. The content type is additionally processed, if json is detected the body is parsed and made available as `json` property. Header names are converted to lowercase as convention choice.
+The `HttpRequest` object is an based on HTTP event as received from API Gateway. The content type is additionally processed, if json is detected the body is parsed and made available as `json` property. Header names are converted to lowercase as convention choice.
 
 - Interface Definition
 ```typescript
-interface Call {
-    type: "remote" | "internal" | "rest" | "event";
+interface Request {
+    type: "remote" | "internal" | "http" | "event";
     application: string;
     service: string;
     method: string;
@@ -1908,7 +1908,7 @@ interface Call {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-interface RestCall extends Call {
+interface HttpRequest extends Request {
     httpMethod: HttpMethod;
     resource: string;
     path: string;
@@ -1921,15 +1921,15 @@ interface RestCall extends Call {
     isBase64Encoded?: boolean;
 
     json?: any;
-    contentType?: RestContentType;
+    contentType?: HttpContentType;
 }
 
-interface RestHeader {
+interface HttpHeader {
     value: string;
     params: Record<string, string>;
 }
 
-interface RestContentType extends RestHeader {
+interface HttpContentType extends HttpHeader {
     domainModel?: string;
     isJson?: boolean;
     isMultipart?: boolean;
@@ -1939,7 +1939,7 @@ interface RestContentType extends RestHeader {
 - Example
 ```json
 {
-    "type": "rest",
+    "type": "http",
     "requestId": "bbfb7cd5-ba45-11e7-bb80-356aa0e72897",
     "sourceIp": "2.3.6.186",
     "application": "tyx-sample5",
@@ -2119,16 +2119,16 @@ It is mandatory to specify the `service` name. If `application` is not provided 
 ```
 
 
-## 6. HTTP/REST Decorators
+## 6. HTTP Decorators
 
-HTTP/REST decorators are to be used over service methods, if the class is not decorated as `@Service` they have no effect.
+HTTP decorators are to be used over service methods, if the class is not decorated as `@Service` they have no effect.
 
 ### 6.1. `@Get` decorator
 
 Decorate the service method to respond on HTTP GET on the specified route.
 
 ```typescript
-@Get(route: string, adapter?: RestAdapter)
+@Get(route: string, adapter?: HttpAdapter)
 ```
 
 ### 6.2. `@Post` decorator
@@ -2138,7 +2138,7 @@ Decorate the service method to respond on HTTP POST on the specified route.
 If `model` argument is not provided or `false` only one method can bind to the specified route. When `true` the incoming `Content-Type` must include parameter `domain-model=(methodName)` so allowing multiple methods to share the route. The `model` can be explicitly provided and have different value from decorated service method.
 
 ```typescript
-@Post(route: string, model?: boolean | string, adapter?: RestAdapter)
+@Post(route: string, model?: boolean | string, adapter?: HttpAdapter)
 ```
 
 ### 6.3. `@Put` decorator
@@ -2146,7 +2146,7 @@ If `model` argument is not provided or `false` only one method can bind to the s
 Decorate the service method to respond on HTTP PUT on the specified route. Argument `model` as in `@Post`.
 
 ```typescript
-@Put(route: string, model?: boolean | string, adapter?: RestAdapter)
+@Put(route: string, model?: boolean | string, adapter?: HttpAdapter)
 ```
 
 ### 6.4. `@Delete` decorator
@@ -2154,7 +2154,7 @@ Decorate the service method to respond on HTTP PUT on the specified route. Argum
 Decorate the service method to respond on HTTP POST on the specified route. Argument `model` as in `@Post`.
 
 ```typescript
-@Delete(route: string, model?: boolean | string, adapter?: RestAdapter)
+@Delete(route: string, model?: boolean | string, adapter?: HttpAdapter)
 ```
 
 ### 6.5. `@Patch` decorator
@@ -2162,7 +2162,7 @@ Decorate the service method to respond on HTTP POST on the specified route. Argu
 Decorate the service method to respond on HTTP PATCH on the specified route. Argument `model` as in `@Post`.
 
 ```typescript
-@Patch(route: string, model?: boolean | string, adapter?: RestAdapter)
+@Patch(route: string, model?: boolean | string, adapter?: HttpAdapter)
 ```
 
 ### 6.6. `@ContentType` decorator
@@ -2173,10 +2173,10 @@ Override the default content type `application/json` for the response.
 @ContentType(type: string)
 ```
 
-Special type `RAW` allows the method to provide a complete response corresponding to the following interface:
+Special type `HttpResponse` allows the method to provide a complete response corresponding to the following interface:
 
 ```typescript
-interface RestResult {
+interface HttpResponse {
     statusCode: HttpCode;
     contentType?: string;
     headers?: Record<string, string>;
@@ -2184,16 +2184,16 @@ interface RestResult {
 }
 ```
 
-### 6.7. `RestAdapter` function
+### 6.7. `HttpAdapter` function
 
-It is preferred to use [7. Method Argument Decorators] however a custom function can be provided to convert the context and call objects to method arguments. When a `RestAdapter` is provided argument decorators are not evaluated.
+It is preferred to use [7. Method Argument Decorators] however a custom function can be provided to convert the context and request objects to method arguments. When a `HttpAdapter` is provided argument decorators are not evaluated.
 
 ```typescript
-interface RestAdapter {
+interface HttpAdapter {
     (
         next: (...args: any[]) => Promise<any>,
         ctx?: Context,
-        call?: RestCall,
+        req?: HttpRequest,
         path?: Record<string, string>,
         query?: Record<string, string>
     ): Promise<any>;
@@ -2211,14 +2211,14 @@ public async startProduction(
 }
 ```
 
-- Equivalent with `RestAdapter`
+- Equivalent with `HttpAdapter`
 
 ```typescript
-@Put("/product/{id}", true, (next, ctx, call, path) => next(
+@Put("/product/{id}", true, (next, ctx, req, path) => next(
     ctx.auth.userId,
     ctx.auth.role,
     path.id,
-    call.json
+    req.json
 ))
 public async startProduction(
     userId: string,
@@ -2315,13 +2315,13 @@ saveNote(@ContextParam("auth.userId") userId: string, @Body() note: Note) { ... 
 
 The parameter may be given as dot separated path, it will evaluate to null or undefined if last token can not be reached.
 
-### 7.10. `@CallObject` decorator
+### 7.10. `@RequestObject` decorator
 
-To inject directly the Call object, use `@ContextObject` decorator:
+To inject directly the Request object, use `@ContextObject` decorator:
 
 ```typescript
 @Post("/notes")
-saveNote(@CallObject() call: RestCall) { ... }
+saveNote(@RequstObject() req: HttpRequest) { ... }
 ```
 
 ## 8. Authorization Decorators
@@ -2330,7 +2330,7 @@ Authorization decorators allow access control at service method level. At most o
 
 ### 8.1. `@Public` decorator
 
-Allow public access to the service method via HTTP/REST decorated routes.
+Allow public access to the service method via HTTP decorated routes.
 
 ```typescript
 @Public()
@@ -2338,7 +2338,7 @@ Allow public access to the service method via HTTP/REST decorated routes.
 
 ### 8.2. `@Private` decorator
 
-Service method is only allowed to be called within the container. HTTP/REST decorators should not be used in combination.
+Service method is only allowed to be called within the container. HTTP decorators should not be used in combination.
 
 ```typescript
 @Private()
@@ -2346,7 +2346,7 @@ Service method is only allowed to be called within the container. HTTP/REST deco
 
 ### 8.3. `@Internal` decorator
 
-Proxy calls allowed only from services from the same application. HTTP/REST decorators should not be used in combination.
+Proxy calls allowed only from services from the same application. HTTP decorators should not be used in combination.
 
 ```typescript
 @Internal()
@@ -2354,7 +2354,7 @@ Proxy calls allowed only from services from the same application. HTTP/REST deco
 
 ### 8.4. `@Remote` decorator
 
-Remote proxy calls allowed from services of other applications. HTTP/REST decorators should not be used in combination.
+Remote proxy calls allowed from services of other applications. HTTP decorators should not be used in combination.
 
 ```typescript
 @Remote()
@@ -2362,7 +2362,7 @@ Remote proxy calls allowed from services of other applications. HTTP/REST decora
 
 ### 8.5. `@Query` decorator
 
-Method allowed only to specified roles. This decorator should used on methods retrieving data, in combination with HTTP/REST decorators.
+Method allowed only to specified roles. This decorator should used on methods retrieving data, in combination with HTTP decorators.
 
 ```typescript
 @Query<R extends Roles>(roles: R)
@@ -2370,7 +2370,7 @@ Method allowed only to specified roles. This decorator should used on methods re
 
 ### 8.6. `@Command` decorator
 
-Method allowed only to specified roles. This decorator should used on methods manipulating data or having other side effects, in combination with HTTP/REST decorators.
+Method allowed only to specified roles. This decorator should used on methods manipulating data or having other side effects, in combination with HTTP decorators.
 
 ```typescript
 @Command<R extends Roles>(roles: R)
@@ -2425,8 +2425,8 @@ abstract class BaseProxy implements Proxy {
     protected security: Security;
     public initialize(config: Configuration, security: Security): void;
     protected proxy(method: Function, params: IArguments): Promise<any>;
-    protected abstract token(call: RemoteCall): Promise<string>;
-    protected abstract invoke(call: RemoteCall): Promise<any>;
+    protected abstract token(req: RemoteRequest): Promise<string>;
+    protected abstract invoke(req: RemoteRequest): Promise<any>;
 }
 ```
 
@@ -2436,8 +2436,8 @@ abstract class BaseProxy implements Proxy {
 abstract class LambdaProxy extends BaseProxy {
     private lambda;
     constructor();
-    protected token(call: RemoteCall): Promise<string>;
-    protected invoke(call: RemoteCall): Promise<any>;
+    protected token(req: RemoteRequest): Promise<string>;
+    protected invoke(req: RemoteRequest): Promise<any>;
 }
 ```
 
@@ -2469,9 +2469,9 @@ interface Container {
     state(): ContainerState;
     prepare(): Container;
 
-    restCall(call: RestCall): Promise<RestResult>;
-    remoteCall(call: RemoteCall): Promise<any>;
-    eventCall(call: EventCall): Promise<EventResult>;
+    httpRequest(req: HttpRequest): Promise<HttpResponse>;
+    remoteRequest(req: RemoteRequest): Promise<any>;
+    eventRequest(req: EventRequest): Promise<EventResult>;
 }
 ```
 
@@ -2524,8 +2524,8 @@ interface Configuration {
     resources: Record<string, string>;
     aliases: Record<string, string>;
 
-    restSecret: string;
-    restTimeout: string;
+    httpSecret: string;
+    httpTimeout: string;
     internalSecret: string;
     internalTimeout: string;
     remoteTimeout: string;
@@ -2549,8 +2549,8 @@ abstract class BaseConfiguration implements Configuration {
     public readonly aliases: Record<string, string>;
     public readonly resources: Record<string, string>;
 
-    public readonly restSecret: string;
-    public readonly restTimeout: string;
+    public readonly httpSecret: string;
+    public readonly httpTimeout: string;
     public readonly internalSecret: string;
     public readonly internalTimeout: string;
     public readonly remoteTimeout: string;
@@ -2566,9 +2566,9 @@ The `Security` interface and the provided `BaseSecurity` implement the TyX token
 
 ```typescript
 interface Security extends Service {
-    restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context>;
-    remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context>;
-    eventAuth(call: EventCall, permission: PermissionMetadata): Promise<Context>;
+    httpAuth(req: HttpRequest, permission: PermissionMetadata): Promise<Context>;
+    remoteAuth(req: RemoteRequest, permission: PermissionMetadata): Promise<Context>;
+    eventAuth(req: EventRequest, permission: PermissionMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;
 }
 ```
@@ -2578,9 +2578,9 @@ abstract class BaseSecurity implements Security {
     public readonly log: Logger;
     protected abstract config: Configuration;
 
-    public restAuth(call: RestCall, permission: PermissionMetadata): Promise<Context>;
-    public remoteAuth(call: RemoteCall, permission: PermissionMetadata): Promise<Context>;
-    public eventAuth(call: EventCall, permission: PermissionMetadata): Promise<Context>;
+    public httpAuth(req: HttpRequest, permission: PermissionMetadata): Promise<Context>;
+    public remoteAuth(req: RemoteRequest, permission: PermissionMetadata): Promise<Context>;
+    public eventAuth(req: EventRequest, permission: PermissionMetadata): Promise<Context>;
     public issueToken(req: IssueRequest): string;
 
     protected verify(requestId: string, token: string, permission: PermissionMetadata): Promise<Context>;
@@ -2636,8 +2636,8 @@ See example [2.6. Express service](#26-express-service).
 
 ```typescript
 abstract class ExpressService extends BaseService {
-    protected process(ctx: Context, call: RestCall): Promise<RestResult>;
-    protected abstract setup(app: Express, ctx: Context, call: RestCall): void;
+    protected process(ctx: Context, req: HttpRequest): Promise<HttpResponse>;
+    protected abstract setup(app: Express, ctx: Context, req: HttpRequest): void;
     public release(): Promise<void>;
 }
 ```

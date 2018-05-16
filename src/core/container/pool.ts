@@ -1,44 +1,11 @@
-import "../env";
-
-import {
-    RestCall,
-    RestResult,
-    RemoteCall,
-    EventCall,
-    EventResult
-} from "../types";
-
-import {
-    Service,
-    Proxy
-} from "../decorators";
-
-import {
-    Configuration,
-    Security
-} from "../base";
-
-import {
-    ContainerMetadata
-} from "../metadata";
-
-import {
-    Logger
-} from "../logger";
-
-import {
-    ContainerInstance
-} from "./instance";
-
-import {
-    Container,
-    ContainerState
-} from "./common";
-
-import {
-    InternalServerError
-} from "../errors";
-
+import { Configuration, Security } from "../base";
+import { Proxy, Service } from "../decorators";
+import { InternalServerError } from "../errors";
+import { Logger } from "../logger";
+import { ContainerMetadata } from "../metadata";
+import { EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { Container, ContainerState } from "./common";
+import { ContainerInstance } from "./instance";
 
 export class ContainerPool implements Container {
     protected log: Logger;
@@ -124,22 +91,22 @@ export class ContainerPool implements Container {
         this.pool = [this.head];
     }
 
-    public async remoteCall(call: RemoteCall): Promise<any> {
+    public async remoteRequest(req: RemoteRequest): Promise<any> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
-        return instance.remoteCall(call);
+        return instance.remoteRequest(req);
     }
 
-    public async eventCall(call: EventCall): Promise<EventResult> {
+    public async eventRequest(req: EventRequest): Promise<EventResult> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
-        return instance.eventCall(call);
+        return instance.eventRequest(req);
     }
 
-    public async restCall(call: RestCall): Promise<RestResult> {
+    public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         let instance = this.prepare();
-        return instance.restCall(call);
+        return instance.httpRequest(req);
     }
 }
 

@@ -1,13 +1,5 @@
-import "../env";
-
-import {
-    EventAdapter
-} from "../types";
-
-import {
-    EventMetadata,
-    ServiceMetadata
-} from "../metadata";
+import { EventMetadata, ServiceMetadata } from "../metadata";
+import { EventAdapter } from "../types";
 
 export function Event(source: string, resource: string, actionFilter: string | boolean, objectFilter: string, adapter: EventAdapter, permission?: Function) {
     return function (type: any, propertyKey: string, descriptor: PropertyDescriptor) {

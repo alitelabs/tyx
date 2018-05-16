@@ -1,45 +1,18 @@
 
-import {
-    HttpMethod,
-    RestCall
-} from "../core/types";
-
-import {
-    ContainerPool,
-    HttpResponse
-} from "../core/container";
-
-import {
-    LogLevel
-} from "../core/logger";
-
-import {
-    InternalServerError
-} from "../core/errors";
-
-import {
-    Utils
-} from "../core/utils";
+import { Express, Request, Response } from "express";
+import { Server, createServer } from "http";
+import { ContainerPool } from "../core/container";
+import { InternalServerError } from "../core/errors";
+import { LogLevel } from "../core/logger";
+import { HttpMethod, HttpRequest } from "../core/types";
+import { HttpUtils, Utils } from "../core/utils";
 
 import express = require("express");
-
-import {
-    Express,
-    Request,
-    Response
-} from "express";
+import BodyParser = require("body-parser");
 
 export {
     Express
 };
-
-import {
-    Server,
-    createServer
-} from "http";
-
-import BodyParser = require("body-parser");
-
 
 export class ExpressContainer extends ContainerPool {
 
@@ -71,9 +44,9 @@ export class ExpressContainer extends ContainerPool {
         let used = {};
         let paths = [];
 
-        let restMetadata = this.metadata.restMetadata;
-        for (let hd in restMetadata) {
-            let target = restMetadata[hd];
+        let httpMetadata = this.metadata.httpMetadata;
+        for (let hd in httpMetadata) {
+            let target = httpMetadata[hd];
             let httpMethod = target.verb;
             let resource = target.resource;
 
@@ -139,8 +112,8 @@ export class ExpressContainer extends ContainerPool {
                 req.body = undefined;
         }
 
-        let call: RestCall = {
-            type: "rest",
+        let request: HttpRequest = {
+            type: "http",
             requestId: Utils.uuid(),
             sourceIp: req.ip || "255.255.255.255",
 
@@ -159,14 +132,14 @@ export class ExpressContainer extends ContainerPool {
         };
 
         try {
-            let result = await super.restCall(call);
+            let result = await super.httpRequest(request);
             for (let header in result.headers) {
                 res.setHeader(header, result.headers[header]);
             }
             if (result.contentType) res.setHeader("Content-Type", result.contentType);
             res.status(result.statusCode).send(result.body);
         } catch (err) {
-            let result = HttpResponse.error(err);
+            let result = HttpUtils.error(err);
             for (let header in result.headers) {
                 res.setHeader(header, result.headers[header]);
             }

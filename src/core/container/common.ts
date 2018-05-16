@@ -1,27 +1,6 @@
-import "../env";
-
-import {
-    Context,
-    RestCall,
-    RestResult,
-    RemoteCall,
-    EventCall,
-    EventResult,
-    HttpCode
-} from "../types";
-
-import {
-    ApiError
-} from "../errors";
-
-import {
-    ContainerMetadata
-} from "../metadata";
-
-import {
-    Service,
-    Proxy
-} from "../decorators";
+import { Proxy, Service } from "../decorators";
+import { ContainerMetadata } from "../metadata";
+import { Context, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 
 export type ObjectType<T> = {
     new(): T;
@@ -31,16 +10,16 @@ export type Constructor<T> = T & {
     new(): T
 };
 
-export interface RemoteHandler {
-    (ctx: Context, call: RemoteCall): Promise<any>;
+export interface HttpHandler {
+    (ctx: Context, req: HttpRequest): Promise<HttpResponse>;
 }
 
-export interface RestHandler {
-    (ctx: Context, call: RestCall): Promise<[number, any, string]>;
+export interface RemoteHandler {
+    (ctx: Context, req: RemoteRequest): Promise<any>;
 }
 
 export interface EventHandler {
-    (ctx: Context, call: EventCall): Promise<any>;
+    (ctx: Context, req: EventRequest): Promise<any>;
 }
 
 export enum ContainerState {
@@ -64,54 +43,7 @@ export interface Container {
 
     prepare(): Container;
 
-    restCall(call: RestCall): Promise<RestResult>;
-    remoteCall(call: RemoteCall): Promise<any>;
-    eventCall(call: EventCall): Promise<EventResult>;
-}
-
-export interface HttpResponse {
-    statusCode: HttpCode;
-    headers: Record<string, string>;
-    body: string;
-}
-
-export namespace HttpResponse {
-
-    export function create(code: HttpCode, body: any, json?: boolean) {
-        json = (json === undefined) ? true : json;
-        if (typeof body !== "string") body = JSON.stringify(body);
-
-        let response: HttpResponse = {
-            statusCode: code,
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH",
-                "Access-Control-Allow-Headers": "Content-Type, Content-Encoding",
-                "Access-Control-Expose-Headers": "Token",
-                "Content-Type": json ? "application/json; charset=utf-8" : "text/plain; charset=utf-8"
-            },
-            body
-        };
-        if (!body) delete response.headers["Content-Type"];
-
-        return response;
-    }
-
-    export function result(rest: RestResult): HttpResponse {
-        let res = create(rest.statusCode, rest.body, true);
-        Object.assign(res.headers, rest.headers || {});
-        if (rest.contentType) res.headers["Content-Type"] = rest.contentType;
-        return res;
-    }
-
-    export function error(error: Error): HttpResponse {
-        let res: HttpResponse;
-        if (error instanceof ApiError) {
-            res = create(error.code, ApiError.serialize(error), true);
-        } else {
-            // TODO: Always json
-            res = create(501, error.message || "Internal Server Error", false);
-        }
-        return res;
-    }
+    httpRequest(req: HttpRequest): Promise<HttpResponse>;
+    remoteRequest(req: RemoteRequest): Promise<any>;
+    eventRequest(req: EventRequest): Promise<EventResult>;
 }

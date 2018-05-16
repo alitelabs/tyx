@@ -1,13 +1,11 @@
-import "../env";
-
-import { PermissionMetadata } from "./security";
-import { RemoteMetadata } from "./remote";
-import { RestMetadata } from "./rest";
 import { EventMetadata } from "./event";
+import { HttpMetadata } from "./http";
+import { RemoteMetadata } from "./remote";
+import { PermissionMetadata } from "./security";
 
 export interface ContainerMetadata {
     permissions: Record<string, PermissionMetadata>;
     remoteMetadata: Record<string, RemoteMetadata>;
-    restMetadata: Record<string, RestMetadata>;
+    httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
 }

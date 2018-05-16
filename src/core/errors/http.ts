@@ -1,12 +1,5 @@
-import "../env";
-
-import {
-    ApiError
-} from "./common";
-
-import {
-    Exception
-} from "../decorators";
+import { Exception } from "../decorators";
+import { ApiError } from "./common";
 
 @Exception
 export class BadRequest extends ApiError {

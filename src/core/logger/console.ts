@@ -1,4 +1,4 @@
-import { Logger, LogLevel } from "./logger";
+import { LogLevel, Logger } from "./logger";
 
 export class ConsoleLogger implements Logger {
     protected _logName: string;

@@ -1,12 +1,6 @@
-import "../env";
-
-import {
-    Service
-} from "../decorators";
-
-import { Utils } from "../utils";
-
+import { Service } from "../decorators";
 import { LogLevel } from "../logger";
+import { Utils } from "../utils";
 
 export const Configuration = "config";
 
@@ -18,9 +12,9 @@ export interface Configuration {
     resources: Record<string, string>;
     aliases: Record<string, string>;
 
-    restSecret: string;
-    restTimeout: string;
-    restLifetime: string;
+    httpSecret: string;
+    httpTimeout: string;
+    httpLifetime: string;
     internalSecret: string;
     internalTimeout: string;
     remoteTimeout: string;
@@ -77,11 +71,11 @@ export abstract class BaseConfiguration implements Configuration {
         return res;
     }
 
-    get restSecret(): string { return this.config.REST_SECRET || undefined; }
+    get httpSecret(): string { return this.config.REST_SECRET || undefined; }
 
-    get restTimeout(): string { return this.config.REST_TIMEOUT || "10min"; }
+    get httpTimeout(): string { return this.config.REST_TIMEOUT || "10min"; }
 
-    get restLifetime(): string { return this.config.REST_LIFETIME || "1h"; }
+    get httpLifetime(): string { return this.config.REST_LIFETIME || "1h"; }
 
     get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
 

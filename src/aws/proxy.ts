@@ -1,5 +1,5 @@
 import {
-    RemoteCall
+    RemoteRequest
 } from "../core/types";
 
 import {
@@ -28,7 +28,7 @@ export abstract class LambdaProxy extends BaseProxy {
         this.lambda = new Lambda();
     }
 
-    protected async token(call: RemoteCall): Promise<string> {
+    protected async token(call: RemoteRequest): Promise<string> {
         return await this.security.issueToken({
             audience: call.application,
             subject: call.type,
@@ -37,7 +37,7 @@ export abstract class LambdaProxy extends BaseProxy {
         });
     }
 
-    protected async invoke(call: RemoteCall): Promise<any> {
+    protected async invoke(call: RemoteRequest): Promise<any> {
         let stage = call.type === "remote"
             ? this.config.remoteStage(call.application)
             : this.config.stage;

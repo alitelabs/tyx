@@ -1,4 +1,4 @@
-import "../env";
+import "reflect-metadata";
 
 export interface RemoteMetadata {
     service?: string;

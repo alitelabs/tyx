@@ -1,5 +1,3 @@
-import "../env";
-
 import uuidr = require("uuid");
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript

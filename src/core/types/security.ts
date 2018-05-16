@@ -1,5 +1,3 @@
-import "../env";
-
 export interface Roles {
     Public?: boolean;
     Internal?: boolean;

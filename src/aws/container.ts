@@ -1,40 +1,13 @@
-import {
-    RestCall,
-    HttpMethod,
-    RestResult,
-    RemoteCall,
-    EventCall,
-    EventRecord,
-    EventResult
-} from "../core/types";
-
-import {
-    ContainerPool,
-    HttpResponse
-} from "../core/container";
-
-import {
-    InternalServerError,
-    BadRequest
-} from "../core/errors";
-
-import {
-    LogLevel
-} from "../core/logger";
-
-import {
-    Utils,
-    RestUtils
-} from "../core/utils";
-
-import {
-    LambdaError
-} from "./error";
-
+import { ContainerPool } from "../core/container";
+import { BadRequest, InternalServerError } from "../core/errors";
+import { LogLevel } from "../core/logger";
+import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, RemoteRequest } from "../core/types";
+import { HttpUtils, Utils } from "../core/utils";
+import { LambdaError } from "./error";
 
 export type UUID = string;
 
-export interface LambdaCall extends RemoteCall {
+export interface RemoteEvent extends RemoteRequest {
     // Any additional params ...
 }
 
@@ -130,7 +103,7 @@ export interface LambdaApiEvent {
     stageVariables?: {
         [variable: string]: string;
     };
-    requestContext?: {
+    req?: {
         accountId: string;
         resourceId: string;
         stage: string;
@@ -173,7 +146,7 @@ export interface LambdaCallback {
     (err: LambdaError, response?: HttpResponse | Object): void;
 }
 
-export type LambdaEvent = LambdaCall & LambdaApiEvent & LambdaS3Event & LambdaDynamoEvent & LambdaScheduleEvent;
+export type LambdaEvent = RemoteEvent & LambdaApiEvent & LambdaS3Event & LambdaDynamoEvent & LambdaScheduleEvent;
 
 export interface LambdaHandler {
     (
@@ -190,7 +163,11 @@ export class LambdaContainer extends ContainerPool {
     }
 
     public export(): LambdaHandler {
-        this.prepare();
+        try {
+            this.prepare();
+        } catch (err) {
+            console.log(err);
+        }
         return (event, context, callback) => {
             this.handler(event, context)
                 .then(res => callback(null, res))
@@ -199,6 +176,12 @@ export class LambdaContainer extends ContainerPool {
     }
 
     private async handler(event: LambdaEvent, context: LambdaContext) {
+        try {
+            this.prepare();
+        } catch (err) {
+            this.log.error(err);
+            return HttpUtils.error(err);
+        }
 
         LogLevel.set(this.config.logLevel);
         this.log.debug("Lambda Event: %j", event);
@@ -206,11 +189,11 @@ export class LambdaContainer extends ContainerPool {
 
         if (event.httpMethod) {
             try {
-                let res = await this.rest(event, context);
-                return HttpResponse.result(res);
+                let res = await this.http(event, context);
+                return HttpUtils.prepare(res);
             } catch (err) {
                 this.log.error(err);
-                return HttpResponse.error(err);
+                return HttpUtils.error(err);
             }
         } else if ((event.type === "remote" || event.type === "internal") && event.service && event.method) {
             try {
@@ -245,13 +228,13 @@ export class LambdaContainer extends ContainerPool {
         }
     }
 
-    private async rest(event: LambdaApiEvent, context: LambdaContext): Promise<RestResult> {
-        let restCall: RestCall = {
-            type: "rest",
+    private async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
+        let req: HttpRequest = {
+            type: "http",
             requestId: context && context.awsRequestId || Utils.uuid(),
-            sourceIp: (event.requestContext
-                && event.requestContext.identity
-                && event.requestContext.identity.sourceIp) || "255.255.255.255",
+            sourceIp: (event.req
+                && event.req.identity
+                && event.req.identity.sourceIp) || "255.255.255.255",
 
             application: undefined,
             service: undefined,
@@ -262,16 +245,16 @@ export class LambdaContainer extends ContainerPool {
             path: event.path,
             pathParameters: event.pathParameters || {},
             queryStringParameters: event.queryStringParameters || {},
-            headers: RestUtils.canonicalHeaders(event.headers || {}),
+            headers: HttpUtils.canonicalHeaders(event.headers || {}),
             body: event.body,
             isBase64Encoded: event.isBase64Encoded || false
         };
-        return super.restCall(restCall);
+        return super.httpRequest(req);
     }
 
-    private async remote(event: LambdaCall, context: LambdaContext): Promise<any> {
+    private async remote(event: RemoteEvent, context: LambdaContext): Promise<any> {
         event.requestId = context && context.awsRequestId || Utils.uuid();
-        return super.remoteCall(event);
+        return super.remoteRequest(event);
     }
 
     private async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
@@ -279,7 +262,7 @@ export class LambdaContainer extends ContainerPool {
 
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
-        let calls: Record<string, EventCall> = {};
+        let reqs: Record<string, EventRequest> = {};
 
         for (let record of event.Records) {
             let resource = record.s3.bucket.name;
@@ -287,7 +270,7 @@ export class LambdaContainer extends ContainerPool {
             let action = record.eventName;
 
             let group = `${resource}/${action}@${object}`;
-            if (!calls[group]) calls[group] = {
+            if (!reqs[group]) reqs[group] = {
                 type: "event",
                 source: "aws:s3",
                 application: undefined,
@@ -300,15 +283,15 @@ export class LambdaContainer extends ContainerPool {
                 object,
                 records: []
             };
-            calls[group].records.push(record);
+            reqs[group].records.push(record);
         }
 
         // TODO: Iteration of all, combine result
         let result: EventResult;
-        for (let key in calls) {
-            let call = calls[key];
-            this.log.info("S3 Call [%s:%s]: %j", call.resource, call.object, call);
-            result = await super.eventCall(call);
+        for (let key in reqs) {
+            let req = reqs[key];
+            this.log.info("S3 Request [%s:%s]: %j", req.resource, req.object, req);
+            result = await super.eventRequest(req);
         }
         return result;
     }
@@ -319,7 +302,7 @@ export class LambdaContainer extends ContainerPool {
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
 
-        let call: EventCall = {
+        let req: EventRequest = {
             type: "event",
             source: "aws:cloudwatch",
             application: undefined,
@@ -331,12 +314,12 @@ export class LambdaContainer extends ContainerPool {
             time,
             object: null,
             records: [
-              event
+                event
             ]
         };
 
-        this.log.info("Schedule Call [%s:%s]: %j", call.resource, call.object, call);
-        let result = await super.eventCall(call);
+        this.log.info("Schedule Request [%s:%s]: %j", req.resource, req.object, req);
+        let result = await super.eventRequest(req);
         return result;
     }
 
@@ -345,7 +328,7 @@ export class LambdaContainer extends ContainerPool {
 
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
-        let calls: Record<string, EventCall> = {};
+        let reqs: Record<string, EventRequest> = {};
 
         for (let record of event.Records) {
             let resource = record.eventSourceARN.split("/")[1];
@@ -353,7 +336,7 @@ export class LambdaContainer extends ContainerPool {
             let action = record.eventName;
 
             let group = `${resource}/${action}@${object}`;
-            if (!calls[group]) calls[group] = {
+            if (!reqs[group]) reqs[group] = {
                 type: "event",
                 source: "aws:dynamodb",
                 application: undefined,
@@ -366,15 +349,15 @@ export class LambdaContainer extends ContainerPool {
                 object,
                 records: []
             };
-            calls[group].records.push(record);
+            reqs[group].records.push(record);
         }
 
         // TODO: Iteration of all, combine result
         let result: EventResult;
-        for (let key in calls) {
-            let call = calls[key];
-            this.log.info("Dynamo Call [%s]: %j", call.resource, call);
-            result = await super.eventCall(call);
+        for (let key in reqs) {
+            let req = reqs[key];
+            this.log.info("Dynamo Request [%s]: %j", req.resource, req);
+            result = await super.eventRequest(req);
         }
         return result;
     }

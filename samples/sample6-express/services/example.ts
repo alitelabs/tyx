@@ -1,29 +1,7 @@
 
-import {
-    Service,
-    ExpressService,
-    Context,
-    RestCall,
-    Public,
-    Get,
-    Post,
-    Put,
-    Delete,
-    ContextObject,
-    ContentType,
-    CallObject,
-    RestResult
-} from "../../../src";
-
-import {
-    Express,
-    Request,
-    Response
-} from "express";
-
-import {
-    ExampleApi
-} from "../api/example";
+import { Express, Request, Response } from "express";
+import { CallObject, ContentType, Context, ContextObject, Delete, ExpressService, Get, HttpCall, HttpResponse, Post, Public, Put, Service } from "../../../src";
+import { ExampleApi } from "../api/example";
 
 import BodyParser = require("body-parser");
 
@@ -39,27 +17,27 @@ export class ExampleService extends ExpressService implements ExampleApi {
 
     @Public()
     @Get("/app")
-    @ContentType("RAW")
-    public async onGet(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
+    @ContentType(HttpResponse)
+    public async onGet(@ContextObject() ctx: Context, @CallObject() call: HttpCall): Promise<HttpResponse> {
         return super.process(ctx, call);
     }
 
     @Public()
     @Post("/app")
-    @ContentType("RAW")
-    public async onPost(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
+    @ContentType(HttpResponse)
+    public async onPost(@ContextObject() ctx: Context, @CallObject() call: HttpCall): Promise<HttpResponse> {
         return super.process(ctx, call);
     }
 
     @Public()
     @Put("/app")
     @Delete("/app/{id}")
-    @ContentType("RAW")
-    public async other(@ContextObject() ctx: Context, @CallObject() call: RestCall): Promise<RestResult> {
+    @ContentType(HttpResponse)
+    public async other(@ContextObject() ctx: Context, @CallObject() call: HttpCall): Promise<HttpResponse> {
         return super.process(ctx, call);
     }
 
-    protected setup(app: Express, ctx: Context, call: RestCall): void {
+    protected setup(app: Express, ctx: Context, call: HttpCall): void {
         app.use(BodyParser.json());
 
         app.get("/app", (req, res) => this.flush(req, res, ctx, call));
@@ -68,7 +46,7 @@ export class ExampleService extends ExpressService implements ExampleApi {
         app.delete("/app/:id", (req, res) => this.flush(req, res, ctx, call));
     }
 
-    private flush(req: Request, res: Response, ctx: Context, call: RestCall) {
+    private flush(req: Request, res: Response, ctx: Context, call: HttpCall) {
         let result = {
             msg: `Express ${req.method} method`,
             path: req.path,

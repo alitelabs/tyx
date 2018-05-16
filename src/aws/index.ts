@@ -1,7 +1,7 @@
 export {
     LambdaContainer,
 
-    LambdaCall,
+    RemoteEvent,
     LambdaApiEvent,
     LambdaS3Event,
     LambdaDynamoEvent,

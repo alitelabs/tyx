@@ -1,8 +1,4 @@
-import "../env";
-
-import {
-    ServiceMetadata
-} from "../metadata";
+import { ServiceMetadata } from "../metadata";
 
 export function Export() {
     return function (type: Object, propertyKey: string, descriptor: PropertyDescriptor) {

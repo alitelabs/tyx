@@ -1,12 +1,6 @@
-import "../env";
+import { HttpAdapter, ArgBinder, HttpCode } from "../types";
 
-import {
-    HttpCode,
-    RestAdapter,
-    RestBinder
-} from "../types";
-
-export interface RestMetadata {
+export interface HttpMetadata {
     service?: string;
     route: string;
     method: string;
@@ -14,7 +8,7 @@ export interface RestMetadata {
     resource: string;
     model: string;
     code: HttpCode;
-    adapter: RestAdapter;
+    adapter: HttpAdapter;
 }
 
 export interface BindingMetadata {
@@ -28,5 +22,5 @@ export interface ArgBindingMetadata {
     index: number;
     type: string;
     param: string;
-    binder: RestBinder;
+    binder: ArgBinder;
 }

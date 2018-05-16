@@ -1,5 +1,3 @@
-import "../env";
-
 import { Roles } from "../types";
 
 export interface PermissionMetadata {

@@ -1,11 +1,6 @@
-import "../env";
+import { Request, Context } from "./common";
 
-import {
-    Context,
-    Call
-} from "./common";
-
-export interface EventCall extends Call {
+export interface EventRequest extends Request {
     source: string;
     action: string;
     time: string;
@@ -44,6 +39,6 @@ export interface EventAdapter {
     (
         next: (...args: any[]) => Promise<any>,
         ctx: Context,
-        call: EventCall
+        call: EventRequest
     ): Promise<any>;
 }

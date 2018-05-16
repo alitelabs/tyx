@@ -1,12 +1,5 @@
-import "../env";
-
-import {
-    HttpCode
-} from "../types";
-
-import {
-    Exception
-} from "../decorators";
+import { Exception } from "../decorators";
+import { HttpCode } from "../types";
 
 export interface ApiErrorData {
     code: string;
@@ -146,7 +139,7 @@ export class ApiError extends Error {
     }
 
     public static wrap(error: ApiError | Error | string | any): ApiError {
-        if (error instanceof ApiError)  return error;
+        if (error instanceof ApiError) return error;
         let result: ApiError;
         if (error instanceof Error) {
             let ctor: any = this;

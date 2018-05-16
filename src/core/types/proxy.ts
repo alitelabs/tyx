@@ -1,8 +1,6 @@
-import "../env";
+import { Request } from "./common";
 
-import { Call } from "./common";
-
-export interface RemoteCall extends Call {
+export interface RemoteRequest extends Request {
     application: string;
     token: string;
     args: any[];

@@ -1,5 +1,3 @@
-import "../env";
-
 import { ConsoleLogger } from "./console";
 
 export enum LogLevel {

@@ -1,17 +1,6 @@
-import "../env";
-
-import {
-    Context
-} from "../types";
-
-import {
-    Metadata,
-    ServiceMetadata
-} from "../metadata";
-
-import {
-    Logger
-} from "../logger";
+import { Logger } from "../logger";
+import { Metadata, ServiceMetadata } from "../metadata";
+import { Context } from "../types";
 
 export interface Service {
     log?: Logger;
@@ -26,7 +15,7 @@ export function Service(name?: string) {
         let meta = ServiceMetadata.get(type);
         meta.name = meta.service = name;
         for (let x of Object.keys(meta.permissions)) meta.permissions[x].service = name;
-        for (let x of Object.keys(meta.restMetadata)) meta.restMetadata[x].service = name;
+        for (let x of Object.keys(meta.httpMetadata)) meta.httpMetadata[x].service = name;
         for (let x of Object.keys(meta.remoteMetadata)) meta.remoteMetadata[x].service = name;
         for (let x of Object.keys(meta.bindingMetadata)) meta.bindingMetadata[x].service = name;
         for (let x of Object.keys(meta.eventMetadata)) meta.eventMetadata[x].forEach(h => h.service = name);

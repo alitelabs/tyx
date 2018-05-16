@@ -1,14 +1,6 @@
-import "../env";
-
-import {
-    ServiceMetadata
-} from "../metadata";
-
-import {
-    Service
-} from "../decorators";
-
+import { Service } from "../decorators";
 import { Logger } from "../logger";
+import { ServiceMetadata } from "../metadata";
 
 export abstract class BaseService implements Service {
     public readonly log: Logger;

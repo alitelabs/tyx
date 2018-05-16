@@ -1,6 +1,4 @@
-import "../env";
-
-export interface Metadata  {
+export interface Metadata {
     name: string;
     dependencies?: Record<string, DependencyMetadata>;
 }
@@ -12,7 +10,7 @@ export namespace Metadata {
         let type: any = null;
         if (typeof target === "function") type = target;
         else if (typeof target === "object") type = target.constructor;
-        if (type && !type[$metadata] && init !== false) type[$metadata] = { };
+        if (type && !type[$metadata] && init !== false) type[$metadata] = {};
         return type && type[$metadata];
     }
 

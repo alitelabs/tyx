@@ -1,28 +1,9 @@
-import "../env";
-
-import {
-    RemoteCall
-} from "../types";
-
-import {
-    ProxyMetadata
-} from "../metadata";
-
-import {
-    Proxy
-} from "../decorators";
-
-import {
-    Configuration
-} from "./config";
-
-import {
-    Security
-} from "./security";
-
-import {
-    Logger
-} from "../logger";
+import { Proxy } from "../decorators";
+import { Logger } from "../logger";
+import { ProxyMetadata } from "../metadata";
+import { RemoteRequest } from "../types";
+import { Configuration } from "./config";
+import { Security } from "./security";
 
 export abstract class BaseProxy implements Proxy {
 
@@ -45,7 +26,7 @@ export abstract class BaseProxy implements Proxy {
             let type: ("remote" | "internal") = "remote";
             let appId = ProxyMetadata.application(this) || this.config.appId;
             if (this.config.appId === appId) type = "internal";
-            let call: RemoteCall = {
+            let call: RemoteRequest = {
                 type,
                 application: appId,
                 service: ProxyMetadata.service(this),
@@ -67,7 +48,7 @@ export abstract class BaseProxy implements Proxy {
         }
     }
 
-    protected abstract async token(call: RemoteCall): Promise<string>;
+    protected abstract async token(call: RemoteRequest): Promise<string>;
 
-    protected abstract async invoke(call: RemoteCall): Promise<any>;
+    protected abstract async invoke(call: RemoteRequest): Promise<any>;
 }

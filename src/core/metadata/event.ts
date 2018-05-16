@@ -1,5 +1,3 @@
-import "../env";
-
 import { EventAdapter } from "../types";
 
 export interface EventMetadata {
