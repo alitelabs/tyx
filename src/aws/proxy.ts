@@ -1,24 +1,9 @@
-import {
-    RemoteRequest
-} from "../core/types";
-
-import {
-    ProxyMetadata
-} from "../core/metadata";
-
-import {
-    BaseProxy
-} from "../core/base";
-
-import {
-    InternalServerError
-} from "../core/errors";
-
-import {
-    LambdaError
-} from "./error";
-
 import { Lambda } from "aws-sdk";
+import { BaseProxy } from "../base";
+import { InternalServerError } from "../errors";
+import { ProxyMetadata } from "../metadata";
+import { RemoteRequest } from "../types";
+import { LambdaError } from "./error";
 
 export abstract class LambdaProxy extends BaseProxy {
     private lambda: Lambda;

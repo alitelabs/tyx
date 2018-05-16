@@ -1,18 +1,16 @@
 
 import { Express, Request, Response } from "express";
 import { Server, createServer } from "http";
-import { ContainerPool } from "../core/container";
-import { InternalServerError } from "../core/errors";
-import { LogLevel } from "../core/logger";
-import { HttpMethod, HttpRequest } from "../core/types";
-import { HttpUtils, Utils } from "../core/utils";
+import { ContainerPool } from "../container";
+import { InternalServerError } from "../errors";
+import { LogLevel } from "../logger";
+import { HttpMethod, HttpRequest } from "../types";
+import { HttpUtils, Utils } from "../utils";
 
 import express = require("express");
 import BodyParser = require("body-parser");
 
-export {
-    Express
-};
+export { Express };
 
 export class ExpressContainer extends ContainerPool {
 

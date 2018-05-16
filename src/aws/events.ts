@@ -1,11 +1,5 @@
-import {
-    EventAdapter
-} from "../core/types";
-
-import {
-    Event,
-    Internal
-} from "../core/decorators";
+import { Event, Internal } from "../decorators";
+import { EventAdapter } from "../types";
 
 export function S3Event(bucket: string, action?: string, filter?: string, adapter?: EventAdapter) {
     return Event("aws:s3", bucket, action, filter, adapter, Internal);

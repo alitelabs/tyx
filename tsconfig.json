@@ -4,7 +4,9 @@
         "lib": [
             "es2015",
             "es2016",
-            "es2017"
+            "es2017",
+            "esnext.asynciterable",
+            "esnext.array"
         ],
         "module": "commonjs",
         "moduleResolution": "node",
@@ -16,9 +18,9 @@
         "sourceMap": true,
         "noImplicitAny": false,
         "declaration": true,
+        "stripInternal": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
-        "stripInternal": true,
         "pretty": true,
         "strictNullChecks": false,
         "noUnusedLocals": true,

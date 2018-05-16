@@ -1,4 +1,4 @@
-import { ApiError, InternalServerError } from "../core/errors";
+import { ApiError, InternalServerError } from "../errors";
 
 export class LambdaError extends Error {
     constructor(error: any) {

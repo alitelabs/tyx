@@ -1,18 +1,14 @@
-export * from "./core";
+import "reflect-metadata";
+if (Symbol["asyncIterator"] === undefined) ((Symbol as any)["asyncIterator"]) = Symbol.for("asyncIterator");
+
+export * from "./types";
+export * from "./metadata";
+export * from "./decorators";
+export * from "./logger";
+export * from "./base";
+export * from "./errors";
+export * from "./utils";
+export * from "./container";
 export * from "./aws";
 export * from "./express";
-
-// Compatibility
-
-// export {
-//     HttpAdapter as RestAdapter,
-//     HttpBinder as RestBinder,
-//     HttpCall as RestCall,
-//     HttpContentType as RestContentType,
-//     HttpHandler as RestHandler,
-//     HttpHeader as RestHeader,
-//     HttpMetadata as RestMetadata,
-//     HttpMultipart as RestMultipart,
-//     HttpResponse as RestResult,
-//     HttpUtils as RestUtils
-// } from "./core";
+export * from "./toolkit";

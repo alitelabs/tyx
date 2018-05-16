@@ -1,15 +1,8 @@
-import {
-    Context,
-    HttpRequest,
-    HttpResponse
-} from "../core/types";
-
-import {
-    BaseService
-} from "../core/base";
-
-import { Server } from "http";
 import { Express } from "express";
+import { Server } from "http";
+import { BaseService } from "../base";
+import { Context, HttpRequest, HttpResponse } from "../types";
+
 export { Express };
 
 import awsServerlessExpress = require("aws-serverless-express");
