@@ -10,7 +10,7 @@
         ],
         "module": "commonjs",
         "moduleResolution": "node",
-        // "skipLibCheck": true,
+        "skipLibCheck": true,
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true,
         "emitDecoratorMetadata": true,

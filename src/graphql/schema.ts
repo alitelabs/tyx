@@ -1,12 +1,12 @@
-import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType } from "graphql";
+import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType, GraphQLSchema } from "graphql";
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
 import { ILogger, SchemaDirectiveVisitor, makeExecutableSchema } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
-import { EntityManager } from "typeorm";
 import { EntityMetadata } from "typeorm/metadata/EntityMetadata";
 import { ToolkitArgs, ToolkitQuery } from "./query";
-import { TypeOrm } from "./typeorm";
 import GraphQLJSON = require("graphql-type-json");
+
+export { GraphQLSchema } from "graphql";
 
 // ID: The ID scalar type represents a unique identifier
 // Int: A signed 32‐bit integer.
@@ -57,8 +57,8 @@ export interface EntitySchema {
 export type ToolkitInfo = GraphQLResolveInfo;
 
 export interface ToolkitContext {
-    manager: EntityManager;
-    results: Record<string, any[]>;
+    provider: ToolkitProvider;
+    results?: Record<string, any[]>;
 }
 
 export interface ToolkitResolver {
@@ -121,7 +121,7 @@ export class RelationVisitor extends SchemaDirectiveVisitor {
     }
 }
 
-export class SchemaToolkit {
+export class ToolkitSchema {
     public static SCALARS = {
         Date: GraphQLDate,
         Time: GraphQLTime,
@@ -136,7 +136,7 @@ export class SchemaToolkit {
         relation: RelationVisitor
     };
 
-    public static DEF_SCALARS = Object.keys(SchemaToolkit.SCALARS).map(s => `scalar ${s}`).join("\n");
+    public static DEF_SCALARS = Object.keys(ToolkitSchema.SCALARS).map(s => `scalar ${s}`).join("\n");
 
     public static DEF_DIRECTIVES = back("        ", `
         enum RelationType {
@@ -267,11 +267,11 @@ export class SchemaToolkit {
         return { model, inputs, args: { create, update, keys, search } };
     }
 
-    public executable(logger?: ILogger) {
+    public executable(logger?: ILogger): GraphQLSchema {
         return makeExecutableSchema({
             typeDefs: this.typeDefs(),
-            resolvers: this.resolvers(TypeOrm),
-            schemaDirectives: SchemaToolkit.DIRECTIVES,
+            resolvers: this.resolvers(),
+            schemaDirectives: ToolkitSchema.DIRECTIVES,
             logger
         });
     }
@@ -283,8 +283,8 @@ export class SchemaToolkit {
     }
 
     public typeDefs(): string {
-        return SchemaToolkit.DEF_SCALARS + "\n"
-            + SchemaToolkit.DEF_DIRECTIVES + "\n"
+        return ToolkitSchema.DEF_SCALARS + "\n"
+            + ToolkitSchema.DEF_DIRECTIVES + "\n"
             + Object.values(this.entities).map((s, i) =>
                 `${i ? "extend " : ""}${s.query}\n`
                 + `${i ? "extend " : ""}${s.mutation}\n`
@@ -292,23 +292,23 @@ export class SchemaToolkit {
             ).join("\n\n");
     }
 
-    public resolvers(provider: ToolkitProvider) {
+    public resolvers() {
         let resolvers = { Query: {}, Mutation: {} };
         for (let entry of Object.entries(this.entities)) {
             let target = entry[0];
-            resolvers.Query[`${GET}${target}`] = provider.get.bind(provider, target);
-            resolvers.Query[`${SEARCH}${target}s`] = provider.search.bind(provider, target);
-            resolvers.Mutation[`${CREATE}${target}`] = provider.create.bind(provider, target);
-            resolvers.Mutation[`${UPDATE}${target}`] = provider.update.bind(provider, target);
-            resolvers.Mutation[`${REMOVE}${target}`] = provider.remove.bind(provider, target);
+            resolvers.Query[`${GET}${target}`] = (obj, args, ctx, info) => ctx.provider.get(target, obj, args, ctx, info);
+            resolvers.Query[`${SEARCH}${target}s`] = (obj, args, ctx, info) => ctx.provider.search(target, obj, args, ctx, info);
+            resolvers.Mutation[`${CREATE}${target}`] = (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info);
+            resolvers.Mutation[`${UPDATE}${target}`] = (obj, args, ctx, info) => ctx.provider.update(target, obj, args, ctx, info);
+            resolvers.Mutation[`${REMOVE}${target}`] = (obj, args, ctx, info) => ctx.provider.remove(target, obj, args, ctx, info);
             let resolver = resolvers[target + MODEL] = {};
             for (let item of Object.entries(entry[1].relations)) {
                 let res: ToolkitResolver;
                 let rel = item[0];
                 switch (item[1].type) {
-                    case "oneToMany": res = provider.oneToMany.bind(provider, target, rel); break;
-                    case "manyToOne": res = provider.manyToOne.bind(provider, target, rel); break;
-                    case "oneToOne": res = provider.oneToOne.bind(provider, target, rel); break;
+                    case "oneToMany": res = (obj, args, ctx, info) => ctx.provider.oneToMany(target, rel, obj, args, ctx, info); break;
+                    case "manyToOne": res = (obj, args, ctx, info) => ctx.provider.manyToOne(target, rel, obj, args, ctx, info); break;
+                    case "oneToOne": res = (obj, args, ctx, info) => ctx.provider.oneToOne(target, rel, obj, args, ctx, info); break;
                     default: continue;
                 }
                 resolver[rel] = res;

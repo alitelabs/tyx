@@ -11,4 +11,4 @@ export * from "./utils";
 export * from "./container";
 export * from "./aws";
 export * from "./express";
-export * from "./toolkit";
+export * from "./graphql";

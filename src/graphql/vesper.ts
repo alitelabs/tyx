@@ -1,10 +1,10 @@
-import { EntitySchema, GET, MODEL, SEARCH, SchemaToolkit } from "./schema";
+import { EntitySchema, GET, MODEL, SEARCH, ToolkitSchema } from "./schema";
 
-export default function codegen(schema: SchemaToolkit, folder: string, ext?: string) {
+export default function codegen(schema: ToolkitSchema, folder: string, ext?: string) {
     ext = ext || "gql";
     let fs = require("fs");
     fs.writeFileSync(`${folder}/schema/import.${ext}`,
-        SchemaToolkit.DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + SchemaToolkit.DEF_DIRECTIVES + "\n");
+        ToolkitSchema.DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + ToolkitSchema.DEF_DIRECTIVES + "\n");
     for (let target in schema.entities) {
         let entry = schema.entities[target];
         fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);
