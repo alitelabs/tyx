@@ -1,9 +1,10 @@
 import { Roles } from "../types";
 
-export interface PermissionMetadata {
+export interface MethodMetadata {
     service?: string;
     method: string;
-    name: string;
+    access: string;
     roles: Roles;
+    args?: any;
+    returns?: string;
 }
-

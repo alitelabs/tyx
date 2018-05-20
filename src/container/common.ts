@@ -29,6 +29,8 @@ export enum ContainerState {
     Busy = 2
 }
 
+export const Container = "container";
+
 export interface Container {
     state: ContainerState;
     metadata: ContainerMetadata;

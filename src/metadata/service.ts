@@ -2,13 +2,13 @@ import { Service } from "../decorators";
 import { Metadata } from "./common";
 import { EventMetadata } from "./event";
 import { BindingMetadata, HttpMetadata } from "./http";
+import { MethodMetadata } from "./method";
 import { RemoteMetadata } from "./remote";
-import { PermissionMetadata } from "./security";
 
 export interface ServiceMetadata extends Metadata {
     service: string;
 
-    permissions: Record<string, PermissionMetadata>;
+    permissions: Record<string, MethodMetadata>;
     remoteMetadata: Record<string, RemoteMetadata>;
     httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
@@ -54,7 +54,7 @@ export namespace ServiceMetadata {
         return get(target).bindingMetadata || {};
     }
 
-    export function permissions(target: Function | Object): Record<string, PermissionMetadata> {
+    export function methodMetadata(target: Function | Object): Record<string, MethodMetadata> {
         return get(target).permissions || {};
     }
 }

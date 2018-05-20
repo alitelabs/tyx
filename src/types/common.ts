@@ -1,10 +1,10 @@
-import { PermissionMetadata } from "../metadata/security";
+import { MethodMetadata } from "../metadata/method";
 import { AuthInfo } from "./security";
 
 export interface Context {
     requestId: string;
     auth: AuthInfo;
-    permission: PermissionMetadata;
+    permission: MethodMetadata;
 }
 
 export interface Request {

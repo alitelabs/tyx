@@ -135,7 +135,7 @@ export function ContentType(type: string | typeof HttpResponse) {
     };
 }
 
-function resolvePath(root: any, param: Function | string): any {
+export function resolvePath(root: any, param: Function | string): any {
     if (typeof param === "function") return param(root);
     if (!param) return undefined;
     param = param.toString();

@@ -1,4 +1,4 @@
-import { HttpAdapter, ArgBinder, HttpCode } from "../types";
+import { ArgBinder, HttpAdapter, HttpCode } from "../types";
 
 export interface HttpMetadata {
     service?: string;

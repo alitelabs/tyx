@@ -4,7 +4,8 @@
         {
             "identifier": "build",
             "type": "npm",
-            "script": "build",
+            "script": "watch",
+            "isBackground": true,
             "presentation": {
                 "echo": true,
                 "reveal": "silent",
@@ -12,7 +13,7 @@
                 "panel": "shared"
             },
             "problemMatcher": [
-                "$tsc"
+                "$tsc-watch"
             ],
             "group": {
                 "kind": "build",

@@ -41,7 +41,7 @@ export class ContainerInstance implements Container {
         this.httpHandlers = {};
         this.eventHandlers = {};
         this.imetadata = {
-            permissions: {},
+            methods: {},
             httpMetadata: {},
             remoteMetadata: {},
             eventMetadata: {}
@@ -138,12 +138,12 @@ export class ContainerInstance implements Container {
         let serviceName = ServiceMetadata.service(service);
         this.log.info("Publish: %s", serviceName);
 
-        let permissionMetadata = ServiceMetadata.permissions(service);
-        let permissions = Object.keys(permissionMetadata);
-        permissions.forEach(method => {
-            let meta = permissionMetadata[method];
+        let methodMetadata = ServiceMetadata.methodMetadata(service);
+        let methods = Object.keys(methodMetadata);
+        methods.forEach(method => {
+            let meta = methodMetadata[method];
             let key = meta.service + "." + method;
-            this.imetadata.permissions[key] = meta;
+            this.imetadata.methods[key] = meta;
         });
 
         let remoteMetadata = ServiceMetadata.remoteMetadata(service);
@@ -290,6 +290,7 @@ export class ContainerInstance implements Container {
             let localId = dep.resource;
             let proxyId = (dep.application || this.application) + ":" + localId;
             let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
+            if (dep.resource === Container) resolved = this;
             let depId = (dep.application ? dep.application + ":" : "") + localId;
             if (!resolved)
                 throw new InternalServerError(`Unresolved dependency [${depId}] on [${service.constructor.name}.${pid}]`);
@@ -315,7 +316,7 @@ export class ContainerInstance implements Container {
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
 
             let permissionId = req.service + "." + req.method;
-            let permission = permissionId && this.imetadata.permissions[permissionId];
+            let permission = permissionId && this.imetadata.methods[permissionId];
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
             let handler: RemoteHandler = this.remoteHandlers[permissionId];
@@ -379,7 +380,7 @@ export class ContainerInstance implements Container {
                 req.method = target.method;
 
                 let permissionId = req.service + "." + req.method;
-                let permission = permissionId && this.imetadata.permissions[permissionId];
+                let permission = permissionId && this.imetadata.methods[permissionId];
                 if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
                 let ctx = await this.security.eventAuth(req, permission);
@@ -439,7 +440,7 @@ export class ContainerInstance implements Container {
             req.method = target.method;
 
             let permissionId = req.service + "." + req.method;
-            let permission = permissionId && this.imetadata.permissions[permissionId];
+            let permission = permissionId && this.imetadata.methods[permissionId];
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
             this.istate = ContainerState.Busy;

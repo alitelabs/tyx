@@ -1,7 +1,7 @@
 import { Inject, Service } from "../decorators";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
-import { PermissionMetadata } from "../metadata";
+import { MethodMetadata } from "../metadata";
 import { AuthInfo, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
 import { Utils } from "../utils";
 import { Configuration } from "./config";
@@ -12,9 +12,9 @@ import MS = require("ms");
 export const Security = "security";
 
 export interface Security extends Service {
-    httpAuth(req: HttpRequest, permission: PermissionMetadata): Promise<Context>;
-    remoteAuth(req: RemoteRequest, permission: PermissionMetadata): Promise<Context>;
-    eventAuth(req: EventRequest, permission: PermissionMetadata): Promise<Context>;
+    httpAuth(req: HttpRequest, permission: MethodMetadata): Promise<Context>;
+    remoteAuth(req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
+    eventAuth(req: EventRequest, permission: MethodMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;
 }
 
@@ -27,7 +27,7 @@ export abstract class BaseSecurity implements Security {
 
     protected abstract config: Configuration;
 
-    public async httpAuth(req: HttpRequest, permission: PermissionMetadata): Promise<Context> {
+    public async httpAuth(req: HttpRequest, permission: MethodMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
@@ -75,7 +75,7 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(req: RemoteRequest, permission: PermissionMetadata): Promise<Context> {
+    public async remoteAuth(req: RemoteRequest, permission: MethodMetadata): Promise<Context> {
         if (!permission.roles.Remote && !permission.roles.Internal)
             throw new Forbidden(`Remote requests not allowed for method [${permission.method}]`);
         let ctx = await this.verify(req.requestId, req.token, permission, null);
@@ -84,7 +84,7 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async eventAuth(req: EventRequest, permission: PermissionMetadata): Promise<Context> {
+    public async eventAuth(req: EventRequest, permission: MethodMetadata): Promise<Context> {
         if (!permission.roles.Internal)
             throw new Forbidden(`Internal events not allowed for method [${permission.method}]`);
         let ctx: Context = {
@@ -134,7 +134,7 @@ export abstract class BaseSecurity implements Security {
         return token;
     }
 
-    protected async verify(requestId: string, token: string, permission: PermissionMetadata, ipAddress: string): Promise<Context> {
+    protected async verify(requestId: string, token: string, permission: MethodMetadata, ipAddress: string): Promise<Context> {
         let jwt: WebToken, secret: string;
         try {
             if (token && token.startsWith("Bearer")) token = token.substring(6).trim();

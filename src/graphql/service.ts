@@ -1,8 +1,9 @@
 import { runHttpQuery } from "apollo-server-core";
 import { GraphQLSchema } from "graphql";
 import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html";
+import { Container } from "../container";
 import { BaseService } from "../base";
-import { ContentType, Get, Post } from "../decorators";
+import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
@@ -19,6 +20,9 @@ export interface GraphQLApi {
 }
 
 export abstract class BaseGraphQLService extends BaseService implements GraphQLApi {
+
+    @Inject(Container)
+    protected container: Container;
 
     protected schema: ToolkitSchema;
     private executable: GraphQLSchema;
