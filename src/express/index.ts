@@ -1,7 +1,4 @@
-export {
-    ExpressService
-} from "./service";
+import "reflect-metadata";
 
-export {
-    ExpressContainer
-} from "./container";
+export { ExpressService } from "./service";
+export { ExpressContainer } from "./container";

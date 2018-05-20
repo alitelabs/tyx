@@ -1,3 +1,5 @@
+import "reflect-metadata";
+
 export * from "./service";
 export * from "./proxy";
 export * from "./remote";

@@ -1,14 +1,9 @@
 import { Proxy, Service } from "../decorators";
 import { ContainerMetadata } from "../metadata";
-import { Context, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
-
-export type ObjectType<T> = {
-    new(): T;
-} | Function;
-
-export type Constructor<T> = T & {
-    new(): T
-};
+import { Context } from "./common";
+import { EventRequest, EventResult } from "./event";
+import { HttpRequest, HttpResponse } from "./http";
+import { RemoteRequest, RemoteResponse } from "./proxy";
 
 export interface HttpHandler {
     (ctx: Context, req: HttpRequest): Promise<HttpResponse>;
@@ -43,9 +38,9 @@ export interface Container {
     publish(service: Function, ...args: any[]): this;
     publish(service: Service): this;
 
-    prepare(): Container;
+    prepare(): Promise<Container>;
 
     httpRequest(req: HttpRequest): Promise<HttpResponse>;
-    remoteRequest(req: RemoteRequest): Promise<any>;
     eventRequest(req: EventRequest): Promise<EventResult>;
+    remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;
 }

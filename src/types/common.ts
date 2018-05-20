@@ -1,11 +1,25 @@
-import { MethodMetadata } from "../metadata/method";
+import { MethodMetadata } from "../metadata";
+import { Container } from "./container";
 import { AuthInfo } from "./security";
 
-export interface Context {
-    requestId: string;
-    auth: AuthInfo;
-    permission: MethodMetadata;
+export type ObjectType<T> = {
+    new(): T;
+} | Function;
+
+export type Constructor<T> = T & {
+    new(): T
+};
+
+export class Context {
+    public container: Container;
+    public requestId: string;
+    public permission: MethodMetadata;
+    public auth: AuthInfo;
+    constructor(ctx: IContext) {
+        Object.assign(this, ctx);
+    }
 }
+export interface IContext extends Context { }
 
 export interface Request {
     type: "remote" | "internal" | "http" | "event" | "graphql";

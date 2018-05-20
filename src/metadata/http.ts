@@ -1,6 +1,7 @@
 import { ArgBinder, HttpAdapter, HttpCode } from "../types";
 
 export interface HttpMetadata {
+    api?: string;
     service?: string;
     route: string;
     method: string;
@@ -12,6 +13,7 @@ export interface HttpMetadata {
 }
 
 export interface BindingMetadata {
+    api?: string;
     service?: string;
     method: string;
     contentType?: string;

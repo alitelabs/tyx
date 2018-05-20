@@ -23,10 +23,10 @@ export class ExpressContainer extends ContainerPool {
         this.basePath = basePath;
     }
 
-    public start(port?: number): Server {
+    public async start(port?: number): Promise<Server> {
         port = port || 5000;
 
-        this.prepare();
+        await this.prepare();
 
         this.app = express();
         this.app.use(BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
@@ -52,7 +52,7 @@ export class ExpressContainer extends ContainerPool {
             parts = parts.map(p => p.replace("}", ""));
             let path = parts.join(":");
 
-            this.log.info("Add route: %s >> %s", hd, path);
+            // this.log.info("Add route: %s >> %s", hd, path);
 
             let route = `${httpMethod} ${path}`;
             if (used[route]) continue;
@@ -60,7 +60,7 @@ export class ExpressContainer extends ContainerPool {
             if (this.basePath) path = this.basePath + path;
             paths.push(`${httpMethod} - http://localhost:${port}${path}`);
 
-            this.log.info("Registered route: %s", route);
+            // this.log.info("Registered route: %s", route);
 
             let adapter = (req: Request, res: Response) => {
                 this.handle(resource, req, res);

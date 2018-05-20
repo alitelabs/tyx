@@ -1,11 +1,10 @@
 import { runHttpQuery } from "apollo-server-core";
 import { GraphQLSchema } from "graphql";
 import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html";
-import { Container } from "../container";
 import { BaseService } from "../base";
 import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
-import { Context, HttpRequest, HttpResponse } from "../types";
+import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 import GraphiQL = require("apollo-server-module-graphiql");
 

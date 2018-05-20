@@ -5,3 +5,7 @@ export interface RemoteRequest extends Request {
     token: string;
     args: any[];
 }
+
+export interface RemoteResponse {
+    [key: string]: any;
+}

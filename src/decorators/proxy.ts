@@ -4,14 +4,13 @@ import { Service } from "./service";
 export interface Proxy extends Service {
 }
 
-export function Proxy(service: string, application?: string, functionName?: string) {
-    return function (type: Function) {
-        functionName = functionName || (service + "-function");
-        let meta = ProxyMetadata.get(type);
-        meta.name = service;
+export function Proxy(service?: string, application?: string, functionName?: string): ClassDecorator {
+    return (target) => {
+        let meta = ProxyMetadata.get(target);
+        meta.name = service || meta.name || target.name;
+        meta.proxy = meta.name;
         meta.application = application;
-        meta.functionName = functionName;
-        meta.proxy = service;
+        meta.functionName = functionName || (meta.name + "-function");;
     };
 }
 

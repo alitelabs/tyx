@@ -1,8 +1,9 @@
 import { EventAdapter } from "../types";
 
 export interface EventMetadata {
-    route: string;
+    api?: string;
     service?: string;
+    route: string;
     method: string;
     source: string;
     resource: string;

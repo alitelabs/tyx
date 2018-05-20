@@ -3,8 +3,7 @@ import { Proxy, Service } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
 import { ContainerMetadata } from "../metadata";
-import { EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
-import { Container, ContainerState } from "./common";
+import { Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 import { ContainerInstance } from "./instance";
 
 export class ContainerPool implements Container {
@@ -20,6 +19,8 @@ export class ContainerPool implements Container {
 
     private head: ContainerInstance;
     private pool: ContainerInstance[];
+
+    private static count = 0;
 
     constructor(application: string, name?: string) {
         this.application = application;
@@ -68,15 +69,15 @@ export class ContainerPool implements Container {
         return this;
     }
 
-    public prepare(): ContainerInstance {
+    public async prepare(): Promise<ContainerInstance> {
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
-            instance = new ContainerInstance(this.application, this.pool.length.toString());
+            instance = new ContainerInstance(this.application, "" + ContainerPool.count++);
             // TODO: Identity
 
             this.registers.forEach(u => instance.register(u.target, ...u.args));
             this.publishes.forEach(p => instance.publish(p.service, ...p.args));
-            instance.prepare();
+            await instance.prepare();
 
             this.pool.push(instance);
             this.head = this.head || instance;
@@ -93,19 +94,19 @@ export class ContainerPool implements Container {
 
     public async remoteRequest(req: RemoteRequest): Promise<any> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-        let instance = this.prepare();
+        let instance = await this.prepare();
         return instance.remoteRequest(req);
     }
 
     public async eventRequest(req: EventRequest): Promise<EventResult> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-        let instance = this.prepare();
+        let instance = await this.prepare();
         return instance.eventRequest(req);
     }
 
     public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
         if (this.cstate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-        let instance = this.prepare();
+        let instance = await this.prepare();
         return instance.httpRequest(req);
     }
 }

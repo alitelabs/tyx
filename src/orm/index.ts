@@ -1,4 +1,5 @@
-export * from "typeorm";
-export { EntityMetadata } from "typeorm/metadata/EntityMetadata";
-export { RelationMetadata } from "typeorm/metadata/RelationMetadata";
+import "reflect-metadata";
+
 export * from "./decorators";
+export * from "./metadata";
+export * from "./manager";

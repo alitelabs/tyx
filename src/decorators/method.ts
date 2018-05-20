@@ -4,48 +4,57 @@ import { Roles } from "../types";
 import * as Utils from "../utils/misc";
 
 export function Public() {
-    return Descriptor(Public.name, { Public: true });
+    return AuthDecorator(Public.name, { Public: true, Internal: true, External: true, Remote: true });
 }
 
 export function Debug() {
-    return Descriptor(Debug.name, { Debug: true });
+    return AuthDecorator(Debug.name, { Debug: true, Internal: true, External: false, Remote: true });
 }
 
 export function Private() {
-    return Descriptor(Private.name, { Internal: false, Remote: false });
+    return AuthDecorator(Private.name, { Internal: false, Remote: false, External: false });
 }
 
 export function Internal() {
-    return Descriptor(Internal.name, { Internal: true, Remote: false });
+    return AuthDecorator(Internal.name, { Internal: true, External: false, Remote: false });
+}
+
+export function External() {
+    return AuthDecorator(External.name, { Internal: true, External: true, Remote: true });
 }
 
 export function Remote() {
-    return Descriptor(Remote.name, { Internal: true, Remote: true });
+    return AuthDecorator(Remote.name, { Internal: true, External: false, Remote: true });
 }
 
-export function Rest<R extends Roles>(roles: R) {
-    return Descriptor(Rest.name, roles);
+export function Auth<R extends Roles>(roles: R) {
+    return AuthDecorator(Auth.name, roles);
 }
 
 export function Query<R extends Roles>(roles: R) {
-    return Descriptor(Query.name, roles);
+    return AuthDecorator(Query.name, roles);
 }
 
 export function Command<R extends Roles>(roles: R) {
-    return Descriptor(Command.name, roles);
+    return AuthDecorator(Command.name, roles);
 }
 
-function Descriptor(access: string, roles: Roles) {
+function AuthDecorator(access: string, roles: Roles): MethodDecorator {
     access = access.toLowerCase();
 
-    return function (type: Object, propertyKey: string, descriptor: PropertyDescriptor) {
-        // roles.Root = roles.Root === undefined ? true : !!roles.Root;
+    return (target, propertyKey, descriptor) => {
+        // TODO: Throw TypeError on symbol
+        propertyKey = propertyKey.toString();
+
+        let metadata = ServiceMetadata.get(target);
+        let prev = metadata.methodMetadata[propertyKey] || { roles: {} };
+
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
 
-        let names = Utils.getArgs(descriptor.value)
-        let types = Reflect.getMetadata("design:paramtypes", type, propertyKey);
-        let returns = Reflect.getMetadata("design:returntype", type, propertyKey);
+        let names = Utils.getArgs(descriptor.value as any)
+        let types = Reflect.getMetadata("design:paramtypes", target, propertyKey);
+        let returns = Reflect.getMetadata("design:returntype", target, propertyKey);
 
         let args = {};
         names.forEach((a, i) => args[a] = "" + types[i]);
@@ -54,16 +63,14 @@ function Descriptor(access: string, roles: Roles) {
             service: undefined,
             method: propertyKey,
             access: access.toLowerCase(),
-            roles,
+            roles: { ...prev.roles, ...roles },
             args,
             returns: "" + returns
         };
+        metadata.methodMetadata[propertyKey] = method;
 
-        let metadata = ServiceMetadata.get(type);
-        metadata.permissions[propertyKey] = method;
-
-        if (roles.Internal || roles.Remote)
-            Export()(type, propertyKey, descriptor);
+        if (roles.Internal || roles.Remote || roles.External)
+            Export()(target, propertyKey, descriptor);
     };
 }
 

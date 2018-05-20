@@ -1,4 +1,4 @@
-import { Proxy } from "../decorators";
+import { Proxy, Inject } from "../decorators";
 import { Logger } from "../logger";
 import { ProxyMetadata } from "../metadata";
 import { RemoteRequest } from "../types";
@@ -8,16 +8,15 @@ import { Security } from "./security";
 export abstract class BaseProxy implements Proxy {
 
     public readonly log: Logger;
+
+    @Inject(Configuration)
     protected config: Configuration;
+
+    @Inject(Security)
     protected security: Security;
 
     constructor() {
         this.log = Logger.get(ProxyMetadata.service(this), this);
-    }
-
-    public initialize(config: Configuration, security: Security) {
-        this.config = config;
-        this.security = security;
     }
 
     protected async proxy(method: Function, params: IArguments): Promise<any> {

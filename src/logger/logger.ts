@@ -1,3 +1,4 @@
+import { Inject } from "..";
 import { ConsoleLogger } from "./console";
 
 export enum LogLevel {
@@ -38,6 +39,11 @@ export interface Logger {
     timeEnd(start: [number, number], message: any, ...args: any[]): void;
 }
 
+
+export function Logger(): PropertyDecorator {
+    return Inject("logger");
+}
+
 export namespace Logger {
     export const sys: Logger = new ConsoleLogger("tyx", "log");
 
@@ -45,5 +51,4 @@ export namespace Logger {
         return new ConsoleLogger(logName, emitter);
     }
 }
-
 

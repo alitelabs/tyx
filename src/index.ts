@@ -9,6 +9,7 @@ export * from "./base";
 export * from "./errors";
 export * from "./utils";
 export * from "./container";
+export * from "./orm";
 export * from "./aws";
 export * from "./express";
 export * from "./graphql";

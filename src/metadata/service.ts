@@ -8,7 +8,7 @@ import { RemoteMetadata } from "./remote";
 export interface ServiceMetadata extends Metadata {
     service: string;
 
-    permissions: Record<string, MethodMetadata>;
+    methodMetadata: Record<string, MethodMetadata>;
     remoteMetadata: Record<string, RemoteMetadata>;
     httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
@@ -25,7 +25,7 @@ export namespace ServiceMetadata {
     export function get(target: Function | Object, init?: boolean): ServiceMetadata {
         let meta = Metadata.get(target, init) as ServiceMetadata;
         if (init !== false) {
-            meta.permissions = meta.permissions || {};
+            meta.methodMetadata = meta.methodMetadata || {};
             meta.remoteMetadata = meta.remoteMetadata || {};
             meta.httpMetadata = meta.httpMetadata || {};
             meta.eventMetadata = meta.eventMetadata || {};
@@ -55,6 +55,6 @@ export namespace ServiceMetadata {
     }
 
     export function methodMetadata(target: Function | Object): Record<string, MethodMetadata> {
-        return get(target).permissions || {};
+        return get(target).methodMetadata || {};
     }
 }

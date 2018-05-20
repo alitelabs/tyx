@@ -1,6 +1,7 @@
 export interface Roles {
     Public?: boolean;
     Internal?: boolean;
+    External?: boolean;
     Remote?: boolean;
     Debug?: boolean;
     Application?: never;

@@ -8,6 +8,8 @@ export interface Configuration {
     appId: string;
     stage: string;
 
+    database: string;
+
     logLevel: LogLevel;
     resources: Record<string, string>;
     aliases: Record<string, string>;
@@ -42,6 +44,8 @@ export abstract class BaseConfiguration implements Configuration {
     get appId(): string { return this._appId; }
 
     get stage(): string { return this.config.STAGE || "local"; }
+
+    get database(): string { return this.config.DATABASE; }
 
     get logLevel(): LogLevel {
         switch (this.config.LOG_LEVEL) {

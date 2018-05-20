@@ -2,7 +2,7 @@ import { Inject, Service } from "../decorators";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
 import { MethodMetadata } from "../metadata";
-import { AuthInfo, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
+import { AuthInfo, Container, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
 import { Utils } from "../utils";
 import { Configuration } from "./config";
 
@@ -12,9 +12,9 @@ import MS = require("ms");
 export const Security = "security";
 
 export interface Security extends Service {
-    httpAuth(req: HttpRequest, permission: MethodMetadata): Promise<Context>;
-    remoteAuth(req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
-    eventAuth(req: EventRequest, permission: MethodMetadata): Promise<Context>;
+    httpAuth(container: Container, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
+    remoteAuth(container: Container, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
+    eventAuth(container: Container, req: EventRequest, permission: MethodMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;
 }
 
@@ -27,21 +27,22 @@ export abstract class BaseSecurity implements Security {
 
     protected abstract config: Configuration;
 
-    public async httpAuth(req: HttpRequest, permission: MethodMetadata): Promise<Context> {
+    public async httpAuth(container: Container, req: HttpRequest, permission: MethodMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
 
         if (!permission.roles.Public && !permission.roles.Debug) {
             if (!token) throw new Unauthorized("Missing authorization token");
-            let ctx = await this.verify(req.requestId, token, permission, req.sourceIp);
-            ctx.auth = this.renew(ctx.auth);
-            return ctx;
+            let auth = await this.verify(req.requestId, token, permission, req.sourceIp);
+            auth = this.renew(auth);
+            return new Context({ container, requestId: req.requestId, permission, auth });
         }
 
         if (permission.roles.Public && token) this.log.debug("Ignore token on public permission");
 
-        let ctx: Context = {
+        let ctx = new Context({
+            container,
             requestId: req.requestId,
             permission,
             auth: {
@@ -57,7 +58,7 @@ export abstract class BaseSecurity implements Security {
                 token,
                 renewed: false
             }
-        };
+        });
 
         if (permission.roles.Debug) {
             if (req.sourceIp !== "127.0.0.1" && req.sourceIp !== "::1")
@@ -65,7 +66,7 @@ export abstract class BaseSecurity implements Security {
             ctx.auth.subject = "user:debug";
             ctx.auth.role = "Debug";
             if (token) try {
-                ctx = await this.verify(req.requestId, token, permission, req.sourceIp);
+                ctx.auth = await this.verify(req.requestId, token, permission, req.sourceIp);
                 ctx.auth = this.renew(ctx.auth);
             } catch (err) {
                 this.log.debug("Ignore invalid token on debug permission", err);
@@ -75,19 +76,20 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(req: RemoteRequest, permission: MethodMetadata): Promise<Context> {
+    public async remoteAuth(container: Container, req: RemoteRequest, permission: MethodMetadata): Promise<Context> {
         if (!permission.roles.Remote && !permission.roles.Internal)
             throw new Forbidden(`Remote requests not allowed for method [${permission.method}]`);
-        let ctx = await this.verify(req.requestId, req.token, permission, null);
-        if (ctx.auth.remote && !permission.roles.Remote)
+        let auth = await this.verify(req.requestId, req.token, permission, null);
+        if (auth.remote && !permission.roles.Remote)
             throw new Unauthorized(`Internal request allowed only for method [${permission.method}]`);
-        return ctx;
+        return new Context({ container, requestId: req.requestId, permission, auth });
     }
 
-    public async eventAuth(req: EventRequest, permission: MethodMetadata): Promise<Context> {
+    public async eventAuth(container: Container, req: EventRequest, permission: MethodMetadata): Promise<Context> {
         if (!permission.roles.Internal)
             throw new Forbidden(`Internal events not allowed for method [${permission.method}]`);
-        let ctx: Context = {
+        let ctx = new Context({
+            container,
             requestId: req.requestId,
             permission,
             auth: {
@@ -103,7 +105,7 @@ export abstract class BaseSecurity implements Security {
                 token: null,
                 renewed: false,
             }
-        };
+        });
         return ctx;
     }
 
@@ -134,7 +136,7 @@ export abstract class BaseSecurity implements Security {
         return token;
     }
 
-    protected async verify(requestId: string, token: string, permission: MethodMetadata, ipAddress: string): Promise<Context> {
+    protected async verify(requestId: string, token: string, permission: MethodMetadata, ipAddress: string): Promise<AuthInfo> {
         let jwt: WebToken, secret: string;
         try {
             if (token && token.startsWith("Bearer")) token = token.substring(6).trim();
@@ -162,29 +164,24 @@ export abstract class BaseSecurity implements Security {
         if (expiry < Date.now())
             throw new Unauthorized(`Token: expired [${new Date(expiry).toISOString()}]`);
 
-        let ctx: Context = {
-            requestId,
-            permission,
-            auth: {
-                tokenId: jwt.jti,
-                subject: jwt.sub,
-                issuer: jwt.iss,
-                audience: jwt.aud,
-                remote: jwt.iss !== jwt.aud,
-                userId: jwt.oid,
-                role: jwt.role,
-                scope: jwt.scope,
-                email: jwt.email,
-                name: jwt.name,
-                ipAddress: jwt.ipaddr,
-                serial: new Date(jwt.ist * 1000),
-                issued: new Date(jwt.iat * 1000),
-                expires: new Date(jwt.exp * 1000),
-                token,
-                renewed: false
-            }
+        return {
+            tokenId: jwt.jti,
+            subject: jwt.sub,
+            issuer: jwt.iss,
+            audience: jwt.aud,
+            remote: jwt.iss !== jwt.aud,
+            userId: jwt.oid,
+            role: jwt.role,
+            scope: jwt.scope,
+            email: jwt.email,
+            name: jwt.name,
+            ipAddress: jwt.ipaddr,
+            serial: new Date(jwt.ist * 1000),
+            issued: new Date(jwt.iat * 1000),
+            expires: new Date(jwt.exp * 1000),
+            token,
+            renewed: false
         };
-        return ctx;
     }
 
     protected renew(auth: AuthInfo): AuthInfo {

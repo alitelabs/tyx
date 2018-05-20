@@ -163,11 +163,6 @@ export class LambdaContainer extends ContainerPool {
     }
 
     public export(): LambdaHandler {
-        try {
-            this.prepare();
-        } catch (err) {
-            console.log(err);
-        }
         return (event, context, callback) => {
             this.handler(event, context)
                 .then(res => callback(null, res))
@@ -177,7 +172,7 @@ export class LambdaContainer extends ContainerPool {
 
     private async handler(event: LambdaEvent, context: LambdaContext) {
         try {
-            this.prepare();
+            await this.prepare();
         } catch (err) {
             this.log.error(err);
             return HttpUtils.error(err);

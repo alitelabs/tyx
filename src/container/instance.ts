@@ -1,11 +1,10 @@
-import { BaseConfiguration, BaseProxy, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../base";
+import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../base";
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
 import { BindingMetadata, ContainerMetadata, EventMetadata, HttpMetadata, Metadata, ProxyMetadata, RemoteMetadata, ServiceMetadata } from "../metadata";
-import { Context, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
-import { Container, ContainerState, EventHandler, HttpHandler, ObjectType, RemoteHandler } from "./common";
 
 export class ContainerInstance implements Container {
     private application: string;
@@ -253,7 +252,7 @@ export class ContainerInstance implements Container {
         return handler;
     }
 
-    public prepare(): this {
+    public async prepare(): Promise<this> {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         if (!this.config) {
@@ -265,25 +264,25 @@ export class ContainerInstance implements Container {
             this.log.warn("Using default security service!");
         }
 
-        for (let sid in this.services) {
-            let service = this.services[sid];
-            this.inject(service);
+        Object.values(this.services).forEach(service => this.inject(service));
+        Object.values(this.proxies).forEach(proxy => this.inject(proxy));
+
+        for (let proxy of Object.values(this.proxies)) {
+            if (!proxy.initialize) continue;
+            await proxy.initialize();
         }
 
-        for (let pid in this.proxies) {
-            let proxy = this.proxies[pid];
-            if (proxy instanceof BaseProxy) {
-                proxy.initialize(this.config, this.security);
-            }
-            this.inject(proxy);
+        for (let service of Object.values(this.services)) {
+            if (!service.initialize) continue;
+            await service.initialize();
         }
 
         this.istate = ContainerState.Ready;
-
         return this;
     }
 
     private inject(service: Service) {
+        let name = ServiceMetadata.service(service);
         let dependencies = Metadata.dependencies(service);
         for (let pid in dependencies) {
             let dep = dependencies[pid];
@@ -291,6 +290,7 @@ export class ContainerInstance implements Container {
             let proxyId = (dep.application || this.application) + ":" + localId;
             let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
             if (dep.resource === Container) resolved = this;
+            if (dep.resource === "logger") resolved = Logger.get(name, service);
             let depId = (dep.application ? dep.application + ":" : "") + localId;
             if (!resolved)
                 throw new InternalServerError(`Unresolved dependency [${depId}] on [${service.constructor.name}.${pid}]`);
@@ -323,7 +323,7 @@ export class ContainerInstance implements Container {
             if (!handler) throw this.log.error(new NotFound(`Method not found [${permissionId}]`));
 
             this.istate = ContainerState.Busy;
-            let ctx = await this.security.remoteAuth(req, permission);
+            let ctx = await this.security.remoteAuth(this, req, permission);
             // let ctx = await this.security.localAuth();
 
             try {
@@ -383,7 +383,7 @@ export class ContainerInstance implements Container {
                 let permission = permissionId && this.imetadata.methods[permissionId];
                 if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
-                let ctx = await this.security.eventAuth(req, permission);
+                let ctx = await this.security.eventAuth(this, req, permission);
 
                 try {
                     await this.activate(ctx);
@@ -444,7 +444,7 @@ export class ContainerInstance implements Container {
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
             this.istate = ContainerState.Busy;
-            let ctx = await this.security.httpAuth(req, permission);
+            let ctx = await this.security.httpAuth(this, req, permission);
 
             try {
                 await this.activate(ctx);
