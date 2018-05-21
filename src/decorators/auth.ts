@@ -1,5 +1,4 @@
-import { Export } from "../decorators";
-import { MethodMetadata, ServiceMetadata } from "../metadata";
+import { AuthMetadata, ServiceMetadata } from "../metadata";
 import { Roles } from "../types";
 
 export function Public() {
@@ -42,16 +41,16 @@ export function Command<TR extends Roles>(roles?: TR) {
     return AuthDecorator(Command.name, roles || {}, true);
 }
 
-function AuthDecorator(access: string, roles: Roles, graphql?: boolean): MethodDecorator {
-    access = access.toLowerCase();
+function AuthDecorator(auth: string, roles: Roles, graphql?: boolean): MethodDecorator {
+    auth = auth.toLowerCase();
 
     return (target, propertyKey, descriptor) => {
         // TODO: Throw TypeError on symbol
         propertyKey = propertyKey.toString();
         graphql = !!graphql;
 
-        let meta = MethodMetadata.define(target, propertyKey, descriptor);
-        if (!graphql) meta.access = meta.access || access;
+        let meta = AuthMetadata.define(target, propertyKey, descriptor);
+        meta.auth = graphql ? auth : (meta.auth || auth);
         meta.graphql = !!meta.graphql || graphql;
         roles = meta.roles = { ...meta.roles, ...roles };
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
@@ -59,9 +58,7 @@ function AuthDecorator(access: string, roles: Roles, graphql?: boolean): MethodD
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
 
         let service = ServiceMetadata.get(target);
-        service.methodMetadata[propertyKey] = meta;
-        if (roles.Internal || roles.Remote || roles.External)
-            Export()(target, propertyKey, descriptor);
+        service.authMetadata[propertyKey] = meta;
     };
 }
 

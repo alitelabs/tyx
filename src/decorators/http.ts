@@ -1,4 +1,4 @@
-import { HttpMetadata, ServiceMetadata } from "../metadata";
+import { HttpMetadata, OldHttpMetadata, ServiceMetadata } from "../metadata";
 import { ArgBinder, ContextBinder, HttpAdapter, HttpCode, HttpMethod, HttpResponse, RequestBinder } from "../types";
 
 /////////// Method Decorators //////////////////////////////////////////////////////////////////
@@ -34,16 +34,17 @@ function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string,
         let modelRoute = model ? `${route}:${model}` : route;
 
         let meta = HttpMetadata.define(target, propertyKey);
-        meta.routes[modelRoute] = {
+        // [modelRoute]
+        meta.http.push({
             verb,
             resource,
             model,
             code,
             adapter
-        };
+        });
 
         // ==== TODO REMOVE =============
-        let old: HttpMetadata = {
+        let old: OldHttpMetadata = {
             service: undefined,
             route,
             method: propertyKey,
@@ -114,13 +115,10 @@ export function RequestParam(param: string | RequestBinder): ParameterDecorator 
 function ArgBinding(type: string, param: string, binder: ArgBinder): ParameterDecorator {
     return function (target: Object, propertyKey: string, index: number) {
         let meta = HttpMetadata.define(target, propertyKey);
-        // TODO: Multi binding
-        meta.bindings[index] = {
-            // index,
-            type,
-            param,
-            binder
-        };
+        let arg = meta.args[index];
+        arg.bind = type;
+        arg.param = param;
+        arg.binder = binder;
         // ==== TODO REMOVE =============
         let metadata = ServiceMetadata.get(target);
         metadata.bindingMetadata[propertyKey] = metadata.bindingMetadata[propertyKey] || {

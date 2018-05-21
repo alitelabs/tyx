@@ -1,7 +1,7 @@
 import { Inject, Service } from "../decorators";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
-import { MethodMetadata } from "../metadata";
+import { AuthMetadata } from "../metadata";
 import { AuthInfo, Container, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
 import { Utils } from "../utils";
 import { Configuration } from "./config";
@@ -12,9 +12,9 @@ import MS = require("ms");
 export const Security = "security";
 
 export interface Security extends Service {
-    httpAuth(container: Container, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
-    remoteAuth(container: Container, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
-    eventAuth(container: Container, req: EventRequest, permission: MethodMetadata): Promise<Context>;
+    httpAuth(container: Container, req: HttpRequest, permission: AuthMetadata): Promise<Context>;
+    remoteAuth(container: Container, req: RemoteRequest, permission: AuthMetadata): Promise<Context>;
+    eventAuth(container: Container, req: EventRequest, permission: AuthMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;
 }
 
@@ -27,24 +27,24 @@ export abstract class BaseSecurity implements Security {
 
     protected abstract config: Configuration;
 
-    public async httpAuth(container: Container, req: HttpRequest, permission: MethodMetadata): Promise<Context> {
+    public async httpAuth(container: Container, req: HttpRequest, metadata: AuthMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
 
-        if (!permission.roles.Public && !permission.roles.Debug) {
+        if (!metadata.roles.Public && !metadata.roles.Debug) {
             if (!token) throw new Unauthorized("Missing authorization token");
-            let auth = await this.verify(req.requestId, token, permission, req.sourceIp);
+            let auth = await this.verify(req.requestId, token, metadata, req.sourceIp);
             auth = this.renew(auth);
-            return new Context({ container, requestId: req.requestId, permission, auth });
+            return new Context({ container, requestId: req.requestId, metadata, auth });
         }
 
-        if (permission.roles.Public && token) this.log.debug("Ignore token on public permission");
+        if (metadata.roles.Public && token) this.log.debug("Ignore token on public permission");
 
         let ctx = new Context({
             container,
             requestId: req.requestId,
-            permission,
+            metadata,
             auth: {
                 tokenId: req.requestId,
                 subject: "user:public",
@@ -60,13 +60,13 @@ export abstract class BaseSecurity implements Security {
             }
         });
 
-        if (permission.roles.Debug) {
+        if (metadata.roles.Debug) {
             if (req.sourceIp !== "127.0.0.1" && req.sourceIp !== "::1")
                 throw new Forbidden("Debug role only valid for localhost");
             ctx.auth.subject = "user:debug";
             ctx.auth.role = "Debug";
             if (token) try {
-                ctx.auth = await this.verify(req.requestId, token, permission, req.sourceIp);
+                ctx.auth = await this.verify(req.requestId, token, metadata, req.sourceIp);
                 ctx.auth = this.renew(ctx.auth);
             } catch (err) {
                 this.log.debug("Ignore invalid token on debug permission", err);
@@ -76,22 +76,22 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(container: Container, req: RemoteRequest, permission: MethodMetadata): Promise<Context> {
-        if (!permission.roles.Remote && !permission.roles.Internal)
-            throw new Forbidden(`Remote requests not allowed for method [${permission.method}]`);
-        let auth = await this.verify(req.requestId, req.token, permission, null);
-        if (auth.remote && !permission.roles.Remote)
-            throw new Unauthorized(`Internal request allowed only for method [${permission.method}]`);
-        return new Context({ container, requestId: req.requestId, permission, auth });
+    public async remoteAuth(container: Container, req: RemoteRequest, metadata: AuthMetadata): Promise<Context> {
+        if (!metadata.roles.Remote && !metadata.roles.Internal)
+            throw new Forbidden(`Remote requests not allowed for method [${metadata.method}]`);
+        let auth = await this.verify(req.requestId, req.token, metadata, null);
+        if (auth.remote && !metadata.roles.Remote)
+            throw new Unauthorized(`Internal request allowed only for method [${metadata.method}]`);
+        return new Context({ container, requestId: req.requestId, metadata, auth });
     }
 
-    public async eventAuth(container: Container, req: EventRequest, permission: MethodMetadata): Promise<Context> {
-        if (!permission.roles.Internal)
-            throw new Forbidden(`Internal events not allowed for method [${permission.method}]`);
+    public async eventAuth(container: Container, req: EventRequest, metadata: AuthMetadata): Promise<Context> {
+        if (!metadata.roles.Internal)
+            throw new Forbidden(`Internal events not allowed for method [${metadata.method}]`);
         let ctx = new Context({
             container,
             requestId: req.requestId,
-            permission,
+            metadata,
             auth: {
                 tokenId: req.requestId,
                 subject: "event",
@@ -136,7 +136,7 @@ export abstract class BaseSecurity implements Security {
         return token;
     }
 
-    protected async verify(requestId: string, token: string, permission: MethodMetadata, ipAddress: string): Promise<AuthInfo> {
+    protected async verify(requestId: string, token: string, permission: AuthMetadata, ipAddress: string): Promise<AuthInfo> {
         let jwt: WebToken, secret: string;
         try {
             if (token && token.startsWith("Bearer")) token = token.substring(6).trim();

@@ -1,40 +1,19 @@
 import { ArgBinder, HttpAdapter, HttpCode } from "../types";
-import { MethodMetadata } from "./method";
+import { MethodArgMetadata, MethodMetadata } from "./method";
 
-export interface HttpMetadata {
-    api?: string;
-    service?: string;
-    route: string;
-    method: string;
-    verb: string;
-    resource: string;
-    model: string;
-    code: HttpCode;
-    adapter: HttpAdapter;
-}
-
-export interface BindingMetadata {
-    api?: string;
-    service?: string;
-    method: string;
+export interface HttpMetadata extends MethodMetadata {
+    args: HttpArgMetadata[];
     contentType?: string;
-    argBindings: ArgBindingMetadata[];
+    http: HttpRouteMetadata[];
 }
 
-export interface ArgBindingMetadata {
-    index: number;
-    type: string;
+export interface HttpArgMetadata extends MethodArgMetadata {
+    bind: string;
     param: string;
     binder: ArgBinder;
 }
 
-export interface HttpMetadataInfo {
-    contentType?: string;
-    routes: Record<string, RouteMetadataInfo>;
-    bindings: BindingMetadataInfo[];
-}
-
-export interface RouteMetadataInfo {
+export interface HttpRouteMetadata {
     // route: string;
     verb: string;
     resource: string;
@@ -43,30 +22,17 @@ export interface RouteMetadataInfo {
     adapter: HttpAdapter;
 }
 
-export interface BindingMetadataInfo {
-    index?: number;
-    type: string;
-    param: string;
-    binder: ArgBinder;
-}
-
 export namespace HttpMetadata {
     export function has(target: Object, propertyKey: string): boolean {
         return !!get(target, propertyKey);
     }
-
-    export function get(target: Object, propertyKey: string): HttpMetadataInfo {
-        let meta = MethodMetadata.get(target, propertyKey);
-        return meta && meta.http;
+    export function get(target: Object, propertyKey: string): HttpMetadata {
+        let meta = MethodMetadata.get(target, propertyKey) as HttpMetadata;
+        return meta && meta.http && meta;
     }
-
-    export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): HttpMetadataInfo {
-        let method = MethodMetadata.define(target, propertyKey, descriptor);
-        method.http = method.http || {
-            contentType: undefined,
-            routes: {},
-            bindings: []
-        };
-        return method.http;
+    export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): HttpMetadata {
+        let method = MethodMetadata.define(target, propertyKey, descriptor) as HttpMetadata;
+        method.http = method.http || [];
+        return method;
     }
 }

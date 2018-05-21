@@ -1,19 +1,16 @@
 import { Service } from "../decorators";
+import { AuthMetadata } from "./auth";
 import { Metadata } from "./common";
-import { EventMetadata } from "./event";
-import { BindingMetadata, HttpMetadata } from "./http";
-import { MethodMetadata } from "./method";
-import { RemoteMetadata } from "./remote";
+import { OldBindingMetadata, OldEventMetadata, OldHttpMetadata } from "./old";
 
 export interface ServiceMetadata extends Metadata {
     service: string;
 
-    methodMetadata: Record<string, MethodMetadata>;
-    remoteMetadata: Record<string, RemoteMetadata>;
-    httpMetadata: Record<string, HttpMetadata>;
-    eventMetadata: Record<string, EventMetadata[]>;
+    authMetadata: Record<string, AuthMetadata>;
+    httpMetadata: Record<string, OldHttpMetadata>;
+    eventMetadata: Record<string, OldEventMetadata[]>;
 
-    bindingMetadata: Record<string, BindingMetadata>;
+    bindingMetadata: Record<string, OldBindingMetadata>;
 }
 
 export namespace ServiceMetadata {
@@ -25,8 +22,7 @@ export namespace ServiceMetadata {
     export function get(target: Function | Object, init?: boolean): ServiceMetadata {
         let meta = Metadata.get(target, init) as ServiceMetadata;
         if (init !== false) {
-            meta.methodMetadata = meta.methodMetadata || {};
-            meta.remoteMetadata = meta.remoteMetadata || {};
+            meta.authMetadata = meta.authMetadata || {};
             meta.httpMetadata = meta.httpMetadata || {};
             meta.eventMetadata = meta.eventMetadata || {};
             meta.bindingMetadata = meta.bindingMetadata || {};
@@ -36,10 +32,6 @@ export namespace ServiceMetadata {
 
     export function service(target: Function | Object): string {
         return get(target).service;
-    }
-
-    export function remoteMetadata(target: Function | Object) {
-        return get(target).remoteMetadata || {};
     }
 
     export function httpMetadata(target: Function | Object) {
@@ -54,7 +46,7 @@ export namespace ServiceMetadata {
         return get(target).bindingMetadata || {};
     }
 
-    export function methodMetadata(target: Function | Object): Record<string, MethodMetadata> {
-        return get(target).methodMetadata || {};
+    export function authMetadata(target: Function | Object): Record<string, AuthMetadata> {
+        return get(target).authMetadata || {};
     }
 }

@@ -14,15 +14,9 @@
                 "${workspaceRoot}/build/compiled/**/*.js"
             ],
             "sourceMaps": true,
+            "showAsyncStacks": true,
             "preLaunchTask": "build",
             "protocol": "legacy"
-        },
-        {
-            "type": "node",
-            "request": "attach",
-            "name": "Attach to Process",
-            "address": "localhost",
-            "port": 5858
         }
     ]
 }

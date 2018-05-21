@@ -1,4 +1,4 @@
-import { MethodMetadata } from "../metadata";
+import { AuthMetadata } from "../metadata";
 import { Container } from "./container";
 import { AuthInfo } from "./security";
 
@@ -13,7 +13,7 @@ export type Constructor<T> = T & {
 export class Context {
     public container: Container;
     public requestId: string;
-    public permission: MethodMetadata;
+    public metadata: AuthMetadata;
     public auth: AuthInfo;
     constructor(ctx: IContext) {
         Object.assign(this, ctx);

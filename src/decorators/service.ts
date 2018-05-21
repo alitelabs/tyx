@@ -13,9 +13,8 @@ export function Api(name?: string): ClassDecorator {
     return (target) => {
         let meta = ServiceMetadata.get(target);
         name = meta.name = name || meta.name || target.name;
-        Object.values(meta.methodMetadata).forEach(item => item.api = name);
+        Object.values(meta.authMetadata).forEach(item => item.api = name);
         Object.values(meta.httpMetadata).forEach(item => item.api = name);
-        Object.values(meta.remoteMetadata).forEach(item => item.api = name);
         Object.values(meta.bindingMetadata).forEach(item => item.api = name);
         Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.api = name));
     };
@@ -26,9 +25,8 @@ export function Service(name?: string): ClassDecorator {
         let meta = ServiceMetadata.get(target);
         name = meta.name = name || meta.name || target.name;
         meta.service = name;
-        Object.values(meta.methodMetadata).forEach(item => item.service = name);
+        Object.values(meta.authMetadata).forEach(item => item.service = name);
         Object.values(meta.httpMetadata).forEach(item => item.service = name);
-        Object.values(meta.remoteMetadata).forEach(item => item.service = name);
         Object.values(meta.bindingMetadata).forEach(item => item.service = name);
         Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.service = name));
     };

@@ -1,11 +1,8 @@
-import { EventMetadata } from "./event";
-import { HttpMetadata } from "./http";
-import { RemoteMetadata } from "./remote";
 import { MethodMetadata } from "./method";
+import { OldEventMetadata, OldHttpMetadata } from "./old";
 
 export interface ContainerMetadata {
-    methods: Record<string, MethodMetadata>;
-    remoteMetadata: Record<string, RemoteMetadata>;
-    httpMetadata: Record<string, HttpMetadata>;
-    eventMetadata: Record<string, EventMetadata[]>;
+    authMetadata: Record<string, MethodMetadata>;
+    httpMetadata: Record<string, OldHttpMetadata>;
+    eventMetadata: Record<string, OldEventMetadata[]>;
 }
