@@ -1,7 +1,6 @@
 import { Export } from "../decorators";
 import { MethodMetadata, ServiceMetadata } from "../metadata";
 import { Roles } from "../types";
-import * as Utils from "../utils/misc";
 
 export function Public() {
     return AuthDecorator(Public.name, { Public: true, Internal: true, External: true, Remote: true });
@@ -27,16 +26,20 @@ export function Remote() {
     return AuthDecorator(Remote.name, { Internal: true, External: false, Remote: true });
 }
 
-export function Auth<R extends Roles>(roles: R) {
-    return AuthDecorator(Auth.name, roles);
+export function Authorization<TR extends Roles>(roles: TR) {
+    return AuthDecorator(Authorization.name, roles);
 }
 
-export function Query<R extends Roles>(roles: R) {
-    return AuthDecorator(Query.name, roles);
+export function Query<TR extends Roles>(roles?: TR) {
+    return AuthDecorator(Query.name, roles || {}, true);
 }
 
-export function Command<R extends Roles>(roles: R) {
-    return AuthDecorator(Command.name, roles);
+export function Mutation<TR extends Roles>(roles?: TR) {
+    return AuthDecorator(Mutation.name, roles || {}, true);
+}
+
+export function Command<TR extends Roles>(roles?: TR) {
+    return AuthDecorator(Command.name, roles || {}, true);
 }
 
 function AuthDecorator(access: string, roles: Roles, graphql?: boolean): MethodDecorator {
@@ -45,32 +48,18 @@ function AuthDecorator(access: string, roles: Roles, graphql?: boolean): MethodD
     return (target, propertyKey, descriptor) => {
         // TODO: Throw TypeError on symbol
         propertyKey = propertyKey.toString();
+        graphql = !!graphql;
 
-        let metadata = ServiceMetadata.get(target);
-        let prev = metadata.methodMetadata[propertyKey];
-        if (prev) roles = { ...prev.roles, ...roles };
+        let meta = MethodMetadata.define(target, propertyKey, descriptor);
+        if (!graphql) meta.access = meta.access || access;
+        meta.graphql = !!meta.graphql || graphql;
+        roles = meta.roles = { ...meta.roles, ...roles };
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
+        roles.External = roles.External === undefined ? false : !!roles.External;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
-        if (!graphql && prev) access = prev.access;
 
-        let names = Utils.getArgs(descriptor.value as any);
-        let types = Reflect.getMetadata("design:paramtypes", target, propertyKey);
-        let returns = Reflect.getMetadata("design:returntype", target, propertyKey);
-
-        let args = {};
-        names.forEach((a, i) => args[a] = "" + types[i]);
-
-        let method: MethodMetadata = {
-            service: undefined,
-            method: propertyKey,
-            access: access.toLowerCase(),
-            roles,
-            args,
-            returns: "" + returns
-        };
-        if (!graphql && prev.access)
-            metadata.methodMetadata[propertyKey] = method;
-
+        let service = ServiceMetadata.get(target);
+        service.methodMetadata[propertyKey] = meta;
         if (roles.Internal || roles.Remote || roles.External)
             Export()(target, propertyKey, descriptor);
     };

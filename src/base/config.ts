@@ -75,11 +75,11 @@ export abstract class BaseConfiguration implements Configuration {
         return res;
     }
 
-    get httpSecret(): string { return this.config.REST_SECRET || undefined; }
+    get httpSecret(): string { return this.config.HTTP_SECRET || undefined; }
 
-    get httpTimeout(): string { return this.config.REST_TIMEOUT || "10min"; }
+    get httpTimeout(): string { return this.config.HTTP_TIMEOUT || "10min"; }
 
-    get httpLifetime(): string { return this.config.REST_LIFETIME || "1h"; }
+    get httpLifetime(): string { return this.config.HTTP_LIFETIME || "1h"; }
 
     get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
 
