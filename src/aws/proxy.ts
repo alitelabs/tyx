@@ -18,6 +18,7 @@ export abstract class LambdaProxy extends BaseProxy {
             audience: call.application,
             subject: call.type,
             userId: null,
+            // TODO: Internal, External, Remote ???
             role: "Application"
         });
     }
@@ -27,21 +28,17 @@ export abstract class LambdaProxy extends BaseProxy {
             ? this.config.remoteStage(call.application)
             : this.config.stage;
 
-        let fun = ProxyMetadata.functionName(this);
-
-
+        let meta = ProxyMetadata.gett(this);
         let response: Lambda.InvocationResponse;
         try {
             response = await this.lambda.invoke({
-                FunctionName: stage + "-" + fun,
+                FunctionName: stage + "-" + meta.functionName,
                 Payload: JSON.stringify(call)
             }).promise();
         } catch (err) {
             throw InternalServerError.wrap(err);
         }
-
         let result = JSON.parse(response.Payload.toString());
-
         if (response.FunctionError === "Handled") {
             throw LambdaError.parse(result.errorMessage);
         } else if (response.FunctionError === "Unhandled") {

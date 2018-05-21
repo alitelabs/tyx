@@ -1,6 +1,6 @@
-import { Proxy, Inject } from "../decorators";
+import { Inject, Proxy } from "../decorators";
 import { Logger } from "../logger";
-import { ProxyMetadata } from "../metadata";
+import { Metadata, ProxyMetadata } from "../metadata";
 import { RemoteRequest } from "../types";
 import { Configuration } from "./config";
 import { Security } from "./security";
@@ -16,19 +16,20 @@ export abstract class BaseProxy implements Proxy {
     protected security: Security;
 
     constructor() {
-        this.log = Logger.get(ProxyMetadata.service(this), this);
+        this.log = Logger.get(Metadata.name(this), this);
     }
 
     protected async proxy(method: Function, params: IArguments): Promise<any> {
         let startTime = this.log.time();
         try {
             let type: ("remote" | "internal") = "remote";
-            let appId = ProxyMetadata.application(this) || this.config.appId;
+            let meta = ProxyMetadata.gett(this);
+            let appId = meta.application || this.config.appId;
             if (this.config.appId === appId) type = "internal";
             let call: RemoteRequest = {
                 type,
                 application: appId,
-                service: ProxyMetadata.service(this),
+                service: meta.proxy,
                 method: method.name,
                 requestId: undefined,
                 token: undefined,

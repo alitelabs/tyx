@@ -6,8 +6,8 @@
  * @template T any Class which extends Error
  * @param {T} inputClass
  */
-export function Exception(type: Function) {
-    Exception.ctors[type.name] = type;
+export function Exception(target: Function) {
+    Exception.ctors[target.name] = target;
 }
 
 export namespace Exception {

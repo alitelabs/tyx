@@ -81,7 +81,7 @@ export namespace Field {
     export function List(req?: boolean): PropertyDecorator {
         return Field(List.name, req);
     }
-    export function Enum(req?: boolean): PropertyDecorator {
+    export function EnumField(req?: boolean): PropertyDecorator {
         return Field(Enum.name, req);
     }
 }

@@ -45,8 +45,7 @@ function AuthDecorator(auth: string, roles: Roles, graphql?: boolean): MethodDec
     auth = auth.toLowerCase();
 
     return (target, propertyKey, descriptor) => {
-        // TODO: Throw TypeError on symbol
-        propertyKey = propertyKey.toString();
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         graphql = !!graphql;
 
         let meta = AuthMetadata.define(target, propertyKey, descriptor);
@@ -57,7 +56,7 @@ function AuthDecorator(auth: string, roles: Roles, graphql?: boolean): MethodDec
         roles.External = roles.External === undefined ? false : !!roles.External;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
 
-        let service = ServiceMetadata.get(target);
+        let service = ServiceMetadata.define(target.constructor);
         service.authMetadata[propertyKey] = meta;
     };
 }

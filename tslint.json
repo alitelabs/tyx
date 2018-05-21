@@ -106,6 +106,9 @@
         ],
         "linebreak-style": [
             true
+        ],
+        "no-shadowed-variable": [
+            true
         ]
     }
 }

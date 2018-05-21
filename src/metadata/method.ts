@@ -16,20 +16,20 @@ export interface MethodMetadata {
 
 export namespace MethodMetadata {
     export const META_TYX_METHOD = "tyx:method";
+
     export function has(target: Object, propertyKey: string): boolean {
         return Reflect.hasMetadata(META_TYX_METHOD, target, propertyKey);
     }
+
     export function get(target: Object, propertyKey: string): MethodMetadata {
         return Reflect.getMetadata(META_TYX_METHOD, target, propertyKey);
     }
+
     export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
         let meta = Reflect.getMetadata(META_TYX_METHOD, target, propertyKey);
         if (meta && meta.returns.name === "done") return meta;
         if (!meta) {
-            meta = {
-                service: undefined,
-                method: propertyKey
-            };
+            meta = { service: undefined, method: propertyKey };
             Reflect.defineMetadata(META_TYX_METHOD, meta, target, propertyKey);
         }
         let names = descriptor ? Utils.getArgs(descriptor.value as any) : [];

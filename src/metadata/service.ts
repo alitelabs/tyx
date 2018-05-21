@@ -1,52 +1,40 @@
-import { Service } from "../decorators";
 import { AuthMetadata } from "./auth";
 import { Metadata } from "./common";
-import { OldBindingMetadata, OldEventMetadata, OldHttpMetadata } from "./old";
+import { EventMetadata } from "./event";
+import { HttpMetadata } from "./http";
 
 export interface ServiceMetadata extends Metadata {
     service: string;
 
     authMetadata: Record<string, AuthMetadata>;
-    httpMetadata: Record<string, OldHttpMetadata>;
-    eventMetadata: Record<string, OldEventMetadata[]>;
-
-    bindingMetadata: Record<string, OldBindingMetadata>;
+    httpMetadata: Record<string, HttpMetadata>;
+    eventMetadata: Record<string, EventMetadata[]>;
 }
 
 export namespace ServiceMetadata {
-    export function has(target: Function | Object): target is Service {
-        let meta = get(target, false);
-        return !!(meta && meta.service);
+    export const META_TYX_SERVICE = "tyx:service";
+
+    export function has(target: Function | Object): boolean {
+        return Reflect.hasMetadata(META_TYX_SERVICE, target)
+            || Reflect.hasMetadata(META_TYX_SERVICE, target.constructor);
     }
 
-    export function get(target: Function | Object, init?: boolean): ServiceMetadata {
-        let meta = Metadata.get(target, init) as ServiceMetadata;
-        if (init !== false) {
+    export function gett(target: Function | Object): ServiceMetadata {
+        return Reflect.getMetadata(META_TYX_SERVICE, target)
+            || Reflect.getMetadata(META_TYX_SERVICE, target.constructor);
+    }
+
+    export function define(target: Function, service?: string): ServiceMetadata {
+        service = service || target.name.replace("Service", "");
+        let meta = gett(target);
+        if (!meta) {
+            meta = Metadata.define(target, service) as ServiceMetadata;
             meta.authMetadata = meta.authMetadata || {};
             meta.httpMetadata = meta.httpMetadata || {};
             meta.eventMetadata = meta.eventMetadata || {};
-            meta.bindingMetadata = meta.bindingMetadata || {};
+            Reflect.defineMetadata(META_TYX_SERVICE, meta, target);
         }
+        meta.name = meta.service = service;
         return meta;
-    }
-
-    export function service(target: Function | Object): string {
-        return get(target).service;
-    }
-
-    export function httpMetadata(target: Function | Object) {
-        return get(target).httpMetadata || {};
-    }
-
-    export function eventMetadata(target: Function | Object) {
-        return get(target).eventMetadata || {};
-    }
-
-    export function bindingMetadata(target: Function | Object) {
-        return get(target).bindingMetadata || {};
-    }
-
-    export function authMetadata(target: Function | Object): Record<string, AuthMetadata> {
-        return get(target).authMetadata || {};
     }
 }

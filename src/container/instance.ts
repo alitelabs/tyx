@@ -2,7 +2,7 @@ import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
-import { AuthMetadata, ContainerMetadata, Metadata, OldBindingMetadata, OldEventMetadata, OldHttpMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
+import { AuthMetadata, ContainerMetadata, EventMetadata, HttpMetadata, Metadata, ProxyMetadata, ServiceMetadata } from "../metadata";
 import { Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
@@ -58,8 +58,8 @@ export class ContainerInstance implements Container {
         if (type === Configuration) return this.config as any;
         if (type === Security) return this.config as any;
         if (typeof type === "string") return this.services[type] || this.proxies[type] || this.resources[type];
-        if (ServiceMetadata.has(type)) return this.services[ServiceMetadata.service(type)] as any;
-        if (ProxyMetadata.has(type)) return this.proxies[ProxyMetadata.service(type)] as any;
+        if (ServiceMetadata.has(type)) return this.services[Metadata.name(type)] as any;
+        if (ProxyMetadata.has(type)) return this.proxies[Metadata.name(type)] as any;
         return null;
     }
 
@@ -70,7 +70,7 @@ export class ContainerInstance implements Container {
     public register(target: Object | Service | Proxy | Function, ...args: any[]): this {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
-        let name = undefined;
+        let name: string = undefined;
 
         // Call constructor
         // https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
@@ -80,15 +80,16 @@ export class ContainerInstance implements Container {
             name = args && args[0];
         }
 
-        let id = name;
+        let id: string;
         if (name) {
             id = name = "" + name;
         } else if (ServiceMetadata.has(target)) {
-            name = ServiceMetadata.service(target);
-            id = name;
+            let meta = ServiceMetadata.gett(target);
+            id = name = meta.name;
         } else if (ProxyMetadata.has(target)) {
-            name = ProxyMetadata.service(target);
-            id = ProxyMetadata.id(target, this.application);
+            let meta = ProxyMetadata.gett(target);
+            name = meta.name;
+            id = (meta.application || this.application) + ":" + meta.name;
         } else {
             id = name = target.constructor.name;
         }
@@ -108,10 +109,10 @@ export class ContainerInstance implements Container {
         }
 
         if (ServiceMetadata.has(target)) {
-            this.services[id] = target;
+            this.services[id] = target as Service;
             this.log.info("Service: %s", id);
         } else if (ProxyMetadata.has(target)) {
-            this.proxies[id] = target;
+            this.proxies[id] = target as Proxy;
             this.log.info("Proxy: %s", id);
         } else {
             this.resources[id] = target;
@@ -120,53 +121,46 @@ export class ContainerInstance implements Container {
         return this;
     }
 
-    public publish(service: Function, ...args: any[]): this;
-    public publish(service: Service): this;
-    public publish(service: Service | Function, ...args: any[]): this {
+    public publish(type: Function, ...args: any[]): this;
+    public publish(object: Service): this;
+    public publish(objectOrType: Service | Function, ...args: any[]): this {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         // Call constructor
-        if (service instanceof Function) {
-            service = new (Function.prototype.bind.apply(service, arguments)) as Service;
+        let service: Service;
+        if (objectOrType instanceof Function) {
+            service = new (Function.prototype.bind.apply(objectOrType, arguments)) as Service;
+        } else {
+            service === objectOrType;
         }
 
         if (!ServiceMetadata.has(service)) throw new InternalServerError("Service decoration missing");
         this.register(service);
 
-        let serviceName = ServiceMetadata.service(service);
-        this.log.info("Publish: %s", serviceName);
+        service = service as Service;
+        let metadata = ServiceMetadata.gett(service);
+        this.log.info("Publish: %s", metadata.service);
 
-        let authMetadata = ServiceMetadata.authMetadata(service);
-        let methods = Object.keys(authMetadata);
-        methods.forEach(method => {
-            let meta = authMetadata[method];
-            let key = meta.service + "." + method;
+        for (let meta of Object.values(metadata.authMetadata)) {
+            let key = metadata.service + "." + meta.method;
             this.imetadata.authMetadata[key] = meta;
-            if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) return;
-            this.remoteHandlers[key] = this.remoteHandler(service as Service, meta);
-        });
+            if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
+            this.remoteHandlers[key] = this.remoteHandler(service, meta);
+        }
 
-        let httpMetadata = ServiceMetadata.httpMetadata(service);
-        let bindMetadata = ServiceMetadata.bindingMetadata(service);
-        let routes = Object.keys(httpMetadata);
-        routes.forEach(route => {
-            let meta = httpMetadata[route];
+        for (let [route, meta] of Object.entries(metadata.httpMetadata)) {
             if (this.imetadata.httpMetadata[route]) throw new InternalServerError(`Duplicate REST route [${route}]`);
             this.imetadata.httpMetadata[route] = meta;
-            let bindings = bindMetadata[meta.method];
-            this.httpHandlers[route] = this.httpHandler(service as Service, meta, bindings);
-        });
+            this.httpHandlers[route] = this.httpHandler(service, meta, route);
+        }
 
-        let eventMetadata = ServiceMetadata.eventMetadata(service);
-        let events = Object.keys(eventMetadata);
-        events.forEach(event => {
-            let metas = eventMetadata[event];
-            this.imetadata.eventMetadata[event] = this.imetadata.eventMetadata[event] || [];
-            this.imetadata.eventMetadata[event] = this.imetadata.eventMetadata[event].concat(metas);
-            let handlers = metas.map(m => this.eventHandler(service as Service, m));
-            this.eventHandlers[event] = this.eventHandlers[event] || [];
-            this.eventHandlers[event] = this.eventHandlers[event].concat(handlers);
-        });
+        for (let [route, metas] of Object.entries(metadata.eventMetadata)) {
+            this.imetadata.eventMetadata[route] = this.imetadata.eventMetadata[route] || [];
+            this.imetadata.eventMetadata[route] = this.imetadata.eventMetadata[route].concat(metas);
+            let handlers = metas.map(m => this.eventHandler(service, m, route));
+            this.eventHandlers[route] = this.eventHandlers[route] || [];
+            this.eventHandlers[route] = this.eventHandlers[route].concat(handlers);
+        }
         return this;
     }
 
@@ -187,31 +181,30 @@ export class ContainerInstance implements Container {
         return fun;
     }
 
-    private httpHandler(service: Service, metadata: OldHttpMetadata, bindings: OldBindingMetadata): HttpHandler {
+    private httpHandler(service: Service, metadata: HttpMetadata, route: string): HttpHandler {
         let fun: HttpHandler = async (ctx: Context, req: HttpRequest): Promise<HttpResponse> => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
                 let method: Function = service[metadata.method];
+                let http = metadata.http[route];
                 let result: any;
-                if (metadata.adapter) {
-                    result = await metadata.adapter(
+                if (http.adapter) {
+                    result = await http.adapter(
                         method.bind(service),
                         ctx,
                         req,
                         req.pathParameters || {},
                         req.queryStringParameters || {});
-                } else if (bindings && bindings.argBindings) {
+                } else {
                     let args: any = [];
-                    for (let binding of bindings.argBindings) {
-                        args[binding.index] = binding.binder(ctx, req);
+                    for (let [index, arg] of metadata.args.entries()) {
+                        args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
                     }
                     result = await method.apply(service, args);
-                } else {
-                    result = await method.apply(service);
                 }
-                let contentType = bindings && bindings.contentType || "application/json";
-                return { statusCode: metadata.code, body: result, contentType };
+                let contentType = metadata.contentType || "application/json";
+                return { statusCode: http.code, body: result, contentType };
             } catch (e) {
                 throw e;
             } finally {
@@ -221,15 +214,16 @@ export class ContainerInstance implements Container {
         return fun;
     }
 
-    private eventHandler(service: Service, metadata: OldEventMetadata): EventHandler {
+    private eventHandler(service: Service, metadata: EventMetadata, route: string): EventHandler {
         let handler: EventHandler = async (ctx: Context, req: EventRequest): Promise<any> => {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
                 let result: Promise<any>;
                 let method: Function = service[metadata.method];
-                if (metadata.adapter) {
-                    result = await metadata.adapter(method.bind(service), ctx, req);
+                let event = metadata.events[route];
+                if (event.adapter) {
+                    result = await event.adapter(method.bind(service), ctx, req);
                 } else {
                     result = await method.call(service, ctx, req);
                 }
@@ -272,21 +266,20 @@ export class ContainerInstance implements Container {
         return this;
     }
 
-    private inject(service: Service) {
-        let name = ServiceMetadata.service(service);
-        let dependencies = Metadata.dependencies(service);
-        for (let pid in dependencies) {
-            let dep = dependencies[pid];
+    private inject(target: object) {
+        let meta = Metadata.gett(target);
+        if (!meta || !meta.dependencies) return;
+        for (let [pid, dep] of Object.entries(meta.dependencies)) {
             let localId = dep.resource;
             let proxyId = (dep.application || this.application) + ":" + localId;
             let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
             if (dep.resource === Container) resolved = this;
-            if (dep.resource === "logger") resolved = Logger.get(name, service);
+            if (dep.resource === "logger") resolved = Logger.get(meta.name, target);
             let depId = (dep.application ? dep.application + ":" : "") + localId;
             if (!resolved)
-                throw new InternalServerError(`Unresolved dependency [${depId}] on [${service.constructor.name}.${pid}]`);
-            this.log.info(`Resolved dependency [${depId}] on [${service.constructor.name}.${pid}]`);
-            service[pid] = resolved;
+                throw new InternalServerError(`Unresolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
+            this.log.info(`Resolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
+            target[pid] = resolved;
         }
     }
 
@@ -339,17 +332,17 @@ export class ContainerInstance implements Container {
             req.type = "event";
             this.log.debug("Event Request: %j", req);
 
-            let key = `${req.source} ${req.resource}`;
+            let route = `${req.source} ${req.resource}`;
             let alias = this.config.resources && this.config.resources[req.resource];
 
-            let metas = this.imetadata.eventMetadata[key];
-            let handlers = this.eventHandlers && this.eventHandlers[key];
+            let metas = this.imetadata.eventMetadata[route];
+            let handlers = this.eventHandlers && this.eventHandlers[route];
             if (!handlers && alias) {
-                let key2 = `${req.source} ${alias}`;
-                metas = this.imetadata.eventMetadata[key2];
-                handlers = this.eventHandlers && this.eventHandlers[key2];
+                route = `${req.source} ${alias}`;
+                metas = this.imetadata.eventMetadata[route];
+                handlers = this.eventHandlers && this.eventHandlers[route];
             }
-            if (!handlers) throw this.log.error(new NotFound(`Event handler not found [${key}] [${req.object}]`));
+            if (!handlers) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
 
             let result: EventResult = {
                 status: null,
@@ -364,7 +357,8 @@ export class ContainerInstance implements Container {
             for (let i = 0; i < handlers.length; i++) {
                 let handler = handlers[i];
                 let target = metas[i];
-                if (!Utils.wildcardMatch(target.actionFilter, req.action) || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
+                if (!Utils.wildcardMatch(target[route].actionFilter, req.action)
+                    || !Utils.wildcardMatch(target[route].objectFilter, req.object)) continue;
 
                 req.application = this.application;
                 req.service = target.service;
@@ -417,7 +411,7 @@ export class ContainerInstance implements Container {
             req.type = "http";
             this.log.debug("HTTP Event: %j", req);
 
-            req.contentType = HttpUtils.contentType(req.headers, req.body);
+            HttpUtils.request(req);
 
             let key = `${req.httpMethod} ${req.resource}`;
             if (req.contentType.domainModel) key += `:${req.contentType.domainModel}`;
@@ -439,8 +433,6 @@ export class ContainerInstance implements Container {
 
             try {
                 await this.activate(ctx);
-
-                HttpUtils.body(req);
 
                 this.log.debug("HTTP Context: %j", ctx);
                 this.log.debug("HTTP Request: %j", req);

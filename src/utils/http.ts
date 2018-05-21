@@ -9,8 +9,7 @@ export namespace HttpUtils {
     export function response(code: HttpCode, body: any, json?: boolean) {
         json = (json === undefined) ? true : json;
         if (typeof body !== "string") body = JSON.stringify(body);
-
-        let response: HttpResponse = {
+        let res: HttpResponse = {
             statusCode: code,
             headers: {
                 "Access-Control-Allow-Origin": "*",
@@ -21,9 +20,8 @@ export namespace HttpUtils {
             },
             body
         };
-        if (!body) delete response.headers["Content-Type"];
-
-        return response;
+        if (!body) delete res.headers["Content-Type"];
+        return res;
     }
 
     export function prepare(arg: HttpResponse): HttpResponse {
@@ -33,20 +31,20 @@ export namespace HttpUtils {
         return res;
     }
 
-    export function error(error: Error): HttpResponse {
+    export function error(err: Error): HttpResponse {
         let res: HttpResponse;
-        if (error instanceof ApiError) {
-            res = HttpUtils.response(error.code, ApiError.serialize(error), true);
+        if (err instanceof ApiError) {
+            res = HttpUtils.response(err.code, ApiError.serialize(err), true);
         } else {
             // TODO: Always json
-            res = HttpUtils.response(501, error.message || "Internal Server Error", false);
+            res = HttpUtils.response(501, err.message || "Internal Server Error", false);
         }
         return res;
     }
 
     export function header(value: string): HttpHeader {
-        let header: HttpHeader = { value: null, params: {} };
-        if (!value) return header;
+        let hdr: HttpHeader = { value: null, params: {} };
+        if (!value) return hdr;
 
         let parts = value.split(";").map(t => t.trim()).filter(t => t);
         parts.map(part => {
@@ -55,42 +53,40 @@ export namespace HttpUtils {
                 let k = p[0];
                 let v = p[1];
                 if (v.startsWith("\"") && v.endsWith("\"")) v = v.substring(1, v.length - 1);
-                header.params[k] = v;
-            } else if (!header.value) {
-                header.value = part;
+                hdr.params[k] = v;
+            } else if (!hdr.value) {
+                hdr.value = part;
             } else {
-                header.params[part] = part;
+                hdr.params[part] = part;
             }
         });
-        return header;
+        return hdr;
     }
 
     export function contentType(headers: Record<string, string>, body: string): HttpContentType {
         let value = headers["Content-Type"] || headers["content-type"] || null;
         let res: HttpContentType = header(value);
         if (!res.value) return res;
-
         res.domainModel = res.params["domain-model"];
         res.isJson = res.value === "application/json";
         res.isMultipart = res.value.startsWith("multipart/");
-
         if (res.value === "application/x-www-form-urlencoded") {
             let boundary = body.substring(0, body.indexOf("\r\n"));
             if (body.endsWith("\r\n" + boundary + "--\r\n")) res.isMultipart = true;
         }
-
         return res;
     }
 
-    export function body(req: HttpRequest) {
-        // TODO: Parse content type and isBase64 encoding etc ...
+    export function request(req: HttpRequest): HttpRequest {
+        req.contentType = req.contentType || contentType(req.headers, req.body);
+        // TODO: isBase64 encoding etc ...
         if (req.contentType.isJson) {
             try {
                 req.json = JSON.parse(req.body || "{}");
             } catch (e) {
                 throw new BadRequest("Invalid JSON body");
             }
-            return;
+            return req;
         }
 
         if (req.contentType.isMultipart) {
@@ -142,9 +138,9 @@ export namespace HttpUtils {
                     body += line;
                 }
             }
-
             req.multiparts = parts;
         }
+        return req;
     }
 
     export function canonicalHeaders(headers: Record<string, string>): Record<string, string> {
@@ -154,15 +150,15 @@ export namespace HttpUtils {
     }
 
     export function extractFile(req: HttpRequest): any {
-        let contentType = req.contentType.isMultipart ? req.multiparts[0].contentType : req.contentType;
+        let ct = req.contentType.isMultipart ? req.multiparts[0].contentType : req.contentType;
         let body = req.contentType.isMultipart ? req.multiparts[0].body : req.body;
-        if (contentType.value.startsWith("text/")) return this.parseCsv(body);
-        if (contentType.value === "application/gzip"
-            || contentType.value === "application/x-gzip"
-            || contentType.value === "application/octet-stream") {
+        if (ct.value.startsWith("text/")) return this.parseCsv(body);
+        if (ct.value === "application/gzip"
+            || ct.value === "application/x-gzip"
+            || ct.value === "application/octet-stream") {
             let is64 = Utils.isBase64(body);
             let input = Buffer.from(body, is64 ? "base64" : "utf-8");
-            let isGz = contentType.value.indexOf("gzip") > 0 || Utils.isGzip(input);
+            let isGz = ct.value.indexOf("gzip") > 0 || Utils.isGzip(input);
             let data = isGz ? Zlib.gunzipSync(input) : input;
             input = null;
             body = null;

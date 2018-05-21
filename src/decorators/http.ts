@@ -1,4 +1,4 @@
-import { HttpMetadata, OldHttpMetadata, ServiceMetadata } from "../metadata";
+import { HttpMetadata, ServiceMetadata } from "../metadata";
 import { ArgBinder, ContextBinder, HttpAdapter, HttpCode, HttpMethod, HttpResponse, RequestBinder } from "../types";
 
 /////////// Method Decorators //////////////////////////////////////////////////////////////////
@@ -25,38 +25,25 @@ export function Patch(route: string, model?: boolean | string, adapter?: HttpAda
 
 // Decorator
 function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string, code: HttpCode, adapter?: HttpAdapter): MethodDecorator {
-    return (target: Object, propertyKey: string, descriptor: PropertyDescriptor) => {
+    return (target, propertyKey, descriptor) => {
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         if (!model) model = undefined;
         else if (model === true) model = propertyKey;
         else model = model.toString();
         model = model as string;
         let route = `${verb} ${resource}`;
-        let modelRoute = model ? `${route}:${model}` : route;
-
+        route = model ? `${route}:${model}` : route;
         let meta = HttpMetadata.define(target, propertyKey);
-        // [modelRoute]
-        meta.http.push({
-            verb,
-            resource,
-            model,
-            code,
-            adapter
-        });
-
-        // ==== TODO REMOVE =============
-        let old: OldHttpMetadata = {
-            service: undefined,
-            route,
-            method: propertyKey,
+        meta.http[route] = {
             verb,
             resource,
             model,
             code,
             adapter
         };
-        let metadata = ServiceMetadata.get(target);
-        if (metadata.httpMetadata[modelRoute]) throw new Error(`Duplicate route: ${modelRoute}`);
-        metadata.httpMetadata[modelRoute] = old;
+        let metadata = ServiceMetadata.define(target.constructor);
+        if (metadata.httpMetadata[route]) throw new Error(`Duplicate route: ${route}`);
+        metadata.httpMetadata[route] = meta;
     };
 }
 
@@ -113,40 +100,21 @@ export function RequestParam(param: string | RequestBinder): ParameterDecorator 
 }
 
 function ArgBinding(type: string, param: string, binder: ArgBinder): ParameterDecorator {
-    return function (target: Object, propertyKey: string, index: number) {
+    return function (target, propertyKey, index) {
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = HttpMetadata.define(target, propertyKey);
         let arg = meta.args[index];
         arg.bind = type;
         arg.param = param;
         arg.binder = binder;
-        // ==== TODO REMOVE =============
-        let metadata = ServiceMetadata.get(target);
-        metadata.bindingMetadata[propertyKey] = metadata.bindingMetadata[propertyKey] || {
-            method: propertyKey,
-            contentType: undefined,
-            argBindings: []
-        };
-        metadata.bindingMetadata[propertyKey].argBindings[index] = {
-            type,
-            index,
-            param,
-            binder
-        };
     };
 }
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
-    return function (target: Object, propertyKey: string, descriptor: PropertyDescriptor) {
+    return function (target, propertyKey, descriptor) {
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = HttpMetadata.define(target, propertyKey, descriptor);
         meta.contentType = contentType;
-        // ==== TODO REMOVE =============
-        let metadata = ServiceMetadata.get(target);
-        metadata.bindingMetadata[propertyKey] = metadata.bindingMetadata[propertyKey] || {
-            method: propertyKey,
-            contentType: contentType,
-            argBindings: []
-        };
-        metadata.bindingMetadata[propertyKey].contentType = contentType;
     };
 }
 

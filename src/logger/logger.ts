@@ -46,9 +46,9 @@ export function Logger(): PropertyDecorator {
 
 export namespace Logger {
     export const sys: Logger = new ConsoleLogger("tyx", "log");
-
+    // TODO: Simplify
     export function get(logName: string, emitter?: any): Logger {
-        return new ConsoleLogger(logName, emitter);
+        return new ConsoleLogger(logName || "<log>", emitter);
     }
 }
 

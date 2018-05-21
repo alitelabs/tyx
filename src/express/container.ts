@@ -43,25 +43,22 @@ export class ExpressContainer extends ContainerPool {
         let paths = [];
 
         let httpMetadata = this.metadata.httpMetadata;
-        for (let hd in httpMetadata) {
-            let target = httpMetadata[hd];
-            let httpMethod = target.verb;
-            let resource = target.resource;
+        for (let [route, meta] of Object.entries(httpMetadata)) {
+            let httpMethod = meta.http[route].verb;
+            let resource = meta.http[route].resource;
 
             let parts = resource.split("{");
             parts = parts.map(p => p.replace("}", ""));
             let path = parts.join(":");
 
             // this.log.info("Add route: %s >> %s", hd, path);
-
-            let route = `${httpMethod} ${path}`;
-            if (used[route]) continue;
-            used[route] = true;
+            let baseRoute = `${httpMethod} ${path}`;
+            if (used[baseRoute]) continue;
+            used[baseRoute] = true;
             if (this.basePath) path = this.basePath + path;
             paths.push(`${httpMethod} - http://localhost:${port}${path}`);
 
             // this.log.info("Registered route: %s", route);
-
             let adapter = (req: Request, res: Response) => {
                 this.handle(resource, req, res);
             };
