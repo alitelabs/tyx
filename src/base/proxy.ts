@@ -23,13 +23,13 @@ export abstract class BaseProxy implements Proxy {
         let startTime = this.log.time();
         try {
             let type: ("remote" | "internal") = "remote";
-            let meta = ProxyMetadata.gett(this);
+            let meta = ProxyMetadata.get(this);
             let appId = meta.application || this.config.appId;
             if (this.config.appId === appId) type = "internal";
             let call: RemoteRequest = {
                 type,
                 application: appId,
-                service: meta.proxy,
+                service: meta.service,
                 method: method.name,
                 requestId: undefined,
                 token: undefined,

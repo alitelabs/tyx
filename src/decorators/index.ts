@@ -6,3 +6,4 @@ export * from "./http";
 export * from "./event";
 export * from "./auth";
 export * from "./exception";
+export * from "./type";

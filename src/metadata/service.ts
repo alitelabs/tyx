@@ -19,14 +19,13 @@ export namespace ServiceMetadata {
             || Reflect.hasMetadata(META_TYX_SERVICE, target.constructor);
     }
 
-    export function gett(target: Function | Object): ServiceMetadata {
+    export function get(target: Function | Object): ServiceMetadata {
         return Reflect.getMetadata(META_TYX_SERVICE, target)
             || Reflect.getMetadata(META_TYX_SERVICE, target.constructor);
     }
 
     export function define(target: Function, service?: string): ServiceMetadata {
-        service = service || target.name.replace("Service", "");
-        let meta = gett(target);
+        let meta = get(target);
         if (!meta) {
             meta = Metadata.define(target, service) as ServiceMetadata;
             meta.authMetadata = meta.authMetadata || {};

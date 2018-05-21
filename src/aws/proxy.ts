@@ -28,7 +28,7 @@ export abstract class LambdaProxy extends BaseProxy {
             ? this.config.remoteStage(call.application)
             : this.config.stage;
 
-        let meta = ProxyMetadata.gett(this);
+        let meta = ProxyMetadata.get(this);
         let response: Lambda.InvocationResponse;
         try {
             response = await this.lambda.invoke({

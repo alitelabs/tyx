@@ -3,7 +3,7 @@ import { Metadata } from "./common";
 export interface ProxyMetadata extends Metadata {
     application: string;
     functionName: string;
-    proxy: string;
+    service: string;
 }
 
 export namespace ProxyMetadata {
@@ -14,19 +14,18 @@ export namespace ProxyMetadata {
             || Reflect.hasMetadata(META_TYX_PROXY, target.constructor);
     }
 
-    export function gett(target: Function | Object): ProxyMetadata {
+    export function get(target: Function | Object): ProxyMetadata {
         return Reflect.getMetadata(META_TYX_PROXY, target)
             || Reflect.getMetadata(META_TYX_PROXY, target.constructor);
     }
 
     export function define(target: Function, service?: string): ProxyMetadata {
-        service = service || target.name.replace("Proxy", "");
-        let meta = gett(target);
+        let meta = get(target);
         if (!meta) {
             meta = Metadata.define(target, service) as ProxyMetadata;
             Reflect.defineMetadata(META_TYX_PROXY, meta, target);
         }
-        meta.name = meta.proxy = service;
+        meta.name = meta.service = service;
         return meta;
     }
 }

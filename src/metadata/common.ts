@@ -33,19 +33,19 @@ export namespace Metadata {
             || Reflect.hasMetadata(META_TYX, target.constructor);
     }
 
-    export function gett(target: Function | Object): Metadata {
+    export function get(target: Function | Object): Metadata {
         return Reflect.getMetadata(META_TYX, target)
             || Reflect.getMetadata(META_TYX, target.constructor);
     }
 
     export function name(target: Function | Object) {
-        let meta = gett(target);
+        let meta = get(target);
         return meta && meta.name;
     }
 
     // tslint:disable-next-line:no-shadowed-variable
     export function define(target: Function, name?: string): Metadata {
-        let meta = gett(target);
+        let meta = get(target);
         if (!meta) {
             meta = { name, dependencies: {} };
             Reflect.defineMetadata(META_TYX, meta, target);

@@ -33,6 +33,10 @@ export function Query<TR extends Roles>(roles?: TR) {
     return AuthDecorator(Query.name, roles || {}, true);
 }
 
+export function Advice<TR extends Roles>(roles?: TR) {
+    return AuthDecorator(Advice.name, roles || {}, true);
+}
+
 export function Mutation<TR extends Roles>(roles?: TR) {
     return AuthDecorator(Mutation.name, roles || {}, true);
 }

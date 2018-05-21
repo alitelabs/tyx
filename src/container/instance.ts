@@ -84,10 +84,10 @@ export class ContainerInstance implements Container {
         if (name) {
             id = name = "" + name;
         } else if (ServiceMetadata.has(target)) {
-            let meta = ServiceMetadata.gett(target);
+            let meta = ServiceMetadata.get(target);
             id = name = meta.name;
         } else if (ProxyMetadata.has(target)) {
-            let meta = ProxyMetadata.gett(target);
+            let meta = ProxyMetadata.get(target);
             name = meta.name;
             id = (meta.application || this.application) + ":" + meta.name;
         } else {
@@ -138,7 +138,7 @@ export class ContainerInstance implements Container {
         this.register(service);
 
         service = service as Service;
-        let metadata = ServiceMetadata.gett(service);
+        let metadata = ServiceMetadata.get(service);
         this.log.info("Publish: %s", metadata.service);
 
         for (let meta of Object.values(metadata.authMetadata)) {
@@ -267,7 +267,7 @@ export class ContainerInstance implements Container {
     }
 
     private inject(target: object) {
-        let meta = Metadata.gett(target);
+        let meta = Metadata.get(target);
         if (!meta || !meta.dependencies) return;
         for (let [pid, dep] of Object.entries(meta.dependencies)) {
             let localId = dep.resource;

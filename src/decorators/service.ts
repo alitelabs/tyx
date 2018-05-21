@@ -11,6 +11,7 @@ export interface Service {
 
 export function Api(name?: string): ClassDecorator {
     return (target) => {
+        name = name || target.name.replace("Api", "");
         let meta = ServiceMetadata.define(target, name);
         Object.values(meta.authMetadata).forEach(item => item.api = meta.name);
         Object.values(meta.httpMetadata).forEach(item => item.api = meta.name);
@@ -20,6 +21,7 @@ export function Api(name?: string): ClassDecorator {
 
 export function Service(name?: string): ClassDecorator {
     return (target) => {
+        name = name || target.name.replace("Service", "");
         let meta = ServiceMetadata.define(target, name);
         Object.values(meta.authMetadata).forEach(item => item.service = meta.name);
         Object.values(meta.httpMetadata).forEach(item => item.service = meta.name);
