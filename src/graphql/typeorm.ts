@@ -9,7 +9,7 @@ export interface IRecord {
 }
 
 export class TypeOrmProvider implements ToolkitProvider {
-    static readonly LIMIT = 1000;
+    public static readonly LIMIT = 1000;
 
     constructor(private manager: EntityManager) { }
 

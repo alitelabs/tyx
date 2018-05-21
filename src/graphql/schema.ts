@@ -281,7 +281,7 @@ export class ToolkitSchema {
 
     public addServiceMethod(service: string, method: string, resolver: ToolkitResolver) {
         let def = this.services[service] = this.services[service] || { service, methods: {} };
-        let signature = `${service}_${method}(req: JSON): JSON`
+        let signature = `${service}_${method}(req: JSON): JSON`;
         def.methods[method] = {
             method,
             resolver,

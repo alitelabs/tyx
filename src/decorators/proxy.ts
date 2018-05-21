@@ -10,7 +10,7 @@ export function Proxy(service?: string, application?: string, functionName?: str
         meta.name = service || meta.name || target.name;
         meta.proxy = meta.name;
         meta.application = application;
-        meta.functionName = functionName || (meta.name + "-function");;
+        meta.functionName = functionName || (meta.name + "-function");
     };
 }
 

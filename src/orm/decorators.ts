@@ -18,7 +18,7 @@ export function Entity<TFunction extends Function>(database?: TFunction, options
             Reflect.getMetadata(META_TYX_ENTITIES, database).push(target);
         }
         Orm.Entity(options)(target);
-    }
+    };
 }
 
 export namespace Entity {

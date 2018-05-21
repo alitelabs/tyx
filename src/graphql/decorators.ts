@@ -10,28 +10,28 @@ export function Input(name?: string): ClassDecorator {
     return (target) => {
         Reflect.defineMetadata(META_GRAPHQL_KIND, "input", target);
         Reflect.defineMetadata(META_GRAPHQL_NAME, name || target.name, target);
-    }
+    };
 }
 
 export function Result(name?: string): ClassDecorator {
     return (target) => {
         Reflect.defineMetadata(META_GRAPHQL_KIND, "result", target);
         Reflect.defineMetadata(META_GRAPHQL_NAME, name || target.name, target);
-    }
+    };
 }
 
 export function Type(name?: string): ClassDecorator {
     return (target) => {
         Reflect.defineMetadata(META_GRAPHQL_KIND, "type", target);
         Reflect.defineMetadata(META_GRAPHQL_NAME, name || target.name, target);
-    }
+    };
 }
 
 export function Enum(name?: string): ClassDecorator {
     return (target) => {
         Reflect.defineMetadata(META_GRAPHQL_KIND, "enum", target);
         Reflect.defineMetadata(META_GRAPHQL_NAME, name || target.name, target);
-    }
+    };
 }
 
 export function Field(type?: string, req?: boolean): PropertyDecorator {
@@ -44,7 +44,7 @@ export function Field(type?: string, req?: boolean): PropertyDecorator {
         // TODO: Check desing type against input type
         Reflect.defineMetadata(META_GRAPHQL_TYPE, type, target, propertyKey);
         Reflect.defineMetadata(META_GRAPHQL_REQUIRED, !!req, target, propertyKey);
-    }
+    };
 }
 
 export namespace Field {

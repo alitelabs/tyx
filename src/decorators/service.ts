@@ -17,7 +17,7 @@ export function Api(name?: string): ClassDecorator {
         Object.values(meta.httpMetadata).forEach(item => item.api = name);
         Object.values(meta.remoteMetadata).forEach(item => item.api = name);
         Object.values(meta.bindingMetadata).forEach(item => item.api = name);
-        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.api = name));;
+        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.api = name));
     };
 }
 
@@ -30,7 +30,7 @@ export function Service(name?: string): ClassDecorator {
         Object.values(meta.httpMetadata).forEach(item => item.service = name);
         Object.values(meta.remoteMetadata).forEach(item => item.service = name);
         Object.values(meta.bindingMetadata).forEach(item => item.service = name);
-        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.service = name));;
+        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.service = name));
     };
 }
 

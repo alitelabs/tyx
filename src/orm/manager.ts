@@ -60,7 +60,7 @@ export class Database implements Service, ToolkitProvider {
             };
         } else {
             this.label = "" + (options.name || options.database);
-            options = { ...options, entities: options.entities || this.entities }
+            options = { ...options, entities: options.entities || this.entities };
         }
         this.connection = await createConnection(options);
         this.manager = this.connection.manager;

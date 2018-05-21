@@ -39,7 +39,7 @@ export function Command<R extends Roles>(roles: R) {
     return AuthDecorator(Command.name, roles);
 }
 
-function AuthDecorator(access: string, roles: Roles): MethodDecorator {
+function AuthDecorator(access: string, roles: Roles, graphql?: boolean): MethodDecorator {
     access = access.toLowerCase();
 
     return (target, propertyKey, descriptor) => {
@@ -47,12 +47,13 @@ function AuthDecorator(access: string, roles: Roles): MethodDecorator {
         propertyKey = propertyKey.toString();
 
         let metadata = ServiceMetadata.get(target);
-        let prev = metadata.methodMetadata[propertyKey] || { roles: {} };
-
+        let prev = metadata.methodMetadata[propertyKey];
+        if (prev) roles = { ...prev.roles, ...roles };
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
+        if (!graphql && prev) access = prev.access;
 
-        let names = Utils.getArgs(descriptor.value as any)
+        let names = Utils.getArgs(descriptor.value as any);
         let types = Reflect.getMetadata("design:paramtypes", target, propertyKey);
         let returns = Reflect.getMetadata("design:returntype", target, propertyKey);
 
@@ -63,11 +64,12 @@ function AuthDecorator(access: string, roles: Roles): MethodDecorator {
             service: undefined,
             method: propertyKey,
             access: access.toLowerCase(),
-            roles: { ...prev.roles, ...roles },
+            roles,
             args,
             returns: "" + returns
         };
-        metadata.methodMetadata[propertyKey] = method;
+        if (!graphql && prev.access)
+            metadata.methodMetadata[propertyKey] = method;
 
         if (roles.Internal || roles.Remote || roles.External)
             Export()(target, propertyKey, descriptor);
