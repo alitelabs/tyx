@@ -21,7 +21,7 @@ function ResolverDecorator(oper: string, roles: Roles, input?: Function, result?
     oper = oper.toLowerCase();
     return (target, propertyKey, descriptor) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        let meta = ResolverMetadata.define(target, propertyKey, descriptor, oper, roles);
+        let meta = ResolverMetadata.define(target, propertyKey, descriptor, oper, roles, input, result);
         let service = ServiceMetadata.define(target.constructor);
         service.authMetadata[propertyKey] = meta;
         service.resolverMetadata[propertyKey] = meta;

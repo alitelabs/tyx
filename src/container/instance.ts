@@ -204,7 +204,7 @@ export class ContainerInstance implements Container {
                         req.queryStringParameters || {});
                 } else {
                     let args: any = [];
-                    for (let [index, arg] of metadata.args.entries()) {
+                    for (let [index, arg] of metadata.bindings.entries()) {
                         args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
                     }
                     result = await method.apply(service, args);

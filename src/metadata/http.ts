@@ -1,16 +1,16 @@
-import { ArgBinder, HttpAdapter, HttpCode } from "../types";
-import { MethodArgMetadata, MethodMetadata } from "./method";
+import { HttpAdapter, HttpBinder, HttpBindingType, HttpCode } from "../types";
+import { MethodMetadata } from "./method";
 
 export interface HttpMetadata extends MethodMetadata {
-    args: HttpArgMetadata[];
+    bindings: HttpBindingMetadata[];
     contentType?: string;
     http: Record<string, HttpRouteMetadata>;
 }
 
-export interface HttpArgMetadata extends MethodArgMetadata {
-    bind: string;
+export interface HttpBindingMetadata {
+    type: HttpBindingType;
     param: string;
-    binder: ArgBinder;
+    binder: HttpBinder;
 }
 
 export interface HttpRouteMetadata {
@@ -34,6 +34,7 @@ export namespace HttpMetadata {
 
     export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): HttpMetadata {
         let method = MethodMetadata.define(target, propertyKey, descriptor) as HttpMetadata;
+        method.bindings = method.bindings || [];
         method.http = method.http || {};
         return method;
     }

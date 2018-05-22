@@ -86,9 +86,9 @@ export class ExpressContainer extends ContainerPool {
         this.server = createServer(this.app);
         this.server.listen(port);
 
-        this.log.info("Server initialized.");
+        this.log.info("👌  Server initialized.");
         paths.forEach(x => this.log.info(x));
-        this.log.info("Server started at %s ...", port);
+        this.log.info("🚀  Server started at %s ...", port);
 
         return this.server;
     }

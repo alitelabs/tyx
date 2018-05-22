@@ -1,3 +1,19 @@
+export const META_DESIGN_TYPE = "design:type";
+export const META_DESIGN_PARAMS = "design:paramtypes";
+export const META_DESIGN_RETURN = "design:returntype";
+
+export const META_TYX_METADATA = "tyx:metadata";
+export const META_TYX_SERVICE = "tyx:service";
+export const META_TYX_PROXY = "tyx:proxy";
+export const META_TYX_TYPE = "tyx:type";
+export const META_TYX_METHOD = "tyx:method";
+
+export type TypeInfo = {
+    name?: string;
+    type: string;
+    constructor: Function;
+};
+
 export interface Metadata {
     name: string;
     dependencies?: Record<string, DependencyMetadata>;
@@ -8,34 +24,15 @@ export interface DependencyMetadata {
     application: string;
 }
 
-export namespace OMetadata {
-    const $metadata = Symbol("metadata");
-
-    export function get(target: Function | Object, init?: boolean): Metadata {
-        let type: any = null;
-        if (typeof target === "function") type = target;
-        else if (typeof target === "object") type = target.constructor;
-        if (type && !type[$metadata] && init !== false) type[$metadata] = {};
-        return type && type[$metadata];
-    }
-
-    export function name(target: Function | Object) {
-        let meta = get(target, false);
-        return meta && meta.name;
-    }
-}
-
 export namespace Metadata {
-    export const META_TYX = "tyx:metadata";
-
     export function has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX, target)
-            || Reflect.hasMetadata(META_TYX, target.constructor);
+        return Reflect.hasMetadata(META_TYX_METADATA, target)
+            || Reflect.hasMetadata(META_TYX_METADATA, target.constructor);
     }
 
     export function get(target: Function | Object): Metadata {
-        return Reflect.getMetadata(META_TYX, target)
-            || Reflect.getMetadata(META_TYX, target.constructor);
+        return Reflect.getMetadata(META_TYX_METADATA, target)
+            || Reflect.getMetadata(META_TYX_METADATA, target.constructor);
     }
 
     export function name(target: Function | Object) {
@@ -48,7 +45,7 @@ export namespace Metadata {
         let meta = get(target);
         if (!meta) {
             meta = { name, dependencies: {} };
-            Reflect.defineMetadata(META_TYX, meta, target);
+            Reflect.defineMetadata(META_TYX_METADATA, meta, target);
         }
         meta.name = name || target.name;
         return meta;

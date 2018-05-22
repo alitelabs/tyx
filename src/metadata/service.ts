@@ -1,5 +1,5 @@
 import { AuthMetadata } from "./auth";
-import { Metadata } from "./common";
+import { META_TYX_SERVICE, Metadata } from "./common";
 import { EventMetadata } from "./event";
 import { HttpMetadata } from "./http";
 import { ResolverMetadata } from "./resolver";
@@ -14,8 +14,6 @@ export interface ServiceMetadata extends Metadata {
 }
 
 export namespace ServiceMetadata {
-    export const META_TYX_SERVICE = "tyx:service";
-
     export function has(target: Function | Object): boolean {
         return Reflect.hasMetadata(META_TYX_SERVICE, target)
             || Reflect.hasMetadata(META_TYX_SERVICE, target.constructor);
@@ -36,7 +34,8 @@ export namespace ServiceMetadata {
             meta.eventMetadata = meta.eventMetadata || {};
             Reflect.defineMetadata(META_TYX_SERVICE, meta, target);
         }
-        meta.name = meta.service = service;
+        meta.service = service || meta.service;
+        meta.name = meta.service || meta.name;
         return meta;
     }
 }

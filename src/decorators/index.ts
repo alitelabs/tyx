@@ -7,4 +7,4 @@ export * from "./resolver";
 export * from "./http";
 export * from "./event";
 export * from "./exception";
-export * from "./type";
+export * from "./graphql";

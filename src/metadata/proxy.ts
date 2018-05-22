@@ -1,4 +1,4 @@
-import { Metadata } from "./common";
+import { Metadata, META_TYX_PROXY } from "./common";
 
 export interface ProxyMetadata extends Metadata {
     application: string;
@@ -7,8 +7,6 @@ export interface ProxyMetadata extends Metadata {
 }
 
 export namespace ProxyMetadata {
-    export const META_TYX_PROXY = "tyx:proxy";
-
     export function has(target: Function | Object): boolean {
         return Reflect.hasMetadata(META_TYX_PROXY, target)
             || Reflect.hasMetadata(META_TYX_PROXY, target.constructor);

@@ -4,8 +4,9 @@ import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html
 import { BaseService } from "../base";
 import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
+import { GraphTypeMetadata } from "../metadata";
 import { Database } from "../orm";
-import { Container, Context, HttpRequest, HttpResponse } from "../types";
+import { Container, Context, GraphType, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 import GraphiQL = require("apollo-server-module-graphiql");
 
@@ -42,11 +43,30 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         if (this.schema) return this.schema;
         let schema = new ToolkitSchema(this.database.metadata);
         for (let method of Object.values(this.container.metadata.resolverMetadata)) {
+            // if (method.auth === Query.name || method)
+            this.resolveType(schema, method.input);
+            // let result = this.resolveType(schema, method.result);
             schema.addServiceMethod(method.service, method.method, () => null);
         }
         // FS.writeFileSync("schema.gql", schema.typeDefs());
         return schema;
     }
+
+    private resolveType(schema: ToolkitSchema, type: GraphTypeMetadata): string {
+        // if (has) return design.name;
+        // let meta = GraphMetadata.get(design.constructor);
+        // if ([Result.name, ResultElement.name].includes(meta.kind)) {
+        //     return this.addInput(schema, meta);
+        // }
+        return GraphType.Object;
+    }
+
+    // private addInput(schema: ToolkitSchema, meta: TypeMetadata): string {
+    //     let ql = `input ${meta.name} {\n`;
+    //     for (let [name, field] of Object.entries(meta.fields)) {
+    //         let type = this.resolveType(schema, field.type);
+    //     }
+    // }
 
     @Get("/graphiql")
     @ContentType("text/html")

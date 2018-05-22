@@ -1,10 +1,15 @@
 import { Roles } from "../types";
 import { AuthMetadata } from "./auth";
-import { MethodArgMetadata } from "./method";
 
 export interface ResolverMetadata extends AuthMetadata {
-    input: MethodArgMetadata;
-    result: MethodArgMetadata;
+    input: GraphTypeMetadata;
+    result: GraphTypeMetadata;
+}
+
+export interface GraphTypeMetadata {
+    type: string;
+    // name: string;
+    constructor: Function;
 }
 
 export namespace ResolverMetadata {
@@ -20,8 +25,8 @@ export namespace ResolverMetadata {
     export function define(target: Object, propertyKey: string, descriptor: PropertyDescriptor,
         oper: string, roles: Roles, input?: Function, result?: Function): ResolverMetadata {
         let meta = AuthMetadata.define(target, propertyKey, descriptor, oper, roles) as ResolverMetadata;
-        meta.input = input ? { type: input.name, constructor: input } : { type: "JSON", constructor: Object };
-        meta.result = result ? { type: result.name, constructor: input } : { type: "JSON", constructor: Object };
+        meta.input = input ? { type: input.name, constructor: input } : { type: "Object", constructor: null };
+        meta.result = result ? { type: result.name, constructor: input } : { type: "Object", constructor: null };
         return meta;
     }
 }

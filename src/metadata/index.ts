@@ -9,4 +9,4 @@ export * from "./container";
 export * from "./proxy";
 export * from "./http";
 export * from "./event";
-export * from "./type";
+export * from "./graphql";

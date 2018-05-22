@@ -1,5 +1,5 @@
 import { HttpMetadata, ServiceMetadata } from "../metadata";
-import { ArgBinder, ContextBinder, HttpAdapter, HttpCode, HttpMethod, HttpResponse, RequestBinder } from "../types";
+import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, HttpCode, HttpMethod, HttpResponse, RequestBinder } from "../types";
 
 /////////// Method Decorators //////////////////////////////////////////////////////////////////
 
@@ -50,63 +50,65 @@ function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string,
 /////////// Parameter Decorators //////////////////////////////////////////////////////////////////
 
 export function PathParam(param: string): ParameterDecorator {
-    return ArgBinding(PathParam.name, param, (ctx, req) => req.pathParameters[param]);
+    return HttpBinding(HttpBindingType.PathParam, param, (ctx, req) => req.pathParameters[param]);
 }
 
 export function PathParams(): ParameterDecorator {
-    return ArgBinding(PathParams.name, "*", (ctx, req) => req.pathParameters);
+    return HttpBinding(HttpBindingType.PathParams, "*", (ctx, req) => req.pathParameters);
 }
 
 export function QueryParam(param: string): ParameterDecorator {
-    return ArgBinding(QueryParam.name, param, (ctx, req) => req.queryStringParameters[param]);
+    return HttpBinding(HttpBindingType.QueryParam, param, (ctx, req) => req.queryStringParameters[param]);
 }
 
 export function QueryParams(): ParameterDecorator {
-    return ArgBinding(QueryParams.name, "*", (ctx, req) => req.queryStringParameters);
+    return HttpBinding(HttpBindingType.QueryParams, "*", (ctx, req) => req.queryStringParameters);
 }
 
 export function BodyParam(param: string): ParameterDecorator {
-    return ArgBinding(BodyParam.name, param, (ctx, req) => resolvePath(req.json, param));
+    return HttpBinding(HttpBindingType.BodyParam, param, (ctx, req) => resolvePath(req.json, param));
 }
 
 export function HeaderParam(param: string): ParameterDecorator {
-    return ArgBinding(HeaderParam.name, param, (ctx, req) => req.headers[("" + param).toLowerCase()]);
+    return HttpBinding(HttpBindingType.HeaderParam, param, (ctx, req) => req.headers[("" + param).toLowerCase()]);
 }
 
 // export function CookieParam(param: string) {}
 
 export function Body(): ParameterDecorator {
-    return ArgBinding(Body.name, undefined, (ctx, req) => req.json);
+    return HttpBinding(HttpBindingType.Body, undefined, (ctx, req) => req.json);
 }
 
 export function ContextObject(): ParameterDecorator {
-    return ArgBinding(ContextObject.name, undefined, (ctx, req) => ctx);
+    return HttpBinding(HttpBindingType.ContextObject, undefined, (ctx, req) => ctx);
 }
 
 export function ContextParam(param: string | ContextBinder): ParameterDecorator {
-    return ArgBinding(ContextParam.name,
+    return HttpBinding(HttpBindingType.ContextParam,
         param instanceof Function ? "[Function]" : param,
         (ctx, req) => resolvePath(ctx, param));
 }
 
 export function RequestObject(): ParameterDecorator {
-    return ArgBinding(RequestObject.name, undefined, (ctx, req) => req);
+    return HttpBinding(HttpBindingType.RequestObject, undefined, (ctx, req) => req);
 }
 
 export function RequestParam(param: string | RequestBinder): ParameterDecorator {
-    return ArgBinding(RequestParam.name,
+    return HttpBinding(HttpBindingType.RequestParam,
         param instanceof Function ? "[Function]" : param,
         (ctx, req) => resolvePath(req, param));
 }
 
-function ArgBinding(type: string, param: string, binder: ArgBinder): ParameterDecorator {
+function HttpBinding(type: HttpBindingType, param: string, binder: HttpBinder): ParameterDecorator {
     return function (target, propertyKey, index) {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = HttpMetadata.define(target, propertyKey);
-        let arg = meta.args[index];
-        arg.bind = type;
-        arg.param = param;
-        arg.binder = binder;
+        meta.bindings[index] = {
+            ...meta.bindings[index],
+            type,
+            param,
+            binder
+        };
     };
 }
 

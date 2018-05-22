@@ -163,6 +163,8 @@ export class ToolkitSchema {
 
 
     public entities: Record<string, EntitySchema> = {};
+    public inputs: Record<string, string> = {};
+    public results: Record<string, string> = {};
     public services: Record<string, ServiceSchema> = {};
 
     constructor(entities: EntityMetadata[]) {
@@ -277,6 +279,10 @@ export class ToolkitSchema {
             + opers.join(",\n  ");
         let inputs = [input, where, nil, multi, like, order].map(x => `input ${target}${x}\n}`);
         return { model, inputs, args: { create, update, keys, search } };
+    }
+
+    public getType(name: string): string {
+        return this.inputs[name] || this.results[name] || this.entities[name] && this.entities[name].model;
     }
 
     public addServiceMethod(service: string, method: string, resolver: ToolkitResolver) {
