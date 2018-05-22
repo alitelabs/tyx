@@ -4,6 +4,7 @@ import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html
 import { BaseService } from "../base";
 import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
+import { Database } from "../orm";
 import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 import GraphiQL = require("apollo-server-module-graphiql");
@@ -23,6 +24,9 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     @Inject(Container)
     protected container: Container;
 
+    @Inject(Database)
+    protected database: Database;
+
     protected schema: ToolkitSchema;
     private executable: GraphQLSchema;
 
@@ -30,10 +34,18 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         super();
     }
 
-    protected abstract initialize(ctx?: Context, req?: HttpRequest): Promise<ToolkitSchema>;
-
     protected async activate(ctx: Context, req: HttpRequest) {
         this.schema = await this.initialize(ctx, req);
+    }
+
+    public async initialize(ctx?: Context, req?: HttpRequest): Promise<ToolkitSchema> {
+        if (this.schema) return this.schema;
+        let schema = new ToolkitSchema(this.database.metadata);
+        for (let method of Object.values(this.container.metadata.resolverMetadata)) {
+            schema.addServiceMethod(method.service, method.method, () => null);
+        }
+        // FS.writeFileSync("schema.gql", schema.typeDefs());
+        return schema;
     }
 
     @Get("/graphiql")

@@ -41,6 +41,7 @@ export class ContainerInstance implements Container {
         this.eventHandlers = {};
         this.imetadata = {
             authMetadata: {},
+            resolverMetadata: {},
             httpMetadata: {},
             eventMetadata: {}
         };
@@ -146,6 +147,11 @@ export class ContainerInstance implements Container {
             this.imetadata.authMetadata[key] = meta;
             if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
             this.remoteHandlers[key] = this.remoteHandler(service, meta);
+        }
+
+        for (let meta of Object.values(metadata.resolverMetadata)) {
+            let key = metadata.service + "." + meta.method;
+            this.imetadata.resolverMetadata[key] = meta;
         }
 
         for (let [route, meta] of Object.entries(metadata.httpMetadata)) {

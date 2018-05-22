@@ -9,8 +9,15 @@ import { EntityMetadata } from "./metadata";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "typeorm";
 
-@Service("database")
-export class Database implements Service, ToolkitProvider {
+export const Database = "database";
+
+export interface Database {
+    manager: EntityManager;
+    metadata: EntityMetadata[];
+}
+
+@Service(Database)
+export class DatabaseProvider implements Service, Database, ToolkitProvider {
 
     private static instances = 0;
 
@@ -45,7 +52,7 @@ export class Database implements Service, ToolkitProvider {
             this.label = options.substring(options.indexOf("@") + 1);
             let tokens = options.split(/:|@|\/|;/);
             let logQueries = tokens.findIndex(x => x === "logall") > 5;
-            let name = (this.config && this.config.appId || "tyx") + "#" + (++Database.instances);
+            let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
             options = {
                 name,
                 username: tokens[0],
