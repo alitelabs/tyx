@@ -6,8 +6,16 @@ export function Input(name?: string): ClassDecorator {
     return (target) => void TypeMetadata.define(target, Input.name, name);
 }
 
+export function InputElement(name?: string): ClassDecorator {
+    return (target) => void TypeMetadata.define(target, InputElement.name, name);
+}
+
 export function Result(name?: string): ClassDecorator {
     return (target) => void TypeMetadata.define(target, Result.name, name);
+}
+
+export function ResultElement(name?: string): ClassDecorator {
+    return (target) => void TypeMetadata.define(target, ResultElement.name, name);
 }
 
 export function Type(name?: string): ClassDecorator {
@@ -30,6 +38,9 @@ export function FloatField(req?: boolean): PropertyDecorator {
     return Field(FloatField.name, req);
 }
 export function StringField(req?: boolean): PropertyDecorator {
+    return Field(StringField.name, req);
+}
+export function OptionField(req?: boolean): PropertyDecorator {
     return Field(StringField.name, req);
 }
 export function BooleanField(req?: boolean): PropertyDecorator {

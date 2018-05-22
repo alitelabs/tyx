@@ -2,11 +2,13 @@ import { AuthMetadata } from "./auth";
 import { Metadata } from "./common";
 import { EventMetadata } from "./event";
 import { HttpMetadata } from "./http";
+import { ResolverMetadata } from "./resolver";
 
 export interface ServiceMetadata extends Metadata {
     service: string;
 
     authMetadata: Record<string, AuthMetadata>;
+    resolverMetadata: Record<string, ResolverMetadata>;
     httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
 }
@@ -29,6 +31,7 @@ export namespace ServiceMetadata {
         if (!meta) {
             meta = Metadata.define(target, service) as ServiceMetadata;
             meta.authMetadata = meta.authMetadata || {};
+            meta.resolverMetadata = meta.resolverMetadata || {};
             meta.httpMetadata = meta.httpMetadata || {};
             meta.eventMetadata = meta.eventMetadata || {};
             Reflect.defineMetadata(META_TYX_SERVICE, meta, target);

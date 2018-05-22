@@ -29,37 +29,11 @@ export function Authorization<TR extends Roles>(roles: TR) {
     return AuthDecorator(Authorization.name, roles);
 }
 
-export function Query<TR extends Roles>(roles?: TR) {
-    return AuthDecorator(Query.name, roles || {}, true);
-}
-
-export function Advice<TR extends Roles>(roles?: TR) {
-    return AuthDecorator(Advice.name, roles || {}, true);
-}
-
-export function Mutation<TR extends Roles>(roles?: TR) {
-    return AuthDecorator(Mutation.name, roles || {}, true);
-}
-
-export function Command<TR extends Roles>(roles?: TR) {
-    return AuthDecorator(Command.name, roles || {}, true);
-}
-
-function AuthDecorator(auth: string, roles: Roles, graphql?: boolean): MethodDecorator {
+function AuthDecorator(auth: string, roles: Roles): MethodDecorator {
     auth = auth.toLowerCase();
-
     return (target, propertyKey, descriptor) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        graphql = !!graphql;
-
-        let meta = AuthMetadata.define(target, propertyKey, descriptor);
-        meta.auth = graphql ? auth : (meta.auth || auth);
-        meta.graphql = !!meta.graphql || graphql;
-        roles = meta.roles = { ...meta.roles, ...roles };
-        roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
-        roles.External = roles.External === undefined ? false : !!roles.External;
-        roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
-
+        let meta = AuthMetadata.define(target, propertyKey, descriptor, auth, roles);
         let service = ServiceMetadata.define(target.constructor);
         service.authMetadata[propertyKey] = meta;
     };

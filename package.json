@@ -63,7 +63,7 @@
     "@types/merge-stream": "^1.1.0",
     "@types/ms": "^0.7.30",
     "@types/node": "^9.6.16",
-    "@types/uuid": "^2.0.30",
+    "@types/uuid": "^3.4.3",
     "aws-sdk": "^2.240.1",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
@@ -75,6 +75,7 @@
     "gulpclass": "^0.1.2",
     "serverless-s3-deploy": "^0.5.0",
     "sha256": "^0.2.0",
+    "shortid": "^2.2.8",
     "ts-node": "^3.3.0",
     "tslint": "^5.10.0",
     "typescript": "^2.8.3"

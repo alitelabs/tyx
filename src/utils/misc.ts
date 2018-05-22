@@ -1,4 +1,4 @@
-import uuidr = require("uuid");
+import uuidr = require("uuid/v4");
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
 export function getArgs(func: (...args: any[]) => any): string[] {
@@ -12,7 +12,7 @@ export function getArgs(func: (...args: any[]) => any): string[] {
 }
 
 export function uuid() {
-    return uuidr.v4();
+    return uuidr();
 }
 
 export function password() {
