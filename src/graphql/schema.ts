@@ -2,32 +2,12 @@ import { GraphQLBoolean, GraphQLField, GraphQLFloat, GraphQLInt, GraphQLInterfac
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
 import { ILogger, SchemaDirectiveVisitor, makeExecutableSchema } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
-import { EntityMetadata } from "typeorm/metadata/EntityMetadata";
+import { ColumnType, EntityMetadata, GraphType, RelationType } from "../metadata";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import GraphQLJSON = require("graphql-type-json");
 
+
 export { GraphQLSchema } from "graphql";
-
-// ID: The ID scalar type represents a unique identifier
-// Int: A signed 32‐bit integer.
-// Float: A signed double-precision floating-point value.
-// String: A UTF‐8 character sequence.
-// Boolean: true or false.
-
-const STRING = "String";
-const INT = "Int";
-const FLOAT = "Float";
-const DATE = "Date";
-// const DATETIME = "DateTime";
-
-// TODO: Find the mapping in typeorm
-const typeMap: Record<string, string> = {
-    "varchar": STRING,
-    "mediumtext": STRING,
-    "int": INT,
-    "decimal": FLOAT,
-    "datetime": DATE
-};
 
 export const SYS_COLUMNS = ["created", "updated", "version"];
 
@@ -195,18 +175,18 @@ export class ToolkitSchema {
                 let target = rel.inverseEntityMetadata.name;
                 let rm = entity.relations[rel.propertyName] = { target } as any;
                 if (!entities.find(e => e.name === target)) continue;
-                if (rel.isManyToOne) {
+                if (rel.relationType === RelationType.ManyToOne) {
                     rm.type = "manyToOne";
                     let args = "";
                     entity.model += `,\n  ${rel.propertyName}${args}: ${target}${MODEL} @relation(type: ManyToOne)`;
                     entity.prisma += `,\n  ${rel.propertyName}: ${target}${MODEL}`;
-                } else if (rel.isOneToOne) {
+                } else if (rel.relationType === RelationType.OneToOne) {
                     rm.type = "oneToOne";
                     let args = "";
                     entity.model += `,\n  ${rel.propertyName}${args}: ${target}${MODEL} @relation(type: OneToOne)`;
-                } else if (rel.isOneToMany) {
+                } else if (rel.relationType === RelationType.OneToMany) {
                     rm.type = "oneToMany";
-                    let args = (rel.isOneToMany) ? ` (${schema.entities[target].args.search}\n  )` : "";
+                    let args = (rel.relationType === RelationType.OneToMany) ? ` (${schema.entities[target].args.search}\n  )` : "";
                     entity.model += `,\n  ${rel.propertyName}${args}: [${target}${MODEL}] @relation(type: OneToMany)`;
                 } else {
                     continue; // TODO: Implement
@@ -234,10 +214,9 @@ export class ToolkitSchema {
         let first = true;
         for (let col of meta.columns) {
             let pn = col.propertyName;
-            let dt = typeMap[col.type.toString()];
-            if (!dt) throw new Error("Unknown type: " + col.type);
+            let dt = ColumnType.graphType(col.type);
             let nl = !col.isNullable ? "!" : "";
-            if (col.propertyName.endsWith("Id")) dt = "ID";
+            if (col.propertyName.endsWith("Id")) dt = GraphType.ID;
             model += `${first ? "" : ","}\n  ${pn}: ${dt}${nl}`;
             if (col.isPrimary)
                 keys += `${first ? "" : ", "}${pn}: ${dt}${nl}`;

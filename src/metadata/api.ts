@@ -1,17 +1,20 @@
-import { GraphType } from "../types";
 import { AuthMetadata } from "./auth";
 import { META_TYX_API, Metadata } from "./common";
 import { EventMetadata } from "./event";
-import { GraphMetadata } from "./graphql";
 import { HttpMetadata } from "./http";
 import { ResolverMetadata } from "./resolver";
+import { GraphType, StrucMetadata, TypeMetadata } from "./type";
+
+export function Api(name?: string): ClassDecorator {
+    return (target) => void ApiMetadata.define(target, name);
+}
 
 export interface ApiMetadata extends Metadata {
     api: string;
 
     authMetadata: Record<string, AuthMetadata>;
-    inputMetadata: Record<string, GraphMetadata>;
-    resultMetadata: Record<string, GraphMetadata>;
+    inputMetadata: Record<string, TypeMetadata>;
+    resultMetadata: Record<string, TypeMetadata>;
     resolverMetadata: Record<string, ResolverMetadata>;
     httpMetadata: Record<string, HttpMetadata>;
     eventMetadata: Record<string, EventMetadata[]>;
@@ -31,7 +34,7 @@ export namespace ApiMetadata {
     export function init(target: Function): ApiMetadata {
         let meta = get(target);
         if (!meta) {
-            meta = Metadata.define(target) as ApiMetadata;
+            meta = Metadata.init(target) as ApiMetadata;
             meta.authMetadata = {};
             meta.inputMetadata = {};
             meta.resultMetadata = {};
@@ -69,9 +72,9 @@ export namespace ApiMetadata {
         return "# " + api.name;
     }
 
-    export function resolve(api: ApiMetadata, meta: GraphMetadata, input: boolean): GraphMetadata {
+    export function resolve(api: ApiMetadata, meta: TypeMetadata, input: boolean): TypeMetadata {
         if (GraphType.isScalar(meta.type)) {
-            meta.ref = meta.type;
+            meta.name = meta.type;
             return meta;
         }
         if (meta.target && input && api.inputMetadata[meta.target.name]) {
@@ -81,27 +84,27 @@ export namespace ApiMetadata {
             return api.resultMetadata[meta.target.name];
         }
         if (GraphType.isRef(meta.type)) {
-            let type = GraphMetadata.get(meta.target);
+            let type = TypeMetadata.get(meta.target);
             if (type) {
                 type = resolve(api, type, input);
-                meta.ref = type.ref;
+                meta.name = type.name;
             } else {
-                meta.ref = GraphType.Object;
+                meta.name = GraphType.Object;
             }
             return meta;
         }
         if (GraphType.isList(meta.type)) {
             let type = resolve(api, meta.item, input);
             if (type) {
-                meta.ref = `[${type.ref}]`;
+                meta.name = `[${type.name}]`;
             } else {
-                meta.ref = `[${GraphType.Object}]`;
+                meta.name = `[${GraphType.Object}]`;
             }
             return meta;
         }
         if (GraphType.isEntity(meta.type) && !input) {
             // TODO: Register imports
-            meta.ref = meta.target.name;
+            meta.name = meta.target.name;
             return meta;
         }
         if (input && !GraphType.isInput(meta.type))
@@ -110,19 +113,21 @@ export namespace ApiMetadata {
         if (!input && GraphType.isInput(meta.type))
             throw new TypeError(`Result type can not reference [${meta.type}]`);
 
-        if (!meta.fields)
-            throw new TypeError(`Empty type difinition ${meta.target}`);
+        let struc = meta as StrucMetadata;
+        if (!GraphType.isStruc(struc.type) || !struc.fields)
+            throw new TypeError(`Empty type difinition ${struc.target}`);
 
         // Generate schema
-        meta.ref = meta.target.name;
-        if (input) api.inputMetadata[meta.ref] = meta; else api.resultMetadata[meta.ref] = meta;
-        let def = input ? `input ${meta.ref} {\n` : `type ${meta.ref} {\n`;
-        for (let [key, field] of Object.entries(meta.fields)) {
+        struc.name = struc.target.name;
+        if (input) api.inputMetadata[struc.name] = struc; else api.resultMetadata[struc.name] = struc;
+        let def = input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        for (let [key, field] of Object.entries(struc.fields)) {
             let res = resolve(api, field, input);
-            def += `  ${key}: ${res.ref}\n`;
+            def += `  ${key}: ${res.name}\n`;
         }
         def += "}";
-        meta._schema = def;
+        struc.schema = def;
+
         return meta;
     }
 }

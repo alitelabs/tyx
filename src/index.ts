@@ -3,12 +3,10 @@ if (Symbol["asyncIterator"] === undefined) ((Symbol as any)["asyncIterator"]) = 
 
 export * from "./types";
 export * from "./metadata";
-export * from "./decorators";
 export * from "./logger";
-export * from "./base";
+export * from "./core";
 export * from "./errors";
 export * from "./utils";
-export * from "./container";
 export * from "./orm";
 export * from "./aws";
 export * from "./express";

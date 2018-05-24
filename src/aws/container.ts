@@ -1,4 +1,4 @@
-import { ContainerPool } from "../container";
+import { ContainerPool } from "../core";
 import { BadRequest, InternalServerError } from "../errors";
 import { LogLevel } from "../logger";
 import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, RemoteRequest } from "../types";

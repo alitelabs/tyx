@@ -1,12 +1,8 @@
-import { Express } from "express";
+
 import { Server } from "http";
-import { BaseService } from "../base";
+import { BaseService } from "../core";
+import { Aws, Express } from "../import";
 import { Context, HttpRequest, HttpResponse } from "../types";
-
-export { Express };
-
-import awsServerlessExpress = require("aws-serverless-express");
-import express = require("express");
 
 export abstract class ExpressService extends BaseService {
 
@@ -17,7 +13,7 @@ export abstract class ExpressService extends BaseService {
         if (rsrc.indexOf("{") > 0) rsrc = rsrc.substring(0, rsrc.indexOf("{") - 1);
         req.path = req.path.substring(req.path.indexOf(rsrc));
 
-        let app: Express = express();
+        let app: Express.Express = Express.Create();
         // app.use(bodyParser.json());
         // app.use(awsServerlessExpressMiddleware.eventContext());
 
@@ -25,8 +21,8 @@ export abstract class ExpressService extends BaseService {
 
         // TODO: Complete response
         return new Promise<HttpResponse>((resolve, reject) => {
-            this.server = awsServerlessExpress.createServer(app);
-            awsServerlessExpress.proxy(this.server, req, {
+            this.server = Aws.ServerlessExpress.createServer(app);
+            Aws.ServerlessExpress.proxy(this.server, req, {
                 succeed: (input) => resolve({
                     statusCode: input.statusCode,
                     headers: input.headers,
@@ -37,7 +33,7 @@ export abstract class ExpressService extends BaseService {
         });
     }
 
-    protected abstract setup(app: Express, ctx: Context, req: HttpRequest): void;
+    protected abstract setup(app: Express.Express, ctx: Context, req: HttpRequest): void;
 
     public async release(): Promise<void> {
         if (this.server) this.server.close();

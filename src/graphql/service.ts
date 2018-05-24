@@ -1,15 +1,10 @@
-import { runHttpQuery } from "apollo-server-core";
-import { GraphQLSchema } from "graphql";
-import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html";
-import { BaseService } from "../base";
-import { ContentType, Get, Inject, Post } from "../decorators";
+import { BaseService } from "../core";
 import { InternalServerError } from "../errors";
-import { GraphMetadata } from "../metadata";
+import { ContentType, Get, Inject, Post } from "../metadata";
 import { Database } from "../orm";
-import { Container, Context, GraphType, HttpRequest, HttpResponse } from "../types";
+import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
-import GraphiQL = require("apollo-server-module-graphiql");
-
+import { GraphQL } from "../import";
 const playgroundVersion = "1.6.6";
 
 export const GraphQLApi = "graphql";
@@ -29,7 +24,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     protected database: Database;
 
     protected schema: ToolkitSchema;
-    private executable: GraphQLSchema;
+    private executable: GraphQL.GraphQLSchema;
 
     constructor(prefix: string) {
         super();
@@ -42,42 +37,20 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     public async initialize(ctx?: Context, req?: HttpRequest): Promise<ToolkitSchema> {
         if (this.schema) return this.schema;
         let schema = new ToolkitSchema(this.database.metadata);
-        for (let method of Object.values(this.container.metadata.resolverMetadata)) {
-            // if (method.auth === Query.name || method)
-            this.resolveType(schema, method.input);
-            // let result = this.resolveType(schema, method.result);
-            schema.addServiceMethod(method.service, method.method, () => null);
-        }
         // FS.writeFileSync("schema.gql", schema.typeDefs());
         return schema;
     }
 
-    private resolveType(schema: ToolkitSchema, type: GraphMetadata): string {
-        // if (has) return design.name;
-        // let meta = GraphMetadata.get(design.constructor);
-        // if ([Result.name, ResultElement.name].includes(meta.kind)) {
-        //     return this.addInput(schema, meta);
-        // }
-        return GraphType.Object;
-    }
-
-    // private addInput(schema: ToolkitSchema, meta: TypeMetadata): string {
-    //     let ql = `input ${meta.name} {\n`;
-    //     for (let [name, field] of Object.entries(meta.fields)) {
-    //         let type = this.resolveType(schema, field.type);
-    //     }
-    // }
-
     @Get("/graphiql")
     @ContentType("text/html")
     public async graphiql(ctx: Context, req: HttpRequest, prefix?: string): Promise<string> {
-        let options: GraphiQL.GraphiQLData = {
+        let options: GraphQL.GraphiQLData = {
             endpointURL: `${prefix || ""}/graphql`,
             passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
             // editorTheme: "idea"
         };
         try {
-            return await GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
+            return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
         } catch (error) {
             throw new InternalServerError(error.message, error);
         }
@@ -87,12 +60,12 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     @ContentType("text/html")
     public async playground(ctx: Context, req: HttpRequest, prefix?: string): Promise<string> {
         let sufix = ctx.auth.token ? ("/" + ctx.auth.token) : "";
-        const options: RenderPageOptions = {
+        const options: GraphQL.RenderPageOptions = {
             endpoint: `${prefix || ""}/graphql${sufix}`,
             // passHeader: `'Authorization': '${call.queryStringParameters.token}'`,
             version: playgroundVersion
         };
-        return await renderPlaygroundPage(options);
+        return await GraphQL.renderPlaygroundPage(options);
     }
 
     @Get("/graphql")
@@ -116,7 +89,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         let result: HttpResponse = { statusCode: null, body: null, headers: {} };
         try {
             // : GraphContext = { ...ctx, db: this.database.getConnection() };
-            result.body = await runHttpQuery([req, ctx], { method: req.httpMethod, options, query });
+            result.body = await GraphQL.runHttpQuery([req, ctx], { method: req.httpMethod, options, query });
             result.headers["Content-Type"] = "application/json";
             result.statusCode = 200;
         } catch (error) {

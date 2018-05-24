@@ -1,4 +1,4 @@
-import { Event, Internal } from "../decorators";
+import { Event, Internal } from "../metadata";
 import { EventAdapter } from "../types";
 
 export function S3Event(bucket: string, action?: string, filter?: string, adapter?: EventAdapter) {

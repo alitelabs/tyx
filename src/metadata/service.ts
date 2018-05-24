@@ -1,5 +1,18 @@
 import { ApiMetadata } from "./api";
 import { META_TYX_SERVICE } from "./common";
+import { Logger } from "../logger";
+import { Context } from "../types";
+
+export interface Service {
+    log?: Logger;
+    initialize?(): Promise<any>;
+    activate?(ctx?: Context): Promise<void>;
+    release?(ctx?: Context): Promise<void>;
+}
+
+export function Service(name?: string): ClassDecorator {
+    return (target) => void ServiceMetadata.define(target, name);
+}
 
 export interface ServiceMetadata extends ApiMetadata {
     service: string;

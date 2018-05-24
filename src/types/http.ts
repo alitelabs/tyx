@@ -1,4 +1,4 @@
-import { Context, Request } from "./common";
+import { Request } from "./common";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -47,31 +47,7 @@ export interface HttpResponse {
     body: any;
 }
 
-export interface HttpAdapter {
-    (
-        next: (...args: any[]) => Promise<any>,
-        ctx?: Context,
-        req?: HttpRequest,
-        path?: Record<string, string>,
-        query?: Record<string, string>
-    ): Promise<any>;
-}
 
-export enum HttpBindingType {
-    PathParam = "PathParam",
-    PathParams = "PathParams",
-    QueryParam = "QueryParam",
-    QueryParams = "QueryParams",
-    HeaderParam = "HeaderParam",
-    BodyParam = "BodyParam",
-    ContextParam = "ContextParam",
-    // Objects
-    Body = "Body",
-    ContextObject = "ContextObject",
-    RequestObject = "RequestObject",
-    RequestParam = "RequestParam"
-}
 
-export type ContextBinder = (ctx: Context) => any;
-export type RequestBinder = (req: HttpRequest) => any;
-export type HttpBinder = (ctx: Context, req: HttpRequest) => any;
+
+

@@ -1,4 +1,17 @@
-import { Metadata, META_TYX_PROXY } from "./common";
+import { META_TYX_PROXY, Metadata } from "./common";
+import { Service } from "./service";
+
+export interface Proxy extends Service {
+}
+
+export function Proxy(service?: string, application?: string, functionName?: string): ClassDecorator {
+    return (target) => {
+        service = service || target.name.replace("Proxy", "");
+        let meta = ProxyMetadata.define(target, service);
+        meta.application = application;
+        meta.functionName = functionName || (meta.name + "-function");
+    };
+}
 
 export interface ProxyMetadata extends Metadata {
     application: string;
@@ -20,7 +33,7 @@ export namespace ProxyMetadata {
     export function define(target: Function, service?: string): ProxyMetadata {
         let meta = get(target);
         if (!meta) {
-            meta = Metadata.define(target, service) as ProxyMetadata;
+            meta = Metadata.init(target, service) as ProxyMetadata;
             Reflect.defineMetadata(META_TYX_PROXY, meta, target);
         }
         meta.name = meta.service = service;

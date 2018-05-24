@@ -1,7 +1,6 @@
-import { Inject, Service } from "../decorators";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
-import { AuthMetadata } from "../metadata";
+import { AuthMetadata, Inject, Service } from "../metadata";
 import { AuthInfo, Container, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
 import { Utils } from "../utils";
 import { Configuration } from "./config";

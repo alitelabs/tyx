@@ -1,11 +1,35 @@
-import { GraphType, Roles } from "../types";
+import { Roles } from "../types";
 import { ApiMetadata } from "./api";
 import { AuthMetadata } from "./auth";
-import { GraphMetadata } from "./graphql";
+import { TypeMetadata, GraphType } from "./type";
+
+export function Query<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
+    return ResolverDecorator(Query.name, roles, input, result);
+}
+
+export function Mutation<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
+    return ResolverDecorator(Mutation.name, roles, input, result);
+}
+
+export function Advice<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
+    return ResolverDecorator(Advice.name, roles, input, result);
+}
+
+export function Command<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
+    return ResolverDecorator(Command.name, roles, input, result);
+}
+
+function ResolverDecorator(oper: string, roles: Roles, input?: Function, result?: Function): MethodDecorator {
+    oper = oper.toLowerCase();
+    return (target, propertyKey, descriptor) => {
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        ResolverMetadata.define(target, propertyKey, descriptor, oper, roles, input, result);
+    };
+}
 
 export interface ResolverMetadata extends AuthMetadata {
-    input: GraphMetadata;
-    result: GraphMetadata;
+    input: TypeMetadata;
+    result: TypeMetadata;
 }
 
 export namespace ResolverMetadata {

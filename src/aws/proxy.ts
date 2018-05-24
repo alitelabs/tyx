@@ -1,16 +1,17 @@
-import { Lambda } from "aws-sdk";
-import { BaseProxy } from "../base";
+
+import { BaseProxy } from "../core";
 import { InternalServerError } from "../errors";
+import { Aws } from "../import";
 import { ProxyMetadata } from "../metadata";
 import { RemoteRequest } from "../types";
 import { LambdaError } from "./error";
 
 export abstract class LambdaProxy extends BaseProxy {
-    private lambda: Lambda;
+    private lambda: Aws.Lambda;
 
     constructor() {
         super();
-        this.lambda = new Lambda();
+        this.lambda = new Aws.Lambda();
     }
 
     protected async token(call: RemoteRequest): Promise<string> {
@@ -29,7 +30,7 @@ export abstract class LambdaProxy extends BaseProxy {
             : this.config.stage;
 
         let meta = ProxyMetadata.get(this);
-        let response: Lambda.InvocationResponse;
+        let response: Aws.Lambda.InvocationResponse;
         try {
             response = await this.lambda.invoke({
                 FunctionName: stage + "-" + meta.functionName,

@@ -1,21 +1,17 @@
 
-import { Express, Request, Response } from "express";
+
 import { Server, createServer } from "http";
-import { ContainerPool } from "../container";
+import { ContainerPool } from "../core";
 import { InternalServerError } from "../errors";
+import { Express } from "../import";
 import { LogLevel } from "../logger";
 import { HttpMethod, HttpRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
-import express = require("express");
-import BodyParser = require("body-parser");
-
-export { Express };
-
 export class ExpressContainer extends ContainerPool {
 
     private server: Server;
-    private app: Express;
+    private app: Express.Express;
     private basePath: string;
 
     constructor(application: string, basePath?: string) {
@@ -28,8 +24,8 @@ export class ExpressContainer extends ContainerPool {
 
         await this.prepare();
 
-        this.app = express();
-        this.app.use(BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
+        this.app = Express.Create();
+        this.app.use(Express.BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
         this.app.use((req, res, next) => {
             res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,PATCH");
@@ -59,7 +55,7 @@ export class ExpressContainer extends ContainerPool {
             paths.push(`${httpMethod} - http://localhost:${port}${path}`);
 
             // this.log.info("Registered route: %s", route);
-            let adapter = (req: Request, res: Response) => {
+            let adapter = (req: Express.Request, res: Express.Response) => {
                 this.handle(resource, req, res);
             };
 
@@ -93,7 +89,7 @@ export class ExpressContainer extends ContainerPool {
         return this.server;
     }
 
-    private async handle(resource: string, req: Request, res: Response) {
+    private async handle(resource: string, req: Express.Request, res: Express.Response) {
         LogLevel.set(this.config.logLevel);
         this.log.info("%s: %s", req.method, req.url);
 

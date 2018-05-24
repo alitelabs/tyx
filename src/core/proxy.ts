@@ -1,6 +1,5 @@
-import { Inject, Proxy } from "../decorators";
 import { Logger } from "../logger";
-import { Metadata, ProxyMetadata } from "../metadata";
+import { Inject, Metadata, Proxy, ProxyMetadata } from "../metadata";
 import { RemoteRequest } from "../types";
 import { Configuration } from "./config";
 import { Security } from "./security";

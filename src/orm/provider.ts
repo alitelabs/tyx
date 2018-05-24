@@ -1,18 +1,16 @@
-import { Connection, ConnectionOptions, EntityManager, SelectQueryBuilder, createConnection, getConnection } from "typeorm";
-import { Configuration } from "../base";
-import { Entity, Inject } from "../decorators";
-import { Service } from "../decorators/service";
+import { Configuration } from "../core";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
+import { Orm } from "../import";
 import { Logger } from "../logger";
+import { Entity, EntityMetadata, Inject, Service } from "../metadata";
 import { Context } from "../types/common";
-import { EntityMetadata } from "./metadata";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "typeorm";
 
 export const Database = "database";
 
 export interface Database {
-    manager: EntityManager;
+    manager: Orm.EntityManager;
     metadata: EntityMetadata[];
 }
 
@@ -28,23 +26,23 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
     public log;
     public label: string;
 
-    protected connection: Connection;
-    public manager: EntityManager;
+    protected connection: Orm.Connection;
+    public manager: Orm.EntityManager;
 
     public get entities(): Function[] { return Entity.list(this); }
 
-    public get metadata(): EntityMetadata[] { return this.connection.entityMetadatas; }
+    public get metadata(): EntityMetadata[] { return this.connection.entityMetadatas as any; }
 
     public getMetadata(entity: string | Function): EntityMetadata {
-        return this.connection.getMetadata(entity);
+        return this.connection.getMetadata(entity) as any;
     }
 
-    public async initialize(options?: string | ConnectionOptions): Promise<void> {
+    public async initialize(options?: string | Orm.ConnectionOptions): Promise<void> {
         if (!this.log) this.log = Logger.get("database", this);
         options = options || this.config && this.config.database || "default";
         if (typeof options === "string" && !options.includes("@")) {
             this.label = options;
-            this.connection = await getConnection(options);
+            this.connection = await Orm.getConnection(options);
             this.manager = this.connection.manager;
             return;
         }
@@ -71,7 +69,7 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
         }
         // this.pool = new ConnectionManager();
         // this.connection = this.pool.create(options);
-        this.connection = await createConnection(options);
+        this.connection = await Orm.createConnection(options);
         this.manager = this.connection.manager;
         this.connection.close();
     }
@@ -153,9 +151,9 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getMany();
     }
 
-    public prepareQuery(type: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): SelectQueryBuilder<any> {
+    public prepareQuery(type: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): Orm.SelectQueryBuilder<any> {
         let sql = ToolkitQuery.prepareSql(keys, query);
-        let builder: SelectQueryBuilder<any> = this.manager.createQueryBuilder(type, ToolkitQuery.ALIAS)
+        let builder: Orm.SelectQueryBuilder<any> = this.manager.createQueryBuilder(type, ToolkitQuery.ALIAS)
             .where(sql.where, sql.params);
         sql.order.forEach(ord => builder.addOrderBy(ord.column, ord.asc ? "ASC" : "DESC"));
         if (sql.skip) builder.skip(sql.skip);

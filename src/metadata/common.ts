@@ -11,12 +11,20 @@ export const META_TYX_METHOD = "tyx:method";
 
 export const META_TYX_ENTITIES = "tyx:entities";
 
-export interface Metadata {
-    name: string;
-    dependencies?: Record<string, DependencyMetadata>;
+// TODO: resource as resolver function, to be used for logger or similar
+export function Inject(resource?: string | Function, application?: string): PropertyDecorator {
+    return (target, propertyKey) => {
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        Metadata.inject(target, propertyKey, resource, application);
+    };
 }
 
-export interface DependencyMetadata {
+export interface Metadata {
+    name: string;
+    dependencies?: Record<string, InjectMetadata>;
+}
+
+export interface InjectMetadata {
     resource: string;
     application: string;
 }
@@ -38,7 +46,7 @@ export namespace Metadata {
     }
 
     // tslint:disable-next-line:no-shadowed-variable
-    export function define(target: Function, name?: string): Metadata {
+    export function init(target: Function, name?: string): Metadata {
         let meta = get(target);
         if (!meta) {
             meta = { name, dependencies: {} };
@@ -46,6 +54,20 @@ export namespace Metadata {
         }
         meta.name = name || target.name;
         return meta;
+    }
+
+    export function inject(target: Object, propertyKey: string, resource?: string | Function, application?: string) {
+        if (!resource) {
+            resource = Reflect.getMetadata(META_DESIGN_TYPE, target, propertyKey);
+        }
+        if (resource instanceof Function) {
+            resource = resource.name;
+        } else {
+            resource = resource.toString();
+        }
+        let metadata = init(target.constructor);
+        metadata.dependencies = metadata.dependencies || {};
+        metadata.dependencies[propertyKey] = { resource, application };
     }
 }
 

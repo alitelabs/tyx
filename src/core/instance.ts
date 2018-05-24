@@ -1,8 +1,7 @@
-import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../base";
-import { Proxy, Service } from "../decorators";
+import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../core";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
-import { AuthMetadata, ContainerMetadata, EventMetadata, HttpMetadata, Metadata, ProxyMetadata, ServiceMetadata } from "../metadata";
+import { AuthMetadata, ContainerMetadata, EventMetadata, HttpMetadata, Metadata, Proxy, ProxyMetadata, Service, ServiceMetadata } from "../metadata";
 import { Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 

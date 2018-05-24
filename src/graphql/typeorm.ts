@@ -1,4 +1,5 @@
 import { EntityManager, SelectQueryBuilder } from "typeorm";
+import { EntityMetadata } from "../metadata";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import { ToolkitContext, ToolkitInfo, ToolkitProvider } from "./schema";
 
@@ -40,10 +41,10 @@ export class TypeOrmProvider implements ToolkitProvider {
     }
 
     public oneToMany(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
-        let pks = relation.entityMetadata.primaryColumns.map(col => col.propertyName);
+        let pks = entity.primaryColumns.map(col => col.propertyName);
         let fks = relation.inverseRelation.joinColumns.map(col => col.propertyName);
         let keys: any = {};
         fks.forEach((fk, i) => keys[fk] = root[pks[i]]);
@@ -51,20 +52,20 @@ export class TypeOrmProvider implements ToolkitProvider {
     }
 
     public oneToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
         let fks = relation.joinColumns.length ?
             relation.joinColumns.map(col => col.propertyName) :
-            relation.entityMetadata.primaryColumns.map(col => col.propertyName);
+            entity.primaryColumns.map(col => col.propertyName);
         let keys: any = {};
         pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
         return this.prepareQuery(target, keys, query, context).getOne();
     }
 
     public manyToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);

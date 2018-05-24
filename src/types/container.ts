@@ -1,5 +1,4 @@
-import { Proxy, Service } from "../decorators";
-import { ContainerMetadata } from "../metadata";
+import { ContainerMetadata, Proxy, Service } from "../metadata";
 import { Context } from "./common";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";

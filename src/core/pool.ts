@@ -1,10 +1,10 @@
-import { Configuration, Security } from "../base";
-import { Proxy, Service } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { ContainerMetadata } from "../metadata";
+import { ContainerMetadata, Proxy, Service } from "../metadata";
 import { Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { Configuration } from "./config";
 import { ContainerInstance } from "./instance";
+import { Security } from "./security";
 
 export class ContainerPool implements Container {
     protected log: Logger;
