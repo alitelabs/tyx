@@ -2,23 +2,29 @@ import { GraphMetadata, META_DESIGN_TYPE, TypeInfo } from "../metadata";
 import { GraphType } from "../types";
 
 export function Input(name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.define(target, GraphType.Input, name);
+    return GraphClass(GraphType.Input, name);
 }
 
 export function InputItem(name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.define(target, GraphType.InputItem, name);
+    return GraphClass(GraphType.InputItem, name);
 }
 
 export function Result(name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.define(target, GraphType.Result, name);
+    return GraphClass(GraphType.Result, name);
 }
 
 export function ResultItem(name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.define(target, GraphType.ResultItem, name);
+    return GraphClass(GraphType.ResultItem, name);
 }
 
 export function Enum(name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.define(target, GraphType.Enum, name);
+    return GraphClass(GraphType.Enum, name);
+}
+
+function GraphClass(type: GraphType, name?: string): ClassDecorator {
+    return (target) => {
+        GraphMetadata.define(target, GraphType.ResultItem, name);
+    };
 }
 
 /// Fields

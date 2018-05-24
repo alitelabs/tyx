@@ -73,7 +73,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     public async graphiql(ctx: Context, req: HttpRequest, prefix?: string): Promise<string> {
         let options: GraphiQL.GraphiQLData = {
             endpointURL: `${prefix || ""}/graphql`,
-            passHeader: `'Authorization': '${req.queryStringParameters.token}'`,
+            passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
             // editorTheme: "idea"
         };
         try {

@@ -2,6 +2,7 @@ import { GraphType } from "../types";
 import { META_TYX_TYPE, TypeInfo } from "./common";
 
 export interface GraphMetadata {
+    api?: string;
     type: GraphType;
     name: string;
     fields: Record<string, FieldMetadata>;
@@ -30,7 +31,7 @@ export namespace GraphMetadata {
         if (type && !GraphType.isRoot(type) && !GraphType.isItem(type)) throw new TypeError(`Not a root type: ${type}`);
         let meta = get(target);
         if (!meta) {
-            meta = { type, name, fields: {} };
+            meta = { api: undefined, type, name, fields: {} };
             Reflect.defineMetadata(META_TYX_TYPE, meta, target);
         }
         meta.type = meta.type || type;

@@ -1,16 +1,8 @@
-import { AuthMetadata } from "./auth";
-import { META_TYX_SERVICE, Metadata } from "./common";
-import { EventMetadata } from "./event";
-import { HttpMetadata } from "./http";
-import { ResolverMetadata } from "./resolver";
+import { ApiMetadata } from "./api";
+import { META_TYX_SERVICE } from "./common";
 
-export interface ServiceMetadata extends Metadata {
+export interface ServiceMetadata extends ApiMetadata {
     service: string;
-
-    authMetadata: Record<string, AuthMetadata>;
-    resolverMetadata: Record<string, ResolverMetadata>;
-    httpMetadata: Record<string, HttpMetadata>;
-    eventMetadata: Record<string, EventMetadata[]>;
 }
 
 export namespace ServiceMetadata {
@@ -24,18 +16,14 @@ export namespace ServiceMetadata {
             || Reflect.getMetadata(META_TYX_SERVICE, target.constructor);
     }
 
-    export function define(target: Function, service?: string): ServiceMetadata {
+    export function define(target: Function, name?: string): ServiceMetadata {
         let meta = get(target);
         if (!meta) {
-            meta = Metadata.define(target, service) as ServiceMetadata;
-            meta.authMetadata = meta.authMetadata || {};
-            meta.resolverMetadata = meta.resolverMetadata || {};
-            meta.httpMetadata = meta.httpMetadata || {};
-            meta.eventMetadata = meta.eventMetadata || {};
+            meta = ApiMetadata.define(target, name) as ServiceMetadata;
             Reflect.defineMetadata(META_TYX_SERVICE, meta, target);
         }
-        meta.service = service || meta.service;
-        meta.name = meta.service || meta.name;
+        if (name) meta.service = meta.name = name;
+        if (!meta.name) meta.name = meta.service = target.name.replace("Service", "");
         return meta;
     }
 }

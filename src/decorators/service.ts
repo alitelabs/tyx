@@ -9,20 +9,9 @@ export interface Service {
     release?(ctx?: Context): Promise<void>;
 }
 
-export function Api(name?: string): ClassDecorator {
-    return (target) => {
-        name = name || target.name.replace("Api", "");
-        let meta = ServiceMetadata.define(target, name);
-        Object.values(meta.authMetadata).forEach(item => item.api = meta.name);
-        Object.values(meta.httpMetadata).forEach(item => item.api = meta.name);
-        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.api = meta.name));
-    };
-}
-
 export function Service(name?: string): ClassDecorator {
     return (target) => {
         let meta = ServiceMetadata.define(target, name);
-        meta.service = meta.name = !name && meta.name || name || target.name.replace("Service", "");
         Object.values(meta.authMetadata).forEach(item => item.service = meta.name);
         Object.values(meta.httpMetadata).forEach(item => item.service = meta.name);
         Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.service = meta.name));

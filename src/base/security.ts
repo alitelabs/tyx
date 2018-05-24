@@ -32,14 +32,17 @@ export abstract class BaseSecurity implements Security {
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
 
-        if (!metadata.roles.Public && !metadata.roles.Debug) {
+        let localhost = req.sourceIp === "127.0.0.1" || req.sourceIp === "::1";
+
+        if (!metadata.roles.Public && !(metadata.roles.Debug && localhost)) {
             if (!token) throw new Unauthorized("Missing authorization token");
             let auth = await this.verify(req.requestId, token, metadata, req.sourceIp);
             auth = this.renew(auth);
             return new Context({ container, requestId: req.requestId, metadata, auth });
         }
 
-        if (metadata.roles.Public && token) this.log.debug("Ignore token on public permission");
+        if (metadata.roles.Public && token)
+            this.log.debug("Ignore token on public permission");
 
         let ctx = new Context({
             container,
@@ -61,8 +64,7 @@ export abstract class BaseSecurity implements Security {
         });
 
         if (metadata.roles.Debug) {
-            if (req.sourceIp !== "127.0.0.1" && req.sourceIp !== "::1")
-                throw new Forbidden("Debug role only valid for localhost");
+            if (!localhost) throw new Forbidden("Debug role only valid for localhost");
             ctx.auth.subject = "user:debug";
             ctx.auth.role = "Debug";
             if (token) try {

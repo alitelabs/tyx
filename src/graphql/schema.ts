@@ -1,4 +1,4 @@
-import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType, GraphQLSchema } from "graphql";
+import { GraphQLBoolean, GraphQLField, GraphQLFloat, GraphQLInt, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLString } from "graphql";
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
 import { ILogger, SchemaDirectiveVisitor, makeExecutableSchema } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
@@ -133,11 +133,15 @@ export class RelationVisitor extends SchemaDirectiveVisitor {
 }
 
 export class ToolkitSchema {
-    public static SCALARS = {
+    public static SCALARS: Record<string, GraphQLScalarType> = {
         Date: GraphQLDate,
         Time: GraphQLTime,
         DateTime: GraphQLDateTime,
-        JSON: GraphQLJSON
+        JSON: GraphQLJSON,
+        string: GraphQLString,
+        number: GraphQLFloat,
+        int: GraphQLInt,
+        boolean: GraphQLBoolean
     };
 
     public static DIRECTIVES = {

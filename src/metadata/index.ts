@@ -1,6 +1,7 @@
 import "reflect-metadata";
 
 export * from "./common";
+export * from "./api";
 export * from "./service";
 export * from "./method";
 export * from "./auth";

@@ -3,6 +3,7 @@ export const META_DESIGN_PARAMS = "design:paramtypes";
 export const META_DESIGN_RETURN = "design:returntype";
 
 export const META_TYX_METADATA = "tyx:metadata";
+export const META_TYX_API = "tyx:api";
 export const META_TYX_SERVICE = "tyx:service";
 export const META_TYX_PROXY = "tyx:proxy";
 export const META_TYX_TYPE = "tyx:type";
