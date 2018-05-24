@@ -144,6 +144,6 @@ export class ExpressContainer extends ContainerPool {
 
     public stop() {
         super.dispose();
-        this.server.close();
+        if (this.server) this.server.close();
     }
 }

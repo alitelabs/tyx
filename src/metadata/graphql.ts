@@ -1,19 +1,22 @@
+import { DesignMetadata } from ".";
 import { GraphType } from "../types";
-import { META_TYX_TYPE, TypeInfo } from "./common";
+import { META_TYX_TYPE } from "./common";
 
 export interface GraphMetadata {
     api?: string;
     type: GraphType;
-    name: string;
-    fields: Record<string, FieldMetadata>;
+    name?: string;
+    fields?: Record<string, FieldMetadata>;
+    target?: Function;
+    schema?: string;
 }
 
 export interface FieldMetadata {
     name: string;
     type: GraphType;
     required: boolean;
-    item: TypeInfo;
-    design: TypeInfo;
+    item: GraphMetadata;
+    design: DesignMetadata;
 }
 
 export namespace GraphMetadata {
@@ -27,15 +30,20 @@ export namespace GraphMetadata {
             || Reflect.getMetadata(META_TYX_TYPE, target.constructor);
     }
 
-    export function define(target: Function, type?: GraphType, name?: string): GraphMetadata {
-        if (type && !GraphType.isRoot(type) && !GraphType.isItem(type)) throw new TypeError(`Not a root type: ${type}`);
+    export function init(target: Function): GraphMetadata {
         let meta = get(target);
         if (!meta) {
-            meta = { api: undefined, type, name, fields: {} };
+            meta = { api: undefined, type: undefined, name: undefined, fields: {} };
             Reflect.defineMetadata(META_TYX_TYPE, meta, target);
         }
-        meta.type = meta.type || type;
-        meta.name = meta.name || name;
+        return meta;
+    }
+
+    export function resolve(target: Function, type: GraphType, name?: string): GraphMetadata {
+        if (type && !GraphType.isRoot(type) && !GraphType.isItem(type)) throw new TypeError(`Not a root type: ${type}`);
+        let meta = init(target);
+        meta.type = type;
+        meta.name = name || target.name;
         return meta;
     }
 }

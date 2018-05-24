@@ -9,11 +9,7 @@ export const META_TYX_PROXY = "tyx:proxy";
 export const META_TYX_TYPE = "tyx:type";
 export const META_TYX_METHOD = "tyx:method";
 
-export type TypeInfo = {
-    name?: string;
-    type: string;
-    constructor: Function;
-};
+export const META_TYX_ENTITIES = "tyx:entities";
 
 export interface Metadata {
     name: string;

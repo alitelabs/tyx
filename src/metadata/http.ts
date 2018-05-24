@@ -32,7 +32,7 @@ export namespace HttpMetadata {
         return meta && meta.http && meta;
     }
 
-    export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): HttpMetadata {
+    export function init(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): HttpMetadata {
         let method = MethodMetadata.define(target, propertyKey, descriptor) as HttpMetadata;
         method.bindings = method.bindings || [];
         method.http = method.http || {};

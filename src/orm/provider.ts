@@ -1,10 +1,10 @@
 import { Connection, ConnectionOptions, EntityManager, SelectQueryBuilder, createConnection, getConnection } from "typeorm";
 import { Configuration } from "../base";
-import { Inject, Service } from "../decorators/service";
+import { Entity, Inject } from "../decorators";
+import { Service } from "../decorators/service";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Logger } from "../logger";
 import { Context } from "../types/common";
-import { Entity } from "./decorators";
 import { EntityMetadata } from "./metadata";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "typeorm";
@@ -69,8 +69,11 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
             this.label = "" + (options.name || options.database);
             options = { ...options, entities: options.entities || this.entities };
         }
+        // this.pool = new ConnectionManager();
+        // this.connection = this.pool.create(options);
         this.connection = await createConnection(options);
         this.manager = this.connection.manager;
+        this.connection.close();
     }
 
     public async activate(ctx: Context) {

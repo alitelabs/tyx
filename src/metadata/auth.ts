@@ -1,4 +1,5 @@
 import { Roles } from "../types";
+import { ApiMetadata } from "./api";
 import { MethodMetadata } from "./method";
 
 export interface AuthMetadata extends MethodMetadata {
@@ -23,6 +24,8 @@ export namespace AuthMetadata {
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
         roles.External = roles.External === undefined ? false : !!roles.External;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
+        let api = ApiMetadata.init(target.constructor);
+        api.authMetadata[propertyKey] = meta;
         return meta;
     }
 }

@@ -1,7 +1,6 @@
 import * as Orm from "typeorm";
+import { META_TYX_ENTITIES } from "../metadata";
 import { ObjectType } from "../types/common";
-
-export const META_TYX_ENTITIES = "tyx:entities";
 
 export interface EntityOptions extends Orm.EntityOptions { }
 

@@ -10,7 +10,7 @@ export function Event(source: string, resource: string,
         actionFilter = actionFilter === true ? propertyKey.toString() : actionFilter;
         actionFilter = actionFilter || "*";
         objectFilter = objectFilter || "*";
-        let meta = EventMetadata.define(target, propertyKey, descriptor);
+        let meta = EventMetadata.init(target, propertyKey, descriptor);
         meta.events[route] = {
             source,
             resource,
@@ -19,7 +19,7 @@ export function Event(source: string, resource: string,
             adapter
         };
         if (auth) auth()(target, propertyKey, descriptor);
-        let service = ServiceMetadata.define(target.constructor);
+        let service = ServiceMetadata.init(target.constructor);
         service.eventMetadata[route] = service.eventMetadata[route] || [];
         service.eventMetadata[route].push(meta);
     };

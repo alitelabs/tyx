@@ -1,5 +1,6 @@
 import "reflect-metadata";
 
+export * from "./common";
 export * from "./api";
 export * from "./service";
 export * from "./proxy";
@@ -9,3 +10,4 @@ export * from "./http";
 export * from "./event";
 export * from "./exception";
 export * from "./graphql";
+export * from "./orm";

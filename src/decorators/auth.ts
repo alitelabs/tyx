@@ -1,4 +1,4 @@
-import { AuthMetadata, ServiceMetadata } from "../metadata";
+import { AuthMetadata } from "../metadata";
 import { Roles } from "../types";
 
 export function Public() {
@@ -30,12 +30,10 @@ export function Authorization<TR extends Roles>(roles: TR) {
 }
 
 function AuthDecorator(auth: string, roles: Roles): MethodDecorator {
-    auth = auth.toLowerCase();
     return (target, propertyKey, descriptor) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        let meta = AuthMetadata.define(target, propertyKey, descriptor, auth, roles);
-        let service = ServiceMetadata.define(target.constructor);
-        service.authMetadata[propertyKey] = meta;
+        auth = auth.toLowerCase();
+        AuthMetadata.define(target, propertyKey, descriptor, auth, roles);
     };
 }
 

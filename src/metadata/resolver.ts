@@ -1,15 +1,11 @@
-import { Roles } from "../types";
+import { GraphType, Roles } from "../types";
+import { ApiMetadata } from "./api";
 import { AuthMetadata } from "./auth";
+import { GraphMetadata } from "./graphql";
 
 export interface ResolverMetadata extends AuthMetadata {
-    input: GraphTypeMetadata;
-    result: GraphTypeMetadata;
-}
-
-export interface GraphTypeMetadata {
-    type: string;
-    // name: string;
-    constructor: Function;
+    input: GraphMetadata;
+    result: GraphMetadata;
 }
 
 export namespace ResolverMetadata {
@@ -25,8 +21,10 @@ export namespace ResolverMetadata {
     export function define(target: Object, propertyKey: string, descriptor: PropertyDescriptor,
         oper: string, roles: Roles, input?: Function, result?: Function): ResolverMetadata {
         let meta = AuthMetadata.define(target, propertyKey, descriptor, oper, roles) as ResolverMetadata;
-        meta.input = input ? { type: input.name, constructor: input } : { type: "Object", constructor: null };
-        meta.result = result ? { type: result.name, constructor: input } : { type: "Object", constructor: null };
+        meta.input = input ? { type: GraphType.Ref, name: input.name, target: input } : { type: GraphType.ANY };
+        meta.result = result ? { type: GraphType.Ref, name: result.name, target: result } : { type: GraphType.ANY };
+        let api = ApiMetadata.init(target.constructor);
+        api.resolverMetadata[propertyKey] = meta;
         return meta;
     }
 }

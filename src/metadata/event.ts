@@ -23,7 +23,7 @@ export namespace EventMetadata {
         return meta && meta.events && meta;
     }
 
-    export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): EventMetadata {
+    export function init(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): EventMetadata {
         let method = MethodMetadata.define(target, propertyKey, descriptor) as EventMetadata;
         method.events = method.events || {};
         return method;

@@ -143,14 +143,14 @@ export class ContainerInstance implements Container {
         this.log.info("Publish: %s", metadata.service);
 
         for (let meta of Object.values(metadata.authMetadata)) {
-            let key = metadata.service + "." + meta.method;
+            let key = meta.service + "." + meta.method;
             this.imetadata.authMetadata[key] = meta;
             if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
             this.remoteHandlers[key] = this.remoteHandler(service, meta);
         }
 
         for (let meta of Object.values(metadata.resolverMetadata)) {
-            let key = metadata.service + "." + meta.method;
+            let key = meta.service + "." + meta.method;
             this.imetadata.resolverMetadata[key] = meta;
         }
 

@@ -33,7 +33,7 @@ function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string,
         model = model as string;
         let route = `${verb} ${resource}`;
         route = model ? `${route}:${model}` : route;
-        let meta = HttpMetadata.define(target, propertyKey);
+        let meta = HttpMetadata.init(target, propertyKey);
         meta.http[route] = {
             verb,
             resource,
@@ -41,7 +41,7 @@ function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string,
             code,
             adapter
         };
-        let metadata = ServiceMetadata.define(target.constructor);
+        let metadata = ServiceMetadata.init(target.constructor);
         if (metadata.httpMetadata[route]) throw new Error(`Duplicate route: ${route}`);
         metadata.httpMetadata[route] = meta;
     };
@@ -102,7 +102,7 @@ export function RequestParam(param: string | RequestBinder): ParameterDecorator 
 function HttpBinding(type: HttpBindingType, param: string, binder: HttpBinder): ParameterDecorator {
     return function (target, propertyKey, index) {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        let meta = HttpMetadata.define(target, propertyKey);
+        let meta = HttpMetadata.init(target, propertyKey);
         meta.bindings[index] = {
             ...meta.bindings[index],
             type,
@@ -115,7 +115,7 @@ function HttpBinding(type: HttpBindingType, param: string, binder: HttpBinder): 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
     return function (target, propertyKey, descriptor) {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        let meta = HttpMetadata.define(target, propertyKey, descriptor);
+        let meta = HttpMetadata.init(target, propertyKey, descriptor);
         meta.contentType = contentType;
     };
 }
