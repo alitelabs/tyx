@@ -26,7 +26,7 @@ export namespace MethodMetadata {
     export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
         let meta = Reflect.getMetadata(META_TYX_METHOD, target, propertyKey) as MethodMetadata;
         let ret = meta && meta.design && meta.design[meta.design.length - 1];
-        if (ret && ret.name === "[return]") return meta;
+        if (ret && ret.name === "#return") return meta;
         if (!meta) {
             meta = { api: undefined, service: undefined, method: propertyKey, design: [] };
             Reflect.defineMetadata(META_TYX_METHOD, meta, target, propertyKey);
@@ -35,7 +35,7 @@ export namespace MethodMetadata {
         let params: any[] = Reflect.getMetadata(META_DESIGN_PARAMS, target, propertyKey);
         let returns = Reflect.getMetadata(META_DESIGN_RETURN, target, propertyKey);
         params.forEach((param, i) => meta.design[i] = { name: names[i], type: param.name, target: param });
-        meta.design[params.length] = { name: descriptor ? "[return]" : undefined, type: returns.name, target: returns };
+        meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns.name, target: returns };
         return meta;
     }
 }

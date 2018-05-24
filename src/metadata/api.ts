@@ -63,46 +63,66 @@ export namespace ApiMetadata {
     export function schema(target: Function | Object): string {
         let api = get(target);
         for (let res of Object.values(api.resolverMetadata)) {
-            // res.input = resolveInput(api, res.input);
-            // res.result = resolveInput(api, res.result);
+            res.input = resolve(api, res.input, true);
+            res.result = resolve(api, res.result, false);
         }
         return "# " + api.name;
     }
 
-    export function resolveInput(api: ApiMetadata, meta: GraphMetadata): GraphMetadata {
+    export function resolve(api: ApiMetadata, meta: GraphMetadata, input: boolean): GraphMetadata {
         if (GraphType.isScalar(meta.type)) {
-            meta.schema = meta.type;
+            meta.ref = meta.type;
             return meta;
         }
-        if (meta.name && api.inputMetadata[meta.name]) {
-            return api.inputMetadata[meta.name];
+        if (meta.target && input && api.inputMetadata[meta.target.name]) {
+            return api.inputMetadata[meta.target.name];
+        }
+        if (meta.target && !input && api.resultMetadata[meta.target.name]) {
+            return api.resultMetadata[meta.target.name];
         }
         if (GraphType.isRef(meta.type)) {
-            let ref = GraphMetadata.get(meta.target);
-            if (ref) {
-                meta.schema = ref.name;
-                resolveInput(api, ref);
+            let type = GraphMetadata.get(meta.target);
+            if (type) {
+                type = resolve(api, type, input);
+                meta.ref = type.ref;
             } else {
-                meta.schema = GraphType.Object;
+                meta.ref = GraphType.Object;
             }
             return meta;
         }
-        if (GraphType.isEntity(meta.type)) {
-            // TODO: Register imports
-            meta.schema = meta.name;
+        if (GraphType.isList(meta.type)) {
+            let type = resolve(api, meta.item, input);
+            if (type) {
+                meta.ref = `[${type.ref}]`;
+            } else {
+                meta.ref = `[${GraphType.Object}]`;
+            }
             return meta;
         }
-        if (!GraphType.isInput(meta.type))
+        if (GraphType.isEntity(meta.type) && !input) {
+            // TODO: Register imports
+            meta.ref = meta.target.name;
+            return meta;
+        }
+        if (input && !GraphType.isInput(meta.type))
             throw new TypeError(`Input type can not reference [${meta.type}]`);
 
-        // Generate Input schema
-        api.inputMetadata[meta.name] = meta;
-        let def = `input ${meta.name} {\n`;
-        for (let [name, field] of Object.entries(meta.fields)) {
-            def += `  ${name}: ${field.type}\n`;
+        if (!input && GraphType.isInput(meta.type))
+            throw new TypeError(`Result type can not reference [${meta.type}]`);
+
+        if (!meta.fields)
+            throw new TypeError(`Empty type difinition ${meta.target}`);
+
+        // Generate schema
+        meta.ref = meta.target.name;
+        if (input) api.inputMetadata[meta.ref] = meta; else api.resultMetadata[meta.ref] = meta;
+        let def = input ? `input ${meta.ref} {\n` : `type ${meta.ref} {\n`;
+        for (let [key, field] of Object.entries(meta.fields)) {
+            let res = resolve(api, field, input);
+            def += `  ${key}: ${res.ref}\n`;
         }
         def += "}";
-        meta.schema = def;
+        meta._schema = def;
         return meta;
     }
 }

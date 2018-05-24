@@ -1,4 +1,4 @@
-import { GraphMetadata, META_DESIGN_TYPE } from "../metadata";
+import { GraphMetadata } from "../metadata";
 import { GraphType } from "../types";
 
 export function Input(name?: string): ClassDecorator {
@@ -22,7 +22,7 @@ export function Enum(name?: string): ClassDecorator {
 }
 
 function GraphClass(type: GraphType, name?: string): ClassDecorator {
-    return (target) => void GraphMetadata.resolve(target, GraphType.ResultItem, name);
+    return (target) => void GraphMetadata.resolve(target, type, name);
 }
 
 /// Fields
@@ -79,19 +79,6 @@ export function EnumField(req?: boolean): PropertyDecorator {
 function Field(type: GraphType, required: boolean, item?: GraphType | Function): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        // TODO: use design type when not specified
-        let design = Reflect.getMetadata(META_DESIGN_TYPE, target, propertyKey);
-        // TODO: Validata
-        let meta = GraphMetadata.init(target.constructor);
-        let itemInfo: GraphMetadata = typeof item === "function"
-            ? { type: GraphType.Object, name: item.name, target: item }
-            : { type: item };
-        meta.fields[propertyKey] = {
-            type,
-            item: itemInfo,
-            name: propertyKey,
-            required,
-            design: { type: design.name, target: design }
-        };
+        GraphMetadata.append(target, propertyKey, type, required, item);
     };
 }

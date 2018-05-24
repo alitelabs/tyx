@@ -4,7 +4,7 @@ import { RenderPageOptions, renderPlaygroundPage } from "graphql-playground-html
 import { BaseService } from "../base";
 import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
-import { GraphTypeMetadata } from "../metadata";
+import { GraphMetadata } from "../metadata";
 import { Database } from "../orm";
 import { Container, Context, GraphType, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
@@ -52,7 +52,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         return schema;
     }
 
-    private resolveType(schema: ToolkitSchema, type: GraphTypeMetadata): string {
+    private resolveType(schema: ToolkitSchema, type: GraphMetadata): string {
         // if (has) return design.name;
         // let meta = GraphMetadata.get(design.constructor);
         // if ([Result.name, ResultElement.name].includes(meta.kind)) {

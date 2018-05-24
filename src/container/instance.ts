@@ -41,6 +41,8 @@ export class ContainerInstance implements Container {
         this.eventHandlers = {};
         this.imetadata = {
             authMetadata: {},
+            inputMetadata: {},
+            resultMetadata: {},
             resolverMetadata: {},
             httpMetadata: {},
             eventMetadata: {}
@@ -95,7 +97,9 @@ export class ContainerInstance implements Container {
             id = name = target.constructor.name;
         }
 
-        if (this.services[id] || this.proxies[id] || this.resources[id]) throw new InternalServerError(`Duplicate registration [${id}]`);
+        let prev = (this.services[id] || this.proxies[id] || this.resources[id]);
+        if (prev && prev !== target)
+            throw new InternalServerError(`Duplicate registration [${id}]`);
 
         if (name === Configuration) {
             if (!ServiceMetadata.has(target)) throw new InternalServerError(`Configuration must be a service`);
@@ -106,7 +110,7 @@ export class ContainerInstance implements Container {
         }
         if (name === Security) {
             if (!ServiceMetadata.has(target)) throw new InternalServerError(`Security must be a service`);
-            this.security = target as any;
+            this.security = target as Security;
         }
 
         if (ServiceMetadata.has(target)) {
@@ -147,6 +151,18 @@ export class ContainerInstance implements Container {
             this.imetadata.authMetadata[key] = meta;
             if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
             this.remoteHandlers[key] = this.remoteHandler(service, meta);
+        }
+
+        for (let [key, meta] of Object.entries(metadata.inputMetadata)) {
+            let prev = this.imetadata.inputMetadata[key];
+            if (prev && meta !== prev) throw TypeError(`Conflict input definition ${prev.target}`);
+            this.imetadata.inputMetadata[key] = meta;
+        }
+
+        for (let [key, meta] of Object.entries(metadata.resultMetadata)) {
+            let prev = this.imetadata.resultMetadata[key];
+            if (prev && meta !== prev) throw TypeError(`Conflict result definition ${prev.target}`);
+            this.imetadata.resultMetadata[key] = meta;
         }
 
         for (let meta of Object.values(metadata.resolverMetadata)) {
