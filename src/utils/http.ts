@@ -152,7 +152,8 @@ export namespace HttpUtils {
     export function extractFile(req: HttpRequest): any {
         let ct = req.contentType.isMultipart ? req.multiparts[0].contentType : req.contentType;
         let body = req.contentType.isMultipart ? req.multiparts[0].body : req.body;
-        if (ct.value.startsWith("text/")) return this.parseCsv(body);
+        // TODO: handle csv
+        if (ct.value.startsWith("text/")) return body;
         if (ct.value === "application/gzip"
             || ct.value === "application/x-gzip"
             || ct.value === "application/octet-stream") {

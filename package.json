@@ -21,16 +21,17 @@
     "typescript",
     "serverless"
   ],
-  "main": "index.js",
-  "typings": "index.d.ts",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "typescript": {
-    "definition": "index.d.ts"
+    "definition": "lib/index.d.ts"
   },
   "scripts": {
-    "clean": "rm -rf build/",
-    "build": "rm -rf build/local ; mkdir -p build/local ; cp package.json build/local/package.json && cd build/local && npm i --production && cd .. && npx tsc",
-    "watch": "rm -rf build/local ; mkdir -p build/local ; cp package.json build/local/package.json && cd build/local && npm i --production && cd .. && npx tsc --watch",
-    "global": "npm -g install ts-node typeorm typescript gulp serverless tslint"
+    "clean": "rm -rf ./lib",
+    "build": "rm -rf ./lib ; tsc -p .",
+    "watch": "rm -rf ./lib ; tsc -p . --watch",
+    "link": "yarn link",
+    "global": "yarn global add ts-node typeorm typescript gulp serverless tslint"
   },
   "dependencies": {
     "apollo-server-core": "^1.3.6",

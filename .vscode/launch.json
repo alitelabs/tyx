@@ -2,21 +2,20 @@
     // Use IntelliSense to learn about possible Node.js debug attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
+    "version": "2.0.0",
     "configurations": [
         {
             "type": "node",
             "request": "launch",
-            "name": "TYX Program",
+            "name": "TyX Program",
             "program": "${file}",
             "cwd": "${workspaceRoot}",
-            "outFiles": [
-                "${workspaceRoot}/build/compiled/**/*.js"
-            ],
             "sourceMaps": true,
-            "showAsyncStacks": true,
             "preLaunchTask": "build",
-            "protocol": "legacy"
+            "showAsyncStacks": true,
+            "outFiles": [
+                "${workspaceRoot}/lib/**/*.js"
+            ]
         }
     ]
 }

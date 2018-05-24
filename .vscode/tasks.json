@@ -2,7 +2,8 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "identifier": "build",
+            "label": "TyX Watch",
+            "identifier": "watch",
             "type": "npm",
             "script": "watch",
             "isBackground": true,
