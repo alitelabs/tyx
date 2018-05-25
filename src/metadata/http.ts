@@ -1,5 +1,6 @@
 import { Context, HttpCode, HttpMethod, HttpRequest, HttpResponse } from "../types";
 import { ApiMetadata } from "./api";
+import { Metadata } from "./common";
 import { MethodMetadata } from "./method";
 
 // -- Types
@@ -33,28 +34,30 @@ export type HttpBinder = (ctx: Context, req: HttpRequest) => any;
 /////////// Method Decorators //////////////////////////////////////////////////////////////////
 
 export function Get(route: string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod("GET", route, false, 200, adapter);
+    return HttpMethod(Get, route, false, 200, adapter);
 }
 
 export function Post(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod("POST", route, model, 200, adapter);
+    return HttpMethod(Post, route, model, 200, adapter);
 }
 
 export function Put(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod("PUT", route, model, 200, adapter);
+    return HttpMethod(Put, route, model, 200, adapter);
 }
 
 export function Delete(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod("DELETE", route, model, 200, adapter);
+    return HttpMethod(Delete, route, model, 200, adapter);
 }
 
 export function Patch(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod("PATCH", route, model, 200, adapter);
+    return HttpMethod(Patch, route, model, 200, adapter);
 }
 
 // Decorator
-function HttpMethod(verb: HttpMethod, resource: string, model: boolean | string, code: HttpCode, adapter?: HttpAdapter): MethodDecorator {
+function HttpMethod(decorator: Function, resource: string, model: boolean | string, code: HttpCode, adapter?: HttpAdapter): MethodDecorator {
     return (target, propertyKey, descriptor) => {
+        Metadata.trace(decorator, target, propertyKey);
+        let verb = decorator.name.toUpperCase();
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         if (!model) model = undefined;
         else if (model === true) model = propertyKey;
@@ -130,6 +133,7 @@ export function RequestParam(param: string | RequestBinder): ParameterDecorator 
 
 function HttpBinding(type: HttpBindingType, param: string, binder: HttpBinder): ParameterDecorator {
     return function (target, propertyKey, index) {
+        Metadata.trace(type, target, propertyKey, index);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = HttpMetadata.init(target, propertyKey);
         meta.bindings[index] = {
@@ -143,6 +147,7 @@ function HttpBinding(type: HttpBindingType, param: string, binder: HttpBinder): 
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
     return function (target, propertyKey, descriptor) {
+        Metadata.trace(ContentType, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = HttpMetadata.init(target, propertyKey, descriptor);
         meta.contentType = contentType;

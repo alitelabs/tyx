@@ -1,5 +1,5 @@
 import { ApiMetadata } from "./api";
-import { META_TYX_SERVICE } from "./common";
+import { META_TYX_SERVICE, Metadata } from "./common";
 import { Logger } from "../logger";
 import { Context } from "../types";
 
@@ -11,7 +11,10 @@ export interface Service {
 }
 
 export function Service(name?: string): ClassDecorator {
-    return (target) => void ServiceMetadata.define(target, name);
+    return (target) => {
+        Metadata.trace(Service, target);
+        return void ServiceMetadata.define(target, name);
+    };
 }
 
 export interface ServiceMetadata extends ApiMetadata {

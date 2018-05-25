@@ -1,39 +1,41 @@
 import { Roles } from "../types";
 import { ApiMetadata } from "./api";
 import { MethodMetadata } from "./method";
+import { Metadata } from "./common";
 
 export function Public() {
-    return AuthDecorator(Public.name, { Public: true, Internal: true, External: true, Remote: true });
+    return AuthDecorator(Public, { Public: true, Internal: true, External: true, Remote: true });
 }
 
 export function Debug() {
-    return AuthDecorator(Debug.name, { Debug: true, Internal: true, External: false, Remote: true });
+    return AuthDecorator(Debug, { Debug: true, Internal: true, External: false, Remote: true });
 }
 
 export function Private() {
-    return AuthDecorator(Private.name, { Internal: false, Remote: false, External: false });
+    return AuthDecorator(Private, { Internal: false, Remote: false, External: false });
 }
 
 export function Internal() {
-    return AuthDecorator(Internal.name, { Internal: true, External: false, Remote: false });
+    return AuthDecorator(Internal, { Internal: true, External: false, Remote: false });
 }
 
 export function External() {
-    return AuthDecorator(External.name, { Internal: true, External: true, Remote: true });
+    return AuthDecorator(External, { Internal: true, External: true, Remote: true });
 }
 
 export function Remote() {
-    return AuthDecorator(Remote.name, { Internal: true, External: false, Remote: true });
+    return AuthDecorator(Remote, { Internal: true, External: false, Remote: true });
 }
 
 export function Authorization<TR extends Roles>(roles: TR) {
-    return AuthDecorator(Authorization.name, roles);
+    return AuthDecorator(Authorization, roles);
 }
 
-function AuthDecorator(auth: string, roles: Roles): MethodDecorator {
+function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
     return (target, propertyKey, descriptor) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        auth = auth.toLowerCase();
+        Metadata.trace(decorator, target, propertyKey);
+        let auth = decorator.name.toLowerCase();
         AuthMetadata.define(target, propertyKey, descriptor, auth, roles);
     };
 }

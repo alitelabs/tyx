@@ -1,4 +1,6 @@
+import { META_TYX_COLUMN, Metadata } from "./common";
 import { Orm } from "../import";
+import { EntityMetadata } from "./entity";
 import { GraphType } from "./type";
 
 export enum ColumnType {
@@ -204,19 +206,31 @@ export interface ColumnOptions {
 }
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
-    return Orm.Column(options) as PropertyDecorator;
+    return (target, propertyKey) => {
+        Metadata.trace(Column, target, propertyKey);
+        return Orm.Column(options)(target, propertyKey);
+    };
 }
 
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
-    return Orm.PrimaryColumn(options) as PropertyDecorator;
+    return (target, propertyKey) => {
+        Metadata.trace(PrimaryColumn, target, propertyKey);
+        return Orm.PrimaryColumn(options)(target, propertyKey);
+    };
 }
 
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
-    return Orm.CreateDateColumn(options) as PropertyDecorator;
+    return (target, propertyKey) => {
+        Metadata.trace(CreateDateColumn, target, propertyKey);
+        return Orm.CreateDateColumn(options)(target, propertyKey);
+    };
 }
 
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
-    return Orm.UpdateDateColumn(options) as PropertyDecorator;
+    return (target, propertyKey) => {
+        Metadata.trace(UpdateDateColumn, target, propertyKey);
+        return Orm.UpdateDateColumn(options)(target, propertyKey);
+    };
 }
 
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
@@ -228,22 +242,27 @@ export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
     } else {
         op = { type: ColumnType.BigInt };
     }
-    return Orm.VersionColumn(op) as PropertyDecorator;
+    return (target, propertyKey) => {
+        Metadata.trace(VersionColumn, target, propertyKey);
+        return Orm.VersionColumn(op)(target, propertyKey);
+    };
 }
 
 export function Transient(): PropertyDecorator {
-    return function (type: any, propertyKey: string) {
-        // DO NOTHING
+    return (target, propertyKey) => {
+        Metadata.trace(VersionColumn, target, propertyKey);
     };
 }
 
 export function PrimaryIdColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { ...options, type: ColumnType.Varchar, length: 36 };
+    let op: ColumnOptions = { ...options, type: ColumnType.Varchar, length: 36, primary: true };
     return PrimaryColumn(op);
 }
 
 export function PrimaryLongColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { ...options, type: ColumnType.BigInt };
+    let op: ColumnOptions = {
+        ...options, type: ColumnType.BigInt, primary: true
+    };
     return PrimaryColumn(op);
 }
 
@@ -357,4 +376,32 @@ export interface ColumnMetadata {
      * Indicates if column can contain nulls or not.
      */
     isNullable: boolean;
+}
+
+export namespace ColumnMetadata {
+    export function has(target: Object, propertyKey: string): boolean {
+        return Reflect.hasMetadata(META_TYX_COLUMN, target, propertyKey);
+    }
+
+    export function get(target: Object, propertyKey: string): ColumnMetadata {
+        return Reflect.getMetadata(META_TYX_COLUMN, target, propertyKey);
+    }
+
+    export function define(target: Object, propertyKey: string, descriptor: PropertyDescriptor, options: ColumnOptions): ColumnMetadata {
+        let meta = get(target, propertyKey);
+        if (!meta) meta = {
+            propertyName: propertyKey,
+            type: options.type,
+            precision: options.precision,
+            scale: options.scale,
+            length: options.length ? "" + options.length : null,
+            isPrimary: options.primary,
+            isGenerated: false, // options.generated;
+            isNullable: !options.primary && options.nullable
+        };
+        Reflect.defineMetadata(META_TYX_COLUMN, target, propertyKey);
+        let entity = EntityMetadata.init(target.constructor);
+        entity.columns.push(meta);
+        return meta;
+    }
 }

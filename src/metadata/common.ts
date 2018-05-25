@@ -9,12 +9,16 @@ export const META_TYX_PROXY = "tyx:proxy";
 export const META_TYX_TYPE = "tyx:type";
 export const META_TYX_METHOD = "tyx:method";
 
+export const META_TYX_ENTITY = "tyx:entity";
+export const META_TYX_COLUMN = "tyx:column";
+export const META_TYX_RELATION = "tyx:relation";
 export const META_TYX_ENTITIES = "tyx:entities";
 
 // TODO: resource as resolver function, to be used for logger or similar
 export function Inject(resource?: string | Function, application?: string): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        Metadata.trace(Inject, target, propertyKey);
         Metadata.inject(target, propertyKey, resource, application);
     };
 }
@@ -30,6 +34,43 @@ export interface InjectMetadata {
 }
 
 export namespace Metadata {
+    let lastType: string;
+    let lastProp: string | symbol;
+    let lastDec: string;
+
+    let traceLog: string = "";
+
+    function log(line: string) {
+        traceLog += line + "\n";
+    }
+
+    export function trace(decorator?: string | Function, target?: Object | Function, propertyKey?: string | symbol, index?: number) {
+        if (!arguments.length) return traceLog;
+        let dec = decorator instanceof Function ? decorator.name : decorator;
+        let type = typeof target === "object" ? target.constructor : target;
+        if (lastType !== type.name) {
+            log("##############################################");
+            log(`${type.name}:`);
+            lastProp = null;
+            lastDec = null;
+        }
+        if (propertyKey && lastProp !== propertyKey) {
+            log(`  ${propertyKey}:`);
+        }
+        if (index !== undefined) {
+            log(`    - [${index}] @${dec} `);
+        } else if (propertyKey) {
+            log(`    - @${dec}`);
+        } else {
+            if (lastProp || !lastDec) log("  $type:");
+            log(`    - @${dec}`);
+        }
+        lastType = type.name;
+        lastProp = propertyKey;
+        lastDec = dec;
+        return undefined;
+    }
+
     export function has(target: Function | Object): boolean {
         return Reflect.hasMetadata(META_TYX_METADATA, target)
             || Reflect.hasMetadata(META_TYX_METADATA, target.constructor);

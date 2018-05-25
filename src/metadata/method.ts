@@ -24,7 +24,7 @@ export namespace MethodMetadata {
     }
 
     export function define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
-        let meta = Reflect.getMetadata(META_TYX_METHOD, target, propertyKey) as MethodMetadata;
+        let meta = get(target, propertyKey);
         let ret = meta && meta.design && meta.design[meta.design.length - 1];
         if (ret && ret.name === "#return") return meta;
         if (!meta) {

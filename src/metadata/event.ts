@@ -1,3 +1,4 @@
+import { Metadata } from "./common";
 import { EventAdapter } from "../types";
 import { ApiMetadata } from "./api";
 import { MethodMetadata } from "./method";
@@ -6,6 +7,7 @@ export function Event(source: string, resource: string,
     actionFilter: string | boolean, objectFilter: string,
     adapter: EventAdapter, auth?: () => MethodDecorator): MethodDecorator {
     return (target, propertyKey, descriptor) => {
+        Metadata.trace(Event, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         EventMetadata.append(target, propertyKey, descriptor, source, resource, actionFilter, objectFilter, adapter, auth);
     };

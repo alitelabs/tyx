@@ -1,7 +1,7 @@
 import { Orm } from "../import";
 import { ObjectType } from "../types";
 import { ColumnMetadata } from "./column";
-import { META_TYX_ENTITIES } from "./common";
+import { META_TYX_ENTITIES, META_TYX_ENTITY, Metadata } from "./common";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {
@@ -35,11 +35,9 @@ export interface EntityOptions {
 
 export function Entity<TFunction extends Function>(database?: TFunction, options?: EntityOptions): ClassDecorator {
     return (target) => {
-        if (database) {
-            if (!Reflect.hasMetadata(META_TYX_ENTITIES, database)) Reflect.defineMetadata(META_TYX_ENTITIES, [], database);
-            Reflect.getMetadata(META_TYX_ENTITIES, database).push(target);
-        }
-        Orm.Entity(options)(target);
+        Metadata.trace(Entity, target);
+        EntityMetadata.define(target, database, options);
+        return Orm.Entity(options)(target);
     };
 }
 
@@ -69,4 +67,42 @@ export interface EntityMetadata {
      * Relations of the entity, including relations that are coming from the embeddeds of this entity.
      */
     relations: RelationMetadata[];
+}
+
+export namespace EntityMetadata {
+    export function has(target: Function | Object): boolean {
+        return Reflect.hasMetadata(META_TYX_ENTITY, target)
+            || Reflect.hasMetadata(META_TYX_ENTITY, target.constructor);
+    }
+
+    export function get(target: Function | Object): EntityMetadata {
+        return Reflect.getMetadata(META_TYX_ENTITY, target)
+            || Reflect.getMetadata(META_TYX_ENTITY, target.constructor);
+    }
+
+    export function init(target: Function): EntityMetadata {
+        let meta = get(target);
+        if (!meta) {
+            meta = {
+                name: undefined,
+                columns: [],
+                primaryColumns: [],
+                relations: []
+            };
+            Reflect.defineMetadata(META_TYX_ENTITY, meta, target);
+        }
+        return meta;
+    }
+
+    export function define(target: Function, database?: Function, options?: EntityOptions): EntityMetadata {
+        let meta = init(target);
+        if (options && options.name) meta.name = options.name;
+        if (!meta.name) meta.name = target.name;
+        if (database) {
+            if (!Reflect.hasMetadata(META_TYX_ENTITIES, database))
+                Reflect.defineMetadata(META_TYX_ENTITIES, [], database);
+            Reflect.getMetadata(META_TYX_ENTITIES, database).push(target);
+        }
+        return meta;
+    }
 }

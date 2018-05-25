@@ -1,27 +1,29 @@
 import { Roles } from "../types";
 import { ApiMetadata } from "./api";
 import { AuthMetadata } from "./auth";
-import { TypeMetadata, GraphType } from "./type";
+import { Metadata } from "./common";
+import { GraphType, TypeMetadata } from "./type";
 
 export function Query<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
-    return ResolverDecorator(Query.name, roles, input, result);
+    return ResolverDecorator(Query, roles, input, result);
 }
 
 export function Mutation<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
-    return ResolverDecorator(Mutation.name, roles, input, result);
+    return ResolverDecorator(Mutation, roles, input, result);
 }
 
 export function Advice<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
-    return ResolverDecorator(Advice.name, roles, input, result);
+    return ResolverDecorator(Advice, roles, input, result);
 }
 
 export function Command<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
-    return ResolverDecorator(Command.name, roles, input, result);
+    return ResolverDecorator(Command, roles, input, result);
 }
 
-function ResolverDecorator(oper: string, roles: Roles, input?: Function, result?: Function): MethodDecorator {
-    oper = oper.toLowerCase();
+function ResolverDecorator(decorator: Function, roles: Roles, input?: Function, result?: Function): MethodDecorator {
     return (target, propertyKey, descriptor) => {
+        Metadata.trace(decorator, target, propertyKey);
+        let oper = decorator.name.toLowerCase();
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ResolverMetadata.define(target, propertyKey, descriptor, oper, roles, input, result);
     };

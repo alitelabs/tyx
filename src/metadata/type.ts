@@ -1,4 +1,4 @@
-import { META_DESIGN_TYPE, META_TYX_TYPE } from "./common";
+import { META_DESIGN_TYPE, META_TYX_TYPE, Metadata } from "./common";
 import { DesignMetadata } from "./method";
 
 export enum GraphType {
@@ -121,7 +121,10 @@ export function Enum(name?: string): ClassDecorator {
 }
 
 function GraphClass(type: GraphType, name?: string): ClassDecorator {
-    return (target) => void TypeMetadata.resolve(target, type, name);
+    return (target) => {
+        Metadata.trace(type, target);
+        return void TypeMetadata.resolve(target, type, name);
+    };
 }
 
 /// Fields

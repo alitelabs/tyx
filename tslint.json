@@ -109,6 +109,11 @@
         ],
         "no-shadowed-variable": [
             true
+        ],
+        "import-blacklist": [
+            true,
+            ".",
+            ".."
         ]
     }
 }

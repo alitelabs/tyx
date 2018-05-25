@@ -6,7 +6,7 @@ import { ResolverMetadata } from "./resolver";
 import { GraphType, StrucMetadata, TypeMetadata } from "./type";
 
 export function Api(name?: string): ClassDecorator {
-    return (target) => void ApiMetadata.define(target, name);
+    return (target) => void (Metadata.trace(Api, target), ApiMetadata.define(target, name));
 }
 
 export interface ApiMetadata extends Metadata {
