@@ -1,10 +1,10 @@
-import { Metadata } from "./common";
+import { Metadata } from "../metadata/common";
 
 /**
  * Decorator for annotating exceptions which can be serialized
  */
 export function Exception(target: Function) {
-    Metadata.trace(Exception, target);
+    Metadata.trace(Exception, undefined, target);
     Exception.ctors[target.name] = target;
 }
 

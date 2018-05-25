@@ -1,8 +1,10 @@
 import { Configuration } from "../core";
+import { Entity } from "../decorators";
+import { Service } from "../decorators/service";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
-import { Entity, EntityMetadata, Inject, Service } from "../metadata";
+import { EntityMetadata, Inject } from "../metadata";
 import { Context } from "../types/common";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "typeorm";

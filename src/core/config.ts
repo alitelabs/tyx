@@ -1,5 +1,5 @@
+import { Service } from "../decorators";
 import { LogLevel } from "../logger";
-import { Service } from "../metadata";
 import { Utils } from "../utils";
 
 export const Configuration = "config";

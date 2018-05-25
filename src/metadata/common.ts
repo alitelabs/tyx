@@ -1,3 +1,4 @@
+
 export const META_DESIGN_TYPE = "design:type";
 export const META_DESIGN_PARAMS = "design:paramtypes";
 export const META_DESIGN_RETURN = "design:returntype";
@@ -18,7 +19,7 @@ export const META_TYX_ENTITIES = "tyx:entities";
 export function Inject(resource?: string | Function, application?: string): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(Inject, target, propertyKey);
+        Metadata.trace(Inject, { resource, application }, target, propertyKey);
         Metadata.inject(target, propertyKey, resource, application);
     };
 }
@@ -33,42 +34,72 @@ export interface InjectMetadata {
     application: string;
 }
 
+export interface TypeDecorationMetadata {
+    target: Function;
+    decorations?: DecoratorMetadata[];
+    properties?: Record<string, PropertyDecorationMetadata>;
+}
+
+export interface PropertyDecorationMetadata {
+    key: string;
+    decorations?: DecoratorMetadata[];
+    parameters?: DecoratorMetadata[][];
+}
+
+export interface DecoratorMetadata {
+    decorator: string;
+    ordinal: number;
+    target?: Function;
+    propertyKey?: string;
+    index?: number;
+    args: Record<string, any>;
+}
+
+export interface DecorationMetadata {
+    types: Record<string, TypeDecorationMetadata>;
+    decorators: Record<string, TypeDecorationMetadata[]>;
+    trace: TypeDecorationMetadata[];
+}
+
 export namespace Metadata {
-    let lastType: string;
-    let lastProp: string | symbol;
-    let lastDec: string;
 
-    let traceLog: string = "";
+    export const decorations = { types: {}, decorators: {}, trace: [] };
 
-    function log(line: string) {
-        traceLog += line + "\n";
+    let ordinal = 0;
+
+    export function stringify(data: any, ident?: number) {
+        // TODO: Circular references
+        return JSON.stringify(data,
+            (key, value) => value instanceof Function ? `[function: ${value.name || "inline"}]` : value, ident);
     }
 
-    export function trace(decorator?: string | Function, target?: Object | Function, propertyKey?: string | symbol, index?: number) {
-        if (!arguments.length) return traceLog;
-        let dec = decorator instanceof Function ? decorator.name : decorator;
-        let type = typeof target === "object" ? target.constructor : target;
-        if (lastType !== type.name) {
-            log("##############################################");
-            log(`${type.name}:`);
-            lastProp = null;
-            lastDec = null;
-        }
-        if (propertyKey && lastProp !== propertyKey) {
-            log(`  ${propertyKey}:`);
-        }
-        if (index !== undefined) {
-            log(`    - [${index}] @${dec} `);
-        } else if (propertyKey) {
-            log(`    - @${dec}`);
+    export function trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
+        let name = decorator instanceof Function ? decorator.name : decorator;
+        let target = (typeof over === "object" ? over.constructor : over);
+        let key = propertyKey && propertyKey.toString();
+        let traceInfo = { decorator: name, ordinal: ordinal++, target, key, index, args };
+        decorations.trace.push(traceInfo);
+        let decInfo = { ordinal: ordinal++, target, key, index, args };
+        decorations.decorators[name] = decorations.decorators[name] || [];
+        decorations.decorators[name].push(decInfo);
+        let typeInfo = { decorator: name, ordinal: traceInfo.ordinal, args };
+        let type = decorations.types[target.name] = decorations.types[target.name] || { target, decorations: undefined, properties: undefined };
+        if (propertyKey) {
+            type.properties = type.properties || {};
+            let prop = type.properties[key] = type.properties[propertyKey]
+                || { key, decorations: undefined, parameters: undefined };
+            if (index !== undefined) {
+                prop.parameters = prop.parameters || [];
+                prop.parameters[index] = prop.parameters[index] || [];
+                prop.parameters[index].push(typeInfo);
+            } else {
+                prop.decorations = prop.decorations || [];
+                prop.decorations.push(typeInfo);
+            }
         } else {
-            if (lastProp || !lastDec) log("  $type:");
-            log(`    - @${dec}`);
+            type.decorations = type.decorations || [];
+            type.decorations.push(typeInfo);
         }
-        lastType = type.name;
-        lastProp = propertyKey;
-        lastDec = dec;
-        return undefined;
     }
 
     export function has(target: Function | Object): boolean {
@@ -81,12 +112,11 @@ export namespace Metadata {
             || Reflect.getMetadata(META_TYX_METADATA, target.constructor);
     }
 
-    export function name(target: Function | Object) {
+    export function id(target: Function | Object) {
         let meta = get(target);
         return meta && meta.name;
     }
 
-    // tslint:disable-next-line:no-shadowed-variable
     export function init(target: Function, name?: string): Metadata {
         let meta = get(target);
         if (!meta) {

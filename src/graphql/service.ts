@@ -1,7 +1,8 @@
 import { BaseService } from "../core";
+import { ContentType, Get, Post } from "../decorators";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
-import { ContentType, Get, Inject, Post } from "../metadata";
+import { Inject } from "../metadata";
 import { Database } from "../orm";
 import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";

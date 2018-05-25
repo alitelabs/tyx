@@ -122,7 +122,7 @@ export function Enum(name?: string): ClassDecorator {
 
 function GraphClass(type: GraphType, name?: string): ClassDecorator {
     return (target) => {
-        Metadata.trace(type, target);
+        Metadata.trace(type, { name }, target);
         return void TypeMetadata.resolve(target, type, name);
     };
 }
@@ -181,6 +181,7 @@ export function EnumField(req?: boolean): PropertyDecorator {
 function Field(type: GraphType, required: boolean, item?: GraphType | Function): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        Metadata.trace(type, { required, item }, target, propertyKey);
         TypeMetadata.append(target, propertyKey, type, required, item);
     };
 }

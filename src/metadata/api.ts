@@ -1,23 +1,20 @@
-import { AuthMetadata } from "./auth";
 import { META_TYX_API, Metadata } from "./common";
-import { EventMetadata } from "./event";
-import { HttpMetadata } from "./http";
-import { ResolverMetadata } from "./resolver";
+import { MethodMetadata } from "./method";
 import { GraphType, StrucMetadata, TypeMetadata } from "./type";
 
 export function Api(name?: string): ClassDecorator {
-    return (target) => void (Metadata.trace(Api, target), ApiMetadata.define(target, name));
+    return (target) => void (Metadata.trace(Api, { name }, target), ApiMetadata.define(target, name));
 }
 
 export interface ApiMetadata extends Metadata {
     api: string;
 
-    authMetadata: Record<string, AuthMetadata>;
+    methodMetadata: Record<string, MethodMetadata>;
     inputMetadata: Record<string, TypeMetadata>;
     resultMetadata: Record<string, TypeMetadata>;
-    resolverMetadata: Record<string, ResolverMetadata>;
-    httpMetadata: Record<string, HttpMetadata>;
-    eventMetadata: Record<string, EventMetadata[]>;
+
+    httpMetadata: Record<string, MethodMetadata>;
+    eventMetadata: Record<string, MethodMetadata[]>;
 }
 
 export namespace ApiMetadata {
@@ -35,10 +32,9 @@ export namespace ApiMetadata {
         let meta = get(target);
         if (!meta) {
             meta = Metadata.init(target) as ApiMetadata;
-            meta.authMetadata = {};
+            meta.methodMetadata = {};
             meta.inputMetadata = {};
             meta.resultMetadata = {};
-            meta.resolverMetadata = {};
             meta.httpMetadata = {};
             meta.eventMetadata = {};
             Reflect.defineMetadata(META_TYX_API, meta, target);
@@ -50,22 +46,15 @@ export namespace ApiMetadata {
         let meta = init(target);
         if (name) meta.name = meta.api = name;
         if (!meta.api) meta.name = meta.api = target.name;
-
-        Object.values(meta.authMetadata).forEach(item => item.api = meta.api);
-        Object.values(meta.resolverMetadata).forEach(item => item.api = meta.api);
-        Object.values(meta.httpMetadata).forEach(item => item.api = meta.api);
-        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.api = meta.api));
-        Object.values(meta.inputMetadata).forEach(item => item.api = meta.api);
-        Object.values(meta.resultMetadata).forEach(item => item.api = meta.api);
-
+        Object.values(meta.methodMetadata).forEach(item => item.api = meta.api);
         schema(target);
-
         return meta;
     }
 
     export function schema(target: Function | Object): string {
         let api = get(target);
-        for (let res of Object.values(api.resolverMetadata)) {
+        for (let res of Object.values(api.methodMetadata)) {
+            if (!res.query && !res.mutation) continue;
             res.input = resolve(api, res.input, true);
             res.result = resolve(api, res.result, false);
         }

@@ -1,7 +1,5 @@
-import { Orm } from "../import";
-import { ObjectType } from "../types";
 import { ColumnMetadata } from "./column";
-import { META_TYX_ENTITIES, META_TYX_ENTITY, Metadata } from "./common";
+import { META_TYX_ENTITIES, META_TYX_ENTITY } from "./common";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {
@@ -31,21 +29,6 @@ export interface EntityOptions {
      * By default schema synchronization is enabled for all entities.
      */
     synchronize?: boolean;
-}
-
-export function Entity<TFunction extends Function>(database?: TFunction, options?: EntityOptions): ClassDecorator {
-    return (target) => {
-        Metadata.trace(Entity, target);
-        EntityMetadata.define(target, database, options);
-        return Orm.Entity(options)(target);
-    };
-}
-
-export namespace Entity {
-    export function list(database: Object): ObjectType<any>[] {
-        return Reflect.getMetadata(META_TYX_ENTITIES, database)
-            || Reflect.getMetadata(META_TYX_ENTITIES, database.constructor);
-    }
 }
 
 export interface EntityMetadata {
@@ -94,14 +77,14 @@ export namespace EntityMetadata {
         return meta;
     }
 
-    export function define(target: Function, database?: Function, options?: EntityOptions): EntityMetadata {
+    export function define(target: Function, group?: Function, options?: EntityOptions): EntityMetadata {
         let meta = init(target);
         if (options && options.name) meta.name = options.name;
         if (!meta.name) meta.name = target.name;
-        if (database) {
-            if (!Reflect.hasMetadata(META_TYX_ENTITIES, database))
-                Reflect.defineMetadata(META_TYX_ENTITIES, [], database);
-            Reflect.getMetadata(META_TYX_ENTITIES, database).push(target);
+        if (group) {
+            if (!Reflect.hasMetadata(META_TYX_ENTITIES, group))
+                Reflect.defineMetadata(META_TYX_ENTITIES, [], group);
+            Reflect.getMetadata(META_TYX_ENTITIES, group).push(target);
         }
         return meta;
     }

@@ -1,4 +1,4 @@
-import { Exception } from "../metadata";
+import { Exception } from "../decorators";
 import { HttpCode } from "../types";
 
 export interface ApiErrorData {

@@ -1,21 +1,5 @@
 import { ApiMetadata } from "./api";
-import { META_TYX_SERVICE, Metadata } from "./common";
-import { Logger } from "../logger";
-import { Context } from "../types";
-
-export interface Service {
-    log?: Logger;
-    initialize?(): Promise<any>;
-    activate?(ctx?: Context): Promise<void>;
-    release?(ctx?: Context): Promise<void>;
-}
-
-export function Service(name?: string): ClassDecorator {
-    return (target) => {
-        Metadata.trace(Service, target);
-        return void ServiceMetadata.define(target, name);
-    };
-}
+import { META_TYX_SERVICE } from "./common";
 
 export interface ServiceMetadata extends ApiMetadata {
     service: string;
@@ -46,12 +30,7 @@ export namespace ServiceMetadata {
         if (name) meta.service = meta.name = name;
         if (!meta.name) meta.name = meta.service = target.name.replace("Service", "");
         if (!meta.service) meta.service = meta.api || meta.name;
-
-        Object.values(meta.authMetadata).forEach(item => item.service = meta.service);
-        Object.values(meta.resolverMetadata).forEach(item => item.service = meta.service);
-        Object.values(meta.httpMetadata).forEach(item => item.service = meta.service);
-        Object.values(meta.eventMetadata).forEach(item => item.forEach(h => h.service = meta.service));
-
+        Object.values(meta.methodMetadata).forEach(item => item.service = meta.service);
         return meta;
     }
 }

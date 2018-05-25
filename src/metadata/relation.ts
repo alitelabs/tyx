@@ -1,7 +1,4 @@
-import { Orm } from "../import";
-import { ObjectType } from "../types";
 import { ColumnMetadata } from "./column";
-import { Metadata } from "./common";
 import { EntityMetadata } from "./entity";
 
 /**
@@ -79,43 +76,6 @@ export interface JoinColumnOptions {
      */
     referencedColumnName?: string;
 }
-
-export function OneToMany<T>(typeFunction: (type?: any) => ObjectType<T>, inverseSide: string | ((object: T) => any), options?: RelationOptions): PropertyDecorator {
-    return (target, propertyKey) => {
-        Metadata.trace(OneToMany, target, propertyKey);
-        return Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
-    };
-}
-
-export function ManyToOne<T>(typeFunction: (type?: any) => ObjectType<T>, options?: RelationOptions): PropertyDecorator;
-export function ManyToOne<T>(typeFunction: (type?: any) => ObjectType<T>, inverseSide?: string | ((object: T) => any), options?: RelationOptions): PropertyDecorator;
-export function ManyToOne(typeFunction, inverseSideOrOptions?, options?): PropertyDecorator {
-    return (target, propertyKey) => {
-        Metadata.trace(ManyToOne, target, propertyKey);
-        return Orm.ManyToOne(typeFunction, inverseSideOrOptions, options)(target, propertyKey);
-    };
-}
-
-export function OneToOne<T>(typeFunction: (type?: any) => ObjectType<T>, options?: RelationOptions): PropertyDecorator;
-export function OneToOne<T>(typeFunction: (type?: any) => ObjectType<T>, inverseSide?: string | ((object: T) => any), options?: RelationOptions): PropertyDecorator;
-export function OneToOne(typeFunction, inverseSideOrOptions?, options?): PropertyDecorator {
-    return (target, propertyKey) => {
-        Metadata.trace(OneToOne, target, propertyKey);
-        return Orm.OneToOne(typeFunction, inverseSideOrOptions, options)(target, propertyKey);
-    };
-}
-
-export function JoinColumn(): PropertyDecorator;
-export function JoinColumn(options: JoinColumnOptions): PropertyDecorator;
-export function JoinColumn(options: JoinColumnOptions[]): PropertyDecorator;
-export function JoinColumn(options?): PropertyDecorator {
-    return (target, propertyKey) => {
-        Metadata.trace(JoinColumn, target, propertyKey);
-        return Orm.JoinColumn(options)(target, propertyKey);
-    };
-}
-
-
 
 export interface RelationMetadata {
     /**

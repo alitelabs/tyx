@@ -1,6 +1,7 @@
+import { Proxy, Service } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { ContainerMetadata, Proxy, Service } from "../metadata";
+import { ContainerMetadata } from "../metadata";
 import { Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 import { Configuration } from "./config";
 import { ContainerInstance } from "./instance";
