@@ -268,28 +268,18 @@ export class ToolkitSchema {
         return this.inputs[name] || this.results[name] || this.entities[name] && this.entities[name].model;
     }
 
-    public addServiceMethod(service: string, method: string, resolver: ToolkitResolver) {
-        let def = this.services[service] = this.services[service] || { service, methods: {} };
-        let signature = `${service}_${method}(req: JSON): JSON`;
-        def.methods[method] = {
-            method,
-            resolver,
-            signature
-        };
-    }
-
     public serviceDefs(): string {
-        // TODO: Types
-        let schema = "type Mutation {";
-        let first = true;
-        for (let service of Object.values(this.services)) {
-            for (let method of Object.values(service.methods)) {
-                schema += `${first ? "" : ","}\n  ` + method.signature;
-                first = false;
-            }
-        }
-        schema += "\n}";
-        return schema;
+        // // TODO: Types
+        // let schema = "type Mutation {";
+        // let first = true;
+        // for (let service of Object.values(this.services)) {
+        //     for (let method of Object.values(service.methods)) {
+        //         schema += `${first ? "" : ","}\n  ` + method.signature;
+        //         first = false;
+        //     }
+        // }
+        // schema += "\n}";
+        return "";
     }
 
     public executable(logger?: ILogger): GraphQLSchema {
@@ -314,8 +304,8 @@ export class ToolkitSchema {
                 `${i ? "extend " : ""}${s.query}\n`
                 + `${i ? "extend " : ""}${s.mutation}\n`
                 + `${s.model}\n${s.inputs.join("\n")}`
-            ).join("\n\n")
-            + "\n\nextend " + this.serviceDefs() + "\n";
+            ).join("\n\n");
+        // "\n\n this.serviceDefs() + "\n";
     }
 
     public resolvers() {

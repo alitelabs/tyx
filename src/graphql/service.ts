@@ -1,12 +1,13 @@
 import { BaseService } from "../core";
 import { InternalServerError } from "../errors";
+import { GraphQL } from "../import";
 import { ContentType, Get, Inject, Post } from "../metadata";
 import { Database } from "../orm";
 import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
-import { GraphQL } from "../import";
-const playgroundVersion = "1.6.6";
+import FS = require("fs");
 
+const playgroundVersion = "1.6.6";
 export const GraphQLApi = "graphql";
 
 export interface GraphQLApi {
@@ -37,7 +38,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     public async initialize(ctx?: Context, req?: HttpRequest): Promise<ToolkitSchema> {
         if (this.schema) return this.schema;
         let schema = new ToolkitSchema(this.database.metadata);
-        // FS.writeFileSync("schema.gql", schema.typeDefs());
+        FS.writeFileSync("schema.gql", schema.typeDefs());
         return schema;
     }
 

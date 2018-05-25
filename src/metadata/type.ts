@@ -51,7 +51,9 @@ export namespace GraphType {
     export function isStruc(type: GraphType) {
         switch (type) {
             case GraphType.Input:
+            case GraphType.InputItem:
             case GraphType.Result:
+            case GraphType.ResultItem:
             case GraphType.Entity:
                 return true;
             default:
