@@ -1,4 +1,4 @@
-import { EntityManager, SelectQueryBuilder } from "typeorm";
+import { EntityManager, SelectQueryBuilder } from "tyxorm";
 import { EntityMetadata } from "../metadata";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import { ToolkitContext, ToolkitInfo, ToolkitProvider } from "./schema";

@@ -1320,9 +1320,13 @@ type-is@^1.6.16, type-is@~1.6.15, type-is@~1.6.16:
     media-typer "0.3.0"
     mime-types "~2.1.18"
 
-typeorm@^0.2.5:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.6.tgz#04e0ac43f4da9e3cdc2c18d6c5987a58f6ebefb8"
+typescript@^2.8.3:
+  version "2.8.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.8.3.tgz#5d817f9b6f31bb871835f4edf0089f21abe6c170"
+
+tyxorm@^0.2.602:
+  version "0.2.602"
+  resolved "https://registry.yarnpkg.com/tyxorm/-/tyxorm-0.2.602.tgz#dcebe5d38dba5da417b3e581b141edaed1cbe6a5"
   dependencies:
     app-root-path "^2.0.1"
     buffer "^5.1.0"
@@ -1337,10 +1341,6 @@ typeorm@^0.2.5:
     xml2js "^0.4.17"
     yargonaut "^1.1.2"
     yargs "^11.1.0"
-
-typescript@^2.8.3:
-  version "2.8.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.8.3.tgz#5d817f9b6f31bb871835f4edf0089f21abe6c170"
 
 unpipe@1.0.0, unpipe@~1.0.0:
   version "1.0.0"

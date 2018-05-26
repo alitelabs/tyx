@@ -28,8 +28,8 @@
   },
   "scripts": {
     "clean": "rm -rf ./lib",
-    "build": "rm -rf ./lib ; tsc -p .",
-    "watch": "rm -rf ./lib ; tsc -p . --watch",
+    "build": "rm -rf ./lib ; npx tsc -p .",
+    "watch": "rm -rf ./lib ; npx tsc -p . --watch",
     "link": "yarn link",
     "global": "yarn global add ts-node typeorm typescript gulp serverless tslint"
   },
@@ -48,7 +48,7 @@
     "jsonwebtoken": "^8.2.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
-    "typeorm": "^0.2.5",
+    "tyxorm": "^0.2.602",
     "uuid": "^3.2.1"
   },
   "devDependencies": {
