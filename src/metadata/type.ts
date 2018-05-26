@@ -1,4 +1,4 @@
-import { META_DESIGN_TYPE, META_TYX_TYPE, Metadata } from "./common";
+import { META_DESIGN_TYPE, META_TYX_TYPE } from "./common";
 import { DesignMetadata } from "./method";
 
 export enum GraphType {
@@ -98,156 +98,78 @@ export namespace GraphType {
     }
 }
 
-/// Root Types
-
-export function Input(name?: string): ClassDecorator {
-    return GraphClass(GraphType.Input, name);
-}
-
-export function InputItem(name?: string): ClassDecorator {
-    return GraphClass(GraphType.InputItem, name);
-}
-
-export function Result(name?: string): ClassDecorator {
-    return GraphClass(GraphType.Result, name);
-}
-
-export function ResultItem(name?: string): ClassDecorator {
-    return GraphClass(GraphType.ResultItem, name);
-}
-
-export function Enum(name?: string): ClassDecorator {
-    return GraphClass(GraphType.Enum, name);
-}
-
-function GraphClass(type: GraphType, name?: string): ClassDecorator {
-    return (target) => {
-        Metadata.trace(type, { name }, target);
-        return void TypeMetadata.resolve(target, type, name);
-    };
-}
-
-/// Fields
-
-export function IDField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.ID, req);
-}
-export function IntField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Int, req);
-}
-export function FloatField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Float, req);
-}
-export function StringField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.String, req);
-}
-export function OptionField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Option, req);
-}
-export function BooleanField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Boolean, req);
-}
-export function DateField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Date, req);
-}
-export function DateTimeField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.DateTime, req);
-}
-export function TimestampField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Date, req);
-}
-export function EmailField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Email, req);
-}
-export function ObjectField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Object, req);
-}
-export function AnyField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.ANY, req);
-}
-export function InputItemField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.InputItem, req);
-}
-export function ResultItemField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.ResultItem, req);
-}
-export function ListField(item: GraphType | Function, req?: boolean): PropertyDecorator {
-    return Field(GraphType.List, req, item);
-}
-export function EnumField(req?: boolean): PropertyDecorator {
-    return Field(GraphType.Enum, req);
-}
-
-function Field(type: GraphType, required: boolean, item?: GraphType | Function): PropertyDecorator {
-    return (target, propertyKey) => {
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(type, { required, item }, target, propertyKey);
-        TypeMetadata.append(target, propertyKey, type, required, item);
-    };
-}
-
-export interface TypeMetadata {
-    api?: string;
+export interface GraphMetadata {
     type: GraphType;
-    item?: TypeMetadata;
+    ref?: string;
+    item?: GraphMetadata;
     target?: Function;
-    name?: string;
     schema?: string;
 }
 
-export interface StrucMetadata extends TypeMetadata {
-    fields?: Record<string, FieldMetadata>;
-}
-
-export interface FieldMetadata extends TypeMetadata {
+export interface FieldMetadata extends GraphMetadata {
     key: string;
     required: boolean;
     design: DesignMetadata;
 }
 
-export namespace TypeMetadata {
-    export function has(target: Function | Object): boolean {
+export interface TypeMetadata extends GraphMetadata {
+    target: Function;
+    item?: never;
+    fields?: Record<string, FieldMetadata>;
+}
+
+export class TypeMetadata {
+    public target: Function;
+    public type: GraphType = undefined;
+    public ref?: string = undefined;
+    public schema?: string = undefined;
+    public fields?: Record<string, FieldMetadata> = undefined;
+
+    constructor(target: Function) {
+        this.target = target;
+    }
+
+    public static has(target: Function | Object): boolean {
         return Reflect.hasMetadata(META_TYX_TYPE, target)
             || Reflect.hasMetadata(META_TYX_TYPE, target.constructor);
     }
 
-    export function get(target: Function | Object): TypeMetadata {
+    public static get(target: Function | Object): TypeMetadata {
         return Reflect.getMetadata(META_TYX_TYPE, target)
             || Reflect.getMetadata(META_TYX_TYPE, target.constructor);
     }
 
-    export function init(target: Function): TypeMetadata {
-        let meta = get(target);
+    public static define(target: Function): TypeMetadata {
+        let meta = this.get(target);
         if (!meta) {
-            meta = { api: undefined, type: undefined };
+            meta = new TypeMetadata(target);
             Reflect.defineMetadata(META_TYX_TYPE, meta, target);
         }
         return meta;
     }
 
-    export function append(target: Object, propertyKey: string, type: GraphType, required: boolean, item?: GraphType | Function) {
+    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | Function): this {
         // TODO: Validata
-        let meta = TypeMetadata.init(target.constructor) as StrucMetadata;
-        meta.fields = meta.fields || {};
+        this.fields = this.fields || {};
         // TODO: use design type when not specified
-        let design = Reflect.getMetadata(META_DESIGN_TYPE, target, propertyKey);
-        let itemInfo: TypeMetadata = typeof item === "function"
+        let design = Reflect.getMetadata(META_DESIGN_TYPE, this.target.prototype, propertyKey);
+        let itemInfo: GraphMetadata = typeof item === "function"
             ? { type: GraphType.Ref, target: item }
             : { type: item };
-        meta.fields[propertyKey] = {
+        this.fields[propertyKey] = {
             type,
             item: item && itemInfo,
             key: propertyKey,
             required,
             design: { type: design.name, target: design }
         };
+        return this;
     }
 
-    export function resolve(target: Function, type: GraphType, name?: string): TypeMetadata {
-        if (type && !GraphType.isStruc(type) && !GraphType.isItem(type)) throw new TypeError(`Not a root type: ${type}`);
-        let meta = init(target);
-        meta.type = type;
-        meta.target = target;
-        return meta;
+    public commit(type: GraphType, name?: string): this {
+        this.type = type;
+        if (this.type && !GraphType.isStruc(this.type)) throw new TypeError(`Not a root type: ${this.type}`);
+        // this.name = name;
+        return this;
     }
 }

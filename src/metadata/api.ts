@@ -1,99 +1,105 @@
-import { META_TYX_API, Metadata } from "./common";
+import { META_TYX_API } from "./common";
 import { MethodMetadata } from "./method";
-import { GraphType, StrucMetadata, TypeMetadata } from "./type";
+import { GraphMetadata, GraphType, TypeMetadata } from "./type";
 
-export function Api(name?: string): ClassDecorator {
-    return (target) => void (Metadata.trace(Api, { name }, target), ApiMetadata.define(target, name));
-}
-
-export interface ApiMetadata extends Metadata {
+export interface ApiMetadata {
+    name: string;
     api: string;
 
-    methodMetadata: Record<string, MethodMetadata>;
-    inputMetadata: Record<string, TypeMetadata>;
-    resultMetadata: Record<string, TypeMetadata>;
+    methods: Record<string, MethodMetadata>;
+    inputs: Record<string, TypeMetadata>;
+    results: Record<string, TypeMetadata>;
 
-    httpMetadata: Record<string, MethodMetadata>;
-    eventMetadata: Record<string, MethodMetadata[]>;
+    routes: Record<string, MethodMetadata>;
+    events: Record<string, MethodMetadata[]>;
 }
 
-export namespace ApiMetadata {
-    export function has(target: Function | Object): boolean {
+export class ApiMetadata implements ApiMetadata {
+    public target: Function;
+    public name: string;
+    public api: string;
+
+    public methods: Record<string, MethodMetadata> = {};
+    public inputs: Record<string, TypeMetadata> = {};
+    public results: Record<string, TypeMetadata> = {};
+
+    public routes: Record<string, MethodMetadata> = {};
+    public events: Record<string, MethodMetadata[]> = {};
+
+    constructor(target: Function) {
+        this.target = target;
+    }
+
+    public static has(target: Function | Object): boolean {
         return Reflect.hasMetadata(META_TYX_API, target)
             || Reflect.hasMetadata(META_TYX_API, target.constructor);
     }
 
-    export function get(target: Function | Object): ApiMetadata {
+    public static get(target: Function | Object): ApiMetadata {
         return Reflect.getMetadata(META_TYX_API, target)
             || Reflect.getMetadata(META_TYX_API, target.constructor);
     }
 
-    export function init(target: Function): ApiMetadata {
-        let meta = get(target);
+    public static define(target: Function): ApiMetadata {
+        let meta = ApiMetadata.get(target);
         if (!meta) {
-            meta = Metadata.init(target) as ApiMetadata;
-            meta.methodMetadata = {};
-            meta.inputMetadata = {};
-            meta.resultMetadata = {};
-            meta.httpMetadata = {};
-            meta.eventMetadata = {};
+            meta = new ApiMetadata(target);
             Reflect.defineMetadata(META_TYX_API, meta, target);
         }
         return meta;
     }
 
-    export function define(target: Function, name?: string): ApiMetadata {
-        let meta = init(target);
-        if (name) meta.name = meta.api = name;
-        if (!meta.api) meta.name = meta.api = target.name;
-        Object.values(meta.methodMetadata).forEach(item => item.api = meta.api);
-        schema(target);
-        return meta;
+    public commit(name?: string): this {
+        if (name) this.name = this.api = name;
+        if (!this.api) this.name = this.api = this.target.name;
+        Object.values(this.methods).forEach(item => item.api = this.api);
+        this.schema();
+        return this;
     }
 
-    export function schema(target: Function | Object): string {
-        let api = get(target);
-        for (let res of Object.values(api.methodMetadata)) {
+    public schema(): string {
+        for (let res of Object.values(this.methods)) {
             if (!res.query && !res.mutation) continue;
-            res.input = resolve(api, res.input, true);
-            res.result = resolve(api, res.result, false);
+            res.input = this.resolve(res.input, true);
+            res.result = this.resolve(res.result, false);
         }
-        return "# " + api.name;
+        return "# " + this.name;
     }
 
-    export function resolve(api: ApiMetadata, meta: TypeMetadata, input: boolean): TypeMetadata {
+    // TODO: Generic
+    protected resolve(meta: GraphMetadata, input: boolean): GraphMetadata {
         if (GraphType.isScalar(meta.type)) {
-            meta.name = meta.type;
+            meta.ref = meta.type;
             return meta;
         }
-        if (meta.target && input && api.inputMetadata[meta.target.name]) {
-            return api.inputMetadata[meta.target.name];
+        if (meta.target && input && this.inputs[meta.target.name]) {
+            return this.inputs[meta.target.name];
         }
-        if (meta.target && !input && api.resultMetadata[meta.target.name]) {
-            return api.resultMetadata[meta.target.name];
+        if (meta.target && !input && this.results[meta.target.name]) {
+            return this.results[meta.target.name];
         }
         if (GraphType.isRef(meta.type)) {
-            let type = TypeMetadata.get(meta.target);
-            if (type) {
-                type = resolve(api, type, input);
-                meta.name = type.name;
+            let target = TypeMetadata.get(meta.target);
+            if (target) {
+                target = this.resolve(target, input) as TypeMetadata;
+                meta.ref = target.ref;
             } else {
-                meta.name = GraphType.Object;
+                meta.ref = GraphType.Object;
             }
             return meta;
         }
         if (GraphType.isList(meta.type)) {
-            let type = resolve(api, meta.item, input);
+            let type = this.resolve(meta.item, input);
             if (type) {
-                meta.name = `[${type.name}]`;
+                meta.ref = `[${type.ref}]`;
             } else {
-                meta.name = `[${GraphType.Object}]`;
+                meta.ref = `[${GraphType.Object}]`;
             }
             return meta;
         }
         if (GraphType.isEntity(meta.type) && !input) {
             // TODO: Register imports
-            meta.name = meta.target.name;
+            meta.ref = meta.target.name;
             return meta;
         }
         if (input && !GraphType.isInput(meta.type))
@@ -102,17 +108,17 @@ export namespace ApiMetadata {
         if (!input && GraphType.isInput(meta.type))
             throw new TypeError(`Result type can not reference [${meta.type}]`);
 
-        let struc = meta as StrucMetadata;
+        let struc = meta as TypeMetadata;
         if (!GraphType.isStruc(struc.type) || !struc.fields)
             throw new TypeError(`Empty type difinition ${struc.target}`);
 
         // Generate schema
-        struc.name = struc.target.name;
-        if (input) api.inputMetadata[struc.name] = struc; else api.resultMetadata[struc.name] = struc;
-        let def = input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        struc.ref = struc.target.name;
+        if (input) this.inputs[struc.ref] = struc; else this.results[struc.ref] = struc;
+        let def = input ? `input ${struc.ref} {\n` : `type ${struc.ref} {\n`;
         for (let [key, field] of Object.entries(struc.fields)) {
-            let res = resolve(api, field, input);
-            def += `  ${key}: ${res.name}\n`;
+            let res = this.resolve(field, input);
+            def += `  ${key}: ${res.ref}\n`;
         }
         def += "}";
         struc.schema = def;

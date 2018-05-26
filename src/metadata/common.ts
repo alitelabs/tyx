@@ -15,25 +15,6 @@ export const META_TYX_COLUMN = "tyx:column";
 export const META_TYX_RELATION = "tyx:relation";
 export const META_TYX_ENTITIES = "tyx:entities";
 
-// TODO: resource as resolver function, to be used for logger or similar
-export function Inject(resource?: string | Function, application?: string): PropertyDecorator {
-    return (target, propertyKey) => {
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(Inject, { resource, application }, target, propertyKey);
-        Metadata.inject(target, propertyKey, resource, application);
-    };
-}
-
-export interface Metadata {
-    name: string;
-    dependencies?: Record<string, InjectMetadata>;
-}
-
-export interface InjectMetadata {
-    resource: string;
-    application: string;
-}
-
 export interface TypeDecorationMetadata {
     target: Function;
     decorations?: DecoratorMetadata[];
@@ -61,29 +42,68 @@ export interface DecorationMetadata {
     trace: TypeDecorationMetadata[];
 }
 
-export namespace Metadata {
+export interface InjectMetadata {
+    resource: string;
+    application: string;
+    target?: Function;
+}
 
-    export const decorations = { types: {}, decorators: {}, trace: [] };
+export interface Metadata {
+    target: Function;
+    name: string;
+    dependencies: Record<string, InjectMetadata>;
+}
 
-    let ordinal = 0;
+export class Metadata implements Metadata {
 
-    export function stringify(data: any, ident?: number) {
-        // TODO: Circular references
-        return JSON.stringify(data,
-            (key, value) => value instanceof Function ? `[function: ${value.name || "inline"}]` : value, ident);
+    public static decorations = { types: {}, decorators: {}, trace: [] };
+    private static ordinal = 0;
+
+    public target: Function;
+    public name: string;
+    public dependencies: Record<string, InjectMetadata> = undefined;
+
+    protected constructor(target: Function, name?: string) {
+        this.target = target;
+        this.name = name || target.name;
     }
 
-    export function trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
+    public static id(target: Function | Object): string {
+        let meta = this.get(target);
+        return meta && meta.name;
+    }
+
+    public static has(target: Function | Object): boolean {
+        return Reflect.hasMetadata(META_TYX_METADATA, target)
+            || Reflect.hasMetadata(META_TYX_METADATA, target.constructor);
+    }
+
+    public static get(target: Function | Object): Metadata {
+        return Reflect.getMetadata(META_TYX_METADATA, target)
+            || Reflect.getMetadata(META_TYX_METADATA, target.constructor);
+    }
+
+    public static define(target: Function, name?: string): Metadata {
+        let meta = this.get(target);
+        if (!meta) {
+            meta = new Metadata(target, name);
+            Reflect.defineMetadata(META_TYX_METADATA, meta, target);
+        }
+        meta.name = name || target.name;
+        return meta;
+    }
+
+    public static trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
         let name = decorator instanceof Function ? decorator.name : decorator;
         let target = (typeof over === "object" ? over.constructor : over);
         let key = propertyKey && propertyKey.toString();
-        let traceInfo = { decorator: name, ordinal: ordinal++, target, key, index, args };
-        decorations.trace.push(traceInfo);
-        let decInfo = { ordinal: ordinal++, target, key, index, args };
-        decorations.decorators[name] = decorations.decorators[name] || [];
-        decorations.decorators[name].push(decInfo);
+        let traceInfo = { decorator: name, ordinal: this.ordinal++, target, key, index, args };
+        this.decorations.trace.push(traceInfo);
+        let decInfo = { ordinal: this.ordinal++, target, key, index, args };
+        this.decorations.decorators[name] = this.decorations.decorators[name] || [];
+        this.decorations.decorators[name].push(decInfo);
         let typeInfo = { decorator: name, ordinal: traceInfo.ordinal, args };
-        let type = decorations.types[target.name] = decorations.types[target.name] || { target, decorations: undefined, properties: undefined };
+        let type = this.decorations.types[target.name] = this.decorations.types[target.name] || { target, decorations: undefined, properties: undefined };
         if (propertyKey) {
             type.properties = type.properties || {};
             let prop = type.properties[key] = type.properties[propertyKey]
@@ -102,43 +122,26 @@ export namespace Metadata {
         }
     }
 
-    export function has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_METADATA, target)
-            || Reflect.hasMetadata(META_TYX_METADATA, target.constructor);
+    public static stringify(data: any, ident?: number) {
+        // TODO: Circular references
+        return JSON.stringify(data,
+            (key, value) => value instanceof Function ? `[function: ${value.name || "inline"}]` : value, ident);
     }
 
-    export function get(target: Function | Object): Metadata {
-        return Reflect.getMetadata(META_TYX_METADATA, target)
-            || Reflect.getMetadata(META_TYX_METADATA, target.constructor);
-    }
-
-    export function id(target: Function | Object) {
-        let meta = get(target);
-        return meta && meta.name;
-    }
-
-    export function init(target: Function, name?: string): Metadata {
-        let meta = get(target);
-        if (!meta) {
-            meta = { name, dependencies: {} };
-            Reflect.defineMetadata(META_TYX_METADATA, meta, target);
-        }
-        meta.name = name || target.name;
-        return meta;
-    }
-
-    export function inject(target: Object, propertyKey: string, resource?: string | Function, application?: string) {
+    public inject(propertyKey: string, resource?: string | Function, application?: string) {
         if (!resource) {
-            resource = Reflect.getMetadata(META_DESIGN_TYPE, target, propertyKey);
+            resource = Reflect.getMetadata(META_DESIGN_TYPE, this.target.prototype, propertyKey);
         }
+        let target: Function;
         if (resource instanceof Function) {
+            target = resource;
             resource = resource.name;
         } else {
+            target = undefined;
             resource = resource.toString();
         }
-        let metadata = init(target.constructor);
-        metadata.dependencies = metadata.dependencies || {};
-        metadata.dependencies[propertyKey] = { resource, application };
+        this.dependencies = this.dependencies || {};
+        this.dependencies[propertyKey] = { resource, target, application };
     }
 }
 

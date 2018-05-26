@@ -38,7 +38,7 @@ export class ExpressContainer extends ContainerPool {
         let used = {};
         let paths = [];
 
-        let httpMetadata = this.metadata.httpMetadata;
+        let httpMetadata = this.metadata.routes;
         for (let [route, meta] of Object.entries(httpMetadata)) {
             let httpMethod = meta.http[route].verb;
             let resource = meta.http[route].resource;

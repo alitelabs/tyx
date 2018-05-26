@@ -2,7 +2,7 @@ import { Context, EventAdapter, HttpCode, HttpRequest, Roles } from "../types";
 import * as Utils from "../utils/misc";
 import { ApiMetadata } from "./api";
 import { META_DESIGN_PARAMS, META_DESIGN_RETURN, META_TYX_METHOD } from "./common";
-import { GraphType, TypeMetadata } from "./type";
+import { GraphMetadata, GraphType } from "./type";
 
 export enum HttpBindingType {
     PathParam = "PathParam",
@@ -73,8 +73,8 @@ export interface MethodMetadata {
 
     query: boolean;
     mutation: boolean;
-    input: TypeMetadata;
-    result: TypeMetadata;
+    input: GraphMetadata;
+    result: GraphMetadata;
 
     contentType: string;
     bindings: HttpBindingMetadata[];
@@ -97,8 +97,8 @@ export class MethodMetadata implements MethodMetadata {
 
     public query: boolean = undefined;
     public mutation: boolean = undefined;
-    public input: TypeMetadata = undefined;
-    public result: TypeMetadata = undefined;
+    public input: GraphMetadata = undefined;
+    public result: GraphMetadata = undefined;
 
     public contentType: string = undefined;
     public bindings: HttpBindingMetadata[] = undefined;
@@ -142,8 +142,9 @@ export class MethodMetadata implements MethodMetadata {
         roles.Internal = roles.Internal === undefined ? true : !!roles.Internal;
         roles.External = roles.External === undefined ? false : !!roles.External;
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
-        let api = ApiMetadata.init(this.target);
-        api.methodMetadata[this.method] = this;
+        let api = ApiMetadata.define(this.target);
+        api.methods = api.methods || {};
+        api.methods[this.method] = this;
         return this;
     }
 
@@ -164,9 +165,10 @@ export class MethodMetadata implements MethodMetadata {
             code,
             adapter
         };
-        let metadata = ApiMetadata.init(this.target);
-        if (metadata.httpMetadata[route]) throw new Error(`Duplicate route: ${route}`);
-        metadata.httpMetadata[route] = meta;
+        let api = ApiMetadata.define(this.target);
+        api.routes = api.routes || {};
+        if (api.routes[route]) throw new Error(`Duplicate route: ${route}`);
+        api.routes[route] = meta;
         return this;
     }
 
@@ -209,9 +211,9 @@ export class MethodMetadata implements MethodMetadata {
             adapter
         };
         this.addAuth("internal", { Internal: true, External: false, Remote: false });
-        let service = ApiMetadata.init(this.target);
-        service.eventMetadata[route] = service.eventMetadata[route] || [];
-        service.eventMetadata[route].push(this);
+        let service = ApiMetadata.define(this.target);
+        service.events[route] = service.events[route] || [];
+        service.events[route].push(this);
         return this;
     }
 }

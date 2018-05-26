@@ -1,20 +1,14 @@
+
+
 import { Configuration } from "../core";
-import { Entity } from "../decorators";
-import { Service } from "../decorators/service";
+import { Entity, Inject, Service } from "../decorators";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
-import { EntityMetadata, Inject } from "../metadata";
+import { EntityMetadata, Database } from "../metadata";
 import { Context } from "../types/common";
 
-export { Connection, ConnectionOptions, EntityManager, Repository } from "typeorm";
-
-export const Database = "database";
-
-export interface Database {
-    manager: Orm.EntityManager;
-    metadata: EntityMetadata[];
-}
+export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 
 @Service(Database)
 export class DatabaseProvider implements Service, Database, ToolkitProvider {

@@ -1,4 +1,4 @@
-import { Inject } from "../metadata";
+import { Inject } from "../decorators";
 import { ConsoleLogger } from "./console";
 
 export enum LogLevel {

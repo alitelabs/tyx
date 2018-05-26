@@ -17,5 +17,6 @@ export {
     ConnectionOptions,
     EntityManager,
     SelectQueryBuilder, createConnection,
-    getConnection
+    getConnection,
+    Repository
 } from "typeorm";

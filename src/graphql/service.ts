@@ -1,9 +1,8 @@
 import { BaseService } from "../core";
-import { ContentType, Get, Post } from "../decorators";
+import { ContentType, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
-import { Inject } from "../metadata";
-import { Database } from "../orm";
+import { Database } from "../metadata/orm";
 import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 import FS = require("fs");
