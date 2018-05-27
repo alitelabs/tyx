@@ -4,7 +4,7 @@ import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
 import { Container, Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
-import FS = require("fs");
+
 
 const playgroundVersion = "1.6.6";
 export const GraphQLApi = "graphql";
@@ -31,13 +31,12 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     }
 
     protected async activate(ctx: Context, req: HttpRequest) {
-        this.schema = await this.initialize(ctx, req);
+        if (this.schema) return;
+        this.schema = await this.initialize();
     }
 
-    public async initialize(ctx?: Context, req?: HttpRequest): Promise<ToolkitSchema> {
-        if (this.schema) return this.schema;
+    protected async initialize(): Promise<ToolkitSchema> {
         let schema = new ToolkitSchema(this.database.metadata);
-        FS.writeFileSync("schema.gql", schema.typeDefs());
         return schema;
     }
 
