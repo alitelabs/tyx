@@ -1,4 +1,4 @@
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { GraphType, TypeMetadata } from "../metadata/type";
 
 /// Root Types

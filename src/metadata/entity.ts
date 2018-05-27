@@ -1,6 +1,6 @@
 import { Class, Prototype } from "../types";
 import { ColumnMetadata } from "./column";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {

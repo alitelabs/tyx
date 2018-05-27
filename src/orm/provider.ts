@@ -6,7 +6,7 @@ import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery
 import { Orm } from "../import";
 import { Logger } from "../logger";
 import { DatabaseMetadata, EntityMetadata } from "../metadata";
-import { Class, Context } from "../types/common";
+import { Class, Context } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 

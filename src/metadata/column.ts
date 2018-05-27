@@ -1,5 +1,5 @@
 import { Prototype } from "../types";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 import { EntityMetadata } from "./entity";
 import { GraphType } from "./type";
 

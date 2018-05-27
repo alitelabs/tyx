@@ -1,4 +1,4 @@
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { ServiceMetadata } from "../metadata/service";
 import { Class } from "../types";
 

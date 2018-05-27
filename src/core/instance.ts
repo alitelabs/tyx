@@ -156,7 +156,7 @@ export class ContainerInstance implements Container {
         this.log.info("Publish: %s", metaApi.alias);
 
         for (let meta of Object.values(metaApi.methods)) {
-            let key = meta.service + "." + meta.method;
+            let key = meta.service + "." + meta.name;
             this.imetadata.methods[key] = meta;
             if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
             this.remoteHandlers[key] = this.remoteHandler(service, meta);
@@ -183,13 +183,13 @@ export class ContainerInstance implements Container {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
-                let method: Function = service[metadata.method];
+                let method: Function = service[metadata.name];
                 let result = await method.apply(service, req.args);
                 return result;
             } catch (e) {
                 throw e;
             } finally {
-                log.timeEnd(startTime, `${metadata.method}`);
+                log.timeEnd(startTime, `${metadata.name}`);
             }
         };
         return fun;
@@ -200,7 +200,7 @@ export class ContainerInstance implements Container {
             let log: Logger = service.log || this.log;
             let startTime = log.time();
             try {
-                let method: Function = service[metadata.method];
+                let method: Function = service[metadata.name];
                 let http = metadata.http[route];
                 let result: any;
                 if (http.adapter) {
@@ -222,7 +222,7 @@ export class ContainerInstance implements Container {
             } catch (e) {
                 throw e;
             } finally {
-                log.timeEnd(startTime, `${metadata.method}`);
+                log.timeEnd(startTime, `${metadata.name}`);
             }
         };
         return fun;
@@ -234,7 +234,7 @@ export class ContainerInstance implements Container {
             let startTime = log.time();
             try {
                 let result: Promise<any>;
-                let method: Function = service[metadata.method];
+                let method: Function = service[metadata.name];
                 let event = metadata.events[route];
                 if (event.adapter) {
                     result = await event.adapter(method.bind(service), ctx, req);
@@ -245,7 +245,7 @@ export class ContainerInstance implements Container {
             } catch (e) {
                 throw e;
             } finally {
-                log.timeEnd(startTime, `${metadata.method}`);
+                log.timeEnd(startTime, `${metadata.name}`);
             }
         };
         return handler;
@@ -376,7 +376,7 @@ export class ContainerInstance implements Container {
 
                 req.application = this.application;
                 req.service = target.service;
-                req.method = target.method;
+                req.method = target.name;
 
                 let permissionId = req.service + "." + req.method;
                 let permission = permissionId && this.imetadata.methods[permissionId] as MethodMetadata;
@@ -392,7 +392,7 @@ export class ContainerInstance implements Container {
                         result.status = result.status || "OK";
                         result.returns.push({
                             service: target.service,
-                            method: target.method,
+                            method: target.name,
                             error: null,
                             data
                         });
@@ -402,7 +402,7 @@ export class ContainerInstance implements Container {
                     result.status = "FAILED";
                     result.returns.push({
                         service: target.service,
-                        method: target.method,
+                        method: target.name,
                         error: InternalServerError.wrap(e),
                         data: null
                     });
@@ -436,7 +436,7 @@ export class ContainerInstance implements Container {
 
             req.application = this.application;
             req.service = target.service;
-            req.method = target.method;
+            req.method = target.name;
 
             let permissionId = req.service + "." + req.method;
             let permission = permissionId && this.imetadata.methods[permissionId] as MethodMetadata;

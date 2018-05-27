@@ -1,4 +1,4 @@
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { MethodMetadata } from "../metadata/method";
 import { Roles } from "../types";
 

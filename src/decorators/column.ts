@@ -1,6 +1,6 @@
 import { Orm } from "../import";
 import { ColumnOptions, ColumnType } from "../metadata/column";
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {

@@ -1,4 +1,4 @@
-import { Request } from "./common";
+import { Request } from "./core";
 
 export interface RemoteRequest extends Request {
     application: string;

@@ -1,4 +1,5 @@
-import { Metadata, ProxyMetadata } from "../metadata";
+import { Metadata } from "../metadata/core";
+import { ProxyMetadata } from "../metadata/proxy";
 import { Service } from "./service";
 
 export interface Proxy extends Service {

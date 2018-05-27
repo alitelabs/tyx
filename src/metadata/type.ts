@@ -1,6 +1,6 @@
-import { Metadata } from "./common";
-import { DesignMetadata } from "./method";
 import { Class, Prototype } from "../types";
+import { Metadata } from "./core";
+import { DesignMetadata } from "./method";
 
 export enum GraphType {
     ID = "ID",

@@ -1,4 +1,4 @@
-import { Request } from "./common";
+import { Request } from "./core";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 

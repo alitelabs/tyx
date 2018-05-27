@@ -1,3 +1,8 @@
+import { ApiMetadata } from "./api";
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method";
+import { ProxyMetadata } from "./proxy";
+import { ServiceMetadata } from "./service";
+
 export interface TypeDecorationMetadata {
     target: Function;
     decorations?: DecoratorMetadata[];
@@ -25,12 +30,18 @@ export interface DecorationMetadata {
     trace: TypeDecorationMetadata[];
 }
 
-export interface Metadata {
-    target: Function;
-    name: string;
+export interface MetadataRegistry {
+    apis: Record<string, ApiMetadata>;
+    services: Record<string, ServiceMetadata>;
+    proxies: Record<string, ProxyMetadata>;
+    methods: Record<string, MethodMetadata>;
+    resolvers: Record<string, MethodMetadata>;
+    routes: Record<string, HttpRouteMetadata>;
+    events: Record<string, EventRouteMetadata[]>;
+    decorations: DecorationMetadata;
 }
 
-export abstract class Metadata implements Metadata {
+export abstract class Metadata {
 
     public static readonly DESIGN_TYPE = "design:type";
     public static readonly DESIGN_PARAMS = "design:paramtypes";
@@ -48,8 +59,29 @@ export abstract class Metadata implements Metadata {
     public static readonly TYX_COLUMN = "tyx:column";
     public static readonly TYX_RELATION = "tyx:relation";
 
-    public static decorations = { types: {}, decorators: {}, trace: [] };
+    public static decorations: DecorationMetadata = { types: {}, decorators: {}, trace: [] };
+    public static apis: Record<string, ApiMetadata> = {};
+    public static services: Record<string, ServiceMetadata> = {};
+    public static proxies: Record<string, ProxyMetadata> = {};
+    public static methods: Record<string, MethodMetadata> = {};
+    public static resolvers: Record<string, MethodMetadata> = {};
+    public static routes: Record<string, HttpRouteMetadata> = {};
+    public static events: Record<string, EventRouteMetadata[]> = {};
+
     private static ordinal = 0;
+
+    public static get registry(): MetadataRegistry {
+        return {
+            apis: this.apis,
+            services: this.services,
+            proxies: this.proxies,
+            methods: this.methods,
+            resolvers: this.resolvers,
+            routes: this.routes,
+            events: this.events,
+            decorations: this.decorations
+        };
+    }
 
     public static trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
         let name = decorator instanceof Function ? decorator.name : decorator;

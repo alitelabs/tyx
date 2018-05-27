@@ -1,5 +1,5 @@
 import { Orm } from "../import";
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
 import { Class } from "../types";

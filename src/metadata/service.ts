@@ -1,6 +1,6 @@
 import { Class, Prototype } from "../types";
 import { ApiMetadata } from "./api";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 
 export interface InjectMetadata {
     resource: string;
@@ -114,6 +114,7 @@ export class ServiceMetadata implements ServiceMetadata {
         if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
+        Metadata.services[this.alias] = this;
         return this;
     }
 }

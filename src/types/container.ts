@@ -1,6 +1,6 @@
 import { Proxy, Service } from "../decorators";
 import { ContainerMetadata } from "../metadata";
-import { Context } from "./common";
+import { Context } from "./core";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";

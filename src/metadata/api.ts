@@ -1,5 +1,5 @@
 import { Class, Prototype } from "../types";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 import { MethodMetadata } from "./method";
 import { GraphMetadata, GraphType, TypeMetadata } from "./type";
 
@@ -52,7 +52,8 @@ export class ApiMetadata implements ApiMetadata {
 
     public commit(alias?: string): this {
         this.alias = alias || this.target.name;
-        Object.values(this.methods).forEach(item => item.service = this.alias);
+        Metadata.apis[this.alias] = this;
+        Object.values(this.methods).forEach(item => item.commit(this));
         this.schema();
         return this;
     }

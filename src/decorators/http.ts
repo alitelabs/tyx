@@ -1,4 +1,4 @@
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, MethodMetadata, RequestBinder } from "../metadata/method";
 import { HttpCode, HttpMethod, HttpResponse } from "../types";
 

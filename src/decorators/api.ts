@@ -1,5 +1,5 @@
 import { ApiMetadata } from "../metadata/api";
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 
 export function Api(name?: string): ClassDecorator {
     return (target) => {

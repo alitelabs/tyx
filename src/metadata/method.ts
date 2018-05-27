@@ -1,7 +1,7 @@
 import { Class, Context, EventAdapter, HttpCode, HttpRequest, Prototype, Roles } from "../types";
 import * as Utils from "../utils/misc";
 import { ApiMetadata } from "./api";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 import { GraphMetadata, GraphType } from "./type";
 
 export enum HttpBindingType {
@@ -44,6 +44,9 @@ export interface HttpBindingMetadata {
 }
 
 export interface HttpRouteMetadata {
+    target: Class;
+    method: string;
+    service: string;
     // route: string;
     verb: string;
     resource: string;
@@ -53,6 +56,9 @@ export interface HttpRouteMetadata {
 }
 
 export interface EventRouteMetadata {
+    target: Class;
+    method: string;
+    service: string;
     source: string;
     resource: string;
     objectFilter: string;
@@ -62,7 +68,7 @@ export interface EventRouteMetadata {
 
 export interface MethodMetadata {
     target: Class;
-    method: string;
+    name: string;
 
     service: string;
     design: DesignMetadata[];
@@ -85,7 +91,7 @@ export interface MethodMetadata {
 export class MethodMetadata implements MethodMetadata {
 
     public target: Class;
-    public method: string;
+    public name: string;
 
     public service: string = undefined;
     public design: DesignMetadata[] = undefined;
@@ -106,7 +112,7 @@ export class MethodMetadata implements MethodMetadata {
 
     private constructor(target: Prototype, method: string) {
         this.target = target.constructor;
-        this.method = method;
+        this.name = method;
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
@@ -142,7 +148,21 @@ export class MethodMetadata implements MethodMetadata {
         roles.Remote = roles.Remote === undefined ? true : !!roles.Internal;
         let api = ApiMetadata.define(this.target);
         api.methods = api.methods || {};
-        api.methods[this.method] = this;
+        api.methods[this.name] = this;
+        return this;
+    }
+
+    public setQuery(input?: Class, result?: Class): this {
+        this.query = true;
+        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
+        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
+        return this;
+    }
+
+    public setMutation(input?: Class, result?: Class): this {
+        this.mutation = true;
+        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
+        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
         return this;
     }
 
@@ -156,7 +176,11 @@ export class MethodMetadata implements MethodMetadata {
         let route = `${verb} ${resource}`;
         route += model ? `:${model}` : "";
         meta.http = meta.http || {};
+        if (this.http[route]) throw new TypeError(`Duplicate HTTP route: [${route}]`);
         meta.http[route] = {
+            service: this.service,
+            target: this.target,
+            method: this.name,
             verb,
             resource,
             model,
@@ -181,27 +205,17 @@ export class MethodMetadata implements MethodMetadata {
         return this;
     }
 
-    public setQuery(input?: Class, result?: Class): this {
-        this.query = true;
-        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
-        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
-        return this;
-    }
-
-    public setMutation(input?: Class, result?: Class): this {
-        this.mutation = true;
-        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
-        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
-        return this;
-    }
-
     public addEvent(source: string, resource: string, actionFilter: string | boolean, objectFilter: string, adapter: EventAdapter): this {
         let route = `${source} ${resource}`;
-        actionFilter = actionFilter === true ? this.method : actionFilter;
+        actionFilter = actionFilter === true ? this.name : actionFilter;
         actionFilter = actionFilter || "*";
         objectFilter = objectFilter || "*";
         this.events = this.events || {};
+        if (this.events[route]) throw new TypeError(`Duplicate event route: [${route}]`);
         this.events[route] = {
+            service: this.service,
+            target: this.target,
+            method: this.name,
             source,
             resource,
             actionFilter,
@@ -212,6 +226,23 @@ export class MethodMetadata implements MethodMetadata {
         let service = ApiMetadata.define(this.target);
         service.events[route] = service.events[route] || [];
         service.events[route].push(this);
+        return this;
+    }
+
+    public commit(api: ApiMetadata): this {
+        this.service = api.alias;
+        Metadata.methods[this.service + "." + this.name] = this;
+        if (this.http) for (let [route, meta] of Object.entries(this.http)) {
+            meta.service = this.service;
+            if (Metadata.routes[route] && Metadata.routes[route] !== meta)
+                throw new TypeError(`Duplicate HTTP route [${route}]`);
+            Metadata.routes[route] = meta;
+        }
+        if (this.events) for (let [route, meta] of Object.entries(this.events)) {
+            meta.service = this.service;
+            let handlers = Metadata.events[route] = Metadata.events[route] || [];
+            if (!handlers.includes(meta)) handlers.push(meta);
+        }
         return this;
     }
 }

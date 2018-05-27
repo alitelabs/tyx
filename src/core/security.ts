@@ -27,27 +27,27 @@ export abstract class BaseSecurity implements Security {
 
     protected abstract config: Configuration;
 
-    public async httpAuth(container: Container, req: HttpRequest, metadata: MethodMetadata): Promise<Context> {
+    public async httpAuth(container: Container, req: HttpRequest, method: MethodMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
 
         let localhost = req.sourceIp === "127.0.0.1" || req.sourceIp === "::1";
 
-        if (!metadata.roles.Public && !(metadata.roles.Debug && localhost)) {
+        if (!method.roles.Public && !(method.roles.Debug && localhost)) {
             if (!token) throw new Unauthorized("Missing authorization token");
-            let auth = await this.verify(req.requestId, token, metadata, req.sourceIp);
+            let auth = await this.verify(req.requestId, token, method, req.sourceIp);
             auth = this.renew(auth);
-            return new Context({ container, requestId: req.requestId, metadata, auth });
+            return new Context({ container, requestId: req.requestId, method, auth });
         }
 
-        if (metadata.roles.Public && token)
+        if (method.roles.Public && token)
             this.log.debug("Ignore token on public permission");
 
         let ctx = new Context({
             container,
             requestId: req.requestId,
-            metadata,
+            method,
             auth: {
                 tokenId: req.requestId,
                 subject: "user:public",
@@ -63,12 +63,12 @@ export abstract class BaseSecurity implements Security {
             }
         });
 
-        if (metadata.roles.Debug) {
+        if (method.roles.Debug) {
             if (!localhost) throw new Forbidden("Debug role only valid for localhost");
             ctx.auth.subject = "user:debug";
             ctx.auth.role = "Debug";
             if (token) try {
-                ctx.auth = await this.verify(req.requestId, token, metadata, req.sourceIp);
+                ctx.auth = await this.verify(req.requestId, token, method, req.sourceIp);
                 ctx.auth = this.renew(ctx.auth);
             } catch (err) {
                 this.log.debug("Ignore invalid token on debug permission", err);
@@ -78,22 +78,22 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(container: Container, req: RemoteRequest, metadata: MethodMetadata): Promise<Context> {
-        if (!metadata.roles.Remote && !metadata.roles.Internal)
-            throw new Forbidden(`Remote requests not allowed for method [${metadata.method}]`);
-        let auth = await this.verify(req.requestId, req.token, metadata, null);
-        if (auth.remote && !metadata.roles.Remote)
-            throw new Unauthorized(`Internal request allowed only for method [${metadata.method}]`);
-        return new Context({ container, requestId: req.requestId, metadata, auth });
+    public async remoteAuth(container: Container, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
+        if (!method.roles.Remote && !method.roles.Internal)
+            throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
+        let auth = await this.verify(req.requestId, req.token, method, null);
+        if (auth.remote && !method.roles.Remote)
+            throw new Unauthorized(`Internal request allowed only for method [${method.name}]`);
+        return new Context({ container, requestId: req.requestId, method, auth });
     }
 
-    public async eventAuth(container: Container, req: EventRequest, metadata: MethodMetadata): Promise<Context> {
-        if (!metadata.roles.Internal)
-            throw new Forbidden(`Internal events not allowed for method [${metadata.method}]`);
+    public async eventAuth(container: Container, req: EventRequest, method: MethodMetadata): Promise<Context> {
+        if (!method.roles.Internal)
+            throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
         let ctx = new Context({
             container,
             requestId: req.requestId,
-            metadata,
+            method,
             auth: {
                 tokenId: req.requestId,
                 subject: "event",
@@ -159,7 +159,7 @@ export abstract class BaseSecurity implements Security {
             throw new Unauthorized(`Invalid request IP address: ${jwt.ipaddr}`);
 
         if (jwt.role !== "Application" && permission.roles[jwt.role] !== true)
-            throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.method}]`);
+            throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.name}]`);
 
         let expiry = new Date(jwt.iss).getTime() + MS(this.timeout(jwt.sub, jwt.iss, jwt.aud));
         // Check age of application token

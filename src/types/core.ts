@@ -17,7 +17,7 @@ export interface Prototype extends Object { }
 export class Context {
     public container: Container;
     public requestId: string;
-    public metadata: MethodMetadata;
+    public method: MethodMetadata;
     public auth: AuthInfo;
     constructor(ctx: IContext) {
         Object.assign(this, ctx);

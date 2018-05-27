@@ -1,4 +1,4 @@
-import { Request, Context } from "./common";
+import { Request, Context } from "./core";
 
 export interface EventRequest extends Request {
     source: string;

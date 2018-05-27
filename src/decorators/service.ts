@@ -1,5 +1,6 @@
 import { Logger } from "../logger";
-import { Metadata, ServiceMetadata } from "../metadata";
+import { Metadata } from "../metadata/core";
+import { ServiceMetadata } from "../metadata/service";
 import { Context } from "../types";
 
 export interface Service {

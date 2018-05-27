@@ -1,5 +1,5 @@
 import { Class, Prototype } from "../types";
-import { Metadata } from "./common";
+import { Metadata } from "./core";
 import { ServiceMetadata } from "./service";
 
 export interface ProxyMetadata extends ServiceMetadata {

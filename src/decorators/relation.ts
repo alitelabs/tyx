@@ -1,5 +1,5 @@
 import { Orm } from "../import";
-import { Metadata } from "../metadata/common";
+import { Metadata } from "../metadata/core";
 import { JoinColumnOptions, RelationOptions } from "../metadata/relation";
 import { ObjectType } from "../types";
 
