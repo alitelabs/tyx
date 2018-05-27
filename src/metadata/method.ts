@@ -1,7 +1,7 @@
-import { Context, EventAdapter, HttpCode, HttpRequest, Roles } from "../types";
+import { Class, Context, EventAdapter, HttpCode, HttpRequest, Prototype, Roles } from "../types";
 import * as Utils from "../utils/misc";
 import { ApiMetadata } from "./api";
-import { META_DESIGN_PARAMS, META_DESIGN_RETURN, META_TYX_METHOD } from "./common";
+import { Metadata } from "./common";
 import { GraphMetadata, GraphType } from "./type";
 
 export enum HttpBindingType {
@@ -61,10 +61,9 @@ export interface EventRouteMetadata {
 }
 
 export interface MethodMetadata {
-    target: Function;
+    target: Class;
     method: string;
 
-    api: string;
     service: string;
     design: DesignMetadata[];
 
@@ -85,10 +84,9 @@ export interface MethodMetadata {
 
 export class MethodMetadata implements MethodMetadata {
 
-    public target: Function;
+    public target: Class;
     public method: string;
 
-    public api: string = undefined;
     public service: string = undefined;
     public design: DesignMetadata[] = undefined;
 
@@ -106,30 +104,30 @@ export class MethodMetadata implements MethodMetadata {
 
     public events: Record<string, EventRouteMetadata> = undefined;
 
-    private constructor(target: Object, method: string) {
+    private constructor(target: Prototype, method: string) {
         this.target = target.constructor;
         this.method = method;
     }
 
-    public static has(target: Object, propertyKey: string): boolean {
-        return Reflect.hasMetadata(META_TYX_METHOD, target, propertyKey);
+    public static has(target: Prototype, propertyKey: string): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_METHOD, target, propertyKey);
     }
 
-    public static get(target: Object, propertyKey: string): MethodMetadata {
-        return Reflect.getMetadata(META_TYX_METHOD, target, propertyKey);
+    public static get(target: Prototype, propertyKey: string): MethodMetadata {
+        return Reflect.getMetadata(Metadata.TYX_METHOD, target, propertyKey);
     }
 
-    public static define(target: Object, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
+    public static define(target: Prototype, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
         let meta = MethodMetadata.get(target, propertyKey);
         let ret = meta && meta.design && meta.design[meta.design.length - 1];
         if (ret && ret.name === "#return") return meta;
         if (!meta) {
             meta = new MethodMetadata(target, propertyKey);
-            Reflect.defineMetadata(META_TYX_METHOD, meta, target, propertyKey);
+            Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
         }
         let names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
-        let params: any[] = Reflect.getMetadata(META_DESIGN_PARAMS, target, propertyKey);
-        let returns = Reflect.getMetadata(META_DESIGN_RETURN, target, propertyKey);
+        let params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
+        let returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
         meta.design = meta.design || [];
         params.forEach((param, i) => meta.design[i] = { name: names[i], type: param.name, target: param });
         meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns.name, target: returns };
@@ -183,14 +181,14 @@ export class MethodMetadata implements MethodMetadata {
         return this;
     }
 
-    public setQuery(input?: Function, result?: Function): this {
+    public setQuery(input?: Class, result?: Class): this {
         this.query = true;
         this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
         this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
         return this;
     }
 
-    public setMutation(input?: Function, result?: Function): this {
+    public setMutation(input?: Class, result?: Class): this {
         this.mutation = true;
         this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
         this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };

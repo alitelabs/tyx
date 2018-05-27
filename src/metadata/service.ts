@@ -1,54 +1,86 @@
-import { META_TYX_SERVICE, Metadata } from "./common";
+import { Class, Prototype } from "../types";
+import { ApiMetadata } from "./api";
+import { Metadata } from "./common";
+
+export interface InjectMetadata {
+    resource: string;
+    application: string;
+    target?: Class;
+}
 
 export interface HandlerMetadata {
     service?: string;
     method: string;
-    target: Function;
+    target: Class;
 }
 
 export interface ServiceMetadata {
-    target: Function;
-    service: string;
+    target: Class;
+    alias: string;
+    dependencies: Record<string, InjectMetadata>;
+    handlers: Record<string, HandlerMetadata>;
 
     initializer: HandlerMetadata;
     selector: HandlerMetadata;
     activator: HandlerMetadata;
     releasor: HandlerMetadata;
-    handlers: Record<string, HandlerMetadata>;
 }
 
 export class ServiceMetadata implements ServiceMetadata {
-    public name: string;
-    public service: string;
+    public target: Class;
+    public alias: string;
+    public dependencies: Record<string, InjectMetadata> = undefined;
+    public handlers: Record<string, HandlerMetadata> = undefined;
+
     public initializer: HandlerMetadata = undefined;
     public selector: HandlerMetadata = undefined;
     public activator: HandlerMetadata = undefined;
     public releasor: HandlerMetadata = undefined;
-    public handlers: Record<string, HandlerMetadata> = undefined;
 
-    constructor(target: Function) {
+    constructor(target: Class) {
         this.target = target;
-        this.name = this.service = target.name;
+        this.alias = this.alias = target.name;
     }
 
-    public static has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_SERVICE, target)
-            || Reflect.hasMetadata(META_TYX_SERVICE, target.constructor);
+    public static has(target: Class | Prototype): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_SERVICE, target)
+            || Reflect.hasMetadata(Metadata.TYX_SERVICE, target.constructor);
     }
 
-    public static get(target: Function | Object): ServiceMetadata {
-        return Reflect.getMetadata(META_TYX_SERVICE, target)
-            || Reflect.getMetadata(META_TYX_SERVICE, target.constructor);
+    public static get(target: Class | Prototype): ServiceMetadata {
+        return Reflect.getMetadata(Metadata.TYX_SERVICE, target)
+            || Reflect.getMetadata(Metadata.TYX_SERVICE, target.constructor);
     }
 
-    public static define(target: Function): ServiceMetadata {
+    public static define(target: Class): ServiceMetadata {
         let meta = this.get(target);
         if (!meta) {
-            Metadata.define(target);
             meta = new ServiceMetadata(target);
-            Reflect.defineMetadata(META_TYX_SERVICE, meta, target);
+            Reflect.defineMetadata(Metadata.TYX_SERVICE, meta, target);
         }
         return meta;
+    }
+
+    public inject(propertyKey: string, resource?: string | Class, application?: string) {
+        if (!resource) {
+            resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
+        }
+        let target: Function;
+        if (resource instanceof Function) {
+            target = resource;
+            resource = resource.name;
+        } else {
+            target = undefined;
+            resource = resource.toString();
+        }
+        this.dependencies = this.dependencies || {};
+        this.dependencies[propertyKey] = { resource, target, application };
+    }
+
+    public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
+        this.handlers = this.handlers || {};
+        this.handlers[propertyKey] = { method: propertyKey, target: descriptor.value };
+        return this;
     }
 
     public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
@@ -71,21 +103,17 @@ export class ServiceMetadata implements ServiceMetadata {
         return this;
     }
 
-    public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
-        this.handlers = this.handlers || {};
-        this.handlers[propertyKey] = { method: propertyKey, target: descriptor.value };
-        return this;
-    }
-
-    public commit(name?: string): this {
-        if (name) this.service = this.name = name;
-        if (!this.name) this.name = this.service = this.target.name.replace("Service", "");
-        this.service = this.service || this.name;
-        if (this.initializer) this.initializer.service = this.service;
-        if (this.selector) this.selector.service = this.service;
-        if (this.activator) this.activator.service = this.service;
-        if (this.releasor) this.releasor.service = this.service;
-        if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.service);
+    public commit(alias?: string): this {
+        if (alias) this.alias = this.alias = alias;
+        if (!this.alias) this.alias = this.alias = this.target.name;
+        this.alias = this.alias || this.alias;
+        if (this.initializer) this.initializer.service = this.alias;
+        if (this.selector) this.selector.service = this.alias;
+        if (this.activator) this.activator.service = this.alias;
+        if (this.releasor) this.releasor.service = this.alias;
+        if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
+        let api = ApiMetadata.get(this.target);
+        if (api) api.commit(alias);
         return this;
     }
 }

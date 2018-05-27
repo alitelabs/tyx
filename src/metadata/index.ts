@@ -11,7 +11,7 @@ export * from "./type";
 export * from "./entity";
 export * from "./column";
 export * from "./relation";
+export * from "./database";
 
 export * from "./container";
-export * from "./orm";
 

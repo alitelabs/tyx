@@ -1,4 +1,5 @@
-import { META_TYX_PROXY } from "./common";
+import { Class, Prototype } from "../types";
+import { Metadata } from "./common";
 import { ServiceMetadata } from "./service";
 
 export interface ProxyMetadata extends ServiceMetadata {
@@ -10,33 +11,33 @@ export class ProxyMetadata extends ServiceMetadata implements ProxyMetadata {
     public functionName: string;
     public application: string;
 
-    protected constructor(target: Function) {
+    protected constructor(target: Class) {
         super(target);
     }
 
-    public static has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_PROXY, target)
-            || Reflect.hasMetadata(META_TYX_PROXY, target.constructor);
+    public static has(target: Class | Prototype): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_PROXY, target)
+            || Reflect.hasMetadata(Metadata.TYX_PROXY, target.constructor);
     }
 
-    public static get(target: Function | Object): ProxyMetadata {
-        return Reflect.getMetadata(META_TYX_PROXY, target)
-            || Reflect.getMetadata(META_TYX_PROXY, target.constructor);
+    public static get(target: Class | Prototype): ProxyMetadata {
+        return Reflect.getMetadata(Metadata.TYX_PROXY, target)
+            || Reflect.getMetadata(Metadata.TYX_PROXY, target.constructor);
     }
 
-    public static define(target: Function): ProxyMetadata {
+    public static define(target: Class): ProxyMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = ServiceMetadata.define(target) as any;
             Object.setPrototypeOf(meta, ProxyMetadata.prototype);
-            Reflect.defineMetadata(META_TYX_PROXY, meta, target);
+            Reflect.defineMetadata(Metadata.TYX_PROXY, meta, target);
         }
         return meta;
     }
 
     public commit(service?: string, application?: string, functionName?: string): this {
-        this.service = service || this.target.name.replace("Proxy", "");
-        this.functionName = functionName || (this.name + "-function");
+        this.alias = service || this.target.name.replace("Proxy", "");
+        this.functionName = functionName || (this.alias + "-function");
         this.application = application;
         super.commit(service);
         return this;

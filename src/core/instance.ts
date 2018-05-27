@@ -2,7 +2,7 @@ import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
-import { ApiMetadata, ContainerMetadata, Metadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
+import { ApiMetadata, ContainerMetadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
 import { Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
@@ -40,6 +40,9 @@ export class ContainerInstance implements Container {
         this.httpHandlers = {};
         this.eventHandlers = {};
         this.imetadata = {
+            apis: {},
+            services: {},
+            proxies: {},
             methods: {},
             resolvers: {},
             routes: {},
@@ -59,8 +62,10 @@ export class ContainerInstance implements Container {
         if (type === Configuration) return this.config as any;
         if (type === Security) return this.config as any;
         if (typeof type === "string") return this.services[type] || this.proxies[type] || this.resources[type];
-        if (ServiceMetadata.has(type)) return this.services[Metadata.id(type)] as any;
-        if (ProxyMetadata.has(type)) return this.proxies[Metadata.id(type)] as any;
+        let proxy = ProxyMetadata.get(type);
+        if (proxy) return this.proxies[proxy.alias] as any;
+        let service = ServiceMetadata.get(type);
+        if (service) return this.services[service.alias] as any;
         return null;
     }
 
@@ -76,7 +81,8 @@ export class ContainerInstance implements Container {
         // Call constructor
         // https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
         if (target instanceof Function) {
-            target = new (Function.prototype.bind.apply(target, arguments));
+            target = new (target as new (...args: any[]) => any)(...args);
+            // target = new (Function.prototype.bind.apply(target, arguments));
         } else {
             name = args && args[0];
         }
@@ -86,11 +92,11 @@ export class ContainerInstance implements Container {
             id = name = "" + name;
         } else if (ServiceMetadata.has(target)) {
             let meta = ServiceMetadata.get(target);
-            id = name = meta.name;
+            id = name = meta.alias;
         } else if (ProxyMetadata.has(target)) {
             let meta = ProxyMetadata.get(target);
-            name = meta.name;
-            id = (meta.application || this.application) + ":" + meta.name;
+            name = meta.alias;
+            id = (meta.application || this.application) + ":" + meta.alias;
         } else {
             id = name = target.constructor.name;
         }
@@ -113,9 +119,12 @@ export class ContainerInstance implements Container {
 
         if (ServiceMetadata.has(target)) {
             this.services[id] = target as Service;
+            this.imetadata.apis[id] = ApiMetadata.get(target);
+            this.imetadata.services[id] = ServiceMetadata.get(target);
             this.log.info("Service: %s", id);
         } else if (ProxyMetadata.has(target)) {
             this.proxies[id] = target as Proxy;
+            this.imetadata.proxies[id] = ProxyMetadata.get(target);
             this.log.info("Proxy: %s", id);
         } else {
             this.resources[id] = target;
@@ -137,14 +146,14 @@ export class ContainerInstance implements Container {
             service === objectOrType;
         }
 
-        if (!ServiceMetadata.has(service)) throw new InternalServerError(`Service decoration missing: ${Metadata.id(service)}`);
-        if (!ApiMetadata.has(service)) throw new InternalServerError(`Api not defined on service `);
+        if (!ServiceMetadata.has(service)) throw new InternalServerError(`Service decoration missing`);
+        if (!ApiMetadata.has(service)) throw new InternalServerError(`Api not defined on service`);
         this.register(service);
 
         service = service as Service;
         // let metaService = ServiceMetadata.get(service);
         let metaApi = ApiMetadata.get(service);
-        this.log.info("Publish: %s", metaApi.api);
+        this.log.info("Publish: %s", metaApi.alias);
 
         for (let meta of Object.values(metaApi.methods)) {
             let key = meta.service + "." + meta.method;
@@ -272,14 +281,14 @@ export class ContainerInstance implements Container {
     }
 
     private inject(target: object) {
-        let meta = Metadata.get(target);
+        let meta = ServiceMetadata.get(target);
         if (!meta || !meta.dependencies) return;
         for (let [pid, dep] of Object.entries(meta.dependencies)) {
             let localId = dep.resource;
             let proxyId = (dep.application || this.application) + ":" + localId;
             let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
             if (dep.resource === Container) resolved = this;
-            if (dep.resource === "logger") resolved = Logger.get(meta.name, target);
+            if (dep.resource === "logger") resolved = Logger.get(meta.alias, target);
             let depId = (dep.application ? dep.application + ":" : "") + localId;
             if (!resolved)
                 throw new InternalServerError(`Unresolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);

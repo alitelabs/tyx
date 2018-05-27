@@ -1,10 +1,11 @@
-import { META_TYX_API } from "./common";
+import { Class, Prototype } from "../types";
+import { Metadata } from "./common";
 import { MethodMetadata } from "./method";
 import { GraphMetadata, GraphType, TypeMetadata } from "./type";
 
 export interface ApiMetadata {
-    name: string;
-    api: string;
+    target: Class;
+    alias: string;
 
     methods: Record<string, MethodMetadata>;
     inputs: Record<string, TypeMetadata>;
@@ -15,9 +16,8 @@ export interface ApiMetadata {
 }
 
 export class ApiMetadata implements ApiMetadata {
-    public target: Function;
-    public name: string;
-    public api: string;
+    public target: Class;
+    public alias: string;
 
     public methods: Record<string, MethodMetadata> = {};
     public inputs: Record<string, TypeMetadata> = {};
@@ -26,33 +26,33 @@ export class ApiMetadata implements ApiMetadata {
     public routes: Record<string, MethodMetadata> = {};
     public events: Record<string, MethodMetadata[]> = {};
 
-    constructor(target: Function) {
+    constructor(target: Class) {
         this.target = target;
     }
 
-    public static has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_API, target)
-            || Reflect.hasMetadata(META_TYX_API, target.constructor);
+    public static has(target: Class | Prototype): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_API, target)
+            || Reflect.hasMetadata(Metadata.TYX_API, target.constructor);
     }
 
-    public static get(target: Function | Object): ApiMetadata {
-        return Reflect.getMetadata(META_TYX_API, target)
-            || Reflect.getMetadata(META_TYX_API, target.constructor);
+    public static get(target: Class | Prototype): ApiMetadata {
+        return Reflect.getMetadata(Metadata.TYX_API, target)
+            || Reflect.getMetadata(Metadata.TYX_API, target.constructor);
     }
 
-    public static define(target: Function): ApiMetadata {
+    public static define(target: Class | Prototype): ApiMetadata {
         let meta = ApiMetadata.get(target);
         if (!meta) {
-            meta = new ApiMetadata(target);
-            Reflect.defineMetadata(META_TYX_API, meta, target);
+            target = (typeof target === "function") ? target : target.constructor;
+            meta = new ApiMetadata(target as Class);
+            Reflect.defineMetadata(Metadata.TYX_API, meta, target);
         }
         return meta;
     }
 
-    public commit(name?: string): this {
-        if (name) this.name = this.api = name;
-        if (!this.api) this.name = this.api = this.target.name;
-        Object.values(this.methods).forEach(item => item.api = this.api);
+    public commit(alias?: string): this {
+        this.alias = alias || this.target.name;
+        Object.values(this.methods).forEach(item => item.service = this.alias);
         this.schema();
         return this;
     }
@@ -63,7 +63,7 @@ export class ApiMetadata implements ApiMetadata {
             res.input = this.resolve(res.input, true);
             res.result = this.resolve(res.result, false);
         }
-        return "# " + this.name;
+        return "# " + this.alias;
     }
 
     // TODO: Generic

@@ -6,9 +6,13 @@ export type ObjectType<T> = {
     new(): T;
 } | Function;
 
-export type Constructor<T> = T & {
-    new(): T
-};
+export interface Class extends Function { }
+
+// export type Constructor<T = Object> = T & {
+//     new(...args: any[]): T
+// };
+
+export interface Prototype extends Object { }
 
 export class Context {
     public container: Container;

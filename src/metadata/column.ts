@@ -1,4 +1,5 @@
-import { META_TYX_COLUMN } from "./common";
+import { Prototype } from "../types";
+import { Metadata } from "./common";
 import { EntityMetadata } from "./entity";
 import { GraphType } from "./type";
 
@@ -204,9 +205,6 @@ export interface ColumnOptions {
     // transformer?: ValueTransformer;
 }
 
-
-
-
 export interface ColumnMetadata {
     /**
      * Class's property name on which this column is applied.
@@ -245,15 +243,15 @@ export interface ColumnMetadata {
 }
 
 export namespace ColumnMetadata {
-    export function has(target: Object, propertyKey: string): boolean {
-        return Reflect.hasMetadata(META_TYX_COLUMN, target, propertyKey);
+    export function has(target: Prototype, propertyKey: string): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
     }
 
-    export function get(target: Object, propertyKey: string): ColumnMetadata {
-        return Reflect.getMetadata(META_TYX_COLUMN, target, propertyKey);
+    export function get(target: Prototype, propertyKey: string): ColumnMetadata {
+        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
     }
 
-    export function define(target: Object, propertyKey: string, descriptor: PropertyDescriptor, options: ColumnOptions): ColumnMetadata {
+    export function define(target: Prototype, propertyKey: string, descriptor: PropertyDescriptor, options: ColumnOptions): ColumnMetadata {
         let meta = get(target, propertyKey);
         if (!meta) meta = {
             propertyName: propertyKey,
@@ -265,7 +263,7 @@ export namespace ColumnMetadata {
             isGenerated: false, // options.generated;
             isNullable: !options.primary && options.nullable
         };
-        Reflect.defineMetadata(META_TYX_COLUMN, target, propertyKey);
+        Reflect.defineMetadata(Metadata.TYX_COLUMN, target, propertyKey);
         let entity = EntityMetadata.init(target.constructor);
         entity.columns.push(meta);
         return meta;

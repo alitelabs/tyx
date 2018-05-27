@@ -1,20 +1,3 @@
-
-export const META_DESIGN_TYPE = "design:type";
-export const META_DESIGN_PARAMS = "design:paramtypes";
-export const META_DESIGN_RETURN = "design:returntype";
-
-export const META_TYX_METADATA = "tyx:metadata";
-export const META_TYX_API = "tyx:api";
-export const META_TYX_SERVICE = "tyx:service";
-export const META_TYX_PROXY = "tyx:proxy";
-export const META_TYX_TYPE = "tyx:type";
-export const META_TYX_METHOD = "tyx:method";
-
-export const META_TYX_ENTITY = "tyx:entity";
-export const META_TYX_COLUMN = "tyx:column";
-export const META_TYX_RELATION = "tyx:relation";
-export const META_TYX_ENTITIES = "tyx:entities";
-
 export interface TypeDecorationMetadata {
     target: Function;
     decorations?: DecoratorMetadata[];
@@ -42,56 +25,31 @@ export interface DecorationMetadata {
     trace: TypeDecorationMetadata[];
 }
 
-export interface InjectMetadata {
-    resource: string;
-    application: string;
-    target?: Function;
-}
-
 export interface Metadata {
     target: Function;
     name: string;
-    dependencies: Record<string, InjectMetadata>;
 }
 
-export class Metadata implements Metadata {
+export abstract class Metadata implements Metadata {
+
+    public static readonly DESIGN_TYPE = "design:type";
+    public static readonly DESIGN_PARAMS = "design:paramtypes";
+    public static readonly DESIGN_RETURN = "design:returntype";
+
+    public static readonly TYX_METADATA = "tyx:metadata";
+    public static readonly TYX_API = "tyx:api";
+    public static readonly TYX_SERVICE = "tyx:service";
+    public static readonly TYX_PROXY = "tyx:proxy";
+    public static readonly TYX_DATABASE = "tyx:database";
+    public static readonly TYX_TYPE = "tyx:type";
+    public static readonly TYX_METHOD = "tyx:method";
+
+    public static readonly TYX_ENTITY = "tyx:entity";
+    public static readonly TYX_COLUMN = "tyx:column";
+    public static readonly TYX_RELATION = "tyx:relation";
 
     public static decorations = { types: {}, decorators: {}, trace: [] };
     private static ordinal = 0;
-
-    public target: Function;
-    public name: string;
-    public dependencies: Record<string, InjectMetadata> = undefined;
-
-    protected constructor(target: Function, name?: string) {
-        this.target = target;
-        this.name = name || target.name;
-    }
-
-    public static id(target: Function | Object): string {
-        let meta = this.get(target);
-        return meta && meta.name;
-    }
-
-    public static has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_METADATA, target)
-            || Reflect.hasMetadata(META_TYX_METADATA, target.constructor);
-    }
-
-    public static get(target: Function | Object): Metadata {
-        return Reflect.getMetadata(META_TYX_METADATA, target)
-            || Reflect.getMetadata(META_TYX_METADATA, target.constructor);
-    }
-
-    public static define(target: Function, name?: string): Metadata {
-        let meta = this.get(target);
-        if (!meta) {
-            meta = new Metadata(target, name);
-            Reflect.defineMetadata(META_TYX_METADATA, meta, target);
-        }
-        meta.name = name || target.name;
-        return meta;
-    }
 
     public static trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
         let name = decorator instanceof Function ? decorator.name : decorator;
@@ -126,22 +84,6 @@ export class Metadata implements Metadata {
         // TODO: Circular references
         return JSON.stringify(data,
             (key, value) => value instanceof Function ? `[function: ${value.name || "inline"}]` : value, ident);
-    }
-
-    public inject(propertyKey: string, resource?: string | Function, application?: string) {
-        if (!resource) {
-            resource = Reflect.getMetadata(META_DESIGN_TYPE, this.target.prototype, propertyKey);
-        }
-        let target: Function;
-        if (resource instanceof Function) {
-            target = resource;
-            resource = resource.name;
-        } else {
-            target = undefined;
-            resource = resource.toString();
-        }
-        this.dependencies = this.dependencies || {};
-        this.dependencies[propertyKey] = { resource, target, application };
     }
 }
 

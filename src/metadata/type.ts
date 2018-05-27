@@ -1,5 +1,6 @@
-import { META_DESIGN_TYPE, META_TYX_TYPE } from "./common";
+import { Metadata } from "./common";
 import { DesignMetadata } from "./method";
+import { Class, Prototype } from "../types";
 
 export enum GraphType {
     ID = "ID",
@@ -102,7 +103,7 @@ export interface GraphMetadata {
     type: GraphType;
     ref?: string;
     item?: GraphMetadata;
-    target?: Function;
+    target?: Class;
     schema?: string;
 }
 
@@ -113,49 +114,49 @@ export interface FieldMetadata extends GraphMetadata {
 }
 
 export interface TypeMetadata extends GraphMetadata {
-    target: Function;
+    target: Class;
     item?: never;
     fields?: Record<string, FieldMetadata>;
 }
 
 export class TypeMetadata {
-    public target: Function;
+    public target: Class;
     public type: GraphType = undefined;
     public ref?: string = undefined;
     public schema?: string = undefined;
     public fields?: Record<string, FieldMetadata> = undefined;
 
-    constructor(target: Function) {
+    constructor(target: Class) {
         this.target = target;
     }
 
-    public static has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_TYPE, target)
-            || Reflect.hasMetadata(META_TYX_TYPE, target.constructor);
+    public static has(target: Class | Prototype): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_TYPE, target)
+            || Reflect.hasMetadata(Metadata.TYX_TYPE, target.constructor);
     }
 
-    public static get(target: Function | Object): TypeMetadata {
-        return Reflect.getMetadata(META_TYX_TYPE, target)
-            || Reflect.getMetadata(META_TYX_TYPE, target.constructor);
+    public static get(target: Class | Prototype): TypeMetadata {
+        return Reflect.getMetadata(Metadata.TYX_TYPE, target)
+            || Reflect.getMetadata(Metadata.TYX_TYPE, target.constructor);
     }
 
-    public static define(target: Function): TypeMetadata {
+    public static define(target: Class): TypeMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = new TypeMetadata(target);
-            Reflect.defineMetadata(META_TYX_TYPE, meta, target);
+            Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
         }
         return meta;
     }
 
-    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | Function): this {
+    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | Class): this {
         // TODO: Validata
         this.fields = this.fields || {};
         // TODO: use design type when not specified
-        let design = Reflect.getMetadata(META_DESIGN_TYPE, this.target.prototype, propertyKey);
+        let design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
         let itemInfo: GraphMetadata = typeof item === "function"
             ? { type: GraphType.Ref, target: item }
-            : { type: item };
+            : { type: item as GraphType };
         this.fields[propertyKey] = {
             type,
             item: item && itemInfo,

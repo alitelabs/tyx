@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "TyX Watch",
+            "label": "TYX Watch",
             "identifier": "watch",
             "type": "npm",
             "script": "watch",

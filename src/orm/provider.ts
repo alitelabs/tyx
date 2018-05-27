@@ -1,12 +1,12 @@
 
 
 import { Configuration } from "../core";
-import { Entity, Inject, Service } from "../decorators";
+import { Database, Inject, Service } from "../decorators";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
-import { EntityMetadata, Database } from "../metadata";
-import { Context } from "../types/common";
+import { DatabaseMetadata, EntityMetadata } from "../metadata";
+import { Class, Context } from "../types/common";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 
@@ -25,7 +25,7 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
     protected connection: Orm.Connection;
     public manager: Orm.EntityManager;
 
-    public get entities(): Function[] { return Entity.list(this); }
+    public get entities(): Class[] { return DatabaseMetadata.get(this).targets; }
 
     public get metadata(): EntityMetadata[] { return this.connection.entityMetadatas as any; }
 

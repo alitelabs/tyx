@@ -7,7 +7,7 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "TyX Program",
+            "name": "TYX Program",
             "program": "${file}",
             "cwd": "${workspaceRoot}",
             "sourceMaps": true,

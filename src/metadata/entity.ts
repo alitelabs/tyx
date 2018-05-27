@@ -1,5 +1,6 @@
+import { Class, Prototype } from "../types";
 import { ColumnMetadata } from "./column";
-import { META_TYX_ENTITIES, META_TYX_ENTITY } from "./common";
+import { Metadata } from "./common";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {
@@ -53,17 +54,17 @@ export interface EntityMetadata {
 }
 
 export namespace EntityMetadata {
-    export function has(target: Function | Object): boolean {
-        return Reflect.hasMetadata(META_TYX_ENTITY, target)
-            || Reflect.hasMetadata(META_TYX_ENTITY, target.constructor);
+    export function has(target: Class | Prototype): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_ENTITY, target)
+            || Reflect.hasMetadata(Metadata.TYX_ENTITY, target.constructor);
     }
 
-    export function get(target: Function | Object): EntityMetadata {
-        return Reflect.getMetadata(META_TYX_ENTITY, target)
-            || Reflect.getMetadata(META_TYX_ENTITY, target.constructor);
+    export function get(target: Class | Prototype): EntityMetadata {
+        return Reflect.getMetadata(Metadata.TYX_ENTITY, target)
+            || Reflect.getMetadata(Metadata.TYX_ENTITY, target.constructor);
     }
 
-    export function init(target: Function): EntityMetadata {
+    export function init(target: Class): EntityMetadata {
         let meta = get(target);
         if (!meta) {
             meta = {
@@ -72,20 +73,15 @@ export namespace EntityMetadata {
                 primaryColumns: [],
                 relations: []
             };
-            Reflect.defineMetadata(META_TYX_ENTITY, meta, target);
+            Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
         }
         return meta;
     }
 
-    export function define(target: Function, group?: Function, options?: EntityOptions): EntityMetadata {
+    export function define(target: Class, options?: EntityOptions): EntityMetadata {
         let meta = init(target);
         if (options && options.name) meta.name = options.name;
         if (!meta.name) meta.name = target.name;
-        if (group) {
-            if (!Reflect.hasMetadata(META_TYX_ENTITIES, group))
-                Reflect.defineMetadata(META_TYX_ENTITIES, [], group);
-            Reflect.getMetadata(META_TYX_ENTITIES, group).push(target);
-        }
         return meta;
     }
 }
