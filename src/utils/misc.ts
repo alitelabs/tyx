@@ -24,6 +24,18 @@ export function password() {
     return p;
 }
 
+// https://github.com/nof1000/isclass/blob/master/index.js
+export function isClass(cls: any): boolean {
+    if (typeof (cls) === "function" && cls.prototype) {
+        try {
+            return !(cls.arguments && cls.caller);
+        } catch (e) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const notBase64 = /[^A-Z0-9+\/=\n\r]/i;
 
 // const base64 = new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$");

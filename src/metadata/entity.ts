@@ -1,6 +1,7 @@
 import { Class, Prototype } from "../types";
 import { ColumnMetadata } from "./column";
 import { Metadata } from "./core";
+import { DatabaseMetadata } from "./database";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {
@@ -33,6 +34,7 @@ export interface EntityOptions {
 }
 
 export interface EntityMetadata {
+    target: Class;
     /**
      * Entity's name.
      * Equal to entity target class's name if target is set to table.
@@ -50,38 +52,61 @@ export interface EntityMetadata {
     /**
      * Relations of the entity, including relations that are coming from the embeddeds of this entity.
      */
-    relations: RelationMetadata[];
+    relations: RelationMetadata<any>[];
 }
 
-export namespace EntityMetadata {
-    export function has(target: Class | Prototype): boolean {
+export class EntityMetadata {
+    public target: Class;
+    public name: string;
+    public columns: ColumnMetadata[] = [];
+    public primaryColumns: ColumnMetadata[] = [];
+    public relations: RelationMetadata<any>[] = [];
+    public members: Record<string, (ColumnMetadata | RelationMetadata<any>)> = {};
+
+    constructor(target: Class) {
+        this.target = target;
+        this.name = target.name;
+    }
+
+    public static has(target: Class | Prototype): boolean {
         return Reflect.hasMetadata(Metadata.TYX_ENTITY, target)
             || Reflect.hasMetadata(Metadata.TYX_ENTITY, target.constructor);
     }
 
-    export function get(target: Class | Prototype): EntityMetadata {
+    public static get(target: Class | Prototype): EntityMetadata {
         return Reflect.getMetadata(Metadata.TYX_ENTITY, target)
             || Reflect.getMetadata(Metadata.TYX_ENTITY, target.constructor);
     }
 
-    export function init(target: Class): EntityMetadata {
-        let meta = get(target);
+    public static define(target: Class): EntityMetadata {
+        let meta = this.get(target);
         if (!meta) {
-            meta = {
-                name: undefined,
-                columns: [],
-                primaryColumns: [],
-                relations: []
-            };
+            meta = new EntityMetadata(target);
             Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
         }
         return meta;
     }
 
-    export function define(target: Class, options?: EntityOptions): EntityMetadata {
-        let meta = init(target);
-        if (options && options.name) meta.name = options.name;
-        if (!meta.name) meta.name = target.name;
-        return meta;
+    public addColumn(column: ColumnMetadata): this {
+        if (!(this.members[column.propertyName])) this.columns.push(column);
+        if (column.isPrimary) this.primaryColumns.push(column);
+        this.members[column.propertyName] = column;
+        return this;
+    }
+
+    public addRelation(relation: RelationMetadata<any>): this {
+        if (!this.members[relation.propertyName]) this.relations.push(relation);
+        this.members[relation.propertyName] = relation;
+        return this;
+    }
+
+    public commit(options?: EntityOptions): void {
+        if (options && options.name) this.name = options.name;
+        Metadata.entities[this.name] = this;
+    }
+
+    public resolve(database: DatabaseMetadata): void {
+        this.columns.forEach(col => col.resolve(database, this));
+        this.relations.forEach(rel => rel.resolve(database, this));
     }
 }

@@ -1,4 +1,6 @@
+import { Utils } from "../utils";
 import { ApiMetadata } from "./api";
+import { EntityMetadata } from "./entity";
 import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method";
 import { ProxyMetadata } from "./proxy";
 import { ServiceMetadata } from "./service";
@@ -35,9 +37,12 @@ export interface MetadataRegistry {
     services: Record<string, ServiceMetadata>;
     proxies: Record<string, ProxyMetadata>;
     methods: Record<string, MethodMetadata>;
+    entities: Record<string, EntityMetadata>;
+    // Derived
     resolvers: Record<string, MethodMetadata>;
     routes: Record<string, HttpRouteMetadata>;
     events: Record<string, EventRouteMetadata[]>;
+    // Trace
     decorations: DecorationMetadata;
 }
 
@@ -64,6 +69,7 @@ export abstract class Metadata {
     public static services: Record<string, ServiceMetadata> = {};
     public static proxies: Record<string, ProxyMetadata> = {};
     public static methods: Record<string, MethodMetadata> = {};
+    public static entities: Record<string, EntityMetadata> = {};
     public static resolvers: Record<string, MethodMetadata> = {};
     public static routes: Record<string, HttpRouteMetadata> = {};
     public static events: Record<string, EventRouteMetadata[]> = {};
@@ -76,6 +82,7 @@ export abstract class Metadata {
             services: this.services,
             proxies: this.proxies,
             methods: this.methods,
+            entities: this.entities,
             resolvers: this.resolvers,
             routes: this.routes,
             events: this.events,
@@ -114,8 +121,15 @@ export abstract class Metadata {
 
     public static stringify(data: any, ident?: number) {
         // TODO: Circular references
-        return JSON.stringify(data,
-            (key, value) => value instanceof Function ? `[function: ${value.name || "inline"}]` : value, ident);
+        function filter(key: string, value: any) {
+            if (value instanceof Function) {
+                let type = Utils.isClass(value) ? "class" : "function";
+                return `[${type}: ${value.name || "inline"}]`;
+            }
+            if (key.startsWith("inverse") && value) return `#(${value.name || value.propertyName})`;
+            return value;
+        }
+        return JSON.stringify(data, filter, ident);
     }
 }
 

@@ -49,6 +49,7 @@ export class DatabaseMetadata implements DatabaseMetadata {
         }
         // TODO: Link entity metadata
         ServiceMetadata.define(this.target).commit(alias);
+        this.entities.forEach(entity => entity.resolve(this));
         return this;
     }
 }

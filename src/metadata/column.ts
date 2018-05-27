@@ -1,5 +1,6 @@
-import { Prototype } from "../types";
+import { Class, Prototype } from "../types";
 import { Metadata } from "./core";
+import { DatabaseMetadata } from "./database";
 import { EntityMetadata } from "./entity";
 import { GraphType } from "./type";
 
@@ -16,7 +17,7 @@ export enum ColumnType {
     Numeric = "numeric",
 
     Date = "date",
-    Datetime = "datetime",
+    DateTime = "datetime",
     Timestamp = "timestamp",
     Time = "time",
     Year = "year",
@@ -67,7 +68,7 @@ export namespace ColumnType {
             case ColumnType.Numeric:
                 return GraphType.Float;
             case ColumnType.Date:
-            case ColumnType.Datetime:
+            case ColumnType.DateTime:
             case ColumnType.Timestamp:
             case ColumnType.Time:
             case ColumnType.Year:
@@ -96,6 +97,25 @@ export namespace ColumnType {
         }
     }
 }
+
+/**
+* Kinda type of the column. Not a type in the database, but locally used type to determine what kind of column
+* we are working with.
+* For example, "primary" means that it will be a primary column, or "createDate" means that it will create a create
+* date column.
+*/
+export enum ColumnMode {
+    Regular = "regular",
+    Virtual = "virtual",
+    CreateDate = "createDate",
+    UpdateDate = "updateDate",
+    Version = "version"
+    // "treeChildrenCount"
+    // "treeLevel"
+    // "objectId"
+    // "array"
+}
+
 
 export interface ColumnOptions {
     /**
@@ -206,6 +226,7 @@ export interface ColumnOptions {
 }
 
 export interface ColumnMetadata {
+    target: Class;
     /**
      * Class's property name on which this column is applied.
      */
@@ -229,43 +250,82 @@ export interface ColumnMetadata {
      */
     length: string;
     /**
+     * Type's display width in the database.
+     */
+    width?: number;
+    /**
+     * Column comment.
+     * This feature is not supported by all databases.
+     */
+    comment: string;
+    /**
      * Indicates if this column is a primary key.
      */
     isPrimary: boolean;
+    /**
+     * Indicates if column can contain nulls or not.
+     */
+    isNullable: boolean;
     /**
      * Indicates if this column is generated (auto increment or generated other way).
      */
     isGenerated: boolean;
     /**
-     * Indicates if column can contain nulls or not.
+     * Indicates if this column contains an entity creation date.
      */
-    isNullable: boolean;
+    isCreateDate: boolean;
+    /**
+     * Indicates if this column contains an entity update date.
+     */
+    isUpdateDate: boolean;
+    /**
+     * Indicates if this column contains an entity version.
+     */
+    isVersion: boolean;
+    /**
+     * Indicates if column is virtual. Virtual columns are not mapped to the entity.
+     */
+    isVirtual: boolean;
 }
 
-export namespace ColumnMetadata {
-    export function has(target: Prototype, propertyKey: string): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
-    }
+export class ColumnMetadata {
 
-    export function get(target: Prototype, propertyKey: string): ColumnMetadata {
-        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
-    }
-
-    export function define(target: Prototype, propertyKey: string, descriptor: PropertyDescriptor, options: ColumnOptions): ColumnMetadata {
-        let meta = get(target, propertyKey);
-        if (!meta) meta = {
+    private constructor(target: Class, propertyKey: string, mode: ColumnMode, options: ColumnOptions) {
+        let state = {
+            target,
             propertyName: propertyKey,
             type: options.type,
+            comment: options.comment,
             precision: options.precision,
             scale: options.scale,
             length: options.length ? "" + options.length : null,
+            width: options.width,
             isPrimary: options.primary,
+            isNullable: !options.primary && options.nullable,
             isGenerated: false, // options.generated;
-            isNullable: !options.primary && options.nullable
+            isCreateDate: mode === ColumnMode.CreateDate,
+            isUpdateDate: mode === ColumnMode.UpdateDate,
+            isVersion: mode === ColumnMode.Version,
+            isVirtual: mode === ColumnMode.Virtual
         };
-        Reflect.defineMetadata(Metadata.TYX_COLUMN, target, propertyKey);
-        let entity = EntityMetadata.init(target.constructor);
-        entity.columns.push(meta);
+        Object.assign(this, state);
+    }
+
+    public static has(target: Prototype, propertyKey: string): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    }
+
+    public static get(target: Prototype, propertyKey: string): ColumnMetadata {
+        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    }
+
+    public static define(target: Prototype, propertyKey: string, mode: ColumnMode, options: ColumnOptions): ColumnMetadata {
+        let meta = this.get(target, propertyKey);
+        if (!meta) meta = new ColumnMetadata(target.constructor, propertyKey, mode, options);
+        Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
+        EntityMetadata.define(target.constructor).addColumn(meta);
         return meta;
     }
+
+    public resolve(database: DatabaseMetadata, entity: EntityMetadata): void { }
 }

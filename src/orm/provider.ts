@@ -27,7 +27,8 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
 
     public get entities(): Class[] { return DatabaseMetadata.get(this).targets; }
 
-    public get metadata(): EntityMetadata[] { return this.connection.entityMetadatas as any; }
+    public get metadata(): EntityMetadata[] { return DatabaseMetadata.get(this).entities; }
+    // { return this.connection.entityMetadatas as any; }
 
     public getMetadata(entity: string | Function): EntityMetadata {
         return this.connection.getMetadata(entity) as any;

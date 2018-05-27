@@ -1,137 +1,127 @@
 import { Orm } from "../import";
-import { ColumnOptions, ColumnType } from "../metadata/column";
+import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from "../metadata/column";
 import { Metadata } from "../metadata/core";
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
         Metadata.trace(Column, { options }, target, propertyKey);
-        return Orm.Column(options)(target, propertyKey);
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        options = { nullable: false, ...options };
+        let col = Orm.Column(options)(target, propertyKey);
+        ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options);
+        return col;
     };
 }
 
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
         Metadata.trace(PrimaryColumn, { options }, target, propertyKey);
-        return Orm.PrimaryColumn(options)(target, propertyKey);
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        options = { ...options, primary: true, nullable: false };
+        let col = Orm.PrimaryColumn(options)(target, propertyKey);
+        ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options);
+        return col;
     };
 }
 
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
         Metadata.trace(CreateDateColumn, { options }, target, propertyKey);
-        return Orm.CreateDateColumn(options)(target, propertyKey);
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        options = { ...options, type: ColumnType.DateTime };
+        let col = Orm.CreateDateColumn(options)(target, propertyKey);
+        ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, options || {});
+        return col;
     };
 }
 
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
         Metadata.trace(UpdateDateColumn, { options }, target, propertyKey);
-        return Orm.UpdateDateColumn(options)(target, propertyKey);
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        options = { ...options, type: ColumnType.DateTime };
+        let col = Orm.UpdateDateColumn(options)(target, propertyKey);
+        ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, options || {});
+        return col;
     };
 }
 
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
-    if (typeof options === "number") {
-        options = { type: ColumnType.BigInt, width: options };
-    } else if (typeof options === "object") {
-        options = { ...options, type: ColumnType.BigInt };
-    } else {
-        options = { type: ColumnType.BigInt };
-    }
     return (target, propertyKey) => {
         Metadata.trace(VersionColumn, { options }, target, propertyKey);
-        return Orm.VersionColumn(options)(target, propertyKey);
+        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
+        if (typeof options === "number") {
+            options = { type: ColumnType.BigInt, width: options };
+        } else {
+            options = { ...options, type: ColumnType.BigInt };
+        }
+        let col = Orm.VersionColumn(options)(target, propertyKey);
+        ColumnMetadata.define(target, propertyKey, ColumnMode.Version, options);
+        return col;
     };
 }
 
 export function Transient(): PropertyDecorator {
     return (target, propertyKey) => {
         Metadata.trace(Transient, undefined, target, propertyKey);
+        // TODO: Register in Schema not in QRM, readOnly
     };
 }
 
 export function PrimaryIdColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { ...options, type: ColumnType.Varchar, length: 36, primary: true };
-    return PrimaryColumn(op);
+    return PrimaryColumn({ ...options, type: ColumnType.Varchar, length: 36 });
 }
 
 export function PrimaryLongColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = {
-        ...options, type: ColumnType.BigInt, primary: true
-    };
-    return PrimaryColumn(op);
+    return PrimaryColumn({ ...options, type: ColumnType.BigInt, primary: true });
 }
 
 export function IdColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { type: ColumnType.Varchar, length: 36 };
-    Object.assign(op, options || {});
-    return Column(op);
+    return Column({ ...options, type: ColumnType.Varchar, length: 36 });
 }
 
-export function StringColumn(options?: number | ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions;
-    if (typeof options === "number") {
-        op = { type: ColumnType.Varchar, length: options || 255 };
-    } else if (typeof options === "object") {
-        op = { ...options, type: ColumnType.Varchar };
+export function StringColumn(numOrOptions?: number | ColumnOptions): PropertyDecorator {
+    let options: ColumnOptions;
+    if (typeof numOrOptions === "number") {
+        options = { type: ColumnType.Varchar, length: numOrOptions || 255 };
     } else {
-        op = { type: ColumnType.Varchar };
+        options = { length: 255, ...numOrOptions, type: ColumnType.Varchar };
     }
-    return Column(op);
+    return Column(options);
 }
 
 export function TextColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions;
-    if (typeof options === "object") {
-        op = { ...options, type: ColumnType.MediumText };
-    } else {
-        op = { type: ColumnType.MediumText };
-    }
-    return Column(op);
+    return Column({ ...options, type: ColumnType.MediumText });
 }
 
-export function IntColumn(options?: number | ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions;
-    if (typeof options === "number") {
-        op = { type: ColumnType.Int, width: options };
-    } else if (typeof options === "object") {
-        op = { ...options, type: ColumnType.Int };
+export function IntColumn(numOrOptions?: number | ColumnOptions): PropertyDecorator {
+    let options: ColumnOptions;
+    if (typeof numOrOptions === "number") {
+        options = { type: ColumnType.Int, width: numOrOptions };
     } else {
-        op = { type: ColumnType.Int };
+        options = { ...numOrOptions, type: ColumnType.Int };
     }
-    return Column(op);
+    return Column(options);
 }
 
-export function LongColumn(options?: number | ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions;
-    if (typeof options === "number") {
-        op = { type: ColumnType.BigInt, width: options };
-    } else if (typeof options === "object") {
-        op = { ...options, type: ColumnType.BigInt };
+export function LongColumn(numOrOptions?: number | ColumnOptions): PropertyDecorator {
+    let options: ColumnOptions;
+    if (typeof numOrOptions === "number") {
+        options = { type: ColumnType.BigInt, width: numOrOptions };
     } else {
-        op = { type: ColumnType.BigInt };
+        options = { ...numOrOptions, type: ColumnType.BigInt };
     }
-    return Column(op);
+    return Column(options);
 }
 
 export function DoubleColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions;
-    if (typeof options === "object") {
-        op = { ...options, type: ColumnType.Double };
-    } else {
-        op = { type: ColumnType.Double };
-    }
-    return Column(op);
+    return Column({ ...options, type: ColumnType.Double });
 }
 
 export function BooleanColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { type: ColumnType.TinyInt, width: 1 };
-    if (typeof options === "object") op = { ...options, ...op };
-    return Column(op);
+    return Column({ ...options, type: ColumnType.TinyInt, width: 1 });
 }
 
 export function TimestampColumn(options?: ColumnOptions): PropertyDecorator {
-    let op: ColumnOptions = { type: ColumnType.Datetime };
-    if (typeof options === "object") op = { ...options, ...op };
-    return Column(op);
+    return Column({ ...options, type: ColumnType.DateTime });
 }

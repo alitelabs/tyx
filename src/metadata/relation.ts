@@ -1,4 +1,7 @@
+import { Class, ObjectType, Prototype } from "../types";
 import { ColumnMetadata } from "./column";
+import { Metadata } from "./core";
+import { DatabaseMetadata } from "./database";
 import { EntityMetadata } from "./entity";
 
 /**
@@ -77,7 +80,8 @@ export interface JoinColumnOptions {
     referencedColumnName?: string;
 }
 
-export interface RelationMetadata {
+export interface RelationMetadata<T> {
+    target: Class;
     /**
      * Entity metadata of the entity where this relation is placed.
      *
@@ -85,13 +89,13 @@ export interface RelationMetadata {
      */
     // entityMetadata: EntityMetadata;
     /**
-     * Relation type, e.g. is it one-to-one, one-to-many, many-to-one or many-to-many.
-     */
-    relationType: RelationType;
-    /**
      * Target's property name to which relation decorator is applied.
      */
     propertyName: string;
+    /**
+     * Relation type, e.g. is it one-to-one, one-to-many, many-to-one or many-to-many.
+     */
+    relationType: RelationType;
     /**
      * Entity metadata of the entity that is targeted by this relation.
      *
@@ -101,7 +105,7 @@ export interface RelationMetadata {
     /**
      * Gets the relation metadata of the inverse side of this relation.
      */
-    inverseRelation?: RelationMetadata;
+    inverseRelation?: RelationMetadata<T>;
     /**
      * Join table columns.
      * Join columns can be obtained only from owner side of the relation.
@@ -110,4 +114,60 @@ export interface RelationMetadata {
      * If this relation is many-to-many then it takes all owner join columns from the junction entity.
      */
     joinColumns: ColumnMetadata[];
+}
+
+export class RelationMetadata<T = any> {
+
+    public target: Class = undefined;
+    public propertyName: string = undefined;
+    public relationType: RelationType = undefined;
+    public inverseEntityMetadata: EntityMetadata = undefined;
+    public inverseRelation?: RelationMetadata<T> = undefined;
+    public joinColumns: ColumnMetadata[] = undefined;
+
+    private joinOptions: JoinColumnOptions[] = [];
+    private typeFunction: (type?: any) => ObjectType<T>;
+    private inverseSide: (object: T) => any;
+
+    private constructor(target: Class, propertyKey: string) {
+        this.target = target;
+        this.propertyName = propertyKey;
+    }
+
+    public static has(target: Prototype, propertyKey: string): boolean {
+        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    }
+
+    public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
+        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    }
+
+    public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
+        let meta = this.get(target, propertyKey);
+        if (!meta) meta = new RelationMetadata(target.constructor, propertyKey);
+        Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
+        return meta;
+    }
+
+    public commit(type: RelationType, typeFunction: (type?: any) => ObjectType<T>, inverseSide: (object: T) => any, options: RelationOptions): this {
+        this.relationType = type;
+        this.typeFunction = typeFunction;
+        this.inverseSide = inverseSide;
+        EntityMetadata.define(this.target).addRelation(this);
+        return this;
+    }
+
+    public addJoinColumn(options: JoinColumnOptions) {
+        this.joinOptions = this.joinOptions;
+        this.joinOptions.push(options);
+    }
+
+    public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
+        this.joinColumns = this.joinOptions.map(opt => entity.members[opt.name] as ColumnMetadata);
+        let inverseEntity = this.typeFunction();
+        this.inverseEntityMetadata = database.entities.find(e => e.target === inverseEntity);
+        this.inverseRelation = this.inverseSide(this.inverseEntityMetadata.members as any);
+        if (!(this.inverseRelation instanceof RelationMetadata)) throw new TypeError(`Invalid inverse relation`);
+        // TODO: More validations and optional inverse relation
+    }
 }
