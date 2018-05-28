@@ -8,7 +8,6 @@ export * from "./decorators";
 export * from "./logger";
 export * from "./errors";
 export * from "./utils";
-export * from "./orm";
 export * from "./aws";
 export * from "./express";
 export * from "./graphql";

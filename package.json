@@ -49,9 +49,19 @@
     "jsonwebtoken": "^8.2.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
-    "tyxdi": "^0.7.301",
-    "tyxorm": "^0.2.603",
-    "uuid": "^3.2.1"
+    "uuid": "^3.2.1",
+    "app-root-path": "^2.0.1",
+    "buffer": "^5.1.0",
+    "chalk": "^2.3.2",
+    "cli-highlight": "^1.2.3",
+    "debug": "^3.1.0",
+    "dotenv": "^5.0.1",
+    "glob": "^7.1.2",
+    "js-yaml": "^3.11.0",
+    "mkdirp": "^0.5.1",
+    "xml2js": "^0.4.17",
+    "yargonaut": "^1.1.2",
+    "yargs": "^11.1.0"
   },
   "devDependencies": {
     "@types/aws-serverless-express": "^2.1.0",

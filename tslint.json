@@ -102,7 +102,7 @@
         "prefer-for-of": true,
         "ban": true,
         "member-access": [
-            true
+            false,
         ],
         "linebreak-style": [
             true
