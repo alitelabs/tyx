@@ -245,16 +245,6 @@ export class ContainerInstance implements Container {
         Object.values(this.services).forEach(service => this.inject(service));
         Object.values(this.proxies).forEach(proxy => this.inject(proxy));
 
-        for (let proxy of Object.values(this.proxies)) {
-            if (!proxy.initialize) continue;
-            await proxy.initialize();
-        }
-
-        for (let service of Object.values(this.services)) {
-            if (!service.initialize) continue;
-            await service.initialize();
-        }
-
         this.istate = ContainerState.Ready;
         return this;
     }

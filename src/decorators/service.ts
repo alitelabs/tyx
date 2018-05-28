@@ -6,7 +6,6 @@ import { Context } from "../types";
 
 export interface Service {
     log?: Logger;
-    initialize?(): Promise<any>;
     activate?(ctx?: Context): Promise<void>;
     release?(ctx?: Context): Promise<void>;
 }

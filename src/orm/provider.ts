@@ -33,7 +33,7 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
         return this.connection.getMetadata(entity) as any;
     }
 
-    public async initialize(options?: string | Orm.ConnectionOptions): Promise<void> {
+    public async init(options?: string | Orm.ConnectionOptions): Promise<void> {
         if (!this.log) this.log = Logger.get("database", this);
         options = options || this.config && this.config.database || "default";
         if (typeof options === "string" && !options.includes("@")) {
@@ -72,6 +72,7 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
 
     public async activate(ctx: Context) {
         this.log.info("Connect: [%s]", this.label);
+        if (!this.connection) await this.init();
         if (!this.connection.isConnected) await this.connection.connect();
     }
 
