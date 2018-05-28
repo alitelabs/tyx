@@ -1,4 +1,3 @@
-import { Inject } from "../decorators";
 import { ConsoleLogger } from "./console";
 
 export enum LogLevel {
@@ -37,11 +36,6 @@ export interface Logger {
     trace(message: any, ...args: any[]): void;
     time(): [number, number];
     timeEnd(start: [number, number], message: any, ...args: any[]): void;
-}
-
-
-export function Logger(): PropertyDecorator {
-    return Inject("logger");
 }
 
 export namespace Logger {

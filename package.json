@@ -49,7 +49,8 @@
     "jsonwebtoken": "^8.2.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
-    "tyxorm": "^0.2.602",
+    "tyxdi": "^0.7.301",
+    "tyxorm": "^0.2.603",
     "uuid": "^3.2.1"
   },
   "devDependencies": {

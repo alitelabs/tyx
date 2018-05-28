@@ -4,7 +4,6 @@ import { Metadata } from "./core";
 
 export interface InjectMetadata {
     resource: string;
-    application: string;
     target?: Class;
 }
 
@@ -61,7 +60,7 @@ export class ServiceMetadata implements ServiceMetadata {
         return meta;
     }
 
-    public inject(propertyKey: string, resource?: string | Class, application?: string) {
+    public inject(propertyKey: string, resource?: string | Class) {
         if (!resource) {
             resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
         }
@@ -74,7 +73,7 @@ export class ServiceMetadata implements ServiceMetadata {
             resource = resource.toString();
         }
         this.dependencies = this.dependencies || {};
-        this.dependencies[propertyKey] = { resource, target, application };
+        this.dependencies[propertyKey] = { resource, target };
     }
 
     public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {

@@ -18,8 +18,7 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
     @Inject(Configuration)
     public config: Configuration;
 
-    @Logger()
-    public log;
+    public log = Logger.get("service", this);
     public label: string;
 
     protected connection: Orm.Connection;

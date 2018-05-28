@@ -12,3 +12,5 @@ export * from "./orm";
 export * from "./aws";
 export * from "./express";
 export * from "./graphql";
+
+export { Orm, Di } from "./import";

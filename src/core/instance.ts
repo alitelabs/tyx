@@ -285,11 +285,11 @@ export class ContainerInstance implements Container {
         if (!meta || !meta.dependencies) return;
         for (let [pid, dep] of Object.entries(meta.dependencies)) {
             let localId = dep.resource;
-            let proxyId = (dep.application || this.application) + ":" + localId;
+            let proxyId = (this.application) + ":" + localId;
             let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
             if (dep.resource === Container) resolved = this;
             if (dep.resource === "logger") resolved = Logger.get(meta.alias, target);
-            let depId = (dep.application ? dep.application + ":" : "") + localId;
+            let depId = localId;
             if (!resolved)
                 throw new InternalServerError(`Unresolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
             this.log.info(`Resolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
