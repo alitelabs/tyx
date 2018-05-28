@@ -1,8 +1,8 @@
-import {QueryRunnerAlreadyReleasedError} from "../../error/QueryRunnerAlreadyReleasedError";
-import {QueryFailedError} from "../../error/QueryFailedError";
-import {AbstractSqliteQueryRunner} from "../sqlite-abstract/AbstractSqliteQueryRunner";
-import {SqliteDriver} from "./SqliteDriver";
-import {Broadcaster} from "../../subscriber/Broadcaster";
+import { QueryFailedError } from "../../error/QueryFailedError";
+import { QueryRunnerAlreadyReleasedError } from "../../error/QueryRunnerAlreadyReleasedError";
+import { Broadcaster } from "../../subscriber/Broadcaster";
+import { AbstractSqliteQueryRunner } from "../sqlite-abstract/AbstractSqliteQueryRunner";
+import { SqliteDriver } from "./SqliteDriver";
 
 /**
  * Runs queries on a single sqlite database connection.
@@ -38,8 +38,8 @@ export class SqliteQueryRunner extends AbstractSqliteQueryRunner {
         const connection = this.driver.connection;
 
         return new Promise<any[]>(async (ok, fail) => {
-
-            const handler = function (err: any, result: any) {
+            // FIX: this: any
+            const handler = function (this: any, err: any, result: any) {
 
                 // log slow queries if maxQueryExecution time is set
                 const maxQueryExecutionTime = connection.options.maxQueryExecutionTime;

@@ -34,6 +34,9 @@
     "link": "yarn link",
     "global": "yarn global add ts-node typeorm typescript gulp serverless tslint"
   },
+  "bin": {
+    "tyxorm": "./lib/orm/cli.js"
+  },
   "dependencies": {
     "apollo-server-core": "^1.3.6",
     "apollo-server-module-graphiql": "^1.3.4",

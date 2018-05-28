@@ -10,7 +10,7 @@ export {
     OneToMany,
     ManyToOne,
     ManyToMany
-} from "tyxorm";
+} from "../orm";
 
 export {
     Connection,
@@ -19,4 +19,4 @@ export {
     SelectQueryBuilder, createConnection,
     getConnection,
     Repository
-} from "tyxorm";
+} from "../orm";

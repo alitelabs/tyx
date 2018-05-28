@@ -69,7 +69,8 @@ export class DepGraph {
             delete this.nodes[node];
             delete this.outgoingEdges[node];
             delete this.incomingEdges[node];
-            [this.incomingEdges, this.outgoingEdges].forEach(function (edgeList) {
+            // FIX: this.any
+            [this.incomingEdges, this.outgoingEdges].forEach(function (this: any, edgeList) {
                 Object.keys(edgeList).forEach(function (key: any) {
                     let idx = edgeList[key].indexOf(node);
                     if (idx >= 0) {
