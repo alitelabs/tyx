@@ -13,5 +13,4 @@ export * from "./column";
 export * from "./relation";
 export * from "./database";
 
-export * from "./container";
 

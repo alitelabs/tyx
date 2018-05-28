@@ -1,7 +1,6 @@
 import { Proxy, Service } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { ContainerMetadata } from "../metadata";
 import { Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 import { Configuration } from "./config";
 import { ContainerInstance } from "./instance";
@@ -35,11 +34,6 @@ export class ContainerPool implements Container {
 
     public get state(): ContainerState {
         return this.cstate;
-    }
-
-    public get metadata(): ContainerMetadata {
-        if (this.cstate !== ContainerState.Ready) return undefined;
-        return this.head.metadata;
     }
 
     public get config(): Configuration {

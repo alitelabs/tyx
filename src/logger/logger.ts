@@ -1,3 +1,5 @@
+import { ApiMetadata } from "../metadata/api";
+import { ServiceMetadata } from "../metadata/service";
 import { ConsoleLogger } from "./console";
 
 export enum LogLevel {
@@ -41,7 +43,26 @@ export interface Logger {
 export namespace Logger {
     export const sys: Logger = new ConsoleLogger("tyx", "log");
     // TODO: Simplify
-    export function get(logName: string, emitter?: any): Logger {
+    export function get(emitter: object);
+    export function get(logName: string, emitter?: any): Logger;
+    export function get(logNameOrEmitter: string | object, emitter?: any): Logger {
+        let logName: string;
+        if (typeof logNameOrEmitter === "string") {
+            logName = logNameOrEmitter;
+        } else if (typeof logNameOrEmitter === "object") {
+            let service = ServiceMetadata.get(logNameOrEmitter);
+            let api = ApiMetadata.get(logNameOrEmitter);
+            if (service) {
+                logName = service.alias || service.target.name;
+                emitter = logNameOrEmitter;
+            } else if (api) {
+                logName = api.alias || api.target.name;
+                emitter = logNameOrEmitter;
+            } else {
+                logName = undefined;
+                emitter = logNameOrEmitter;
+            }
+        }
         return new ConsoleLogger(logName || "<log>", emitter);
     }
 }

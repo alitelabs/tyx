@@ -1,5 +1,4 @@
 import { Proxy, Service } from "../decorators";
-import { ContainerMetadata } from "../metadata";
 import { Context } from "./core";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
@@ -28,7 +27,6 @@ export const Container = "container";
 
 export interface Container {
     state: ContainerState;
-    metadata: ContainerMetadata;
 
     register(resource: Object, name?: string): this;
     register(service: Service): this;

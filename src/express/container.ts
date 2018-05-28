@@ -5,6 +5,7 @@ import { ContainerPool } from "../core";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
 import { LogLevel } from "../logger";
+import { Metadata } from "../metadata/core";
 import { HttpMethod, HttpRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
@@ -38,10 +39,10 @@ export class ExpressContainer extends ContainerPool {
         let used = {};
         let paths = [];
 
-        let httpMetadata = this.metadata.routes;
-        for (let [route, meta] of Object.entries(httpMetadata)) {
-            let httpMethod = meta.http[route].verb;
-            let resource = meta.http[route].resource;
+        let httpMetadata = Metadata.routes;
+        for (let meta of Object.values(httpMetadata)) {
+            let httpMethod = meta.verb;
+            let resource = meta.resource;
 
             let parts = resource.split("{");
             parts = parts.map(p => p.replace("}", ""));

@@ -2,7 +2,7 @@ import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
-import { ApiMetadata, ContainerMetadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
+import { ApiMetadata, Metadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
 import { Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
@@ -16,7 +16,7 @@ export class ContainerInstance implements Container {
     private security: Security;
 
     private istate: ContainerState;
-    private imetadata: ContainerMetadata;
+    // private imetadata: ContainerMetadata;
 
     private resources: Record<string, any>;
     private services: Record<string, Service>;
@@ -39,23 +39,10 @@ export class ContainerInstance implements Container {
         this.remoteHandlers = {};
         this.httpHandlers = {};
         this.eventHandlers = {};
-        this.imetadata = {
-            apis: {},
-            services: {},
-            proxies: {},
-            methods: {},
-            resolvers: {},
-            routes: {},
-            events: {}
-        };
     }
 
     public get state() {
         return this.istate;
-    }
-
-    public get metadata() {
-        return this.imetadata;
     }
 
     public get<T>(type: ObjectType<T> | string): T {
@@ -119,12 +106,9 @@ export class ContainerInstance implements Container {
 
         if (ServiceMetadata.has(target)) {
             this.services[id] = target as Service;
-            this.imetadata.apis[id] = ApiMetadata.get(target);
-            this.imetadata.services[id] = ServiceMetadata.get(target);
             this.log.info("Service: %s", id);
         } else if (ProxyMetadata.has(target)) {
             this.proxies[id] = target as Proxy;
-            this.imetadata.proxies[id] = ProxyMetadata.get(target);
             this.log.info("Proxy: %s", id);
         } else {
             this.resources[id] = target;
@@ -157,20 +141,15 @@ export class ContainerInstance implements Container {
 
         for (let meta of Object.values(metaApi.methods)) {
             let key = meta.service + "." + meta.name;
-            this.imetadata.methods[key] = meta;
             if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
             this.remoteHandlers[key] = this.remoteHandler(service, meta);
         }
 
         for (let [route, meta] of Object.entries(metaApi.routes)) {
-            if (this.imetadata.routes[route]) throw new InternalServerError(`Duplicate REST route [${route}]`);
-            this.imetadata.routes[route] = meta;
             this.httpHandlers[route] = this.httpHandler(service, meta, route);
         }
 
         for (let [route, metas] of Object.entries(metaApi.events)) {
-            this.imetadata.events[route] = this.imetadata.events[route] || [];
-            this.imetadata.events[route] = this.imetadata.events[route].concat(metas);
             let handlers = metas.map(m => this.eventHandler(service, m, route));
             this.eventHandlers[route] = this.eventHandlers[route] || [];
             this.eventHandlers[route] = this.eventHandlers[route].concat(handlers);
@@ -314,7 +293,7 @@ export class ContainerInstance implements Container {
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
 
             let permissionId = req.service + "." + req.method;
-            let permission = permissionId && this.imetadata.methods[permissionId] as MethodMetadata;
+            let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
             let handler: RemoteHandler = this.remoteHandlers[permissionId];
@@ -349,11 +328,11 @@ export class ContainerInstance implements Container {
             let route = `${req.source} ${req.resource}`;
             let alias = this.config.resources && this.config.resources[req.resource];
 
-            let metas = this.imetadata.events[route];
+            let metas = Metadata.events[route];
             let handlers = this.eventHandlers && this.eventHandlers[route];
             if (!handlers && alias) {
                 route = `${req.source} ${alias}`;
-                metas = this.imetadata.events[route];
+                metas = Metadata.events[route];
                 handlers = this.eventHandlers && this.eventHandlers[route];
             }
             if (!handlers) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
@@ -376,10 +355,10 @@ export class ContainerInstance implements Container {
 
                 req.application = this.application;
                 req.service = target.service;
-                req.method = target.name;
+                req.method = target.method;
 
                 let permissionId = req.service + "." + req.method;
-                let permission = permissionId && this.imetadata.methods[permissionId] as MethodMetadata;
+                let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
                 if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
                 let ctx = await this.security.eventAuth(this, req, permission);
@@ -392,7 +371,7 @@ export class ContainerInstance implements Container {
                         result.status = result.status || "OK";
                         result.returns.push({
                             service: target.service,
-                            method: target.name,
+                            method: target.method,
                             error: null,
                             data
                         });
@@ -402,7 +381,7 @@ export class ContainerInstance implements Container {
                     result.status = "FAILED";
                     result.returns.push({
                         service: target.service,
-                        method: target.name,
+                        method: target.method,
                         error: InternalServerError.wrap(e),
                         data: null
                     });
@@ -432,14 +411,14 @@ export class ContainerInstance implements Container {
             let handler = this.httpHandlers && this.httpHandlers[key];
             if (!handler) throw this.log.error(new NotFound(`Route not found [${key}]`));
 
-            let target = this.imetadata.routes[key];
+            let target = Metadata.routes[key];
 
             req.application = this.application;
             req.service = target.service;
-            req.method = target.name;
+            req.method = target.method;
 
             let permissionId = req.service + "." + req.method;
-            let permission = permissionId && this.imetadata.methods[permissionId] as MethodMetadata;
+            let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
             if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
 
             this.istate = ContainerState.Busy;
