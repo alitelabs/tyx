@@ -1,5 +1,5 @@
-import { Exception } from "../decorators";
-import { HttpCode } from "../types";
+import { Exception } from "../decorators/exception";
+import { HttpCode } from "../types/http";
 
 export interface ApiErrorData {
     code: string;

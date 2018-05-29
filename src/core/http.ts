@@ -1,8 +1,8 @@
 import { ApiError, BadRequest } from "../errors";
-import { HttpCode, HttpContentType, HttpHeader, HttpMultipart, HttpRequest, HttpResponse } from "../types";
+import { HttpCode, HttpContentType, HttpHeader, HttpMultipart, HttpRequest, HttpResponse } from "../types/http";
 
 import Zlib = require("zlib");
-import Utils = require("./misc");
+import Utils = require("../utils/misc");
 
 export namespace HttpUtils {
 

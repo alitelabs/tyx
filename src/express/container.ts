@@ -1,12 +1,12 @@
-
-
 import { Server, createServer } from "http";
-import { CorePool } from "../core";
+import { CorePool } from "../core/pool";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
-import { Metadata } from "../metadata/core";
-import { HttpMethod, HttpRequest, LogLevel } from "../types";
-import { HttpUtils, Utils } from "../utils";
+import { Registry } from "../metadata/registry";
+import { LogLevel } from "../types/config";
+import { HttpMethod, HttpRequest } from "../types/http";
+import { Utils } from "../utils";
+import { HttpUtils } from "../core/http";
 
 export class ExpressContainer extends CorePool {
 
@@ -38,7 +38,7 @@ export class ExpressContainer extends CorePool {
         let used = {};
         let paths = [];
 
-        let httpMetadata = Metadata.routes;
+        let httpMetadata = Registry.routes;
         for (let meta of Object.values(httpMetadata)) {
             let httpMethod = meta.verb;
             let resource = meta.resource;

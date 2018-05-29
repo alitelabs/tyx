@@ -1,7 +1,11 @@
-import { CorePool } from "../core";
+import { HttpUtils } from "../core/http";
+import { CorePool } from "../core/pool";
 import { BadRequest, InternalServerError } from "../errors";
-import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, LogLevel, RemoteRequest } from "../types";
-import { HttpUtils, Utils } from "../utils";
+import { LogLevel } from "../types/config";
+import { EventRecord, EventRequest, EventResult } from "../types/event";
+import { HttpMethod, HttpRequest, HttpResponse } from "../types/http";
+import { RemoteRequest } from "../types/proxy";
+import { Utils } from "../utils";
 import { LambdaError } from "./error";
 
 export type UUID = string;

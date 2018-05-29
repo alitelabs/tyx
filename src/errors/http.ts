@@ -1,4 +1,4 @@
-import { Exception } from "../decorators";
+import { Exception } from "../decorators/exception";
 import { ApiError } from "./common";
 
 @Exception

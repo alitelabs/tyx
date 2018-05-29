@@ -1,4 +1,4 @@
-import { LogLevel } from "../types";
+import { LogLevel } from "../types/config";
 import { Logger } from "./logger";
 
 export class ConsoleLogger implements Logger {

@@ -1,11 +1,13 @@
 
 
-import { Database, Inject, Service } from "../decorators";
+import { Database } from "../decorators/database";
+import { Inject, Service } from "../decorators/service";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
-import { DatabaseMetadata, EntityMetadata } from "../metadata";
-import { Configuration } from "../types";
+import { DatabaseMetadata } from "../metadata/database";
+import { EntityMetadata } from "../metadata/entity";
+import { Configuration } from "../types/config";
 import { Class, Context } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";

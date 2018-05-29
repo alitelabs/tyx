@@ -1,7 +1,7 @@
-import { Class, Prototype } from "../types";
+import { Class, Prototype } from "../types/core";
 import { ColumnMetadata } from "./column";
-import { Metadata } from "./core";
 import { DatabaseMetadata } from "./database";
+import { Registry } from "./registry";
 import { RelationMetadata } from "./relation";
 
 export interface EntityOptions {
@@ -69,20 +69,20 @@ export class EntityMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_ENTITY, target)
-            || Reflect.hasMetadata(Metadata.TYX_ENTITY, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_ENTITY, target)
+            || Reflect.hasMetadata(Registry.TYX_ENTITY, target.constructor);
     }
 
     public static get(target: Class | Prototype): EntityMetadata {
-        return Reflect.getMetadata(Metadata.TYX_ENTITY, target)
-            || Reflect.getMetadata(Metadata.TYX_ENTITY, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_ENTITY, target)
+            || Reflect.getMetadata(Registry.TYX_ENTITY, target.constructor);
     }
 
     public static define(target: Class): EntityMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = new EntityMetadata(target);
-            Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
+            Reflect.defineMetadata(Registry.TYX_ENTITY, meta, target);
         }
         return meta;
     }
@@ -102,7 +102,7 @@ export class EntityMetadata {
 
     public commit(options?: EntityOptions): void {
         if (options && options.name) this.name = options.name;
-        Metadata.entities[this.name] = this;
+        Registry.entities[this.name] = this;
     }
 
     public resolve(database: DatabaseMetadata): void {

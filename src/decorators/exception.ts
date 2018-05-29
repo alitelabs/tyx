@@ -1,11 +1,11 @@
-import { Metadata } from "../metadata/core";
-import { Class } from "../types";
+import { Registry } from "../metadata/registry";
+import { Class } from "../types/core";
 
 /**
  * Decorator for annotating exceptions which can be serialized
  */
 export function Exception(target: Class) {
-    Metadata.trace(Exception, undefined, target);
+    Registry.trace(Exception, undefined, target);
     Exception.ctors[target.name] = target;
 }
 

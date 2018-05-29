@@ -1,7 +1,10 @@
-import { Class, Context, EventAdapter, HttpCode, HttpRequest, Prototype, Roles } from "../types";
+import { Class, Context, Prototype } from "../types/core";
+import { EventAdapter } from "../types/event";
+import { HttpCode, HttpRequest } from "../types/http";
+import { Roles } from "../types/security";
 import * as Utils from "../utils/misc";
 import { ApiMetadata } from "./api";
-import { Metadata } from "./core";
+import { Registry } from "./registry";
 import { GraphMetadata, GraphType } from "./type";
 
 export enum HttpBindingType {
@@ -18,14 +21,6 @@ export enum HttpBindingType {
     RequestObject = "RequestObject",
     RequestParam = "RequestParam"
 }
-
-export type HttpAdapter = (
-    next: (...args: any[]) => Promise<any>,
-    ctx?: Context,
-    req?: HttpRequest,
-    path?: Record<string, string>,
-    query?: Record<string, string>
-) => Promise<any>;
 
 export type ContextBinder = (ctx: Context) => any;
 export type RequestBinder = (req: HttpRequest) => any;
@@ -54,6 +49,14 @@ export interface HttpRouteMetadata {
     code: HttpCode;
     adapter: HttpAdapter;
 }
+
+export type HttpAdapter = (
+    next: (...args: any[]) => Promise<any>,
+    ctx?: Context,
+    req?: HttpRequest,
+    path?: Record<string, string>,
+    query?: Record<string, string>
+) => Promise<any>;
 
 export interface EventRouteMetadata {
     target: Class;
@@ -116,11 +119,11 @@ export class MethodMetadata implements MethodMetadata {
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_METHOD, target, propertyKey);
+        return Reflect.hasMetadata(Registry.TYX_METHOD, target, propertyKey);
     }
 
     public static get(target: Prototype, propertyKey: string): MethodMetadata {
-        return Reflect.getMetadata(Metadata.TYX_METHOD, target, propertyKey);
+        return Reflect.getMetadata(Registry.TYX_METHOD, target, propertyKey);
     }
 
     public static define(target: Prototype, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
@@ -129,11 +132,11 @@ export class MethodMetadata implements MethodMetadata {
         if (ret && ret.name === "#return") return meta;
         if (!meta) {
             meta = new MethodMetadata(target, propertyKey);
-            Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
+            Reflect.defineMetadata(Registry.TYX_METHOD, meta, target, propertyKey);
         }
         let names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
-        let params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
-        let returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
+        let params: any[] = Reflect.getMetadata(Registry.DESIGN_PARAMS, target, propertyKey);
+        let returns = Reflect.getMetadata(Registry.DESIGN_RETURN, target, propertyKey);
         meta.design = meta.design || [];
         params.forEach((param, i) => meta.design[i] = { name: names[i], type: param.name, target: param });
         meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns.name, target: returns };
@@ -231,16 +234,16 @@ export class MethodMetadata implements MethodMetadata {
 
     public commit(api: ApiMetadata): this {
         this.service = api.alias;
-        Metadata.methods[this.service + "." + this.name] = this;
+        Registry.methods[this.service + "." + this.name] = this;
         if (this.http) for (let [route, meta] of Object.entries(this.http)) {
             meta.service = this.service;
-            if (Metadata.routes[route] && Metadata.routes[route] !== meta)
+            if (Registry.routes[route] && Registry.routes[route] !== meta)
                 throw new TypeError(`Duplicate HTTP route [${route}]`);
-            Metadata.routes[route] = meta;
+            Registry.routes[route] = meta;
         }
         if (this.events) for (let [route, meta] of Object.entries(this.events)) {
             meta.service = this.service;
-            let handlers = Metadata.events[route] = Metadata.events[route] || [];
+            let handlers = Registry.events[route] = Registry.events[route] || [];
             if (!handlers.includes(meta)) handlers.push(meta);
         }
         return this;

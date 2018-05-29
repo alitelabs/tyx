@@ -1,4 +1,4 @@
-import { Service } from "../decorators";
+import { Service } from "../decorators/service";
 import { Logger } from "../logger";
 
 export abstract class BaseService implements Service {

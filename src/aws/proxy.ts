@@ -1,9 +1,9 @@
 
-import { BaseProxy } from "../core";
+import { BaseProxy } from "../core/proxy";
 import { InternalServerError } from "../errors";
 import { Aws } from "../import";
-import { ProxyMetadata } from "../metadata";
-import { RemoteRequest } from "../types";
+import { ProxyMetadata } from "../metadata/proxy";
+import { RemoteRequest } from "../types/proxy";
 import { LambdaError } from "./error";
 
 export abstract class LambdaProxy extends BaseProxy {

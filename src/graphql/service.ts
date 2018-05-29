@@ -1,10 +1,12 @@
-import { BaseService } from "../core";
-import { ContentType, Database, Get, Inject, Post } from "../decorators";
+import { BaseService } from "../core/service";
+import { Database } from "../decorators/database";
+import { ContentType, Get, Post } from "../decorators/http";
+import { Inject } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
-import { Context, HttpRequest, HttpResponse } from "../types";
+import { Context } from "../types/core";
+import { HttpRequest, HttpResponse } from "../types/http";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
-
 
 const playgroundVersion = "1.6.6";
 export const GraphQLApi = "graphql";

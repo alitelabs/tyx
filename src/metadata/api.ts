@@ -1,5 +1,5 @@
-import { Class, Prototype } from "../types";
-import { Metadata } from "./core";
+import { Class, Prototype } from "../types/core";
+import { Registry } from "./registry";
 import { MethodMetadata } from "./method";
 import { GraphMetadata, GraphType, TypeMetadata } from "./type";
 
@@ -31,13 +31,13 @@ export class ApiMetadata implements ApiMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_API, target)
-            || Reflect.hasMetadata(Metadata.TYX_API, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_API, target)
+            || Reflect.hasMetadata(Registry.TYX_API, target.constructor);
     }
 
     public static get(target: Class | Prototype): ApiMetadata {
-        return Reflect.getMetadata(Metadata.TYX_API, target)
-            || Reflect.getMetadata(Metadata.TYX_API, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_API, target)
+            || Reflect.getMetadata(Registry.TYX_API, target.constructor);
     }
 
     public static define(target: Class | Prototype): ApiMetadata {
@@ -45,16 +45,16 @@ export class ApiMetadata implements ApiMetadata {
         if (!meta) {
             target = (typeof target === "function") ? target : target.constructor;
             meta = new ApiMetadata(target as Class);
-            Reflect.defineMetadata(Metadata.TYX_API, meta, target);
+            Reflect.defineMetadata(Registry.TYX_API, meta, target);
         }
         return meta;
     }
 
     public commit(alias?: string): this {
         this.alias = alias || this.target.name;
-        let prev = Metadata.apis[this.alias];
+        let prev = Registry.apis[this.alias];
         if (prev && prev !== this) throw new TypeError(`Duplicate API alias [${this.alias}]`);
-        Metadata.apis[this.alias] = this;
+        Registry.apis[this.alias] = this;
         Object.values(this.methods).forEach(item => item.commit(this));
         this.schema();
         return this;

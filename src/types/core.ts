@@ -1,4 +1,4 @@
-import { MethodMetadata } from "../metadata";
+import { MethodMetadata } from "../metadata/method";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";
@@ -17,16 +17,15 @@ export interface Class extends Function { }
 export interface Prototype extends Object { }
 
 export class Context {
-    public container: CoreInstance = undefined;
+    public container: CoreContainer = undefined;
     public requestId: string;
     public method: MethodMetadata;
     public auth: AuthInfo;
-    constructor(ctx: IContext) {
+    constructor(ctx: Context) {
         Object.assign(this, ctx);
         Object.defineProperty(this, "container", { enumerable: false });
     }
 }
-export interface IContext extends Context { }
 
 export interface Request {
     type: "remote" | "internal" | "http" | "event" | "graphql";
@@ -43,15 +42,15 @@ export enum ContainerState {
     Busy = 2
 }
 
-export const CoreInstance = "container";
+export const CoreContainer = "container";
 
-export interface CoreInstance {
+export interface CoreContainer {
     state: ContainerState;
 
     register(target: Class | Object): this;
     publish(service: Class): this;
 
-    prepare(): Promise<CoreInstance>;
+    prepare(): Promise<CoreContainer>;
 
     httpRequest(req: HttpRequest): Promise<HttpResponse>;
     eventRequest(req: EventRequest): Promise<EventResult>;

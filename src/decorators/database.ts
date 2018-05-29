@@ -1,8 +1,8 @@
 import { Di, Orm } from "../import";
-import { Metadata } from "../metadata/core";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
-import { Class } from "../types";
+import { Registry } from "../metadata/registry";
+import { Class } from "../types/core";
 
 export const Database = "database";
 export interface Database {
@@ -16,7 +16,7 @@ export function DatabaseService(aliasOrEntities: string | Class[], entities?: Cl
     let alias = typeof aliasOrEntities === "string" ? aliasOrEntities : "database";
     entities = Array.isArray(aliasOrEntities) ? aliasOrEntities : entities;
     return (target) => {
-        Metadata.trace(Database, { alias, entities }, target);
+        Registry.trace(Database, { alias, entities }, target);
         DatabaseMetadata.define(target).commit(alias, entities);
         return Di.Service(alias)(target);
     };

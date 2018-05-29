@@ -1,8 +1,8 @@
-import { Class, ObjectType, Prototype } from "../types";
+import { Class, ObjectType, Prototype } from "../types/core";
 import { ColumnMetadata } from "./column";
-import { Metadata } from "./core";
 import { DatabaseMetadata } from "./database";
 import { EntityMetadata } from "./entity";
+import { Registry } from "./registry";
 
 /**
  * All types that relation can be.
@@ -135,17 +135,17 @@ export class RelationMetadata<T = any> {
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+        return Reflect.hasMetadata(Registry.TYX_COLUMN, target, propertyKey);
     }
 
     public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
-        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+        return Reflect.getMetadata(Registry.TYX_COLUMN, target, propertyKey);
     }
 
     public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
         let meta = this.get(target, propertyKey);
         if (!meta) meta = new RelationMetadata(target.constructor, propertyKey);
-        Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
+        Reflect.defineMetadata(Registry.TYX_RELATION, meta, target, propertyKey);
         return meta;
     }
 

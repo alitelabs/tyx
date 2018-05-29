@@ -1,9 +1,14 @@
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { Class, Configuration, ContainerState, CoreInstance, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest, Security } from "../types";
-import { Core } from "./core";
+import { Class, ContainerState, CoreContainer } from "../types/core";
+import { CoreInstance } from "./container";
+import { Configuration } from "../types/config";
+import { Security } from "../types/security";
+import { RemoteRequest } from "../types/proxy";
+import { EventRequest, EventResult } from "../types/event";
+import { HttpRequest, HttpResponse } from "../types/http";
 
-export class CorePool implements CoreInstance {
+export class CorePool implements CoreContainer {
     protected log: Logger;
 
     private application: string;
@@ -14,8 +19,8 @@ export class CorePool implements CoreInstance {
     private registers: { target: any, args: any[] }[];
     private publishes: { service: any, args: any[] }[];
 
-    private head: Core;
-    private pool: Core[];
+    private head: CoreInstance;
+    private pool: CoreInstance[];
 
     private static count = 0;
 
@@ -58,7 +63,7 @@ export class CorePool implements CoreInstance {
     public async prepare(): Promise<CoreInstance> {
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
-            instance = new Core(this.application, "" + CorePool.count++);
+            instance = new CoreInstance(this.application, "" + CorePool.count++);
             // TODO: Identity
 
             this.registers.forEach(u => instance.register(u.target));

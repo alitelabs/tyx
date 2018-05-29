@@ -1,6 +1,6 @@
-import { Class, Prototype } from "../types";
-import { Metadata } from "./core";
+import { Class, Prototype } from "../types/core";
 import { DesignMetadata } from "./method";
+import { Registry } from "./registry";
 
 export enum GraphType {
     ID = "ID",
@@ -22,6 +22,7 @@ export enum GraphType {
     InputItem = "InputItem",
     ResultItem = "ResultItem",
     // Roots
+    Metadata = "Metadata",
     Input = "Input",
     Result = "Result",
     Entity = "Entity",
@@ -51,6 +52,7 @@ export namespace GraphType {
     }
     export function isStruc(type: GraphType) {
         switch (type) {
+            case GraphType.Metadata:
             case GraphType.Input:
             case GraphType.InputItem:
             case GraphType.Result:
@@ -60,6 +62,9 @@ export namespace GraphType {
             default:
                 return false;
         }
+    }
+    export function isMetadata(type: GraphType) {
+        return type === GraphType.Metadata;
     }
     export function isEntity(type: GraphType) {
         return type === GraphType.Entity;
@@ -131,20 +136,20 @@ export class TypeMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_TYPE, target)
-            || Reflect.hasMetadata(Metadata.TYX_TYPE, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_TYPE, target)
+            || Reflect.hasMetadata(Registry.TYX_TYPE, target.constructor);
     }
 
     public static get(target: Class | Prototype): TypeMetadata {
-        return Reflect.getMetadata(Metadata.TYX_TYPE, target)
-            || Reflect.getMetadata(Metadata.TYX_TYPE, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_TYPE, target)
+            || Reflect.getMetadata(Registry.TYX_TYPE, target.constructor);
     }
 
     public static define(target: Class): TypeMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = new TypeMetadata(target);
-            Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
+            Reflect.defineMetadata(Registry.TYX_TYPE, meta, target);
         }
         return meta;
     }
@@ -153,7 +158,7 @@ export class TypeMetadata {
         // TODO: Validata
         this.fields = this.fields || {};
         // TODO: use design type when not specified
-        let design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
+        let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
         let itemInfo: GraphMetadata = typeof item === "function"
             ? { type: GraphType.Ref, target: item }
             : { type: item as GraphType };

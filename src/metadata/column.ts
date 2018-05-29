@@ -1,7 +1,7 @@
-import { Class, Prototype } from "../types";
-import { Metadata } from "./core";
+import { Class, Prototype } from "../types/core";
 import { DatabaseMetadata } from "./database";
 import { EntityMetadata } from "./entity";
+import { Registry } from "./registry";
 import { GraphType } from "./type";
 
 export enum ColumnType {
@@ -312,17 +312,17 @@ export class ColumnMetadata {
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+        return Reflect.hasMetadata(Registry.TYX_COLUMN, target, propertyKey);
     }
 
     public static get(target: Prototype, propertyKey: string): ColumnMetadata {
-        return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+        return Reflect.getMetadata(Registry.TYX_COLUMN, target, propertyKey);
     }
 
     public static define(target: Prototype, propertyKey: string, mode: ColumnMode, options: ColumnOptions): ColumnMetadata {
         let meta = this.get(target, propertyKey);
         if (!meta) meta = new ColumnMetadata(target.constructor, propertyKey, mode, options);
-        Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
+        Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
         EntityMetadata.define(target.constructor).addColumn(meta);
         return meta;
     }

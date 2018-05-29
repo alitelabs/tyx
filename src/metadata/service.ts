@@ -1,6 +1,6 @@
-import { Class, Prototype } from "../types";
+import { Class, Prototype } from "../types/core";
 import { ApiMetadata } from "./api";
-import { Metadata } from "./core";
+import { Registry } from "./registry";
 
 export interface InjectMetadata {
     resource: string;
@@ -43,27 +43,27 @@ export class ServiceMetadata implements ServiceMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_SERVICE, target)
-            || Reflect.hasMetadata(Metadata.TYX_SERVICE, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_SERVICE, target)
+            || Reflect.hasMetadata(Registry.TYX_SERVICE, target.constructor);
     }
 
     public static get(target: Class | Prototype): ServiceMetadata {
-        return Reflect.getMetadata(Metadata.TYX_SERVICE, target)
-            || Reflect.getMetadata(Metadata.TYX_SERVICE, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_SERVICE, target)
+            || Reflect.getMetadata(Registry.TYX_SERVICE, target.constructor);
     }
 
     public static define(target: Class): ServiceMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = new ServiceMetadata(target);
-            Reflect.defineMetadata(Metadata.TYX_SERVICE, meta, target);
+            Reflect.defineMetadata(Registry.TYX_SERVICE, meta, target);
         }
         return meta;
     }
 
     public inject(propertyKey: string, index: number, resource?: string | Class) {
         if (!resource) {
-            resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
+            resource = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
         }
         let target: Function;
         if (resource instanceof Function) {
@@ -115,9 +115,9 @@ export class ServiceMetadata implements ServiceMetadata {
         if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
-        let prev = Metadata.services[this.alias];
+        let prev = Registry.services[this.alias];
         if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.alias}]`);
-        Metadata.services[this.alias] = this;
+        Registry.services[this.alias] = this;
         return this;
     }
 }

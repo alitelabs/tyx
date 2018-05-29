@@ -1,10 +1,10 @@
 import { Orm } from "../import";
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from "../metadata/column";
-import { Metadata } from "../metadata/core";
+import { Registry } from "../metadata/registry";
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(Column, { options }, target, propertyKey);
+        Registry.trace(Column, { options }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         options = { nullable: false, ...options };
         let col = Orm.Column(options)(target, propertyKey);
@@ -15,7 +15,7 @@ export function Column(options?: ColumnOptions): PropertyDecorator {
 
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(PrimaryColumn, { options }, target, propertyKey);
+        Registry.trace(PrimaryColumn, { options }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         options = { ...options, primary: true, nullable: false };
         let col = Orm.PrimaryColumn(options)(target, propertyKey);
@@ -26,7 +26,7 @@ export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
 
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(CreateDateColumn, { options }, target, propertyKey);
+        Registry.trace(CreateDateColumn, { options }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         options = { ...options, type: ColumnType.DateTime };
         let col = Orm.CreateDateColumn(options)(target, propertyKey);
@@ -37,7 +37,7 @@ export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
 
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(UpdateDateColumn, { options }, target, propertyKey);
+        Registry.trace(UpdateDateColumn, { options }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         options = { ...options, type: ColumnType.DateTime };
         let col = Orm.UpdateDateColumn(options)(target, propertyKey);
@@ -48,7 +48,7 @@ export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
 
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(VersionColumn, { options }, target, propertyKey);
+        Registry.trace(VersionColumn, { options }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         if (typeof options === "number") {
             options = { type: ColumnType.BigInt, width: options };
@@ -63,7 +63,7 @@ export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
 
 export function Transient(): PropertyDecorator {
     return (target, propertyKey) => {
-        Metadata.trace(Transient, undefined, target, propertyKey);
+        Registry.trace(Transient, undefined, target, propertyKey);
         // TODO: Register in Schema not in QRM, readOnly
     };
 }

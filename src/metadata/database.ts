@@ -1,6 +1,6 @@
-import { Class, Prototype } from "../types";
-import { Metadata } from "./core";
+import { Class, Prototype } from "../types/core";
 import { EntityMetadata } from "./entity";
+import { Registry } from "./registry";
 import { ServiceMetadata } from "./service";
 
 export interface DatabaseMetadata extends ServiceMetadata {
@@ -21,20 +21,20 @@ export class DatabaseMetadata implements DatabaseMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_DATABASE, target)
-            || Reflect.hasMetadata(Metadata.TYX_DATABASE, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_DATABASE, target)
+            || Reflect.hasMetadata(Registry.TYX_DATABASE, target.constructor);
     }
 
     public static get(target: Class | Prototype): DatabaseMetadata {
-        return Reflect.getMetadata(Metadata.TYX_DATABASE, target)
-            || Reflect.getMetadata(Metadata.TYX_DATABASE, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_DATABASE, target)
+            || Reflect.getMetadata(Registry.TYX_DATABASE, target.constructor);
     }
 
     public static define(target: Class): DatabaseMetadata {
         let meta = this.get(target);
         if (!meta) {
             meta = new DatabaseMetadata(target);
-            Reflect.defineMetadata(Metadata.TYX_DATABASE, meta, target);
+            Reflect.defineMetadata(Registry.TYX_DATABASE, meta, target);
         }
         return meta;
     }

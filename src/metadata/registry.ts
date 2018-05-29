@@ -1,4 +1,4 @@
-import { Utils } from "../utils";
+import * as Utils from "../utils/misc";
 import { ApiMetadata } from "./api";
 import { EntityMetadata } from "./entity";
 import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method";
@@ -33,21 +33,18 @@ export interface DecorationMetadata {
 }
 
 export interface MetadataRegistry {
+    decorations: DecorationMetadata;
     apis: Record<string, ApiMetadata>;
     services: Record<string, ServiceMetadata>;
     proxies: Record<string, ProxyMetadata>;
     methods: Record<string, MethodMetadata>;
     entities: Record<string, EntityMetadata>;
-    // Derived
     resolvers: Record<string, MethodMetadata>;
     routes: Record<string, HttpRouteMetadata>;
     events: Record<string, EventRouteMetadata[]>;
-    // Trace
-    decorations: DecorationMetadata;
 }
 
-export abstract class Metadata {
-
+export class Registry {
     public static readonly DESIGN_TYPE = "design:type";
     public static readonly DESIGN_PARAMS = "design:paramtypes";
     public static readonly DESIGN_RETURN = "design:returntype";
@@ -64,20 +61,24 @@ export abstract class Metadata {
     public static readonly TYX_COLUMN = "tyx:column";
     public static readonly TYX_RELATION = "tyx:relation";
 
-    public static decorations: DecorationMetadata = { types: {}, decorators: {}, trace: [] };
-    public static apis: Record<string, ApiMetadata> = {};
-    public static services: Record<string, ServiceMetadata> = {};
-    public static proxies: Record<string, ProxyMetadata> = {};
-    public static methods: Record<string, MethodMetadata> = {};
-    public static entities: Record<string, EntityMetadata> = {};
-    public static resolvers: Record<string, MethodMetadata> = {};
-    public static routes: Record<string, HttpRouteMetadata> = {};
-    public static events: Record<string, EventRouteMetadata[]> = {};
+    public static readonly decorations: DecorationMetadata = { types: {}, decorators: {}, trace: [] };
+    public static readonly apis: Record<string, ApiMetadata> = {};
+    public static readonly services: Record<string, ServiceMetadata> = {};
+    public static readonly proxies: Record<string, ProxyMetadata> = {};
+    public static readonly methods: Record<string, MethodMetadata> = {};
+    public static readonly entities: Record<string, EntityMetadata> = {};
+    public static readonly resolvers: Record<string, MethodMetadata> = {};
+    public static readonly routes: Record<string, HttpRouteMetadata> = {};
+    public static readonly events: Record<string, EventRouteMetadata[]> = {};
 
+    private constructor() { }
+
+    // private static regisry = new Registry();
     private static ordinal = 0;
 
-    public static get registry(): MetadataRegistry {
-        return {
+    public static get(): Registry {
+        let reg: MetadataRegistry = {
+            decorations: this.decorations,
             apis: this.apis,
             services: this.services,
             proxies: this.proxies,
@@ -85,9 +86,10 @@ export abstract class Metadata {
             entities: this.entities,
             resolvers: this.resolvers,
             routes: this.routes,
-            events: this.events,
-            decorations: this.decorations
+            events: this.events
         };
+        Object.setPrototypeOf(reg, Registry.prototype);
+        return reg as any;
     }
 
     public static trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
@@ -119,7 +121,7 @@ export abstract class Metadata {
         }
     }
 
-    public static stringify(data: any, ident?: number) {
+    public stringify(ident?: number) {
         // TODO: Circular references
         function filter(key: string, value: any) {
             if (value instanceof Function) {
@@ -129,7 +131,9 @@ export abstract class Metadata {
             if (key.startsWith("inverse") && value) return `#(${value.name || value.propertyName})`;
             return value;
         }
-        return JSON.stringify(data, filter, ident);
+        return JSON.stringify(this, filter, ident);
     }
 }
+
+
 

@@ -1,4 +1,4 @@
-import { Configuration, LogLevel } from "../types";
+import { Configuration, LogLevel } from "../types/config";
 import { Utils } from "../utils";
 
 const REMOTE_STAGE_PREFIX = "REMOTE_STAGE_";

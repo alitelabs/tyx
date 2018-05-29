@@ -1,5 +1,5 @@
-import { Class, Prototype } from "../types";
-import { Metadata } from "./core";
+import { Class, Prototype } from "../types/core";
+import { Registry } from "./registry";
 import { ServiceMetadata } from "./service";
 
 export interface ProxyMetadata extends ServiceMetadata {
@@ -16,13 +16,13 @@ export class ProxyMetadata extends ServiceMetadata implements ProxyMetadata {
     }
 
     public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Metadata.TYX_PROXY, target)
-            || Reflect.hasMetadata(Metadata.TYX_PROXY, target.constructor);
+        return Reflect.hasMetadata(Registry.TYX_PROXY, target)
+            || Reflect.hasMetadata(Registry.TYX_PROXY, target.constructor);
     }
 
     public static get(target: Class | Prototype): ProxyMetadata {
-        return Reflect.getMetadata(Metadata.TYX_PROXY, target)
-            || Reflect.getMetadata(Metadata.TYX_PROXY, target.constructor);
+        return Reflect.getMetadata(Registry.TYX_PROXY, target)
+            || Reflect.getMetadata(Registry.TYX_PROXY, target.constructor);
     }
 
     public static define(target: Class): ProxyMetadata {
@@ -30,7 +30,7 @@ export class ProxyMetadata extends ServiceMetadata implements ProxyMetadata {
         if (!meta) {
             meta = ServiceMetadata.define(target) as any;
             Object.setPrototypeOf(meta, ProxyMetadata.prototype);
-            Reflect.defineMetadata(Metadata.TYX_PROXY, meta, target);
+            Reflect.defineMetadata(Registry.TYX_PROXY, meta, target);
         }
         return meta;
     }

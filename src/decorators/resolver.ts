@@ -1,6 +1,6 @@
-import { Metadata } from "../metadata/core";
+import { Registry } from "../metadata/registry";
 import { MethodMetadata } from "../metadata/method";
-import { Roles } from "../types";
+import { Roles } from "../types/security";
 
 export function Query<TR extends Roles>(roles?: TR, input?: Function, result?: Function) {
     return ResolverDecorator(Query, false, roles, input, result);
@@ -20,7 +20,7 @@ export function Command<TR extends Roles>(roles?: TR, input?: Function, result?:
 
 function ResolverDecorator(decorator: Function, mutation: boolean, roles: Roles, input?: Function, result?: Function): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Metadata.trace(decorator, { roles, input, result }, target, propertyKey);
+        Registry.trace(decorator, { roles, input, result }, target, propertyKey);
         let oper = decorator.name.toLowerCase();
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let meta = MethodMetadata.define(target, propertyKey, descriptor).addAuth(oper, roles);

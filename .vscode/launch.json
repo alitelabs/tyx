@@ -11,7 +11,7 @@
             "program": "${file}",
             "cwd": "${workspaceRoot}",
             "sourceMaps": true,
-            "preLaunchTask": "build",
+            "preLaunchTask": "watch",
             "showAsyncStacks": true,
             "outFiles": [
                 "${workspaceRoot}/lib/**/*.js"

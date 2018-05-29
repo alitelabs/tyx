@@ -1,6 +1,6 @@
-import { Metadata } from "../metadata/core";
 import { MethodMetadata } from "../metadata/method";
-import { Roles } from "../types";
+import { Roles } from "../types/security";
+import { Registry } from "../metadata/registry";
 
 export function Public() {
     return AuthDecorator(Public, { Public: true, Internal: true, External: true, Remote: true });
@@ -33,7 +33,7 @@ export function Authorization<TR extends Roles>(roles: TR) {
 function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
     return (target, propertyKey, descriptor) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(decorator, { roles }, target, propertyKey);
+        Registry.trace(decorator, { roles }, target, propertyKey);
         let auth = decorator.name.toLowerCase();
         MethodMetadata.define(target, propertyKey, descriptor).addAuth(auth, roles);
     };

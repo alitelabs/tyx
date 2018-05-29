@@ -1,6 +1,6 @@
-import { Metadata } from "../metadata/core";
 import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, MethodMetadata, RequestBinder } from "../metadata/method";
-import { HttpCode, HttpMethod, HttpResponse } from "../types";
+import { Registry } from "../metadata/registry";
+import { HttpCode, HttpMethod, HttpResponse } from "../types/http";
 
 export function Get(route: string, adapter?: HttpAdapter): MethodDecorator {
     return HttpMethod(Get, route, false, 200, adapter);
@@ -25,7 +25,7 @@ export function Patch(route: string, model?: boolean | string, adapter?: HttpAda
 // Decorator
 function HttpMethod(decorator: Function, resource: string, model: boolean | string, code: HttpCode, adapter?: HttpAdapter): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Metadata.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
+        Registry.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         let verb = decorator.name.toUpperCase();
         if (!model) model = undefined;
@@ -89,7 +89,7 @@ export function RequestParam(path: string | RequestBinder): ParameterDecorator {
 
 function HttpBinding(type: HttpBindingType, path: string, binder: HttpBinder): ParameterDecorator {
     return function (target, propertyKey, index) {
-        Metadata.trace(type, { path, binder }, target, propertyKey, index);
+        Registry.trace(type, { path, binder }, target, propertyKey, index);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         MethodMetadata.define(target, propertyKey).addBinding(index, type, path, binder);
     };
@@ -97,7 +97,7 @@ function HttpBinding(type: HttpBindingType, path: string, binder: HttpBinder): P
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
     return function (target, propertyKey, descriptor) {
-        Metadata.trace(ContentType, { contentType }, target, propertyKey);
+        Registry.trace(ContentType, { contentType }, target, propertyKey);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         MethodMetadata.define(target, propertyKey).setContentType(contentType);
     };

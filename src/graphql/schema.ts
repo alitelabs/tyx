@@ -2,7 +2,10 @@ import { GraphQLBoolean, GraphQLField, GraphQLFloat, GraphQLInt, GraphQLInterfac
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
 import { ILogger, SchemaDirectiveVisitor, makeExecutableSchema } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
-import { ColumnType, EntityMetadata, GraphType, RelationType } from "../metadata";
+import { ColumnType } from "../metadata/column";
+import { EntityMetadata } from "../metadata/entity";
+import { RelationType } from "../metadata/relation";
+import { GraphType } from "../metadata/type";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import GraphQLJSON = require("graphql-type-json");
 

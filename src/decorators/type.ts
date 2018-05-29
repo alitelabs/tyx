@@ -1,7 +1,11 @@
-import { Metadata } from "../metadata/core";
+import { Registry } from "../metadata/registry";
 import { GraphType, TypeMetadata } from "../metadata/type";
 
 /// Root Types
+
+export function Metadata(name?: string): ClassDecorator {
+    return GraphClass(GraphType.Metadata, name);
+}
 
 export function Input(name?: string): ClassDecorator {
     return GraphClass(GraphType.Input, name);
@@ -25,7 +29,7 @@ export function Enum(name?: string): ClassDecorator {
 
 function GraphClass(type: GraphType, name?: string): ClassDecorator {
     return (target) => {
-        Metadata.trace(type, { name }, target);
+        Registry.trace(type, { name }, target);
         return void TypeMetadata.define(target).commit(type, name);
     };
 }
@@ -84,7 +88,7 @@ export function EnumField(req?: boolean): PropertyDecorator {
 function Field(type: GraphType, required: boolean, item?: GraphType | Function): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(type, { required, item }, target, propertyKey);
+        Registry.trace(type, { required, item }, target, propertyKey);
         TypeMetadata.define(target.constructor).addField(propertyKey, type, required, item);
     };
 }

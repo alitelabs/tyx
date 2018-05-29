@@ -1,4 +1,4 @@
-import { EntityMetadata } from "../metadata";
+import { EntityMetadata } from "../metadata/entity";
 import { EntityManager, SelectQueryBuilder } from "../orm";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import { ToolkitContext, ToolkitInfo, ToolkitProvider } from "./schema";

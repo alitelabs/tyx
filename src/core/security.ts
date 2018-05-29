@@ -1,14 +1,17 @@
-import { Inject } from "../decorators";
+import { Inject } from "../decorators/service";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
-import { MethodMetadata } from "../metadata";
-import { AuthInfo, Configuration, Context, CoreInstance, EventRequest, HttpRequest, IssueRequest, RemoteRequest, Security, WebToken } from "../types";
+import { MethodMetadata } from "../metadata/method";
+import { Configuration } from "../types/config";
+import { Context, CoreContainer } from "../types/core";
+import { EventRequest } from "../types/event";
+import { HttpRequest } from "../types/http";
+import { RemoteRequest } from "../types/proxy";
+import { AuthInfo, IssueRequest, Security, WebToken } from "../types/security";
 import { Utils } from "../utils";
 
 import JWT = require("jsonwebtoken");
 import MS = require("ms");
-
-
 
 export class CoreSecurity implements Security {
     public readonly log: Logger;
@@ -20,7 +23,7 @@ export class CoreSecurity implements Security {
     @Inject(Configuration)
     protected config: Configuration;
 
-    public async httpAuth(container: CoreInstance, req: HttpRequest, method: MethodMetadata): Promise<Context> {
+    public async httpAuth(container: CoreContainer, req: HttpRequest, method: MethodMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
@@ -71,7 +74,7 @@ export class CoreSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(container: CoreInstance, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
+    public async remoteAuth(container: CoreContainer, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Remote && !method.roles.Internal)
             throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
         let auth = await this.verify(req.requestId, req.token, method, null);
@@ -80,7 +83,7 @@ export class CoreSecurity implements Security {
         return new Context({ container, requestId: req.requestId, method, auth });
     }
 
-    public async eventAuth(container: CoreInstance, req: EventRequest, method: MethodMetadata): Promise<Context> {
+    public async eventAuth(container: CoreContainer, req: EventRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Internal)
             throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
         let ctx = new Context({
