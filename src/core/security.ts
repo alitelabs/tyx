@@ -2,7 +2,7 @@ import { Inject, Service } from "../decorators";
 import { BadRequest, Forbidden, Unauthorized } from "../errors";
 import { Logger } from "../logger";
 import { MethodMetadata } from "../metadata";
-import { AuthInfo, Container, Context, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
+import { AuthInfo, Context, Core, EventRequest, HttpRequest, IssueRequest, RemoteRequest, WebToken } from "../types";
 import { Utils } from "../utils";
 import { Configuration } from "./config";
 
@@ -12,22 +12,23 @@ import MS = require("ms");
 export const Security = "security";
 
 export interface Security extends Service {
-    httpAuth(container: Container, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
-    remoteAuth(container: Container, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
-    eventAuth(container: Container, req: EventRequest, permission: MethodMetadata): Promise<Context>;
+    httpAuth(container: Core, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
+    remoteAuth(container: Core, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
+    eventAuth(container: Core, req: EventRequest, permission: MethodMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;
 }
 
-export abstract class BaseSecurity implements Security {
+export class CoreSecurity implements Security {
     public readonly log: Logger;
 
     constructor() {
         this.log = Logger.get(Security, this);
     }
 
-    protected abstract config: Configuration;
+    @Inject(Configuration)
+    protected config: Configuration;
 
-    public async httpAuth(container: Container, req: HttpRequest, method: MethodMetadata): Promise<Context> {
+    public async httpAuth(container: Core, req: HttpRequest, method: MethodMetadata): Promise<Context> {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
@@ -78,7 +79,7 @@ export abstract class BaseSecurity implements Security {
         return ctx;
     }
 
-    public async remoteAuth(container: Container, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
+    public async remoteAuth(container: Core, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Remote && !method.roles.Internal)
             throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
         let auth = await this.verify(req.requestId, req.token, method, null);
@@ -87,7 +88,7 @@ export abstract class BaseSecurity implements Security {
         return new Context({ container, requestId: req.requestId, method, auth });
     }
 
-    public async eventAuth(container: Container, req: EventRequest, method: MethodMetadata): Promise<Context> {
+    public async eventAuth(container: Core, req: EventRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Internal)
             throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
         let ctx = new Context({
@@ -224,12 +225,3 @@ export abstract class BaseSecurity implements Security {
         return timeout;
     }
 }
-
-@Service(Security)
-export class DefaultSecurity extends BaseSecurity {
-    @Inject(Configuration)
-    protected config: Configuration;
-}
-
-
-

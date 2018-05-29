@@ -1,11 +1,11 @@
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { Class, Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { Class, Core, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 import { Configuration } from "./config";
-import { ContainerInstance } from "./instance";
+import { CoreInstance } from "./instance";
 import { Security } from "./security";
 
-export class ContainerPool implements Container {
+export class CorePool implements Core {
     protected log: Logger;
 
     private application: string;
@@ -16,14 +16,14 @@ export class ContainerPool implements Container {
     private registers: { target: any, args: any[] }[];
     private publishes: { service: any, args: any[] }[];
 
-    private head: ContainerInstance;
-    private pool: ContainerInstance[];
+    private head: CoreInstance;
+    private pool: CoreInstance[];
 
     private static count = 0;
 
     constructor(application: string, name?: string) {
         this.application = application;
-        this.name = name || ContainerPool.name;
+        this.name = name || CorePool.name;
         this.log = Logger.get(application, this.name);
         this.cstate = ContainerState.Pending;
         this.registers = [];
@@ -57,10 +57,10 @@ export class ContainerPool implements Container {
         return this;
     }
 
-    public async prepare(): Promise<ContainerInstance> {
+    public async prepare(): Promise<CoreInstance> {
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
-            instance = new ContainerInstance(this.application, "" + ContainerPool.count++);
+            instance = new CoreInstance(this.application, "" + CorePool.count++);
             // TODO: Identity
 
             this.registers.forEach(u => instance.register(u.target));

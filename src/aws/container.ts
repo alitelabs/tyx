@@ -1,4 +1,4 @@
-import { ContainerPool } from "../core";
+import { CorePool } from "../core";
 import { BadRequest, InternalServerError } from "../errors";
 import { LogLevel } from "../logger";
 import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, RemoteRequest } from "../types";
@@ -156,7 +156,7 @@ export interface LambdaHandler {
     ): boolean | void;
 }
 
-export class LambdaContainer extends ContainerPool {
+export class LambdaContainer extends CorePool {
 
     constructor(applicationId: string) {
         super(applicationId, LambdaContainer.name);

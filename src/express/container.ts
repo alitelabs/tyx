@@ -1,7 +1,7 @@
 
 
 import { Server, createServer } from "http";
-import { ContainerPool } from "../core";
+import { CorePool } from "../core";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
 import { LogLevel } from "../logger";
@@ -9,7 +9,7 @@ import { Metadata } from "../metadata/core";
 import { HttpMethod, HttpRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
-export class ExpressContainer extends ContainerPool {
+export class ExpressContainer extends CorePool {
 
     private server: Server;
     private app: Express.Express;

@@ -52,6 +52,8 @@ export class ApiMetadata implements ApiMetadata {
 
     public commit(alias?: string): this {
         this.alias = alias || this.target.name;
+        let prev = Metadata.apis[this.alias];
+        if (prev && prev !== this) throw new TypeError(`Duplicate API alias [${this.alias}]`);
         Metadata.apis[this.alias] = this;
         Object.values(this.methods).forEach(item => item.commit(this));
         this.schema();

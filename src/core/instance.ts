@@ -1,44 +1,31 @@
-import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../core";
-import { Proxy, Service } from "../decorators";
-import { Forbidden, InternalServerError, NotFound } from "../errors";
+import { Configuration, CoreConfiguration, CoreSecurity, Security } from "../core";
+import { Service } from "../decorators";
+import { Container, ContainerInstance } from "../di";
+import { InternalServerError, NotFound } from "../errors";
 import { Logger } from "../logger";
-import { ApiMetadata, Metadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
-import { Class, Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
+import { Metadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
+import { Class, ContainerState, Context, Core, EventRequest, EventResult, HttpRequest, HttpResponse, ObjectType, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
-export class ContainerInstance implements Container {
+export class CoreInstance implements Core {
     private application: string;
     private name: string;
-
     private log: Logger;
 
+    private container: ContainerInstance;
     private config: Configuration;
     private security: Security;
-
     private istate: ContainerState;
-    // private imetadata: ContainerMetadata;
-
-    private resources: Record<string, any>;
-    private services: Record<string, Service>;
-    private proxies: Record<string, Proxy>;
-
-    private remoteHandlers: Record<string, RemoteHandler>;
-    private httpHandlers: Record<string, HttpHandler>;
-    private eventHandlers: Record<string, EventHandler[]>;
 
     constructor(application: string, name: string, index?: string) {
         this.application = application;
-        this.name = name || ContainerInstance.name;
+        this.name = name || CoreInstance.name;
         if (index !== undefined) this.name += ":" + index;
+
+        this.container = Container.of(this.name);
 
         this.log = Logger.get(this.application, this.name);
         this.istate = ContainerState.Pending;
-        this.resources = {};
-        this.services = {};
-        this.proxies = {};
-        this.remoteHandlers = {};
-        this.httpHandlers = {};
-        this.eventHandlers = {};
     }
 
     public get state() {
@@ -46,221 +33,51 @@ export class ContainerInstance implements Container {
     }
 
     public get<T>(type: ObjectType<T> | string): T {
-        if (type === Configuration) return this.config as any;
-        if (type === Security) return this.config as any;
-        if (typeof type === "string") return this.services[type] || this.proxies[type] || this.resources[type];
+        if (typeof type === "string") return this.container.get<T>(type);
         let proxy = ProxyMetadata.get(type);
-        if (proxy) return this.proxies[proxy.alias] as any;
+        if (proxy) return this.container.get(proxy.alias);
         let service = ServiceMetadata.get(type);
-        if (service) return this.services[service.alias] as any;
-        return null;
+        if (service) return this.container.get(service.alias);
+        return undefined;
     }
 
     public register(target: Class | Object): this {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
-
-        let name: string = undefined;
-        // let srvMeta = ServiceMetadata.get(target);
-
-        if (target instanceof Function) {
-            target = new (target as new () => any)();
-            // https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-            // target = new (Function.prototype.bind.apply(target, arguments));
-            // if (srvMeta) target = Di.Container.get(srvMeta.alias);
-            // else target = Di.Container.get(target);
-        }
-
-        let id: string;
-        if (name) {
-            id = name = "" + name;
-        } else if (ServiceMetadata.has(target)) {
-            let meta = ServiceMetadata.get(target);
-            id = name = meta.alias;
-        } else if (ProxyMetadata.has(target)) {
-            let meta = ProxyMetadata.get(target);
-            name = meta.alias;
-            id = (meta.application || this.application) + ":" + meta.alias;
-        } else {
-            id = name = target.constructor.name;
-        }
-
-        let prev = (this.services[id] || this.proxies[id] || this.resources[id]);
-        if (prev && prev !== target)
-            throw new InternalServerError(`Duplicate registration [${id}]`);
-
-        if (name === Configuration) {
-            if (!ServiceMetadata.has(target)) throw new InternalServerError(`Configuration must be a service`);
-            this.config = target as Configuration;
-            if (target instanceof BaseConfiguration) {
-                target.init(this.application);
-            }
-        }
-        if (name === Security) {
-            if (!ServiceMetadata.has(target)) throw new InternalServerError(`Security must be a service`);
-            this.security = target as Security;
-        }
-
-        if (ServiceMetadata.has(target)) {
-            this.services[id] = target as Service;
-            this.log.info("Service: %s", id);
-        } else if (ProxyMetadata.has(target)) {
-            this.proxies[id] = target as Proxy;
-            this.log.info("Proxy: %s", id);
-        } else {
-            this.resources[id] = target;
-            this.log.info("Resource: %s", id);
-        }
         return this;
     }
 
     public publish(target: Class | Object): this {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
-
-        // let serviceMeta = ServiceMetadata.get(target);
-        // Call constructor
-        let service: Service;
-        if (target instanceof Function) {
-            service = new (target as new () => any)();
-            // service = new (Function.prototype.bind.apply(target, arguments)) as Service;
-            // service = Di.Container.get(serviceMeta.alias);
-        } else {
-            service === target;
-        }
-
-        if (!ServiceMetadata.has(service)) throw new InternalServerError(`Service decoration missing`);
-        if (!ApiMetadata.has(service)) throw new InternalServerError(`Api not defined on service`);
-        this.register(service);
-
-        service = service as Service;
-        // let metaService = ServiceMetadata.get(service);
-        let metaApi = ApiMetadata.get(service);
-        this.log.info("Publish: %s", metaApi.alias);
-
-        for (let meta of Object.values(metaApi.methods)) {
-            let key = meta.service + "." + meta.name;
-            if (!meta.roles.Internal && !meta.roles.External && !meta.roles.Remote) continue;
-            this.remoteHandlers[key] = this.remoteHandler(service, meta);
-        }
-
-        for (let [route, meta] of Object.entries(metaApi.routes)) {
-            this.httpHandlers[route] = this.httpHandler(service, meta, route);
-        }
-
-        for (let [route, metas] of Object.entries(metaApi.events)) {
-            let handlers = metas.map(m => this.eventHandler(service, m, route));
-            this.eventHandlers[route] = this.eventHandlers[route] || [];
-            this.eventHandlers[route] = this.eventHandlers[route].concat(handlers);
-        }
         return this;
-    }
-
-    private remoteHandler(service: Service, metadata: MethodMetadata): RemoteHandler {
-        let fun: RemoteHandler = async (ctx: Context, req: RemoteRequest): Promise<any> => {
-            let log: Logger = service.log || this.log;
-            let startTime = log.time();
-            try {
-                let method: Function = service[metadata.name];
-                let result = await method.apply(service, req.args);
-                return result;
-            } catch (e) {
-                throw e;
-            } finally {
-                log.timeEnd(startTime, `${metadata.name}`);
-            }
-        };
-        return fun;
-    }
-
-    private httpHandler(service: Service, metadata: MethodMetadata, route: string): HttpHandler {
-        let fun: HttpHandler = async (ctx: Context, req: HttpRequest): Promise<HttpResponse> => {
-            let log: Logger = service.log || this.log;
-            let startTime = log.time();
-            try {
-                let method: Function = service[metadata.name];
-                let http = metadata.http[route];
-                let result: any;
-                if (http.adapter) {
-                    result = await http.adapter(
-                        method.bind(service),
-                        ctx,
-                        req,
-                        req.pathParameters || {},
-                        req.queryStringParameters || {});
-                } else {
-                    let args: any = [];
-                    for (let [index, arg] of metadata.bindings.entries()) {
-                        args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
-                    }
-                    result = await method.apply(service, args);
-                }
-                let contentType = metadata.contentType || "application/json";
-                return { statusCode: http.code, body: result, contentType };
-            } catch (e) {
-                throw e;
-            } finally {
-                log.timeEnd(startTime, `${metadata.name}`);
-            }
-        };
-        return fun;
-    }
-
-    private eventHandler(service: Service, metadata: MethodMetadata, route: string): EventHandler {
-        let handler: EventHandler = async (ctx: Context, req: EventRequest): Promise<any> => {
-            let log: Logger = service.log || this.log;
-            let startTime = log.time();
-            try {
-                let result: Promise<any>;
-                let method: Function = service[metadata.name];
-                let event = metadata.events[route];
-                if (event.adapter) {
-                    result = await event.adapter(method.bind(service), ctx, req);
-                } else {
-                    result = await method.call(service, ctx, req);
-                }
-                return result;
-            } catch (e) {
-                throw e;
-            } finally {
-                log.timeEnd(startTime, `${metadata.name}`);
-            }
-        };
-        return handler;
     }
 
     public async prepare(): Promise<this> {
         if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
-        if (!this.config) {
-            this.register(new DefaultConfiguration());
+        if (!Container.has(Configuration)) {
             this.log.warn("Using default configuration service!");
+            this.container.set({ id: Configuration, type: CoreConfiguration });
         }
-        if (!this.security) {
-            this.register(new DefaultSecurity());
-            this.log.warn("Using default security service!");
+        this.config = this.container.get(Configuration);
+        if (this.config instanceof CoreConfiguration) {
+            this.config.init(this.application);
+        } else if (!ServiceMetadata.has(this.config)) {
+            throw new InternalServerError(`Configuration must be a service`);
         }
 
-        Object.values(this.services).forEach(service => this.inject(service));
-        Object.values(this.proxies).forEach(proxy => this.inject(proxy));
+        if (!Container.has(Security)) {
+            this.log.warn("Using default security service!");
+            this.container.set({ id: Security, type: CoreSecurity });
+        }
+        this.security = this.container.get(Security);
+        if (this.security instanceof CoreSecurity) {
+            // OK
+        } else if (!ServiceMetadata.has(this.security)) {
+            throw new InternalServerError(`Security must be a service`);
+        }
 
         this.istate = ContainerState.Ready;
         return this;
-    }
-
-    private inject(target: object) {
-        let meta = ServiceMetadata.get(target);
-        if (!meta || !meta.dependencies) return;
-        for (let [pid, dep] of Object.entries(meta.dependencies)) {
-            let localId = dep.resource;
-            let proxyId = (this.application) + ":" + localId;
-            let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
-            if (dep.resource === Container) resolved = this;
-            if (dep.resource === "logger") resolved = Logger.get(meta.alias, target);
-            let depId = localId;
-            if (!resolved)
-                throw new InternalServerError(`Unresolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
-            this.log.info(`Resolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
-            target[pid] = resolved;
-        }
     }
 
     // --------------------------------------------------
@@ -272,31 +89,27 @@ export class ContainerInstance implements Container {
         try {
             this.log.debug("Remote Request: %j", req);
 
-            if (req.application !== this.application) {
-                throw this.log.error(new NotFound(`Application not found [${req.application}]`));
-            }
-
-            let service = this.services[req.service];
+            if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
+            let service = this.container.get(req.service);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-
-            let permissionId = req.service + "." + req.method;
-            let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
-            if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
-
-            let handler: RemoteHandler = this.remoteHandlers[permissionId];
-            if (!handler) throw this.log.error(new NotFound(`Method not found [${permissionId}]`));
+            let methodId = req.service + "." + req.method;
+            let metadata = Metadata.methods[methodId];
+            if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
 
             this.istate = ContainerState.Busy;
-            let ctx = await this.security.remoteAuth(this, req, permission);
-            // let ctx = await this.security.localAuth();
+            let ctx = await this.security.remoteAuth(this, req, metadata);
 
+            let log = Logger.get(service);
+            let startTime = log.time();
             try {
                 await this.activate(ctx);
-                let result = await handler(ctx, req);
+                let handler: Function = service[metadata.name];
+                let result = await handler.apply(service, req.args);
                 return result;
             } catch (e) {
                 throw this.log.error(e);
             } finally {
+                log.timeEnd(startTime, `${metadata.name}`);
                 await this.release(ctx);
             }
         } finally {
@@ -314,15 +127,12 @@ export class ContainerInstance implements Container {
 
             let route = `${req.source} ${req.resource}`;
             let alias = this.config.resources && this.config.resources[req.resource];
-
-            let metas = Metadata.events[route];
-            let handlers = this.eventHandlers && this.eventHandlers[route];
-            if (!handlers && alias) {
+            let metadatas = Metadata.events[route];
+            if (!metadatas) {
                 route = `${req.source} ${alias}`;
-                metas = Metadata.events[route];
-                handlers = this.eventHandlers && this.eventHandlers[route];
+                metadatas = Metadata.events[route];
             }
-            if (!handlers) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
+            if (!metadatas) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
 
             let result: EventResult = {
                 status: null,
@@ -334,9 +144,12 @@ export class ContainerInstance implements Container {
             };
 
             this.istate = ContainerState.Busy;
-            for (let i = 0; i < handlers.length; i++) {
-                let handler = handlers[i];
-                let target = metas[i];
+            for (let target of metadatas) {
+                let service = this.container.get(target.service);
+                if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
+                let methodId = target.service + "." + target.method;
+                let method = Metadata.methods[methodId];
+
                 if (!Utils.wildcardMatch(target[route].actionFilter, req.action)
                     || !Utils.wildcardMatch(target[route].objectFilter, req.object)) continue;
 
@@ -344,17 +157,21 @@ export class ContainerInstance implements Container {
                 req.service = target.service;
                 req.method = target.method;
 
-                let permissionId = req.service + "." + req.method;
-                let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
-                if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
+                let ctx = await this.security.eventAuth(this, req, method);
 
-                let ctx = await this.security.eventAuth(this, req, permission);
-
+                let log = Logger.get(service);
+                let startTime = log.time();
                 try {
                     await this.activate(ctx);
                     for (let record of req.records) {
                         req.record = record;
-                        let data = await handler(ctx, req);
+                        let handler = service[target.method];
+                        let data: any;
+                        if (target.adapter) {
+                            data = await target.adapter(handler.bind(service), ctx, req);
+                        } else {
+                            data = await handler.call(service, ctx, req);
+                        }
                         result.status = result.status || "OK";
                         result.returns.push({
                             service: target.service,
@@ -373,6 +190,7 @@ export class ContainerInstance implements Container {
                         data: null
                     });
                 } finally {
+                    log.timeEnd(startTime, `${target.method}`);
                     await this.release(ctx);
                 }
             }
@@ -393,42 +211,61 @@ export class ContainerInstance implements Container {
 
             HttpUtils.request(req);
 
-            let key = `${req.httpMethod} ${req.resource}`;
-            if (req.contentType.domainModel) key += `:${req.contentType.domainModel}`;
-            let handler = this.httpHandlers && this.httpHandlers[key];
-            if (!handler) throw this.log.error(new NotFound(`Route not found [${key}]`));
-
-            let target = Metadata.routes[key];
+            let route = `${req.httpMethod} ${req.resource}`;
+            if (req.contentType.domainModel) route += `:${req.contentType.domainModel}`;
+            let target = Metadata.routes[route];
+            if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
+            let service = this.container.get(target.service);
+            if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
+            let methodId = target.service + "." + target.method;
+            let method = Metadata.methods[methodId] as MethodMetadata;
 
             req.application = this.application;
             req.service = target.service;
             req.method = target.method;
 
-            let permissionId = req.service + "." + req.method;
-            let permission = permissionId && Metadata.methods[permissionId] as MethodMetadata;
-            if (permission == null) throw this.log.error(new Forbidden(`Undefined permission for method [${permissionId}]`));
-
             this.istate = ContainerState.Busy;
-            let ctx = await this.security.httpAuth(this, req, permission);
+            let ctx = await this.security.httpAuth(this, req, method);
 
+            let log = Logger.get(service);
+            let startTime = log.time();
             try {
                 await this.activate(ctx);
 
                 this.log.debug("HTTP Context: %j", ctx);
                 this.log.debug("HTTP Request: %j", req);
 
-                let res = await handler(ctx, req);
-                if (res.contentType === HttpResponse) res = res.body;
-                if (ctx && ctx.auth.renewed && ctx.auth.token) {
-                    res.headers = res.headers || {};
-                    res.headers["Token"] = ctx.auth.token;
+                let handler: Function = service[method.name];
+                let http = method.http[route];
+                let result: any;
+                if (http.adapter) {
+                    result = await http.adapter(
+                        handler.bind(service),
+                        ctx,
+                        req,
+                        req.pathParameters || {},
+                        req.queryStringParameters || {});
+                } else {
+                    let args: any = [];
+                    for (let [index, arg] of method.bindings.entries()) {
+                        args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
+                    }
+                    result = await handler.apply(service, args);
                 }
-                this.log.debug("Response: %j", res);
-                return res;
+
+                let contentType = method.contentType || "application/json";
+                if (contentType !== HttpResponse) result = { statusCode: http.code, body: result, contentType };
+                if (ctx && ctx.auth.renewed && ctx.auth.token) {
+                    result.headers = result.headers || {};
+                    result.headers["Token"] = ctx.auth.token;
+                }
+                this.log.debug("Response: %j", result);
+                return result;
             } catch (e) {
                 this.log.error(e);
                 throw InternalServerError.wrap(e);
             } finally {
+                log.timeEnd(startTime, `${method.name}`);
                 await this.release(ctx);
             }
         } finally {
@@ -437,8 +274,8 @@ export class ContainerInstance implements Container {
     }
 
     public async activate(ctx: Context): Promise<Context> {
-        for (let sid in this.services) {
-            let service = this.services[sid];
+        for (let sid in Metadata.services) {
+            let service = this.container.get<Service>(sid);
             try {
                 if (service.activate) await service.activate(ctx);
             } catch (e) {
@@ -452,8 +289,8 @@ export class ContainerInstance implements Container {
     }
 
     public async release(ctx: Context): Promise<void> {
-        for (let sid in this.services) {
-            let service = this.services[sid];
+        for (let sid in Metadata.services) {
+            let service = this.container.get<Service>(sid);
             try {
                 if (service.release) await service.release(ctx);
             } catch (e) {

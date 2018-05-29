@@ -115,6 +115,8 @@ export class ServiceMetadata implements ServiceMetadata {
         if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
+        let prev = Metadata.services[this.alias];
+        if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.alias}]`);
         Metadata.services[this.alias] = this;
         return this;
     }

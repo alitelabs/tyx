@@ -1,4 +1,4 @@
-import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../core";
+import { Configuration, CoreConfiguration, CoreSecurity, Security } from "../core";
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
 import { Di, Orm } from "../import";
@@ -92,7 +92,7 @@ export class Core {
         if (name === Configuration) {
             if (!ServiceMetadata.has(target)) throw new InternalServerError(`Configuration must be a service`);
             this.config = target as Configuration;
-            if (target instanceof BaseConfiguration) {
+            if (target instanceof CoreConfiguration) {
                 target.init(this.application);
             }
         }
@@ -225,11 +225,11 @@ export class Core {
         if (this.prepared) return this;
         await this.initConnection();
         if (!this.config) {
-            this.register(new DefaultConfiguration());
+            this.register(new CoreConfiguration());
             this.log.warn("Using default configuration service!");
         }
         if (!this.security) {
-            this.register(new DefaultSecurity());
+            this.register(new CoreSecurity());
             this.log.warn("Using default security service!");
         }
         this.istate = ContainerState.Ready;

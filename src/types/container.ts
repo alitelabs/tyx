@@ -22,15 +22,15 @@ export enum ContainerState {
     Busy = 2
 }
 
-export const Container = "container";
+export const Core = "container";
 
-export interface Container {
+export interface Core {
     state: ContainerState;
 
     register(target: Class | Object): this;
     publish(service: Class): this;
 
-    prepare(): Promise<Container>;
+    prepare(): Promise<Core>;
 
     httpRequest(req: HttpRequest): Promise<HttpResponse>;
     eventRequest(req: EventRequest): Promise<EventResult>;

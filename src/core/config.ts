@@ -27,13 +27,13 @@ export interface Configuration {
 const REMOTE_STAGE_PREFIX = "REMOTE_STAGE_";
 const REMOTE_SECRET_PREFIX = "REMOTE_SECRET_";
 
-export abstract class BaseConfiguration implements Configuration {
+export class CoreConfiguration implements Configuration {
 
     private _appId: string;
     protected config: Record<string, any>;
 
-    constructor(config?: Record<string, any>) {
-        this.config = config || process.env;
+    constructor() {
+        this.config = process.env;
     }
 
     public init(appId: string) {
@@ -94,11 +94,5 @@ export abstract class BaseConfiguration implements Configuration {
     public remoteStage(appId: string): string {
         appId = appId && appId.split("-").join("_").toUpperCase();
         return this.config[REMOTE_STAGE_PREFIX + appId];
-    }
-}
-
-export class DefaultConfiguration extends BaseConfiguration {
-    constructor(config?: any) {
-        super(config);
     }
 }

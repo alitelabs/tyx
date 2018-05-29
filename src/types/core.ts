@@ -1,5 +1,5 @@
 import { MethodMetadata } from "../metadata";
-import { Container } from "./container";
+import { Core } from "./container";
 import { AuthInfo } from "./security";
 
 export type ObjectType<T> = {
@@ -15,7 +15,7 @@ export interface Class extends Function { }
 export interface Prototype extends Object { }
 
 export class Context {
-    public container: Container = undefined;
+    public container: Core = undefined;
     public requestId: string;
     public method: MethodMetadata;
     public auth: AuthInfo;
