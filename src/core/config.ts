@@ -1,4 +1,3 @@
-import { Service } from "../decorators";
 import { LogLevel } from "../logger";
 import { Utils } from "../utils";
 
@@ -98,7 +97,6 @@ export abstract class BaseConfiguration implements Configuration {
     }
 }
 
-@Service(Configuration)
 export class DefaultConfiguration extends BaseConfiguration {
     constructor(config?: any) {
         super(config);

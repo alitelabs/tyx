@@ -1,35 +1,39 @@
 import { BaseConfiguration, Configuration, DefaultConfiguration, DefaultSecurity, Security } from "../core";
 import { Proxy, Service } from "../decorators";
 import { Forbidden, InternalServerError, NotFound } from "../errors";
+import { Di, Orm } from "../import";
 import { Logger } from "../logger";
 import { ApiMetadata, Metadata, MethodMetadata, ProxyMetadata, ServiceMetadata } from "../metadata";
-import { Class, Container, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
+import { Class, ContainerState, Context, EventHandler, EventRequest, EventResult, HttpHandler, HttpRequest, HttpResponse, ObjectType, RemoteHandler, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
-export class ContainerInstance implements Container {
+const SINGLETON = true;
+Orm.useContainer(Di.Container);
+
+export class Core {
     private application: string;
     private name: string;
 
-    private log: Logger;
+    protected log: Logger;
 
-    private config: Configuration;
-    private security: Security;
+    public config: Configuration;
+    public security: Security;
 
     private istate: ContainerState;
-    // private imetadata: ContainerMetadata;
 
     private resources: Record<string, any>;
-    private services: Record<string, Service>;
+    public services: Record<string, Service>;
     private proxies: Record<string, Proxy>;
 
     private remoteHandlers: Record<string, RemoteHandler>;
     private httpHandlers: Record<string, HttpHandler>;
     private eventHandlers: Record<string, EventHandler[]>;
 
-    constructor(application: string, name: string, index?: string) {
+    private prepared: boolean;
+
+    constructor(application: string, name: string) {
         this.application = application;
-        this.name = name || ContainerInstance.name;
-        if (index !== undefined) this.name += ":" + index;
+        this.name = name || Core.name;
 
         this.log = Logger.get(this.application, this.name);
         this.istate = ContainerState.Pending;
@@ -56,18 +60,15 @@ export class ContainerInstance implements Container {
         return null;
     }
 
-    public register(target: Class | Object): this {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+    public register(target: Object | Class): this {
+        if (!SINGLETON && this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         let name: string = undefined;
-        // let srvMeta = ServiceMetadata.get(target);
 
         if (target instanceof Function) {
-            target = new (target as new () => any)();
-            // https://stackoverflow.com/questions/1606797/use-of-apply-with-new-operator-is-this-possible
-            // target = new (Function.prototype.bind.apply(target, arguments));
-            // if (srvMeta) target = Di.Container.get(srvMeta.alias);
-            // else target = Di.Container.get(target);
+            // target = new (target as new (...args: any[]) => any)(...args);
+            let meta = ServiceMetadata.get(target);
+            target = Di.Container.get(meta.alias) as Service;
         }
 
         let id: string;
@@ -113,25 +114,16 @@ export class ContainerInstance implements Container {
         return this;
     }
 
-    public publish(target: Class | Object): this {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+    public publish(type: Class): this {
+        if (!SINGLETON && this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
-        // let serviceMeta = ServiceMetadata.get(target);
-        // Call constructor
-        let service: Service;
-        if (target instanceof Function) {
-            service = new (target as new () => any)();
-            // service = new (Function.prototype.bind.apply(target, arguments)) as Service;
-            // service = Di.Container.get(serviceMeta.alias);
-        } else {
-            service === target;
-        }
-
-        if (!ServiceMetadata.has(service)) throw new InternalServerError(`Service decoration missing`);
-        if (!ApiMetadata.has(service)) throw new InternalServerError(`Api not defined on service`);
+        let meta = ServiceMetadata.get(type);
+        if (!meta) throw new InternalServerError(`Service decoration missing`);
+        if (!ApiMetadata.has(type)) throw new InternalServerError(`Api not defined on service`);
+        let di = Di.Container;
+        let service = di.get(meta.alias) as Service;
         this.register(service);
 
-        service = service as Service;
         // let metaService = ServiceMetadata.get(service);
         let metaApi = ApiMetadata.get(service);
         this.log.info("Publish: %s", metaApi.alias);
@@ -228,8 +220,10 @@ export class ContainerInstance implements Container {
     }
 
     public async prepare(): Promise<this> {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+        if (!SINGLETON && this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
+        if (this.prepared) return this;
+        await this.initConnection();
         if (!this.config) {
             this.register(new DefaultConfiguration());
             this.log.warn("Using default configuration service!");
@@ -238,36 +232,36 @@ export class ContainerInstance implements Container {
             this.register(new DefaultSecurity());
             this.log.warn("Using default security service!");
         }
-
-        Object.values(this.services).forEach(service => this.inject(service));
-        Object.values(this.proxies).forEach(proxy => this.inject(proxy));
-
         this.istate = ContainerState.Ready;
+        this.prepared = true;
         return this;
     }
 
-    private inject(target: object) {
-        let meta = ServiceMetadata.get(target);
-        if (!meta || !meta.dependencies) return;
-        for (let [pid, dep] of Object.entries(meta.dependencies)) {
-            let localId = dep.resource;
-            let proxyId = (this.application) + ":" + localId;
-            let resolved = this.proxies[proxyId] || this.services[localId] || this.resources[localId];
-            if (dep.resource === Container) resolved = this;
-            if (dep.resource === "logger") resolved = Logger.get(meta.alias, target);
-            let depId = localId;
-            if (!resolved)
-                throw new InternalServerError(`Unresolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
-            this.log.info(`Resolved dependency [${depId}] on [${target.constructor.name}.${pid}]`);
-            target[pid] = resolved;
-        }
+    public async initConnection(): Promise<void> {
+        let cfg: string = process.env.DATABASE;
+        // this.label = options.substring(options.indexOf("@") + 1);
+        let tokens = cfg.split(/:|@|\/|;/);
+        let logQueries = tokens.findIndex(x => x === "logall") > 5;
+        // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
+        let options: Orm.ConnectionOptions = {
+            name: "default",
+            username: tokens[0],
+            password: tokens[1],
+            type: tokens[2] as any,
+            host: tokens[3],
+            port: +tokens[4],
+            database: tokens[5],
+            // timezone: "Z",
+            logging: logQueries ? "all" : ["error"],
+            entities: Object.values(Metadata.entities).map(meta => meta.target)
+        };
+        await Orm.createConnection(options);
     }
 
     // --------------------------------------------------
 
     public async remoteRequest(req: RemoteRequest): Promise<any> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-
+        if (!SINGLETON && this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         this.istate = ContainerState.Reserved;
         try {
             this.log.debug("Remote Request: %j", req);
@@ -305,8 +299,7 @@ export class ContainerInstance implements Container {
     }
 
     public async eventRequest(req: EventRequest): Promise<EventResult> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-
+        if (!SINGLETON && this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         this.istate = ContainerState.Reserved;
         try {
             req.type = "event";
@@ -384,8 +377,7 @@ export class ContainerInstance implements Container {
     }
 
     public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-
+        if (!SINGLETON && this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
         this.istate = ContainerState.Reserved;
         try {
             req.type = "http";

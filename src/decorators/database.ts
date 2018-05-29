@@ -1,4 +1,4 @@
-import { Orm } from "../import";
+import { Di, Orm } from "../import";
 import { Metadata } from "../metadata/core";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
@@ -18,5 +18,6 @@ export function DatabaseService(aliasOrEntities: string | Class[], entities?: Cl
     return (target) => {
         Metadata.trace(Database, { alias, entities }, target);
         DatabaseMetadata.define(target).commit(alias, entities);
+        return Di.Service(alias)(target);
     };
 }

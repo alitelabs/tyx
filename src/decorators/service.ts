@@ -3,6 +3,7 @@ import { Logger } from "../logger";
 import { Metadata } from "../metadata/core";
 import { ServiceMetadata } from "../metadata/service";
 import { Context } from "../types";
+import { Utils } from "../utils";
 
 export interface Service {
     log?: Logger;
@@ -12,20 +13,23 @@ export interface Service {
 
 // TODO (name?: string, ...apis: Function[])
 // TODO: Selector
-export function Service(name?: string): ClassDecorator {
+export function Service(alias?: string): ClassDecorator {
     return (target) => {
-        Metadata.trace(Service, { name }, target);
-        ServiceMetadata.define(target).commit(name);
-        return Di.Service(name)(target);
+        Metadata.trace(Service, { alias }, target);
+        ServiceMetadata.define(target).commit(alias);
+        return Di.Service(alias)(target);
     };
 }
 
-export function Inject(resource?: string): PropertyDecorator {
-    return (target, propertyKey) => {
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Metadata.trace(Inject, { resource }, target, propertyKey);
-        ServiceMetadata.define(target.constructor).inject(propertyKey, resource);
-        return Di.Inject(resource)(target, propertyKey);
+export function Inject(resource?: string): PropertyDecorator & ParameterDecorator {
+    return (target, propertyKey, index?) => {
+        if (typeof propertyKey !== "string"
+            && !propertyKey === undefined) throw new TypeError("propertyKey must be string");
+        // propertyKey = propertyKey || "<constructor>";
+        Metadata.trace(Inject, { resource }, target, propertyKey, index);
+        let constructor = Utils.isClass(target) ? target : target.constructor;
+        ServiceMetadata.define(constructor).inject(propertyKey, index, resource);
+        return Di.Inject(resource)(target, propertyKey, index);
     };
 }
 

@@ -1,7 +1,6 @@
-import { Proxy, Service } from "../decorators";
 import { InternalServerError } from "../errors";
 import { Logger } from "../logger";
-import { Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { Class, Container, ContainerState, EventRequest, EventResult, HttpRequest, HttpResponse, RemoteRequest } from "../types";
 import { Configuration } from "./config";
 import { ContainerInstance } from "./instance";
 import { Security } from "./security";
@@ -46,19 +45,13 @@ export class ContainerPool implements Container {
         return this.head.get<Security>(Security);
     }
 
-    public register(resource: Object, name?: string): this;
-    public register(service: Service): this;
-    public register(proxy: Proxy): this;
-    public register(type: Function, ...args: any[]): this;
-    public register(target: Object | Service | Proxy | Function, ...args: any[]): this {
+    public register(target: Object | Class, ...args: any[]): this {
         if (this.cstate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
         this.registers.push({ target, args });
         return this;
     }
 
-    public publish(service: Function, ...args: any[]): this;
-    public publish(service: Service): this;
-    public publish(service: Service | Function, ...args: any[]): this {
+    public publish(service: Object | Class, ...args: any[]): this {
         if (this.cstate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
         this.publishes.push({ service, args });
         return this;
@@ -70,8 +63,8 @@ export class ContainerPool implements Container {
             instance = new ContainerInstance(this.application, "" + ContainerPool.count++);
             // TODO: Identity
 
-            this.registers.forEach(u => instance.register(u.target, ...u.args));
-            this.publishes.forEach(p => instance.publish(p.service, ...p.args));
+            this.registers.forEach(u => instance.register(u.target));
+            this.publishes.forEach(p => instance.publish(p.service));
             await instance.prepare();
 
             this.pool.push(instance);

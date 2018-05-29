@@ -69,7 +69,7 @@ export function Transient(): PropertyDecorator {
 }
 
 export function PrimaryIdColumn(options?: ColumnOptions): PropertyDecorator {
-    return PrimaryColumn({ ...options, type: ColumnType.Varchar, length: 36 });
+    return PrimaryColumn({ length: 36, ...options, type: ColumnType.Varchar });
 }
 
 export function PrimaryLongColumn(options?: ColumnOptions): PropertyDecorator {
@@ -77,7 +77,7 @@ export function PrimaryLongColumn(options?: ColumnOptions): PropertyDecorator {
 }
 
 export function IdColumn(options?: ColumnOptions): PropertyDecorator {
-    return Column({ ...options, type: ColumnType.Varchar, length: 36 });
+    return Column({ length: 36, ...options, type: ColumnType.Varchar });
 }
 
 export function StringColumn(numOrOptions?: number | ColumnOptions): PropertyDecorator {

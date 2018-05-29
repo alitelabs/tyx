@@ -15,12 +15,13 @@ export interface Class extends Function { }
 export interface Prototype extends Object { }
 
 export class Context {
-    public container: Container;
+    public container: Container = undefined;
     public requestId: string;
     public method: MethodMetadata;
     public auth: AuthInfo;
     constructor(ctx: IContext) {
         Object.assign(this, ctx);
+        Object.defineProperty(this, "container", { enumerable: false });
     }
 }
 export interface IContext extends Context { }

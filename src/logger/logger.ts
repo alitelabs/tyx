@@ -52,6 +52,7 @@ export namespace Logger {
         } else if (typeof logNameOrEmitter === "object") {
             let service = ServiceMetadata.get(logNameOrEmitter);
             let api = ApiMetadata.get(logNameOrEmitter);
+            // let db = DatabaseMetadata.get(logNameOrEmitter);
             if (service) {
                 logName = service.alias || service.target.name;
                 emitter = logNameOrEmitter;

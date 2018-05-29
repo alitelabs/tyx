@@ -18,5 +18,6 @@ export {
     EntityManager,
     SelectQueryBuilder, createConnection,
     getConnection,
-    Repository
+    Repository,
+    useContainer
 } from "../orm";

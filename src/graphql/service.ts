@@ -2,7 +2,7 @@ import { BaseService } from "../core";
 import { ContentType, Database, Get, Inject, Post } from "../decorators";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
-import { Container, Context, HttpRequest, HttpResponse } from "../types";
+import { Context, HttpRequest, HttpResponse } from "../types";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 
 
@@ -16,9 +16,6 @@ export interface GraphQLApi {
 }
 
 export abstract class BaseGraphQLService extends BaseService implements GraphQLApi {
-
-    @Inject(Container)
-    protected container: Container;
 
     @Inject(Database)
     protected database: Database;

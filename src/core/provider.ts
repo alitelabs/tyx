@@ -10,7 +10,6 @@ import { Class, Context } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 
-@Service(Database)
 export class DatabaseProvider implements Service, Database, ToolkitProvider {
 
     private static instances = 0;
@@ -67,7 +66,8 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
         // this.connection = this.pool.create(options);
         this.connection = await Orm.createConnection(options);
         this.manager = this.connection.manager;
-        this.connection.close();
+        await this.connection.close();
+        // return this.connection;
     }
 
     public async activate(ctx: Context) {

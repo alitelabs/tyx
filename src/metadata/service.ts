@@ -5,6 +5,7 @@ import { Metadata } from "./core";
 export interface InjectMetadata {
     resource: string;
     target?: Class;
+    index?: number;
 }
 
 export interface HandlerMetadata {
@@ -60,7 +61,7 @@ export class ServiceMetadata implements ServiceMetadata {
         return meta;
     }
 
-    public inject(propertyKey: string, resource?: string | Class) {
+    public inject(propertyKey: string, index: number, resource?: string | Class) {
         if (!resource) {
             resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
         }
@@ -72,8 +73,9 @@ export class ServiceMetadata implements ServiceMetadata {
             target = undefined;
             resource = resource.toString();
         }
+        let key = (propertyKey || "[constructor]") + (index !== undefined ? `#${index}` : "");
         this.dependencies = this.dependencies || {};
-        this.dependencies[propertyKey] = { resource, target };
+        this.dependencies[key] = { resource, target, index };
     }
 
     public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {

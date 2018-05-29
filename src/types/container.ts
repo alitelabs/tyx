@@ -1,5 +1,4 @@
-import { Proxy, Service } from "../decorators";
-import { Context } from "./core";
+import { Class, Context } from "./core";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";
@@ -28,13 +27,8 @@ export const Container = "container";
 export interface Container {
     state: ContainerState;
 
-    register(resource: Object, name?: string): this;
-    register(service: Service): this;
-    register(proxy: Proxy): this;
-    register(type: Function, ...args: any[]): this;
-
-    publish(service: Function, ...args: any[]): this;
-    publish(service: Service): this;
+    register(target: Class | Object): this;
+    publish(service: Class): this;
 
     prepare(): Promise<Container>;
 
