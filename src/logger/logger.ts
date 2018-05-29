@@ -2,31 +2,7 @@ import { ApiMetadata } from "../metadata/api";
 import { ServiceMetadata } from "../metadata/service";
 import { ConsoleLogger } from "./console";
 
-export enum LogLevel {
-    ALL = 0,
-    TRACE = 0,
-    DEBUG = 1,
-    INFO = 2,
-    WARN = 3,
-    ERROR = 4,
-    FATAL = 5,
-    OFF = 6
-}
 
-export namespace LogLevel {
-    let _level: LogLevel = LogLevel.INFO;
-
-    export function bellow(level: LogLevel) {
-        return _level > level;
-    }
-
-    export function set(level: LogLevel): void {
-        if (level == null || level === undefined)
-            _level = LogLevel.OFF;
-        else
-            _level = level;
-    }
-}
 
 export interface Logger {
     todo(message: any, ...args: any[]): void;

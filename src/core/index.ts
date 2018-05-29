@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-export * from "./instance";
+export * from "./core";
 export * from "./pool";
 
 export * from "./config";

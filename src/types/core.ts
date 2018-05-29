@@ -1,5 +1,7 @@
 import { MethodMetadata } from "../metadata";
-import { Core } from "./container";
+import { EventRequest, EventResult } from "./event";
+import { HttpRequest, HttpResponse } from "./http";
+import { RemoteRequest, RemoteResponse } from "./proxy";
 import { AuthInfo } from "./security";
 
 export type ObjectType<T> = {
@@ -15,7 +17,7 @@ export interface Class extends Function { }
 export interface Prototype extends Object { }
 
 export class Context {
-    public container: Core = undefined;
+    public container: CoreInstance = undefined;
     public requestId: string;
     public method: MethodMetadata;
     public auth: AuthInfo;
@@ -32,4 +34,26 @@ export interface Request {
     service: string;
     method: string;
     requestId: string;
+}
+
+export enum ContainerState {
+    Pending = -1,
+    Ready = 0,
+    Reserved = 1,
+    Busy = 2
+}
+
+export const CoreInstance = "container";
+
+export interface CoreInstance {
+    state: ContainerState;
+
+    register(target: Class | Object): this;
+    publish(service: Class): this;
+
+    prepare(): Promise<CoreInstance>;
+
+    httpRequest(req: HttpRequest): Promise<HttpResponse>;
+    eventRequest(req: EventRequest): Promise<EventResult>;
+    remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;
 }

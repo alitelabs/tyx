@@ -1,28 +1,5 @@
-import { LogLevel } from "../logger";
+import { Configuration, LogLevel } from "../types";
 import { Utils } from "../utils";
-
-export const Configuration = "config";
-
-export interface Configuration {
-    appId: string;
-    stage: string;
-
-    database: string;
-
-    logLevel: LogLevel;
-    resources: Record<string, string>;
-    aliases: Record<string, string>;
-
-    httpSecret: string;
-    httpTimeout: string;
-    httpLifetime: string;
-    internalSecret: string;
-    internalTimeout: string;
-    remoteTimeout: string;
-
-    remoteSecret(appId: string): string;
-    remoteStage(appId: string): string;
-}
 
 const REMOTE_STAGE_PREFIX = "REMOTE_STAGE_";
 const REMOTE_SECRET_PREFIX = "REMOTE_SECRET_";

@@ -4,9 +4,8 @@ import { Server, createServer } from "http";
 import { CorePool } from "../core";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
-import { LogLevel } from "../logger";
 import { Metadata } from "../metadata/core";
-import { HttpMethod, HttpRequest } from "../types";
+import { HttpMethod, HttpRequest, LogLevel } from "../types";
 import { HttpUtils, Utils } from "../utils";
 
 export class ExpressContainer extends CorePool {

@@ -1,11 +1,11 @@
 
 
-import { Configuration } from "../core";
 import { Database, Inject, Service } from "../decorators";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
 import { DatabaseMetadata, EntityMetadata } from "../metadata";
+import { Configuration } from "../types";
 import { Class, Context } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";

@@ -1,9 +1,7 @@
 import { Inject, Proxy } from "../decorators";
 import { Logger } from "../logger";
 import { ProxyMetadata } from "../metadata";
-import { RemoteRequest } from "../types";
-import { Configuration } from "./config";
-import { Security } from "./security";
+import { Configuration, RemoteRequest, Security } from "../types";
 
 export abstract class BaseProxy implements Proxy {
 

@@ -1,4 +1,5 @@
-import { LogLevel, Logger } from "./logger";
+import { LogLevel } from "../types";
+import { Logger } from "./logger";
 
 export class ConsoleLogger implements Logger {
     protected _logName: string;

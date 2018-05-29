@@ -1,3 +1,10 @@
+import { Service } from "../decorators";
+import { MethodMetadata } from "../metadata";
+import { Context, CoreInstance } from "./core";
+import { EventRequest } from "./event";
+import { HttpRequest } from "./http";
+import { RemoteRequest } from "./proxy";
+
 export interface Roles {
     Public?: boolean;
     Internal?: boolean;
@@ -91,4 +98,13 @@ export interface WebToken {
     amr?: string[];
     platf?: string;
     uti?: string;
+}
+
+export const Security = "security";
+
+export interface Security extends Service {
+    httpAuth(container: CoreInstance, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
+    remoteAuth(container: CoreInstance, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
+    eventAuth(container: CoreInstance, req: EventRequest, permission: MethodMetadata): Promise<Context>;
+    issueToken(req: IssueRequest): string;
 }

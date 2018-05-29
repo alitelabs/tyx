@@ -1,7 +1,6 @@
 import { CorePool } from "../core";
 import { BadRequest, InternalServerError } from "../errors";
-import { LogLevel } from "../logger";
-import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, RemoteRequest } from "../types";
+import { EventRecord, EventRequest, EventResult, HttpMethod, HttpRequest, HttpResponse, LogLevel, RemoteRequest } from "../types";
 import { HttpUtils, Utils } from "../utils";
 import { LambdaError } from "./error";
 
