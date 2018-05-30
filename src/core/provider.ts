@@ -1,7 +1,7 @@
 
 
 import { Database } from "../decorators/database";
-import { Inject, Service } from "../decorators/service";
+import { Activator, Inject, Releasor } from "../decorators/service";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
@@ -12,7 +12,7 @@ import { Class, Context } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 
-export class DatabaseProvider implements Service, Database, ToolkitProvider {
+export class DatabaseProvider implements Database, ToolkitProvider {
 
     private static instances = 0;
 
@@ -72,13 +72,15 @@ export class DatabaseProvider implements Service, Database, ToolkitProvider {
         // return this.connection;
     }
 
-    public async activate(ctx: Context) {
+    @Activator()
+    protected async activate(ctx: Context) {
         this.log.info("Connect: [%s]", this.label);
         if (!this.connection) await this.init();
         if (!this.connection.isConnected) await this.connection.connect();
     }
 
-    public async release(ctx: Context) {
+    @Releasor()
+    protected async release(ctx: Context) {
         this.log.info("Close: [%s]", this.label);
         try {
             await this.connection.close();

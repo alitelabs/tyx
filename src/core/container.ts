@@ -1,4 +1,3 @@
-import { Service } from "../decorators/service";
 import { InternalServerError, NotFound } from "../errors/http";
 import { Container, ContainerInstance } from "../import/typedi";
 import { ConnectionOptions, createConnection } from "../import/typeorm";
@@ -287,10 +286,13 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async activate(ctx: Context): Promise<Context> {
-        for (let sid in Registry.services) {
-            let service = this.container.get<Service>(sid);
+        for (let [sid, meta] of Object.entries(Registry.services)) {
+            if (!meta.activator) continue;
+            if (!this.container.has(sid)) continue;
             try {
-                if (service.activate) await service.activate(ctx);
+                let service = this.container.get(sid);
+                let handler = service[meta.activator.method] as Function;
+                await handler.call(service, ctx);
             } catch (e) {
                 this.log.error("Failed to activate service: [%s]", sid);
                 this.log.error(e);
@@ -302,10 +304,13 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async release(ctx: Context): Promise<void> {
-        for (let sid in Registry.services) {
-            let service = this.container.get<Service>(sid);
+        for (let [sid, meta] of Object.entries(Registry.services)) {
+            if (!meta.releasor) continue;
+            if (!this.container.has(sid)) continue;
             try {
-                if (service.release) await service.release(ctx);
+                let service = this.container.get(sid);
+                let handler = service[meta.releasor.method] as Function;
+                await handler.call(service, ctx);
             } catch (e) {
                 this.log.error("Failed to release service: [%s]", sid);
                 this.log.error(e);

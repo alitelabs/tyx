@@ -1,4 +1,3 @@
-import { Service } from "../decorators/service";
 import { MethodMetadata } from "../metadata/method";
 import { Context, CoreContainer } from "./core";
 import { EventRequest } from "./event";
@@ -102,7 +101,7 @@ export interface WebToken {
 
 export const Security = "security";
 
-export interface Security extends Service {
+export interface Security {
     httpAuth(container: CoreContainer, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
     remoteAuth(container: CoreContainer, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
     eventAuth(container: CoreContainer, req: EventRequest, permission: MethodMetadata): Promise<Context>;

@@ -1,15 +1,7 @@
-import { Context } from "..";
 import { Di } from "../import";
-import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
 import { ServiceMetadata } from "../metadata/service";
 import { Utils } from "../utils";
-
-export interface Service {
-    log?: Logger;
-    activate?(ctx?: Context): Promise<void>;
-    release?(ctx?: Context): Promise<void>;
-}
 
 // TODO (name?: string, ...apis: Function[])
 // TODO: Selector
