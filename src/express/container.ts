@@ -1,4 +1,5 @@
 import { Server, createServer } from "http";
+import { HttpUtils } from "../core/http";
 import { CorePool } from "../core/pool";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
@@ -6,7 +7,6 @@ import { Registry } from "../metadata/registry";
 import { LogLevel } from "../types/config";
 import { HttpMethod, HttpRequest } from "../types/http";
 import { Utils } from "../utils";
-import { HttpUtils } from "../core/http";
 
 export class ExpressContainer extends CorePool {
 

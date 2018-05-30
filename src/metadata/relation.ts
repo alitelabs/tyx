@@ -1,7 +1,7 @@
 import { Class, ObjectType, Prototype } from "../types/core";
-import { ColumnMetadata } from "./column";
+import { ColumnMetadata, IColumnMetadata } from "./column";
 import { DatabaseMetadata } from "./database";
-import { EntityMetadata } from "./entity";
+import { EntityMetadata, IEntityMetadata } from "./entity";
 import { Registry } from "./registry";
 
 /**
@@ -80,7 +80,7 @@ export interface JoinColumnOptions {
     referencedColumnName?: string;
 }
 
-export interface RelationMetadata<T> {
+export interface IRelationMetadata<T> {
     target: Class;
     /**
      * Entity metadata of the entity where this relation is placed.
@@ -101,11 +101,11 @@ export interface RelationMetadata<T> {
      *
      * For example for @ManyToMany(type => Category) in Post, inverseEntityMetadata will be metadata of Category entity.
      */
-    inverseEntityMetadata: EntityMetadata;
+    inverseEntityMetadata: IEntityMetadata;
     /**
      * Gets the relation metadata of the inverse side of this relation.
      */
-    inverseRelation?: RelationMetadata<T>;
+    inverseRelation?: IRelationMetadata<T>;
     /**
      * Join table columns.
      * Join columns can be obtained only from owner side of the relation.
@@ -113,10 +113,10 @@ export interface RelationMetadata<T> {
      * If this relation is a many-to-one/one-to-one then it takes join columns from the current entity.
      * If this relation is many-to-many then it takes all owner join columns from the junction entity.
      */
-    joinColumns: ColumnMetadata[];
+    joinColumns: IColumnMetadata[];
 }
 
-export class RelationMetadata<T = any> {
+export class RelationMetadata<T = any> implements IRelationMetadata<T> {
 
     public target: Class = undefined;
     public propertyName: string = undefined;

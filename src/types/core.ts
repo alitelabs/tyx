@@ -4,9 +4,13 @@ import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";
 import { AuthInfo } from "./security";
 
-export type ObjectType<T> = {
-    new(): T;
-} | Function;
+// export type _ObjectType<T> = {
+//     new(): T;
+// } | Function;
+
+export type ObjectType<T> = { new(...args: any[]): T };
+
+export type TypeRef<T> = (type?: any) => ObjectType<T>;
 
 export interface Class extends Function { }
 

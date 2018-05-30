@@ -1,5 +1,6 @@
 import { Registry } from "../metadata/registry";
 import { GraphType, TypeMetadata } from "../metadata/type";
+import { TypeRef } from "../types/core";
 
 /// Root Types
 
@@ -30,6 +31,7 @@ export function Enum(name?: string): ClassDecorator {
 function GraphClass(type: GraphType, name?: string): ClassDecorator {
     return (target) => {
         Registry.trace(type, { name }, target);
+        if (type === GraphType.Metadata) name = name || target.name.replace(/MetadataType$/, "Metadata");
         return void TypeMetadata.define(target).commit(type, name);
     };
 }
@@ -72,20 +74,23 @@ export function ObjectField(req?: boolean): PropertyDecorator {
 export function AnyField(req?: boolean): PropertyDecorator {
     return Field(GraphType.ANY, req);
 }
+export function RefField<T>(ref: TypeRef<T>, req?: boolean): PropertyDecorator {
+    return Field(GraphType.Ref, req, ref);
+}
 export function InputItemField(req?: boolean): PropertyDecorator {
     return Field(GraphType.InputItem, req);
 }
 export function ResultItemField(req?: boolean): PropertyDecorator {
     return Field(GraphType.ResultItem, req);
 }
-export function ListField(item: GraphType | Function, req?: boolean): PropertyDecorator {
+export function ListField<T>(item: GraphType | TypeRef<T>, req?: boolean): PropertyDecorator {
     return Field(GraphType.List, req, item);
 }
 export function EnumField(req?: boolean): PropertyDecorator {
     return Field(GraphType.Enum, req);
 }
 
-function Field(type: GraphType, required: boolean, item?: GraphType | Function): PropertyDecorator {
+function Field(type: GraphType, required: boolean, item?: GraphType | TypeRef<any>): PropertyDecorator {
     return (target, propertyKey) => {
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         Registry.trace(type, { required, item }, target, propertyKey);

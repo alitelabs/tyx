@@ -1,4 +1,5 @@
 import "reflect-metadata";
+
 if (Symbol["asyncIterator"] === undefined) ((Symbol as any)["asyncIterator"]) = Symbol.for("asyncIterator");
 
 // --- types/index.ts ----
@@ -61,4 +62,8 @@ export * from "./aws";
 export * from "./express";
 export * from "./graphql";
 
+
 export { Orm, Di } from "./import";
+
+// --- LAST ---
+export * from "./schema/metadata";

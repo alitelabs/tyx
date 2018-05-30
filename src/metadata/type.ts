@@ -1,4 +1,4 @@
-import { Class, Prototype } from "../types/core";
+import { Class, Prototype, TypeRef } from "../types/core";
 import { DesignMetadata } from "./method";
 import { Registry } from "./registry";
 
@@ -109,26 +109,27 @@ export interface GraphMetadata {
     ref?: string;
     item?: GraphMetadata;
     target?: Class;
-    schema?: string;
 }
 
 export interface FieldMetadata extends GraphMetadata {
-    key: string;
+    name: string;
     required: boolean;
     design: DesignMetadata;
 }
 
 export interface TypeMetadata extends GraphMetadata {
     target: Class;
+    name: string;
     item?: never;
     fields?: Record<string, FieldMetadata>;
 }
 
 export class TypeMetadata {
-    public target: Class;
+    public target: Class = undefined;
     public type: GraphType = undefined;
+    public name: string = undefined;
     public ref?: string = undefined;
-    public schema?: string = undefined;
+    // public schema?: string = undefined;
     public fields?: Record<string, FieldMetadata> = undefined;
 
     constructor(target: Class) {
@@ -154,18 +155,21 @@ export class TypeMetadata {
         return meta;
     }
 
-    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | Class): this {
+    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | TypeRef<any>): this {
         // TODO: Validata
         this.fields = this.fields || {};
         // TODO: use design type when not specified
         let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
-        let itemInfo: GraphMetadata = typeof item === "function"
-            ? { type: GraphType.Ref, target: item }
-            : { type: item as GraphType };
+        let itemInfo: GraphMetadata = undefined;
+        if (type === GraphType.List)
+            itemInfo = typeof item === "function"
+                ? { type: GraphType.Ref, target: item }
+                : { type: item as GraphType };
         this.fields[propertyKey] = {
             type,
+            name: propertyKey,
             item: item && itemInfo,
-            key: propertyKey,
+            target: (type === GraphType.Ref) ? item as any : undefined,
             required,
             design: { type: design.name, target: design }
         };
@@ -174,8 +178,21 @@ export class TypeMetadata {
 
     public commit(type: GraphType, name?: string): this {
         this.type = type;
-        if (this.type && !GraphType.isStruc(this.type)) throw new TypeError(`Not a root type: ${this.type}`);
+        this.name = name || this.target.name;
+        if (this.type && !GraphType.isStruc(this.type)) throw new TypeError(`Not a struct type: ${this.type}`);
         // this.name = name;
+        switch (type) {
+            case GraphType.Metadata:
+                Registry.metadata[this.target.name] = this; break;
+            case GraphType.Result:
+            case GraphType.ResultItem:
+                Registry.results[this.target.name] = this; break;
+            case GraphType.Input:
+            case GraphType.InputItem:
+                Registry.inputs[this.target.name] = this; break;
+            default:
+                throw new TypeError(`Not Implemented: ${type}`);
+        }
         return this;
     }
 }

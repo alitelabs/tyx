@@ -1,8 +1,8 @@
 import { Class, Prototype } from "../types/core";
-import { ColumnMetadata } from "./column";
+import { ColumnMetadata, IColumnMetadata } from "./column";
 import { DatabaseMetadata } from "./database";
 import { Registry } from "./registry";
-import { RelationMetadata } from "./relation";
+import { IRelationMetadata, RelationMetadata } from "./relation";
 
 export interface EntityOptions {
     /**
@@ -33,7 +33,7 @@ export interface EntityOptions {
     synchronize?: boolean;
 }
 
-export interface EntityMetadata {
+export interface IEntityMetadata {
     target: Class;
     /**
      * Entity's name.
@@ -44,18 +44,18 @@ export interface EntityMetadata {
     /**
      * Columns of the entity, including columns that are coming from the embeddeds of this entity.
      */
-    columns: ColumnMetadata[];
+    columns: IColumnMetadata[];
     /**
      * Gets the primary columns.
      */
-    primaryColumns: ColumnMetadata[];
+    primaryColumns: IColumnMetadata[];
     /**
      * Relations of the entity, including relations that are coming from the embeddeds of this entity.
      */
-    relations: RelationMetadata<any>[];
+    relations: IRelationMetadata<any>[];
 }
 
-export class EntityMetadata {
+export class EntityMetadata implements IEntityMetadata {
     public target: Class;
     public name: string;
     public columns: ColumnMetadata[] = [];

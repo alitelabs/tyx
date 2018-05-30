@@ -75,7 +75,7 @@ export class CoreInstance implements CoreContainer {
         if (this.config instanceof CoreConfiguration) {
             this.config.init(this.application);
         } else if (!ServiceMetadata.has(this.config)) {
-            throw new InternalServerError(`Configuration must be a service`);
+            throw new TypeError(`Configuration must be a service`);
         }
 
         if (!Container.has(Security)) {
@@ -86,7 +86,7 @@ export class CoreInstance implements CoreContainer {
         if (this.security instanceof CoreSecurity) {
             // OK
         } else if (!ServiceMetadata.has(this.security)) {
-            throw new InternalServerError(`Security must be a service`);
+            throw new TypeError(`Security must be a service`);
         }
 
         this.istate = ContainerState.Ready;

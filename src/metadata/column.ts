@@ -225,7 +225,7 @@ export interface ColumnOptions {
     // transformer?: ValueTransformer;
 }
 
-export interface ColumnMetadata {
+export interface IColumnMetadata {
     target: Class;
     /**
      * Class's property name on which this column is applied.
@@ -288,10 +288,25 @@ export interface ColumnMetadata {
     isVirtual: boolean;
 }
 
-export class ColumnMetadata {
+export class ColumnMetadata implements IColumnMetadata {
+    public target: Class;
+    public propertyName: string;
+    public type: ColumnType;
+    public precision?: number | null;
+    public scale?: number;
+    public length: string;
+    public width?: number;
+    public comment: string;
+    public isPrimary: boolean;
+    public isNullable: boolean;
+    public isGenerated: boolean;
+    public isCreateDate: boolean;
+    public isUpdateDate: boolean;
+    public isVersion: boolean;
+    public isVirtual: boolean;
 
-    private constructor(target: Class, propertyKey: string, mode: ColumnMode, options: ColumnOptions) {
-        let state = {
+    protected constructor(target: Class, propertyKey: string, mode: ColumnMode, options: ColumnOptions) {
+        let state: IColumnMetadata = {
             target,
             propertyName: propertyKey,
             type: options.type,
