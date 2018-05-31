@@ -16,7 +16,8 @@ export interface HandlerMetadata {
 
 export interface ServiceMetadata {
     target: Class;
-    alias: string;
+    serviceId: string;
+
     dependencies: Record<string, InjectMetadata>;
     handlers: Record<string, HandlerMetadata>;
 
@@ -28,7 +29,7 @@ export interface ServiceMetadata {
 
 export class ServiceMetadata implements ServiceMetadata {
     public target: Class;
-    public alias: string;
+    public serviceId: string;
     public dependencies: Record<string, InjectMetadata> = undefined;
     public handlers: Record<string, HandlerMetadata> = undefined;
 
@@ -39,7 +40,7 @@ export class ServiceMetadata implements ServiceMetadata {
 
     constructor(target: Class) {
         this.target = target;
-        this.alias = this.alias = target.name;
+        this.serviceId = this.serviceId = target.name;
     }
 
     public static has(target: Class | Prototype): boolean {
@@ -105,19 +106,19 @@ export class ServiceMetadata implements ServiceMetadata {
     }
 
     public commit(alias?: string): this {
-        if (alias) this.alias = this.alias = alias;
-        if (!this.alias) this.alias = this.alias = this.target.name;
-        this.alias = this.alias || this.alias;
-        if (this.initializer) this.initializer.service = this.alias;
-        if (this.selector) this.selector.service = this.alias;
-        if (this.activator) this.activator.service = this.alias;
-        if (this.releasor) this.releasor.service = this.alias;
-        if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
+        if (alias) this.serviceId = this.serviceId = alias;
+        if (!this.serviceId) this.serviceId = this.serviceId = this.target.name;
+        this.serviceId = this.serviceId || this.serviceId;
+        if (this.initializer) this.initializer.service = this.serviceId;
+        if (this.selector) this.selector.service = this.serviceId;
+        if (this.activator) this.activator.service = this.serviceId;
+        if (this.releasor) this.releasor.service = this.serviceId;
+        if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.serviceId);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
-        let prev = Registry.services[this.alias];
-        if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.alias}]`);
-        Registry.services[this.alias] = this;
+        let prev = Registry.services[this.serviceId];
+        if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.serviceId}]`);
+        Registry.services[this.serviceId] = this;
         return this;
     }
 }

@@ -24,14 +24,14 @@ export class ConsoleLogger implements Logger {
 
     public todo(message: any, ...args: any[]): void {
         if (LogLevel.bellow(LogLevel.ALL)) return;
-        message = this.format("TODO", message);
+        message = this.format("TODO", message, args);
         console.log(message, ...args);
     }
 
     public fatal(message: any, ...args: any[]): any {
         let err = message;
         if (LogLevel.bellow(LogLevel.FATAL)) return err;
-        message = this.format("FATAL", message);
+        message = this.format("FATAL", message, args);
         console.error(message, ...args);
         return err;
     }
@@ -39,32 +39,32 @@ export class ConsoleLogger implements Logger {
     public error(message: any, ...args: any[]): any {
         let err = message;
         if (LogLevel.bellow(LogLevel.ERROR)) return err;
-        message = this.format("ERROR", message);
+        message = this.format("ERROR", message, args);
         console.error(message, ...args);
         return err;
     }
 
     public info(message: any, ...args: any[]): void {
         if (LogLevel.bellow(LogLevel.INFO)) return;
-        message = this.format("INFO", message);
+        message = this.format("INFO", message, args);
         console.info(message, ...args);
     }
 
     public warn(message: any, ...args: any[]): void {
         if (LogLevel.bellow(LogLevel.WARN)) return;
-        message = this.format("WARN", message);
+        message = this.format("WARN", message, args);
         console.warn(message, ...args);
     }
 
     public debug(message: any, ...args: any[]): void {
         if (LogLevel.bellow(LogLevel.DEBUG)) return;
-        message = this.format("DEBUG", message);
+        message = this.format("DEBUG", message, args);
         console.log(message, ...args);
     }
 
     public trace(message: any, ...args: any[]): void {
         if (LogLevel.bellow(LogLevel.TRACE)) return;
-        message = this.format("TRACE", message);
+        message = this.format("TRACE", message, args);
         console.trace(message, ...args);
     }
 
@@ -76,13 +76,14 @@ export class ConsoleLogger implements Logger {
         let lapse = process.hrtime(start);
         let ms = lapse[0] * 1000 + Math.floor(lapse[1] / 1000000);
         let ns = Math.floor((lapse[1] % 1000000) / 1000);
-        message = this.format("TIME", message) + ": " + ms + "." + ns + "ms";
+        message = this.format("TIME", message, args) + ": " + ms + "." + ns + "ms";
         console.log(message, ...args);
     }
 
-    private format(type: string, message: any) {
+    private format(type: string, message: any, args: any[]) {
         // https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html
         // let time = ""; // `[${new Date().toISOString()}] `;
+        if (typeof message === "object") { args.unshift(message); }
         return `${type} ${this.prefix} : ${message}`;
     }
 

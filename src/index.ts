@@ -43,14 +43,10 @@ export * from "./decorators/exception";
 // ---- core/index.ts ----
 
 export * from "./core/core";
-export * from "./core/container";
-export * from "./core/pool";
-
 export * from "./core/config";
 export * from "./core/security";
 export * from "./core/service";
 export * from "./core/proxy";
-
 export * from "./core/provider";
 
 // --- TODO ---

@@ -1,28 +1,27 @@
-import { Server, createServer } from "http";
+import { Core } from "../core/core";
 import { HttpUtils } from "../core/http";
-import { CorePool } from "../core/pool";
 import { InternalServerError } from "../errors";
 import { Express } from "../import";
+import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
-import { LogLevel } from "../types/config";
 import { HttpMethod, HttpRequest } from "../types/http";
 import { Utils } from "../utils";
 
-export class ExpressContainer extends CorePool {
+export class ExpressAdapter {
 
-    private server: Server;
-    private app: Express.Express;
+    private log: Logger;
     private basePath: string;
 
-    constructor(application: string, basePath?: string) {
-        super(application, ExpressContainer.name);
-        this.basePath = basePath;
+    public app: Express.Express;
+    public paths: [string, string][];
+
+    constructor(basePath: string) {
+        this.log = Logger.get("TYX", this);
+        this.express();
     }
 
-    public async start(port?: number): Promise<Server> {
-        port = port || 5000;
-
-        await this.prepare();
+    public express(): Express.Express {
+        if (this.app) return this.app;
 
         this.app = Express.Create();
         this.app.use(Express.BodyParser.text({ type: ["*/json", "text/*"], defaultCharset: "utf-8" }));
@@ -43,6 +42,7 @@ export class ExpressContainer extends CorePool {
             let httpMethod = meta.verb;
             let resource = meta.resource;
 
+            // TODO: Regex
             let parts = resource.split("{");
             parts = parts.map(p => p.replace("}", ""));
             let path = parts.join(":");
@@ -52,7 +52,7 @@ export class ExpressContainer extends CorePool {
             if (used[baseRoute]) continue;
             used[baseRoute] = true;
             if (this.basePath) path = this.basePath + path;
-            paths.push(`${httpMethod} - http://localhost:${port}${path}`);
+            paths.push([httpMethod, path]);
 
             // this.log.info("Registered route: %s", route);
             let adapter = (req: Express.Request, res: Express.Response) => {
@@ -78,19 +78,11 @@ export class ExpressContainer extends CorePool {
                 default: throw new InternalServerError(`Unsupported http method: ${httpMethod}`);
             }
         }
-
-        this.server = createServer(this.app);
-        this.server.listen(port);
-
-        this.log.info("👌  Server initialized.");
-        paths.forEach(x => this.log.info(x));
-        this.log.info("🚀  Server started at %s ...", port);
-
-        return this.server;
+        this.paths = paths;
+        return this.app;
     }
 
     private async handle(resource: string, req: Express.Request, res: Express.Response) {
-        LogLevel.set(this.config.logLevel);
         this.log.info("%s: %s", req.method, req.url);
 
         if (Buffer.isBuffer(req.body))
@@ -123,7 +115,7 @@ export class ExpressContainer extends CorePool {
         };
 
         try {
-            let result = await super.httpRequest(request);
+            let result = await Core.httpRequest(request);
             for (let header in result.headers) {
                 res.setHeader(header, result.headers[header]);
             }
@@ -136,10 +128,5 @@ export class ExpressContainer extends CorePool {
             }
             res.status(result.statusCode).send(result.body);
         }
-    }
-
-    public stop() {
-        super.dispose();
-        if (this.server) this.server.close();
     }
 }

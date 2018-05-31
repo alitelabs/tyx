@@ -1,20 +1,17 @@
-
-
 import { Database } from "../decorators/database";
-import { Activator, Inject, Releasor } from "../decorators/service";
+import { Activator, Inject } from "../decorators/service";
 import { ToolkitArgs, ToolkitContext, ToolkitInfo, ToolkitProvider, ToolkitQuery } from "../graphql";
 import { Orm } from "../import";
 import { Logger } from "../logger";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
+import { getConnection } from "../orm";
 import { Configuration } from "../types/config";
-import { Class, Context } from "../types/core";
+import { Class } from "../types/core";
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from "../import/typeorm";
 
 export class DatabaseProvider implements Database, ToolkitProvider {
-
-    private static instances = 0;
 
     @Inject(Configuration)
     public config: Configuration;
@@ -34,59 +31,14 @@ export class DatabaseProvider implements Database, ToolkitProvider {
         return this.connection.getMetadata(entity) as any;
     }
 
-    public async init(options?: string | Orm.ConnectionOptions): Promise<void> {
-        if (!this.log) this.log = Logger.get("database", this);
-        options = options || this.config && this.config.database || "default";
-        if (typeof options === "string" && !options.includes("@")) {
-            this.label = options;
-            this.connection = await Orm.getConnection(options);
-            this.manager = this.connection.manager;
-            return;
-        }
-        if (typeof options === "string") {
-            this.label = options.substring(options.indexOf("@") + 1);
-            let tokens = options.split(/:|@|\/|;/);
-            let logQueries = tokens.findIndex(x => x === "logall") > 5;
-            let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
-            options = {
-                name,
-                username: tokens[0],
-                password: tokens[1],
-                type: tokens[2] as any,
-                host: tokens[3],
-                port: +tokens[4],
-                database: tokens[5],
-                // timezone: "Z",
-                logging: logQueries ? "all" : ["error"],
-                entities: this.entities
-            };
-        } else {
-            this.label = "" + (options.name || options.database);
-            options = { ...options, entities: options.entities || this.entities };
-        }
-        // this.pool = new ConnectionManager();
-        // this.connection = this.pool.create(options);
-        this.connection = await Orm.createConnection(options);
-        this.manager = this.connection.manager;
-        await this.connection.close();
-        // return this.connection;
-    }
-
     @Activator()
-    protected async activate(ctx: Context) {
-        this.log.info("Connect: [%s]", this.label);
-        if (!this.connection) await this.init();
-        if (!this.connection.isConnected) await this.connection.connect();
-    }
-
-    @Releasor()
-    protected async release(ctx: Context) {
-        this.log.info("Close: [%s]", this.label);
-        try {
-            await this.connection.close();
-        } catch (e) {
-            this.log.error(e);
+    protected async activate() {
+        if (!this.connection) {
+            // TODO: Multiple connections, name from metadata
+            this.connection = getConnection();
+            this.manager = this.connection.manager;
         }
+        if (!this.connection.isConnected) await this.connection.connect();
     }
 
     // Schema provider interface
@@ -118,10 +70,10 @@ export class DatabaseProvider implements Database, ToolkitProvider {
     }
 
     public oneToMany(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity = this.getMetadata(type);
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
-        let pks = relation.entityMetadata.primaryColumns.map(col => col.propertyName);
+        let pks = entity.primaryColumns.map(col => col.propertyName);
         let fks = relation.inverseRelation.joinColumns.map(col => col.propertyName);
         let keys: any = {};
         fks.forEach((fk, i) => keys[fk] = root[pks[i]]);
@@ -129,27 +81,27 @@ export class DatabaseProvider implements Database, ToolkitProvider {
     }
 
     public oneToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity = this.getMetadata(type);
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
         let fks = relation.joinColumns.length ?
             relation.joinColumns.map(col => col.propertyName) :
-            relation.entityMetadata.primaryColumns.map(col => col.propertyName);
+            entity.primaryColumns.map(col => col.propertyName);
         let keys: any = {};
         pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
         return this.prepareQuery(target, keys, query, context).getOne();
     }
 
     public manyToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let entity = this.manager.connection.getMetadata(type);
+        let entity = this.getMetadata(type);
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
         let fks = relation.joinColumns.map(col => col.propertyName);
         let keys: any = {};
         pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
-        return this.prepareQuery(target, keys, query, context).getMany();
+        return this.prepareQuery(target, keys, query, context).getOne();
     }
 
     public prepareQuery(type: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): Orm.SelectQueryBuilder<any> {

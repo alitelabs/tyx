@@ -1,6 +1,5 @@
 import { InternalServerError, NotFound } from "../errors/http";
 import { Container, ContainerInstance } from "../import/typedi";
-import { ConnectionOptions, createConnection } from "../import/typeorm";
 import { Logger } from "../logger";
 import { MethodMetadata } from "../metadata/method";
 import { ProxyMetadata } from "../metadata/proxy";
@@ -8,7 +7,7 @@ import { Registry } from "../metadata/registry";
 import { ServiceMetadata } from "../metadata/service";
 import { ObjectType } from "../orm/common/ObjectType";
 import { Configuration } from "../types/config";
-import { Class, ContainerState, Context, CoreContainer } from "../types/core";
+import { ContainerState, Context, CoreContainer } from "../types/core";
 import { EventRequest, EventResult } from "../types/event";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
@@ -22,7 +21,7 @@ export class CoreInstance implements CoreContainer {
 
     private application: string;
     private name: string;
-    private log: Logger;
+    public log: Logger;
 
     private container: ContainerInstance;
     private config: Configuration;
@@ -47,20 +46,10 @@ export class CoreInstance implements CoreContainer {
     public get<T>(type: ObjectType<T> | string): T {
         if (typeof type === "string") return this.container.get<T>(type);
         let proxy = ProxyMetadata.get(type);
-        if (proxy) return this.container.get(proxy.alias);
+        if (proxy) return this.container.get(proxy.serviceId);
         let service = ServiceMetadata.get(type);
-        if (service) return this.container.get(service.alias);
+        if (service) return this.container.get(service.serviceId);
         return undefined;
-    }
-
-    public register(target: Class | Object): this {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
-        return this;
-    }
-
-    public publish(target: Class | Object): this {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
-        return this;
     }
 
     public async prepare(): Promise<this> {
@@ -115,13 +104,13 @@ export class CoreInstance implements CoreContainer {
             let startTime = log.time();
             try {
                 await this.activate(ctx);
-                let handler: Function = service[metadata.name];
+                let handler: Function = service[metadata.methodId];
                 let result = await handler.apply(service, req.args);
                 return result;
             } catch (e) {
                 throw this.log.error(e);
             } finally {
-                log.timeEnd(startTime, `${metadata.name}`);
+                log.timeEnd(startTime, `${metadata.methodId}`);
                 await this.release(ctx);
             }
         } finally {
@@ -157,17 +146,17 @@ export class CoreInstance implements CoreContainer {
 
             this.istate = ContainerState.Busy;
             for (let target of metadatas) {
-                let service = this.container.get(target.service);
+                let service = this.container.get(target.serviceId);
                 if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-                let methodId = target.service + "." + target.method;
+                let methodId = target.serviceId + "." + target.methodId;
                 let method = Registry.methods[methodId];
 
                 if (!Utils.wildcardMatch(target[route].actionFilter, req.action)
                     || !Utils.wildcardMatch(target[route].objectFilter, req.object)) continue;
 
                 req.application = this.application;
-                req.service = target.service;
-                req.method = target.method;
+                req.service = target.serviceId;
+                req.method = target.methodId;
 
                 let ctx = await this.security.eventAuth(this, req, method);
 
@@ -177,7 +166,7 @@ export class CoreInstance implements CoreContainer {
                     await this.activate(ctx);
                     for (let record of req.records) {
                         req.record = record;
-                        let handler = service[target.method];
+                        let handler = service[target.methodId];
                         let data: any;
                         if (target.adapter) {
                             data = await target.adapter(handler.bind(service), ctx, req);
@@ -186,8 +175,8 @@ export class CoreInstance implements CoreContainer {
                         }
                         result.status = result.status || "OK";
                         result.returns.push({
-                            service: target.service,
-                            method: target.method,
+                            service: target.serviceId,
+                            method: target.methodId,
                             error: null,
                             data
                         });
@@ -196,13 +185,13 @@ export class CoreInstance implements CoreContainer {
                     this.log.error(e);
                     result.status = "FAILED";
                     result.returns.push({
-                        service: target.service,
-                        method: target.method,
+                        service: target.serviceId,
+                        method: target.methodId,
                         error: InternalServerError.wrap(e),
                         data: null
                     });
                 } finally {
-                    log.timeEnd(startTime, `${target.method}`);
+                    log.timeEnd(startTime, `${target.methodId}`);
                     await this.release(ctx);
                 }
             }
@@ -227,14 +216,14 @@ export class CoreInstance implements CoreContainer {
             if (req.contentType.domainModel) route += `:${req.contentType.domainModel}`;
             let target = Registry.routes[route];
             if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
-            let service = this.container.get(target.service);
+            let service = this.container.get(target.serviceId);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-            let methodId = target.service + "." + target.method;
+            let methodId = target.serviceId + "." + target.methodId;
             let method = Registry.methods[methodId] as MethodMetadata;
 
             req.application = this.application;
-            req.service = target.service;
-            req.method = target.method;
+            req.service = target.serviceId;
+            req.method = target.methodId;
 
             this.istate = ContainerState.Busy;
             let ctx = await this.security.httpAuth(this, req, method);
@@ -247,7 +236,7 @@ export class CoreInstance implements CoreContainer {
                 this.log.debug("HTTP Context: %j", ctx);
                 this.log.debug("HTTP Request: %j", req);
 
-                let handler: Function = service[method.name];
+                let handler: Function = service[method.methodId];
                 let http = method.http[route];
                 let result: any;
                 if (http.adapter) {
@@ -277,7 +266,7 @@ export class CoreInstance implements CoreContainer {
                 this.log.error(e);
                 throw InternalServerError.wrap(e);
             } finally {
-                log.timeEnd(startTime, `${method.name}`);
+                log.timeEnd(startTime, `${method.methodId}`);
                 await this.release(ctx);
             }
         } finally {
@@ -317,27 +306,6 @@ export class CoreInstance implements CoreContainer {
                 // TODO: Error state for container
             }
         }
-    }
-
-    public async initConnection(): Promise<void> {
-        let cfg: string = process.env.DATABASE;
-        // this.label = options.substring(options.indexOf("@") + 1);
-        let tokens = cfg.split(/:|@|\/|;/);
-        let logQueries = tokens.findIndex(x => x === "logall") > 5;
-        // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
-        let options: ConnectionOptions = {
-            name: "default",
-            username: tokens[0],
-            password: tokens[1],
-            type: tokens[2] as any,
-            host: tokens[3],
-            port: +tokens[4],
-            database: tokens[5],
-            // timezone: "Z",
-            logging: logQueries ? "all" : ["error"],
-            entities: Object.values(Registry.entities).map(meta => meta.target)
-        };
-        await createConnection(options);
     }
 }
 

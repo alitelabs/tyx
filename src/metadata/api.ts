@@ -1,5 +1,5 @@
 import { Class, Prototype } from "../types/core";
-import { MethodMetadata } from "./method";
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method";
 import { Registry } from "./registry";
 
 export interface ApiMetadata {
@@ -7,8 +7,8 @@ export interface ApiMetadata {
     alias: string;
 
     methods: Record<string, MethodMetadata>;
-    routes: Record<string, MethodMetadata>;
-    events: Record<string, MethodMetadata[]>;
+    routes: Record<string, HttpRouteMetadata>;
+    events: Record<string, EventRouteMetadata[]>;
 }
 
 export class ApiMetadata implements ApiMetadata {
@@ -16,8 +16,8 @@ export class ApiMetadata implements ApiMetadata {
     public alias: string;
 
     public methods: Record<string, MethodMetadata> = {};
-    public routes: Record<string, MethodMetadata> = {};
-    public events: Record<string, MethodMetadata[]> = {};
+    public routes: Record<string, HttpRouteMetadata> = {};
+    public events: Record<string, EventRouteMetadata[]> = {};
 
     constructor(target: Class) {
         this.target = target;
@@ -41,6 +41,20 @@ export class ApiMetadata implements ApiMetadata {
             Reflect.defineMetadata(Registry.TYX_API, meta, target);
         }
         return meta;
+    }
+
+    public addMethod(meta: MethodMetadata) {
+        this.methods[meta.methodId] = meta;
+    }
+
+    public addRoute(meta: HttpRouteMetadata) {
+        if (this.routes[meta.routeId]) throw new Error(`Duplicate route: ${meta.routeId}`);
+        this.routes[meta.routeId] = meta;
+    }
+
+    public addEvent(meta: EventRouteMetadata) {
+        this.events[meta.eventId] = this.events[meta.eventId] || [];
+        this.events[meta.eventId].push(meta);
     }
 
     public commit(alias?: string): this {

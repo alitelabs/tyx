@@ -51,9 +51,6 @@ export const CoreContainer = "container";
 export interface CoreContainer {
     state: ContainerState;
 
-    register(target: Class | Object): this;
-    publish(service: Class): this;
-
     prepare(): Promise<CoreContainer>;
 
     httpRequest(req: HttpRequest): Promise<HttpResponse>;

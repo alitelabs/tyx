@@ -1,4 +1,4 @@
 import "reflect-metadata";
 
 export { ExpressService } from "./service";
-export { ExpressContainer } from "./container";
+export { ExpressAdapter } from "./adapter";

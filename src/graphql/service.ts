@@ -1,7 +1,7 @@
 import { BaseService } from "../core/service";
 import { Database } from "../decorators/database";
 import { ContentType, Get, Post } from "../decorators/http";
-import { Inject } from "../decorators/service";
+import { Activator, Inject } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
 import { Context } from "../types/core";
@@ -29,6 +29,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         super();
     }
 
+    @Activator()
     protected async activate(ctx: Context, req: HttpRequest) {
         if (this.schema) return;
         this.schema = await this.initialize();

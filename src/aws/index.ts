@@ -1,7 +1,7 @@
 import "reflect-metadata";
 
 export {
-    LambdaContainer,
+    LambdaAdapter,
 
     RemoteEvent,
     LambdaApiEvent,
@@ -14,7 +14,7 @@ export {
     LambdaContext,
     LambdaCallback,
     LambdaHandler
-} from "./container";
+} from "./adapter";
 
 export {
     LambdaError,

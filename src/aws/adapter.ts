@@ -1,7 +1,7 @@
+import { Core } from "../core/core";
 import { HttpUtils } from "../core/http";
-import { CorePool } from "../core/pool";
 import { BadRequest, InternalServerError } from "../errors";
-import { LogLevel } from "../types/config";
+import { Logger } from "../logger";
 import { EventRecord, EventRequest, EventResult } from "../types/event";
 import { HttpMethod, HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
@@ -159,10 +159,12 @@ export interface LambdaHandler {
     ): boolean | void;
 }
 
-export class LambdaContainer extends CorePool {
+export class LambdaAdapter {
 
-    constructor(applicationId: string) {
-        super(applicationId, LambdaContainer.name);
+    private log: Logger;
+
+    constructor() {
+        this.log = Logger.get("TYX", this);
     }
 
     public export(): LambdaHandler {
@@ -174,14 +176,6 @@ export class LambdaContainer extends CorePool {
     }
 
     private async handler(event: LambdaEvent, context: LambdaContext) {
-        try {
-            await this.prepare();
-        } catch (err) {
-            this.log.error(err);
-            return HttpUtils.error(err);
-        }
-
-        LogLevel.set(this.config.logLevel);
         this.log.debug("Lambda Event: %j", event);
         this.log.debug("Lambda Context: %j", context);
 
@@ -247,12 +241,12 @@ export class LambdaContainer extends CorePool {
             body: event.body,
             isBase64Encoded: event.isBase64Encoded || false
         };
-        return super.httpRequest(req);
+        return Core.httpRequest(req);
     }
 
     private async remote(event: RemoteEvent, context: LambdaContext): Promise<any> {
         event.requestId = context && context.awsRequestId || Utils.uuid();
-        return super.remoteRequest(event);
+        return Core.remoteRequest(event);
     }
 
     private async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
@@ -289,7 +283,7 @@ export class LambdaContainer extends CorePool {
         for (let key in reqs) {
             let req = reqs[key];
             this.log.info("S3 Request [%s:%s]: %j", req.resource, req.object, req);
-            result = await super.eventRequest(req);
+            result = await Core.eventRequest(req);
         }
         return result;
     }
@@ -317,7 +311,7 @@ export class LambdaContainer extends CorePool {
         };
 
         this.log.info("Schedule Request [%s:%s]: %j", req.resource, req.object, req);
-        let result = await super.eventRequest(req);
+        let result = await Core.eventRequest(req);
         return result;
     }
 
@@ -355,7 +349,7 @@ export class LambdaContainer extends CorePool {
         for (let key in reqs) {
             let req = reqs[key];
             this.log.info("Dynamo Request [%s]: %j", req.resource, req);
-            result = await super.eventRequest(req);
+            result = await Core.eventRequest(req);
         }
         return result;
     }

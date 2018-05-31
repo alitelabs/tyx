@@ -5,7 +5,7 @@ import { ServiceMetadata } from "./service";
 
 export interface DatabaseMetadata extends ServiceMetadata {
     target: Class;
-    alias: string;
+    serviceId: string;
 
     targets: Class[];
     entities: EntityMetadata[];
@@ -17,7 +17,7 @@ export class DatabaseMetadata implements DatabaseMetadata {
 
     protected constructor(target: Class) {
         this.target = target;
-        this.alias = "database";
+        this.serviceId = "database";
     }
 
     public static has(target: Class | Prototype): boolean {
@@ -40,7 +40,7 @@ export class DatabaseMetadata implements DatabaseMetadata {
     }
 
     public commit(alias?: string, entities?: Class[]): this {
-        this.alias = alias || this.target.name;
+        this.serviceId = alias || this.target.name;
         for (let target of entities) {
             let meta = EntityMetadata.get(target);
             if (!meta) throw new TypeError(`Type [${target.name}] missing @Entity decoration`);
