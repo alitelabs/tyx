@@ -37,23 +37,8 @@ export class CoreInstance implements CoreContainer {
 
         this.log = Logger.get(this.application, this.name);
         this.istate = ContainerState.Pending;
-    }
 
-    public get state() {
-        return this.istate;
-    }
-
-    public get<T>(type: ObjectType<T> | string): T {
-        if (typeof type === "string") return this.container.get<T>(type);
-        let proxy = ProxyMetadata.get(type);
-        if (proxy) return this.container.get(proxy.serviceId);
-        let service = ServiceMetadata.get(type);
-        if (service) return this.container.get(service.serviceId);
-        return undefined;
-    }
-
-    public async prepare(): Promise<this> {
-        if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+        // if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
         if (!Container.has(Configuration)) {
             this.log.warn("Using default configuration service!");
@@ -78,7 +63,19 @@ export class CoreInstance implements CoreContainer {
         }
 
         this.istate = ContainerState.Ready;
-        return this;
+    }
+
+    public get state() {
+        return this.istate;
+    }
+
+    public get<T>(type: ObjectType<T> | string): T {
+        if (typeof type === "string") return this.container.get<T>(type);
+        let proxy = ProxyMetadata.get(type);
+        if (proxy) return this.container.get(proxy.serviceId);
+        let service = ServiceMetadata.get(type);
+        if (service) return this.container.get(service.serviceId);
+        return undefined;
     }
 
     // --------------------------------------------------
@@ -151,8 +148,8 @@ export class CoreInstance implements CoreContainer {
                 let methodId = target.serviceId + "." + target.methodId;
                 let method = Registry.methods[methodId];
 
-                if (!Utils.wildcardMatch(target[route].actionFilter, req.action)
-                    || !Utils.wildcardMatch(target[route].objectFilter, req.object)) continue;
+                if (!Utils.wildcardMatch(target.actionFilter, req.action)
+                    || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
 
                 req.application = this.application;
                 req.service = target.serviceId;

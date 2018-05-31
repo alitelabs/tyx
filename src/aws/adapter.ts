@@ -82,7 +82,7 @@ export interface LambdaDynamoRecord extends LambdaEventRecord {
 }
 
 export interface LambdaScheduleEvent {
-    type: string;
+    type: "schedule";
     action: string;
     [prop: string]: string;
 }

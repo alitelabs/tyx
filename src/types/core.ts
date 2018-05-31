@@ -51,8 +51,6 @@ export const CoreContainer = "container";
 export interface CoreContainer {
     state: ContainerState;
 
-    prepare(): Promise<CoreContainer>;
-
     httpRequest(req: HttpRequest): Promise<HttpResponse>;
     eventRequest(req: EventRequest): Promise<EventResult>;
     remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;

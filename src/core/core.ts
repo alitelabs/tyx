@@ -2,7 +2,7 @@ import { Server, createServer } from "http";
 import { LambdaAdapter, LambdaHandler } from "../aws/adapter";
 import { ExpressAdapter } from "../express/adapter";
 import { Express } from "../import";
-import { ConnectionOptions, createConnection, getConnection } from "../import/typeorm";
+import { ConnectionOptions, createConnection, getConnection, Connection } from "../import/typeorm";
 import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
 import { Class, ContainerState } from "../types/core";
@@ -16,6 +16,8 @@ export abstract class Core {
 
     private static application: string;
     private static instance: CoreInstance;
+    private static options: ConnectionOptions;
+    private static connection: Connection;
 
     private static pool: CoreInstance[];
     private static counter: number;
@@ -30,9 +32,10 @@ export abstract class Core {
 
     public static register(...args: Class[]) { }
 
-    public static async init(application?: string, args?: Class[]) {
-        this.application = this.application || application || "Core";
+    public static init(application?: string, args?: Class[]): void {
         if (this.instance) return;
+
+        this.application = this.application || application || "Core";
         this.pool = [];
 
         let cfg: string = process.env.DATABASE;
@@ -40,7 +43,7 @@ export abstract class Core {
         let tokens = cfg.split(/:|@|\/|;/);
         let logQueries = tokens.findIndex(x => x === "logall") > 5;
         // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
-        let options: ConnectionOptions = {
+        this.options = {
             name: "default",
             username: tokens[0],
             password: tokens[1],
@@ -52,19 +55,15 @@ export abstract class Core {
             logging: logQueries ? "all" : ["error"],
             entities: Object.values(Registry.entities).map(meta => meta.target)
         };
-        await createConnection(options);
-
         this.instance = new CoreInstance(application, "Core");
-        this.instance.prepare();
     }
 
     private static async activate(): Promise<CoreInstance> {
-        await this.init();
+        this.init();
+        if (!this.connection) this.connection = await createConnection(this.options);
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
             instance = new CoreInstance(this.application, "" + this.counter++);
-            // TODO: Identity
-            await instance.prepare();
             this.pool.push(instance);
             this.instance = this.instance || instance;
         }
@@ -99,7 +98,7 @@ export abstract class Core {
     }
 
     private static async release() {
-        if (!this.server) await getConnection().close();
+        if (!this.server && this.connection) await this.connection.close();
     }
 
     public static lambda(): LambdaHandler {

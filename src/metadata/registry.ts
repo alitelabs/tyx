@@ -140,9 +140,9 @@ export abstract class Registry implements MetadataRegistry {
         this.decorations.decorators[name].push(decInfo);
         let typeInfo = { decorator: name, ordinal: traceInfo.ordinal, args };
         let type = this.decorations.types[target.name] = this.decorations.types[target.name] || { target, decorations: undefined, properties: undefined };
-        if (propertyKey) {
+        if (key) {
             type.properties = type.properties || {};
-            let prop = type.properties[key] = type.properties[propertyKey]
+            let prop = type.properties[key] = type.properties[key]
                 || { key, decorations: undefined, parameters: undefined };
             if (index !== undefined) {
                 prop.parameters = prop.parameters || [];
