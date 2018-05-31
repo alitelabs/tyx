@@ -2,6 +2,7 @@ import { Core } from "../core/core";
 import { HttpUtils } from "../core/http";
 import { BadRequest, InternalServerError } from "../errors";
 import { Logger } from "../logger";
+import { LogLevel } from "../types/config";
 import { EventRecord, EventRequest, EventResult } from "../types/event";
 import { HttpMethod, HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
@@ -165,6 +166,7 @@ export class LambdaAdapter {
 
     constructor() {
         this.log = Logger.get("TYX", this);
+        LogLevel.set(process.env.LOG_LEVEL as any);
     }
 
     public export(): LambdaHandler {
@@ -180,6 +182,7 @@ export class LambdaAdapter {
         this.log.debug("Lambda Context: %j", context);
 
         if (event.httpMethod) {
+            this.log.info("HTTP event detected");
             try {
                 let res = await this.http(event, context);
                 return HttpUtils.prepare(res);
@@ -188,6 +191,7 @@ export class LambdaAdapter {
                 return HttpUtils.error(err);
             }
         } else if ((event.type === "remote" || event.type === "internal") && event.service && event.method) {
+            this.log.info("Remote event detected");
             try {
                 return await this.remote(event, context);
             } catch (err) {
@@ -195,6 +199,7 @@ export class LambdaAdapter {
                 throw InternalServerError.wrap(err);
             }
         } else if (event.type === "schedule" && event.action) {
+            this.log.info("Schedule event detected");
             try {
                 return await this.schedule(event, context);
             } catch (err) {
@@ -202,6 +207,7 @@ export class LambdaAdapter {
                 throw InternalServerError.wrap(err);
             }
         } else if (event.Records && event.Records[0] && event.Records[0].eventSource === "aws:s3") {
+            this.log.info("S3 event detected");
             try {
                 return await this.s3(event, context);
             } catch (err) {
@@ -209,6 +215,7 @@ export class LambdaAdapter {
                 throw InternalServerError.wrap(err);
             }
         } else if (event.Records && event.Records[0] && event.Records[0].eventSource === "aws:dynamodb") {
+            this.log.info("DynamoDB event detected");
             try {
                 return await this.dynamo(event, context);
             } catch (err) {
@@ -250,8 +257,6 @@ export class LambdaAdapter {
     }
 
     private async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
-        this.log.info("S3 Event: %j", event);
-
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
         let reqs: Record<string, EventRequest> = {};
@@ -289,8 +294,6 @@ export class LambdaAdapter {
     }
 
     private async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {
-        this.log.info("Schedule Event: %j", event);
-
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
 
@@ -316,8 +319,6 @@ export class LambdaAdapter {
     }
 
     private async dynamo(event: LambdaDynamoEvent, context: LambdaContext): Promise<EventResult> {
-        this.log.info("Dynamo Event: %j", event);
-
         let requestId = context && context.awsRequestId || Utils.uuid();
         let time = new Date().toISOString();
         let reqs: Record<string, EventRequest> = {};

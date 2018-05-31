@@ -35,10 +35,9 @@ export class DatabaseProvider implements Database, ToolkitProvider {
     protected async activate() {
         if (!this.connection) {
             // TODO: Multiple connections, name from metadata
-            this.connection = getConnection();
+            this.connection = getConnection("tyx");
             this.manager = this.connection.manager;
         }
-        if (!this.connection.isConnected) await this.connection.connect();
     }
 
     // Schema provider interface

@@ -28,7 +28,7 @@ export class CoreInstance implements CoreContainer {
     private security: Security;
     private istate: ContainerState;
 
-    constructor(application: string, name: string, index?: string) {
+    constructor(application: string, name: string, index?: number) {
         this.application = application;
         this.name = name || CoreInstance.name;
         if (index !== undefined) this.name += ":" + index;

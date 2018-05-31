@@ -1,8 +1,8 @@
-import { Server, createServer } from "http";
+import { createServer, Server } from "http";
 import { LambdaAdapter, LambdaHandler } from "../aws/adapter";
 import { ExpressAdapter } from "../express/adapter";
 import { Express } from "../import";
-import { ConnectionOptions, createConnection, getConnection, Connection } from "../import/typeorm";
+import { Connection, ConnectionOptions, createConnection, getConnection } from "../import/typeorm";
 import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
 import { Class, ContainerState } from "../types/core";
@@ -20,7 +20,7 @@ export abstract class Core {
     private static connection: Connection;
 
     private static pool: CoreInstance[];
-    private static counter: number;
+    private static counter: number = 0;
 
     private static server: Server;
 
@@ -44,7 +44,7 @@ export abstract class Core {
         let logQueries = tokens.findIndex(x => x === "logall") > 5;
         // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
         this.options = {
-            name: "default",
+            name: "tyx",
             username: tokens[0],
             password: tokens[1],
             type: tokens[2] as any,
@@ -55,15 +55,17 @@ export abstract class Core {
             logging: logQueries ? "all" : ["error"],
             entities: Object.values(Registry.entities).map(meta => meta.target)
         };
-        this.instance = new CoreInstance(application, "Core");
+        this.instance = new CoreInstance(application, Core.name);
+        this.pool.push(this.instance);
     }
 
     private static async activate(): Promise<CoreInstance> {
         this.init();
         if (!this.connection) this.connection = await createConnection(this.options);
+        if (!this.connection.isConnected) await this.connection.connect();
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
-            instance = new CoreInstance(this.application, "" + this.counter++);
+            instance = new CoreInstance(this.application, Core.name, this.counter++);
             this.pool.push(instance);
             this.instance = this.instance || instance;
         }
@@ -73,27 +75,27 @@ export abstract class Core {
     public static async remoteRequest(req: RemoteRequest): Promise<any> {
         try {
             let instance = await this.activate();
-            return instance.remoteRequest(req);
+            return await instance.remoteRequest(req);
         } finally {
-            this.release();
+            await this.release();
         }
     }
 
     public static async eventRequest(req: EventRequest): Promise<EventResult> {
         try {
             let instance = await this.activate();
-            return instance.eventRequest(req);
+            return await instance.eventRequest(req);
         } finally {
-            this.release();
+            await this.release();
         }
     }
 
     public static async httpRequest(req: HttpRequest): Promise<HttpResponse> {
         try {
             let instance = await this.activate();
-            return instance.httpRequest(req);
+            return await instance.httpRequest(req);
         } finally {
-            this.release();
+            await this.release();
         }
     }
 
