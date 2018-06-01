@@ -40,7 +40,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(type, null, args, context).getMany();
     }
 
-    public oneToMany(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+    public oneToMany(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<object[]> {
         let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
@@ -51,7 +51,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getMany();
     }
 
-    public oneToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+    public oneToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
         let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
@@ -64,7 +64,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getOne();
     }
 
-    public manyToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+    public manyToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
         let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
         let relation = entity.relations.find(r => r.propertyName === rel);
         let target = relation.inverseEntityMetadata.name;
@@ -72,7 +72,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         let fks = relation.joinColumns.map(col => col.propertyName);
         let keys: any = {};
         pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
-        return this.prepareQuery(target, keys, query, context).getMany();
+        return this.prepareQuery(target, keys, query, context).getOne();
     }
 
     public prepareQuery(type: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): SelectQueryBuilder<any> {

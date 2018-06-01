@@ -1,6 +1,6 @@
 import { GraphQLBoolean, GraphQLField, GraphQLFloat, GraphQLInt, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLString } from "graphql";
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
-import { ILogger, SchemaDirectiveVisitor, makeExecutableSchema } from "graphql-tools";
+import { ILogger, makeExecutableSchema, SchemaDirectiveVisitor } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
 import { ColumnType } from "../metadata/column";
 import { EntityMetadata } from "../metadata/entity";
@@ -15,26 +15,25 @@ export { GraphQLSchema } from "graphql";
 export const SYS_COLUMNS = ["created", "updated", "version"];
 
 export const MODEL = "";
-export const GET = "get";
+export const GET = "";
 export const SEARCH = "";
 export const CREATE = "create";
 export const UPDATE = "update";
 export const REMOVE = "remove";
 
 export interface EntitySchema {
-    query?: string;
-    mutation?: string;
+    query: string;
+    mutation: string;
     model: string;
-    prisma?: string;
-    inputs?: string[];
-    schema?: string;
+    inputs: string[];
+    search: string;
+    simple?: string;
+
+    // get: ToolkitResolver;
+    // sea
+
     relations?: Record<string, { target: string, type: string }>;
-    args: {
-        keys?: string;
-        search?: string;
-        create?: string;
-        update?: string;
-    };
+    // schema?: string;
 }
 
 export interface ServiceSchema {
@@ -148,63 +147,19 @@ export class ToolkitSchema {
         directive @query(type: RelationType) on FIELD_DEFINITION
     `);
 
-
     public entities: Record<string, EntitySchema> = {};
     public inputs: Record<string, string> = {};
     public results: Record<string, string> = {};
     public services: Record<string, ServiceSchema> = {};
 
     constructor(entities: EntityMetadata[]) {
-        let schema = this;
-        for (let meta of entities) {
-            let target = meta.name;
-            let entry = schema.entities[target] = this.genEntity(meta);
-            // Roots
-            entry.query = `type Query {\n`;
-            entry.query += `  ${GET}${target}(${entry.args.keys}): ${target}${MODEL} @query(rem: "TODO"),\n`;
-            entry.query += `  ${SEARCH}${target}s(${entry.args.search}\n  ): [${target}${MODEL}] @query(rem: "TODO")\n`;
-            entry.query += `}`;
-            entry.mutation = "type Mutation {\n";
-            entry.mutation += `  ${CREATE}${target}(${entry.args.create}\n  ): ${target}${MODEL},\n`;
-            entry.mutation += `  ${UPDATE}${target}(${entry.args.update}\n  ): ${target}${MODEL},\n`;
-            entry.mutation += `  ${REMOVE}${target}(${entry.args.keys}): ${target}${MODEL}\n`;
-            entry.mutation += "}";
-        }
-        for (let meta of entities) {
-            let entity = schema.entities[meta.name];
-            entity.prisma = entity.model;
-            entity.relations = {};
-            for (let rel of meta.relations) {
-                let target = rel.inverseEntityMetadata.name;
-                let rm = entity.relations[rel.propertyName] = { target } as any;
-                if (!entities.find(e => e.name === target)) continue;
-                if (rel.relationType === RelationType.ManyToOne) {
-                    rm.type = "manyToOne";
-                    let args = "";
-                    entity.model += `,\n  ${rel.propertyName}${args}: ${target}${MODEL} @relation(type: ManyToOne)`;
-                    entity.prisma += `,\n  ${rel.propertyName}: ${target}${MODEL}`;
-                } else if (rel.relationType === RelationType.OneToOne) {
-                    rm.type = "oneToOne";
-                    let args = "";
-                    entity.model += `,\n  ${rel.propertyName}${args}: ${target}${MODEL} @relation(type: OneToOne)`;
-                } else if (rel.relationType === RelationType.OneToMany) {
-                    rm.type = "oneToMany";
-                    let args = (rel.relationType === RelationType.OneToMany) ? ` (${schema.entities[target].args.search}\n  )` : "";
-                    entity.model += `,\n  ${rel.propertyName}${args}: [${target}${MODEL}] @relation(type: OneToMany)`;
-                } else {
-                    continue; // TODO: Implement
-                }
-            }
-            entity.model += "\n}";
-            entity.prisma += "\n}";
-            entity.schema = entity.query + "\n" + entity.mutation + "\n" + entity.model + "\n" + entity.inputs.join("\n");
-        }
-        // "type _DebugInfo {\n  where: String,\n  order: String,\n  sql: String\n}",
-        return schema;
+        for (let meta of entities) this.genEntity(meta, this.entities);
     }
 
-    public genEntity(meta: EntityMetadata): EntitySchema {
+    public genEntity(meta: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
         let target = meta.name;
+        if (schemas[target]) return schemas[target];
+
         let model = `type ${target}${MODEL} @entity(rem: "TODO") {`;
         let input = `Input {`;
         let nil = `Null {`;
@@ -214,24 +169,24 @@ export class ToolkitSchema {
         let keys = "";
         let create = ``;
         let update = ``;
-        let first = true;
+        let cm = true;
         for (let col of meta.columns) {
             let pn = col.propertyName;
             let dt = ColumnType.graphType(col.type);
             let nl = !col.isNullable ? "!" : "";
             if (col.propertyName.endsWith("Id")) dt = GraphType.ID;
-            model += `${first ? "" : ","}\n  ${pn}: ${dt}${nl}`;
+            model += `${cm ? "" : ","}\n  ${pn}: ${dt}${nl}`;
             if (col.isPrimary)
-                keys += `${first ? "" : ", "}${pn}: ${dt}${nl}`;
-            input += `${first ? "" : ","}\n  ${pn}: ${dt}`;
-            nil += `${first ? "" : ","}\n  ${pn}: Boolean`;
-            multi += `${first ? "" : ","}\n  ${pn}: [${dt}!]`;
-            like += `${first ? "" : ","}\n  ${pn}: String`;
-            order += `${first ? "" : ","}\n  ${pn}: Int`;
-            update += `${first ? "" : ","}\n    ${pn}: ${dt}${col.isPrimary ? "!" : ""}`;
-            if (SYS_COLUMNS.includes(pn)) nl = "";
-            create += `${first ? "" : ","}\n    ${pn}: ${dt}${nl}`;
-            first = false;
+                keys += `${cm ? "" : ", "}${pn}: ${dt}${nl}`;
+            input += `${cm ? "" : ","}\n  ${pn}: ${dt}`;
+            nil += `${cm ? "" : ","}\n  ${pn}: Boolean`;
+            multi += `${cm ? "" : ","}\n  ${pn}: [${dt}!]`;
+            like += `${cm ? "" : ","}\n  ${pn}: String`;
+            order += `${cm ? "" : ","}\n  ${pn}: Int`;
+            update += `${cm ? "" : ","}\n    ${pn}: ${dt}${col.isPrimary ? "!" : ""}`;
+            if (col.isCreateDate || col.isUpdateDate || col.isVersion || col.isVirtual || col.isGenerated) nl = "";
+            create += `${cm ? "" : ","}\n    ${pn}: ${dt}${nl}`;
+            cm = false;
         }
         // Debug field
         // model += `,\n  _exclude: Boolean`;
@@ -264,25 +219,54 @@ export class ToolkitSchema {
         let where = `Where {\n  `
             + opers.join(",\n  ");
         let inputs = [input, where, nil, multi, like, order].map(x => `input ${target}${x}\n}`);
-        return { model, inputs, args: { create, update, keys, search } };
-    }
 
-    public getType(name: string): string {
-        return this.inputs[name] || this.results[name] || this.entities[name] && this.entities[name].model;
-    }
+        let query = `type Query {\n`;
+        query += `  ${GET}${target}(${keys}): ${target}${MODEL} @query(rem: "TODO"),\n`;
+        query += `  ${SEARCH}${target}s(${search}\n  ): [${target}${MODEL}] @query(rem: "TODO")\n`;
+        query += `}`;
+        let mutation = "type Mutation {\n";
+        mutation += `  ${CREATE}${target}(${create}\n  ): ${target}${MODEL},\n`;
+        mutation += `  ${UPDATE}${target}(${update}\n  ): ${target}${MODEL},\n`;
+        mutation += `  ${REMOVE}${target}(${keys}): ${target}${MODEL}\n`;
+        mutation += "}";
 
-    public serviceDefs(): string {
-        // // TODO: Types
-        // let schema = "type Mutation {";
-        // let first = true;
-        // for (let service of Object.values(this.services)) {
-        //     for (let method of Object.values(service.methods)) {
-        //         schema += `${first ? "" : ","}\n  ` + method.signature;
-        //         first = false;
-        //     }
-        // }
-        // schema += "\n}";
-        return "";
+        let schema: EntitySchema = { query, mutation, model, inputs, search };
+        schemas[target] = schema;
+
+        let simple = model;
+        let relations = {};
+        for (let rel of meta.relations) {
+            let inverse = rel.inverseEntityMetadata.name;
+            let rm = relations[rel.propertyName] = { inverse } as any;
+            // TODO: Subset of entities
+            // if (!entities.find(e => e.name === target)) continue;
+            if (rel.relationType === RelationType.ManyToOne) {
+                rm.type = "manyToOne";
+                let args = "";
+                model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
+                simple += `,\n  ${rel.propertyName}: ${inverse}${MODEL}`;
+            } else if (rel.relationType === RelationType.OneToOne) {
+                rm.type = "oneToOne";
+                let args = "";
+                model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
+            } else if (rel.relationType === RelationType.OneToMany) {
+                rm.type = "oneToMany";
+                let temp = this.genEntity(rel.inverseEntityMetadata, schemas);
+                let args = (rel.relationType === RelationType.OneToMany) ? ` (${temp.search}\n  )` : "";
+                model += `,\n  ${rel.propertyName}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
+            } else {
+                continue; // TODO: Implement
+            }
+        }
+        model += "\n}";
+        simple += "\n}";
+
+        schema.model = model;
+        schema.simple = simple;
+        schema.relations = relations;
+        // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
+
+        return schema;
     }
 
     public executable(logger?: ILogger): GraphQLSchema {
@@ -296,7 +280,7 @@ export class ToolkitSchema {
 
     public types() {
         return Object.values(this.entities).map((s, i) =>
-            s.prisma
+            s.simple
         ).join("\n\n");
     }
 
@@ -331,11 +315,6 @@ export class ToolkitSchema {
                     default: continue;
                 }
                 resolver[rel] = res;
-            }
-        }
-        for (let service of Object.values(this.services)) {
-            for (let method of Object.values(service.methods)) {
-                resolvers.Mutation[service.service + "_" + method.method] = method.resolver;
             }
         }
         return resolvers;

@@ -8,7 +8,7 @@ import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
 
-const playgroundVersion = "1.6.6";
+const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
 
 export interface GraphQLApi {
