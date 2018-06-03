@@ -6,6 +6,8 @@ import { ProxyMetadata } from "./proxy";
 import { RelationMetadata } from "./relation";
 import { ServiceMetadata } from "./service";
 import { TypeMetadata } from "./type";
+import { ColumnMetadata } from "./column";
+import { DatabaseMetadata } from "./database";
 
 export interface TypeDecorationMetadata {
     target: Function;
@@ -39,11 +41,15 @@ export interface MetadataRegistry {
     services: Record<string, ServiceMetadata>;
     proxies: Record<string, ProxyMetadata>;
 
+    databases: Record<string, DatabaseMetadata>;
     entities: Record<string, EntityMetadata>;
-    metadata: Record<string, TypeMetadata>;
+    columns: Record<string, ColumnMetadata>;
+    relations: Record<string, RelationMetadata>;
+
     inputs: Record<string, TypeMetadata>;
     results: Record<string, TypeMetadata>;
 
+    metadata: Record<string, TypeMetadata>;
     decorations: DecorationMetadata;
 
     methods: Record<string, MethodMetadata>;
@@ -73,11 +79,14 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly services: Record<string, ServiceMetadata> = {};
     public static readonly proxies: Record<string, ProxyMetadata> = {};
 
+    public static readonly databases: Record<string, DatabaseMetadata> = {};
     public static readonly entities: Record<string, EntityMetadata> = {};
-    public static readonly metadata: Record<string, TypeMetadata> = {};
+    public static readonly columns: Record<string, ColumnMetadata> = {};
+    public static readonly relations: Record<string, RelationMetadata> = {};
     public static readonly inputs: Record<string, TypeMetadata> = {};
     public static readonly results: Record<string, TypeMetadata> = {};
 
+    public static readonly metadata: Record<string, TypeMetadata> = {};
     public static readonly decorations: DecorationMetadata = { types: {}, decorators: {}, trace: [] };
 
     public static readonly methods: Record<string, MethodMetadata> = {};
@@ -91,11 +100,14 @@ export abstract class Registry implements MetadataRegistry {
     public abstract services: Record<string, ServiceMetadata>;
     public abstract proxies: Record<string, ProxyMetadata>;
 
+    public abstract databases: Record<string, DatabaseMetadata>;
     public abstract entities: Record<string, EntityMetadata>;
-    public abstract metadata: Record<string, TypeMetadata>;
+    public abstract columns: Record<string, ColumnMetadata>;
+    public abstract relations: Record<string, RelationMetadata>;
     public abstract inputs: Record<string, TypeMetadata>;
     public abstract results: Record<string, TypeMetadata>;
 
+    public abstract metadata: Record<string, TypeMetadata>;
     public abstract decorations: DecorationMetadata;
 
     public abstract methods: Record<string, MethodMetadata>;
@@ -110,13 +122,17 @@ export abstract class Registry implements MetadataRegistry {
 
     public static get(): Registry {
         let reg: MetadataRegistry = {
+            metadata: this.metadata,
             decorations: this.decorations,
+
             apis: this.apis,
             services: this.services,
             proxies: this.proxies,
 
+            databases: this.databases,
             entities: this.entities,
-            metadata: this.metadata,
+            columns: this.columns,
+            relations: this.relations,
             inputs: this.inputs,
             results: this.results,
 

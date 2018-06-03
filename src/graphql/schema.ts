@@ -315,29 +315,27 @@ export class CoreSchema {
         // Generate schema
         let schema: TypeSchema = { target: struc, model: undefined, params: undefined, query: undefined, registry: undefined, navigation: {} };
         reg[struc.name] = schema;
-        let params = ""
+        schema.params = "";
         for (let field of Object.values(struc.fields)) {
             if (!GraphType.isScalar(field.type as GraphType)) continue;
-            params += (params ? ",\n    " : "    ") + `${field.name}: ${field.type}`;
+            schema.params += (schema.params ? ",\n    " : "    ") + `${field.name}: ${field.type}`;
         }
-        schema.params = params;
-        let model = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        schema.model = (scope === GraphType.Input) ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
         for (let field of Object.values(struc.fields)) {
             let type = this.genType(field, scope, reg);
             if (GraphType.isMetadata(struc.type) && GraphType.isList(field.type)) {
                 let ref = this.genType(field.item, scope, reg);
-                let args = reg[ref].params;
-                model += `  ${field.name}(\n${args}\n  ): ${type}\n`;
+                let args = GraphType.isScalar(ref as GraphType) ? "" : `(\n${reg[ref].params}\n  )`;
+                schema.model += `  ${field.name}${args}: ${type}\n`;
             } else {
-                model += `  ${field.name}: ${type}\n`;
+                schema.model += `  ${field.name}: ${type}\n`;
             }
             if ((struc.target as any)[field.name] instanceof Function)
                 schema.navigation[field.name] = (struc.target as any)[field.name];
         }
-        model += "}";
-        schema.model = model;
+        schema.model += "}";
         if (GraphType.isMetadata(struc.type)) {
-            schema.query = `  ${struc.name}(\n${params}\n  ): [${struc.name}]`;
+            schema.query = `  ${struc.name}(\n${schema.params}\n  ): [${struc.name}]`;
             schema.registry = (struc.target as any).registry;
         }
 

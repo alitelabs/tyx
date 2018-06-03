@@ -11,6 +11,7 @@ import { Class } from "../types/core";
 @Metadata()
 export class ColumnMetadataType implements IColumnMetadata {
     @StringField() target: Class;
+    @RefField(type => EntityMetadataType) entityMetadata: IEntityMetadata;
     @StringField() propertyName: string;
     @StringField() type: ColumnType;
     @IntField() precision?: number;
@@ -27,22 +28,34 @@ export class ColumnMetadataType implements IColumnMetadata {
     @BooleanField() isVirtual: boolean;
 
     public static registry(root: MetadataRegistry, args: ResolverArgs, ctx: ResolverContext, info: ResolverInfo): IColumnMetadata[] {
-        return []; // Object.values(Registry.columns);
+        return Lo.filter(Object.values(root.columns), args);
+    }
+
+    public static target(parent: IColumnMetadata, args: ResolverArgs): string {
+        return parent.target && `[class: ${parent.target.name}]`;
     }
 }
 
 @Metadata()
 export class RelationMetadataType implements IRelationMetadata<any> {
     @StringField() target: Class;
-    // entityMetadata: EntityMetadataType;
+    @RefField(type => EntityMetadataType) entityMetadata: IEntityMetadata;
     @StringField() propertyName: string;
     @StringField() relationType: RelationType;
     @RefField(type => EntityMetadataType) inverseEntityMetadata: IEntityMetadata;
     @RefField(type => RelationMetadataType) inverseRelation?: IRelationMetadata<any>;
     @ListField(type => ColumnMetadataType) joinColumns: IColumnMetadata[];
 
-    public static registry(root: MetadataRegistry, args: ResolverArgs): IRelationMetadata<any>[] {
-        return []; // Object.values(Registry.relations);
+    public static registry(root: MetadataRegistry, args: ResolverArgs): IRelationMetadata[] {
+        return Lo.filter(Object.values(root.relations), args);
+    }
+
+    public static target(parent: IRelationMetadata, args: ResolverArgs): string {
+        return parent.target && `[class: ${parent.target.name}]`;
+    }
+
+    public static joinColumns(parent: IRelationMetadata, args: ResolverArgs): IColumnMetadata[] {
+        return Lo.filter(parent.joinColumns, args);
     }
 }
 
@@ -52,10 +65,14 @@ export class EntityMetadataType implements IEntityMetadata {
     @StringField() name: string;
     @ListField(type => ColumnMetadataType) columns: IColumnMetadata[];
     @ListField(type => ColumnMetadataType) primaryColumns: IColumnMetadata[];
-    @ListField(type => RelationMetadataType) relations: IRelationMetadata<any>[];
+    @ListField(type => RelationMetadataType) relations: IRelationMetadata[];
 
     public static registry(root: MetadataRegistry, args: ResolverArgs): IEntityMetadata[] {
         return Lo.filter(Object.values(root.entities), args);
+    }
+
+    public static target(parent: IEntityMetadata, args: ResolverArgs): string {
+        return parent.target && `[class: ${parent.target.name}]`;
     }
 
     public static columns(parent: IEntityMetadata, args: ResolverArgs): IColumnMetadata[] {
@@ -66,7 +83,7 @@ export class EntityMetadataType implements IEntityMetadata {
         return Lo.filter(parent.primaryColumns, args);
     }
 
-    public static relations(parent: IEntityMetadata, args: ResolverArgs): IRelationMetadata<any>[] {
+    public static relations(parent: IEntityMetadata, args: ResolverArgs): IRelationMetadata[] {
         return Lo.filter(parent.relations, args);
     }
 }

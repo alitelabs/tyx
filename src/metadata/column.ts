@@ -1,6 +1,6 @@
 import { Class, Prototype } from "../types/core";
 import { DatabaseMetadata } from "./database";
-import { EntityMetadata } from "./entity";
+import { EntityMetadata, IEntityMetadata } from "./entity";
 import { Registry } from "./registry";
 import { GraphType } from "./type";
 
@@ -226,7 +226,17 @@ export interface ColumnOptions {
 }
 
 export interface IColumnMetadata {
+    /**
+     * Target class where column decorator is used.
+     * This may not be always equal to entity metadata (for example embeds or inheritance cases).
+     */
     target: Class;
+    /**
+     * Entity metadata where this column metadata is.
+     *
+     * For example for @Column() name: string in Post, entityMetadata will be metadata of Post entity.
+     */
+    entityMetadata: IEntityMetadata;
     /**
      * Class's property name on which this column is applied.
      */
@@ -290,6 +300,7 @@ export interface IColumnMetadata {
 
 export class ColumnMetadata implements IColumnMetadata {
     public target: Class;
+    public entityMetadata: IEntityMetadata;
     public propertyName: string;
     public type: ColumnType;
     public precision?: number | null;
@@ -308,6 +319,7 @@ export class ColumnMetadata implements IColumnMetadata {
     protected constructor(target: Class, propertyKey: string, mode: ColumnMode, options: ColumnOptions) {
         let state: IColumnMetadata = {
             target,
+            entityMetadata: undefined,
             propertyName: propertyKey,
             type: options.type,
             comment: options.comment,
@@ -342,5 +354,13 @@ export class ColumnMetadata implements IColumnMetadata {
         return meta;
     }
 
-    public resolve(database: DatabaseMetadata, entity: EntityMetadata): void { }
+    public commit(): void {
+    }
+
+    public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
+        this.entityMetadata = entity;
+        let key = `${entity.name}.${this.propertyName}`;
+        Registry.columns[key] = this;
+        database.columns.push(this);
+    }
 }

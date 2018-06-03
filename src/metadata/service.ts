@@ -14,7 +14,7 @@ export interface HandlerMetadata {
     target: Class;
 }
 
-export interface ServiceMetadata {
+export interface IServiceMetadata {
     target: Class;
     serviceId: string;
 
@@ -27,7 +27,7 @@ export interface ServiceMetadata {
     releasor: HandlerMetadata;
 }
 
-export class ServiceMetadata implements ServiceMetadata {
+export class ServiceMetadata implements IServiceMetadata {
     public target: Class;
     public serviceId: string;
     public dependencies: Record<string, InjectMetadata> = undefined;

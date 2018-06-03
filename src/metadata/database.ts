@@ -1,19 +1,27 @@
 import { Class, Prototype } from "../types/core";
-import { EntityMetadata } from "./entity";
+import { ColumnMetadata, IColumnMetadata } from "./column";
+import { EntityMetadata, IEntityMetadata } from "./entity";
 import { Registry } from "./registry";
+import { IRelationMetadata, RelationMetadata } from "./relation";
 import { ServiceMetadata } from "./service";
 
-export interface DatabaseMetadata extends ServiceMetadata {
+export interface IDatabaseMetadata {
     target: Class;
     serviceId: string;
 
     targets: Class[];
-    entities: EntityMetadata[];
+    entities: IEntityMetadata[];
+    columns: IColumnMetadata[];
+    relations: IRelationMetadata<any>[];
 }
 
-export class DatabaseMetadata implements DatabaseMetadata {
+export class DatabaseMetadata implements IDatabaseMetadata {
+    public target: Class;
+    public serviceId: string;
     public targets: Class[] = [];
     public entities: EntityMetadata[] = [];
+    public columns: ColumnMetadata[] = [];
+    public relations: RelationMetadata[] = [];
 
     protected constructor(target: Class) {
         this.target = target;
@@ -49,6 +57,7 @@ export class DatabaseMetadata implements DatabaseMetadata {
         }
         // TODO: Link entity metadata
         ServiceMetadata.define(this.target).commit(alias);
+        Registry.databases[this.serviceId] = this;
         this.entities.forEach(entity => entity.resolve(this));
         return this;
     }

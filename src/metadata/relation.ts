@@ -80,14 +80,14 @@ export interface JoinColumnOptions {
     referencedColumnName?: string;
 }
 
-export interface IRelationMetadata<T> {
+export interface IRelationMetadata<T = any> {
     target: Class;
     /**
      * Entity metadata of the entity where this relation is placed.
      *
      * For example for @ManyToMany(type => Category) in Post, entityMetadata will be metadata of Post entity.
      */
-    // entityMetadata: EntityMetadata;
+    entityMetadata: IEntityMetadata;
     /**
      * Target's property name to which relation decorator is applied.
      */
@@ -121,6 +121,7 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
     public target: Class = undefined;
     public propertyName: string = undefined;
     public relationType: RelationType = undefined;
+    public entityMetadata: EntityMetadata = undefined;
     public inverseEntityMetadata: EntityMetadata = undefined;
     public inverseRelation?: RelationMetadata<T> = undefined;
     public joinColumns: ColumnMetadata[] = undefined;
@@ -163,11 +164,15 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
     }
 
     public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
+        this.entityMetadata = entity;
         this.joinColumns = this.joinOptions.map(opt => entity.members[opt.name] as ColumnMetadata);
         let inverseEntity = this.typeFunction();
         this.inverseEntityMetadata = database.entities.find(e => e.target === inverseEntity);
         this.inverseRelation = this.inverseSide(this.inverseEntityMetadata.members as any);
         if (!(this.inverseRelation instanceof RelationMetadata)) throw new TypeError(`Invalid inverse relation`);
         // TODO: More validations and optional inverse relation
+        let key = `${entity.name}.${this.propertyName}`;
+        Registry.relations[key] = this;
+        database.relations.push(this);
     }
 }
