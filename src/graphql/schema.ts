@@ -1,19 +1,14 @@
-import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema } from "graphql";
-import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
-import { makeExecutableSchema, SchemaDirectiveVisitor } from "graphql-tools";
-import { GraphQLResolveInfo } from "graphql/type/definition";
+import { GraphQLSchema } from "graphql";
+import { ILogger, makeExecutableSchema } from "graphql-tools";
 import { ColumnType } from "../metadata/column";
 import { EntityMetadata } from "../metadata/entity";
 import { MetadataRegistry } from "../metadata/registry";
 import { RelationMetadata, RelationType } from "../metadata/relation";
 import { GraphMetadata, GraphType, TypeMetadata } from "../metadata/type";
-import { ToolkitArgs, ToolkitQuery } from "./query";
-import GraphQLJSON = require("graphql-type-json");
-
+import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from "./base";
+import { ToolkitResolver } from "./types";
 
 export { GraphQLSchema } from "graphql";
-
-export const SYS_COLUMNS = ["created", "updated", "version"];
 
 export const MODEL = "";
 export const GET = "";
@@ -23,7 +18,7 @@ export const UPDATE = "update";
 export const REMOVE = "remove";
 
 export interface EntitySchema {
-    entity: EntityMetadata;
+    target: EntityMetadata;
 
     query: string;
     mutation: string;
@@ -38,6 +33,13 @@ export interface EntitySchema {
     navigation: Record<string, ToolkitResolver>;
 }
 
+export interface TypeSchema {
+    target: TypeMetadata;
+    ref: string;
+    def: string;
+    query: string;
+}
+
 export interface ServiceSchema {
     service: string;
     methods: Record<string, MethodSchema>;
@@ -49,121 +51,77 @@ export interface MethodSchema {
     resolver: ToolkitResolver;
 }
 
-export type ToolkitInfo = GraphQLResolveInfo;
-
-export interface ToolkitContext {
-    provider: ToolkitProvider;
-    results?: Record<string, any[]>;
-}
-
-export interface ToolkitResolver {
-    (obj: any, args: ToolkitQuery & ToolkitArgs, ctx: ToolkitContext, info: ToolkitInfo): Promise<any>;
-}
-
-export interface ToolkitMutation {
-    (entity: EntityMetadata, obj: any, args: ToolkitQuery & ToolkitArgs, ctx: ToolkitContext, info: ToolkitInfo): Promise<any>;
-}
-
-export interface ToolkitRead {
-    (entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any>;
-}
-
-export interface ToolkitRelation {
-    (entity: EntityMetadata, rel: RelationMetadata, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any>;
-}
-
-export interface ToolkitProvider {
-    get: ToolkitRead;
-    search: ToolkitRead;
-    create: ToolkitMutation;
-    update: ToolkitMutation;
-    remove: ToolkitMutation;
-    oneToMany: ToolkitRelation;
-    oneToOne: ToolkitRelation;
-    manyToOne: ToolkitRelation;
-}
-
-export class QueryVisitor extends SchemaDirectiveVisitor {
-    constructor(config) { super(config); }
-    public visitFieldDefinition(field: GraphQLField<any, any>, details: {
-        objectType: GraphQLObjectType | GraphQLInterfaceType;
-    }): GraphQLField<any, any> | void {
-        // let resolve = field.resolve;
-        // field.resolve = async (obj, args, context, info) => {
-        //     let res = await resolve.call(field, obj, args, context, info);
-        //     // context.results = { [ww(info.path)]: res };
-        //     return res;
-        // };
-    }
-}
-
-export class RelationVisitor extends SchemaDirectiveVisitor {
-    public visitFieldDefinition(field: GraphQLField<any, any>, details: {
-        objectType: GraphQLObjectType | GraphQLInterfaceType;
-    }): GraphQLField<any, any> | void {
-        // let resolve = field.resolve;
-        // field.resolve = async (obj, args, context, info) => {
-        //     let res = await resolve.call(field, obj, args, context, info);
-        //     if (args.exists && res.length === 0) {
-        //         let gp = ww(info.path.prev.prev);
-        //         let ar = context.results[gp];
-        //         delete ar[info.path.prev.key];
-        //     } else {
-        //         context.results[ww(info.path)] = res;
-        //     }
-        //     return res;
-        // };
-    }
-}
-
 export class CoreSchema {
-    public static SCALARS: Record<string, GraphQLScalarType> = {
-        Date: GraphQLDate,
-        Time: GraphQLTime,
-        DateTime: GraphQLDateTime,
-        JSON: GraphQLJSON
-    };
-
-    public static DIRECTIVES = {
-        // entity: ToolkitVisitor,
-        // column: RelationVisitor,
-        query: QueryVisitor,
-        relation: RelationVisitor
-    };
-
-    public static DEF_SCALARS = Object.keys(CoreSchema.SCALARS).map(s => `scalar ${s}`).join("\n");
-
-    public static DEF_DIRECTIVES = back("        ", `
-        enum RelationType {
-            OneToOne,
-            OneToMany,
-            ManyToOne
-        }
-        directive @entity(rem: String) on OBJECT
-        directive @column(rem: String) on OBJECT
-        directive @relation(type: RelationType) on FIELD_DEFINITION
-        directive @query(type: RelationType) on FIELD_DEFINITION
-    `);
-
+    public metadata: Record<string, TypeSchema> = {};
     public entities: Record<string, EntitySchema> = {};
-
-    // public inputs: Record<string, string> = {};
-    // public results: Record<string, string> = {};
+    public inputs: Record<string, TypeSchema> = {};
+    public results: Record<string, TypeSchema> = {};
     // public services: Record<string, ServiceSchema> = {};
 
-    constructor(entities: EntityMetadata[]) {
-        // Metdata
-        for (let meta of entities) this.genEntity(meta, this.entities);
+    constructor(registry: MetadataRegistry) {
+        // Metadata
+        for (let type of Object.values(registry.metadata))
+            this.genType(type, GraphType.Metadata, this.metadata);
+        // Entities
+        for (let meta of Object.values(registry.entities))
+            this.genEntity(meta, this.entities);
         // Inputs
+        for (let type of Object.values(registry.inputs))
+            this.genType(type, GraphType.Input, this.inputs);
         // Results
+        for (let type of Object.values(registry.results))
+            this.genType(type, GraphType.Result, this.results);
         // Services
     }
 
-    public genEntity(entity: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
-        let target = entity.name;
-        if (schemas[target]) return schemas[target];
+    public executable(logger?: ILogger): GraphQLSchema {
+        return makeExecutableSchema({
+            typeDefs: this.typeDefs(),
+            resolvers: this.resolvers(),
+            schemaDirectives: DIRECTIVES,
+            logger
+        });
+    }
 
-        let model = `type ${target}${MODEL} @entity(rem: "TODO") {`;
+    public typeDefs(): string {
+        return back(`
+            #### Scalars ####
+            ${DEF_SCALARS}\n
+            #### Directives ####
+            ${DEF_DIRECTIVES}\n
+            #### Metadata Types ####
+            ${Object.values(this.metadata).map(m => m.def).join("\n")}\n
+            #### Metadata Resolvers ####
+            type Query {
+            ${Object.values(this.metadata).map(m => m.query).join("\n")}    
+            }
+            type Mutation {
+              reloadMetadata(role: String): JSON
+            }
+        \n`) + Object.values(this.entities).map((e) => {
+                return `#### Entity: ${e.target.name} ####\n`
+                    + `extend ${e.query}\n`
+                    + `extend ${e.mutation}\n`
+                    + `${e.model}\n${e.inputs.join("\n")}`;
+            });
+    }
+
+    public resolvers() {
+        let resolvers = { Query: {}, Mutation: {} };
+        for (let entry of Object.entries(this.entities)) {
+            let target = entry[0];
+            let schema = entry[1];
+            resolvers.Query = { ...resolvers.Query, ...schema.queries, [target + MODEL]: schema.navigation };
+            resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
+        }
+        return resolvers;
+    }
+
+    public genEntity(target: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
+        let name = target.name;
+        if (schemas[name]) return schemas[name];
+
+        let model = `type ${name}${MODEL} @entity(rem: "TODO") {`;
         let input = `Input {`;
         let nil = `Null {`;
         let multi = `Multi {`;
@@ -173,11 +131,11 @@ export class CoreSchema {
         let create = ``;
         let update = ``;
         let cm = true;
-        for (let col of entity.columns) {
+        for (let col of target.columns) {
             let pn = col.propertyName;
             let dt = ColumnType.graphType(col.type);
             let nl = !col.isNullable ? "!" : "";
-            if (col.propertyName.endsWith("Id")) dt = GraphType.ID;
+            if (pn.endsWith("Id")) dt = GraphType.ID;
             model += `${cm ? "" : ","}\n  ${pn}: ${dt}${nl}`;
             if (col.isPrimary)
                 keys += `${cm ? "" : ", "}${pn}: ${dt}${nl}`;
@@ -195,46 +153,46 @@ export class CoreSchema {
         // model += `,\n  _exclude: Boolean`;
         // model += `,\n  _debug: _DebugInfo`;
         let opers = [
-            `if: ${target}Input`,
-            `eq: ${target}Input`,
-            `ne: ${target}Input`,
-            `gt: ${target}Input`,
-            `gte: ${target}Input`,
-            `lt: ${target}Input`,
-            `lte: ${target}Input`,
-            `like: ${target}Like`,
-            `nlike: ${target}Like`,
-            `rlike: ${target}Like`,
-            `in: ${target}Multi`,
-            `nin: ${target}Multi`,
-            `not: ${target}Where`,
-            `nor: ${target}Where`,
-            `nil: ${target}Null`, // TODO
-            `and: [${target}Where]`,
-            `or: [${target}Where]`,
+            `if: ${name}Input`,
+            `eq: ${name}Input`,
+            `ne: ${name}Input`,
+            `gt: ${name}Input`,
+            `gte: ${name}Input`,
+            `lt: ${name}Input`,
+            `lte: ${name}Input`,
+            `like: ${name}Like`,
+            `nlike: ${name}Like`,
+            `rlike: ${name}Like`,
+            `in: ${name}Multi`,
+            `nin: ${name}Multi`,
+            `not: ${name}Where`,
+            `nor: ${name}Where`,
+            `nil: ${name}Null`, // TODO
+            `and: [${name}Where]`,
+            `or: [${name}Where]`,
         ];
         let search = `\n    `
             + opers.join(",\n    ")
-            + `,\n    order: ${target}Order,`
+            + `,\n    order: ${name}Order,`
             + `\n    skip: Int,`
             + `\n    take: Int,`
             + `\n    exists: Boolean`;
         let where = `Where {\n  `
             + opers.join(",\n  ");
-        let inputs = [input, where, nil, multi, like, order].map(x => `input ${target}${x}\n}`);
+        let inputs = [input, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
 
         let query = `type Query {\n`;
-        query += `  ${GET}${target}(${keys}): ${target}${MODEL} @query(rem: "TODO"),\n`;
-        query += `  ${SEARCH}${target}s(${search}\n  ): [${target}${MODEL}] @query(rem: "TODO")\n`;
+        query += `  ${GET}${name}(${keys}): ${name}${MODEL} @query(rem: "TODO"),\n`;
+        query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${MODEL}] @query(rem: "TODO")\n`;
         query += `}`;
         let mutation = "type Mutation {\n";
-        mutation += `  ${CREATE}${target}(${create}\n  ): ${target}${MODEL},\n`;
-        mutation += `  ${UPDATE}${target}(${update}\n  ): ${target}${MODEL},\n`;
-        mutation += `  ${REMOVE}${target}(${keys}): ${target}${MODEL}\n`;
+        mutation += `  ${CREATE}${name}(${create}\n  ): ${name}${MODEL},\n`;
+        mutation += `  ${UPDATE}${name}(${update}\n  ): ${name}${MODEL},\n`;
+        mutation += `  ${REMOVE}${name}(${keys}): ${name}${MODEL}\n`;
         mutation += "}";
 
         let schema: EntitySchema = {
-            entity,
+            target,
 
             query,
             mutation,
@@ -244,42 +202,43 @@ export class CoreSchema {
             simple: model,
             relations: {},
             queries: {
-                [`${GET}${target}`]: this.findResolver(entity),
-                [`${SEARCH}${target}s`]: this.searchResolver(entity)
+                [`${GET}${name}`]: this.findResolver(target),
+                [`${SEARCH}${name}s`]: this.searchResolver(target)
             },
             mutations: {
-                [`${CREATE}${target}`]: this.createResolver(entity),
-                [`${UPDATE}${target}`]: this.updateResolver(entity),
-                [`${REMOVE}${target}`]: this.removeResolver(entity)
+                [`${CREATE}${name}`]: this.createResolver(target),
+                [`${UPDATE}${name}`]: this.updateResolver(target),
+                [`${REMOVE}${name}`]: this.removeResolver(target)
             },
             navigation: {}
         };
-        schemas[target] = schema;
+        schemas[name] = schema;
 
         let simple = model;
         let navigation = {};
-        for (let rel of entity.relations) {
+        for (let rel of target.relations) {
+            let property = rel.propertyName;
             let inverse = rel.inverseEntityMetadata.name;
-            let rm = navigation[rel.propertyName] = { inverse } as any;
+            let rm = navigation[property] = { inverse } as any;
             // TODO: Subset of entities
             // if (!entities.find(e => e.name === target)) continue;
             if (rel.relationType === RelationType.ManyToOne) {
                 rm.type = "manyToOne";
                 let args = "";
-                model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
-                simple += `,\n  ${rel.propertyName}: ${inverse}${MODEL}`;
-                schema.navigation[rel.propertyName] = this.manyToOneResolver(entity, rel);
+                model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
+                simple += `,\n  ${property}: ${inverse}${MODEL}`;
+                schema.navigation[property] = this.manyToOneResolver(target, rel);
             } else if (rel.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";
-                model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
-                schema.navigation[rel.propertyName] = this.oneToOneResolver(entity, rel);
+                model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
+                schema.navigation[property] = this.oneToOneResolver(target, rel);
             } else if (rel.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
                 let temp = this.genEntity(rel.inverseEntityMetadata, schemas);
                 let args = ` (${temp.search}\n  )`;
-                model += `,\n  ${rel.propertyName}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
-                schema.navigation[rel.propertyName] = this.oneToManyResolver(entity, rel);
+                model += `,\n  ${property}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
+                schema.navigation[property] = this.oneToManyResolver(target, rel);
             } else {
                 continue; // TODO: Implement
             }
@@ -293,17 +252,6 @@ export class CoreSchema {
         // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
 
         return schema;
-    }
-
-    public resolvers() {
-        let resolvers = { Query: {}, Mutation: {} };
-        for (let entry of Object.entries(this.entities)) {
-            let target = entry[0];
-            let schema = entry[1];
-            resolvers.Query = { ...resolvers.Query, ...schema.queries, [target + MODEL]: schema.navigation };
-            resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
-        }
-        return resolvers;
     }
 
     private findResolver(entity: EntityMetadata): ToolkitResolver {
@@ -338,121 +286,77 @@ export class CoreSchema {
         return (obj, args, ctx, info) => ctx.provider.oneToOne(entity, relation, obj, args, ctx, info)
     }
 
-    public executable(logger?: ILogger): GraphQLSchema {
-        return makeExecutableSchema({
-            typeDefs: this.typeDefs(),
-            resolvers: this.resolvers(),
-            schemaDirectives: CoreSchema.DIRECTIVES,
-            logger
-        });
-    }
-
-    public typeDefs(): string {
-        return CoreSchema.DEF_SCALARS + "\n"
-            + CoreSchema.DEF_DIRECTIVES + "\n"
-            + Object.values(this.entities).map((s, i) =>
-                `${i ? "extend " : ""}${s.query}\n`
-                + `${i ? "extend " : ""}${s.mutation}\n`
-                + `${s.model}\n${s.inputs.join("\n")}`
-            ).join("\n\n");
-        // "\n\n this.serviceDefs() + "\n";
-    }
-
-    public api(registry: MetadataRegistry): string {
-        let schema: string[] = [];
-        let query: string[] = [];
-
-        schema.push("### Metadata Types");
-        let metaReg: Record<string, TypeMetadata> = {};
-        for (let type of Object.values(registry.metadata)) {
-            resolve(type, GraphType.Metadata, metaReg);
+    // TODO: Generic
+    private genType(target: GraphMetadata, scope: GraphType, reg: Record<string, TypeSchema>): string {
+        if (GraphType.isScalar(target.type)) {
+            return target.type;
+        }
+        if (GraphType.isRef(target.type)) {
+            let type = target.target();
+            let meta = TypeMetadata.get(type);
+            if (meta) {
+                return this.genType(meta, scope, reg);
+            } else {
+                return GraphType.Object;
+            }
+        }
+        if (GraphType.isList(target.type)) {
+            let type = this.genType(target.item, scope, reg);
+            if (type) {
+                return `[${type}]`;
+            } else {
+                return `[${GraphType.Object}]`;
+            }
+        }
+        if (GraphType.isStruc(target.type)) {
+            let struc = target as TypeMetadata;
+            let link = struc.target && struc.name || target.target.name;
+            if (link && reg[link]) return link;
+        }
+        if (GraphType.isEntity(target.type) && scope !== GraphType.Result) {
+            // TODO: Register imports
+            return target.target.name;
         }
 
-        schema.push("\n### Input Types");
-        let inputReg: Record<string, TypeMetadata> = {};
-        for (let type of Object.values(registry.inputs)) {
-            resolve(type, GraphType.Input, inputReg);
+        if (scope === GraphType.Metadata && !GraphType.isMetadata(target.type))
+            throw new TypeError(`Metadata type can not reference [${target.type}]`);
+
+        if (scope === GraphType.Input && !GraphType.isInput(target.type))
+            throw new TypeError(`Input type can not reference [${target.type}]`);
+
+        if (scope === GraphType.Result && !GraphType.isResult(target.type) && !GraphType.isEntity(target.type))
+            throw new TypeError(`Result type can not reference [${target.type}]`);
+
+        let struc = target as TypeMetadata;
+        if (!GraphType.isStruc(struc.type) || !struc.fields)
+            throw new TypeError(`Empty type difinition ${struc.target}`);
+
+        // Generate schema
+        let schema: TypeSchema = { target: struc, ref: struc.name, def: undefined, query: undefined };
+        reg[struc.name] = schema;
+        let def = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        let params = ""
+        for (let field of Object.values(struc.fields)) {
+            let type = this.genType(field, scope, reg);
+            def += `  ${field.name}: ${type}\n`;
+            if (GraphType.isScalar(type as GraphType))
+                params += (params ? ",\n    " : "    ") + `${field.name}: ${type}`;
         }
+        def += "}";
+        schema.def = def;
+        if (GraphType.isMetadata(struc.type)) schema.query = `  ${struc.name}(\n${params}\n  ): [${struc.name}]`;
 
-        schema.push("\n### Result Types");
-        let resultReg: Record<string, TypeMetadata> = {};
-        for (let type of Object.values(registry.results)) {
-            resolve(type, GraphType.Result, resultReg);
-        }
-
-        return "Query {\n" + query.join("\n") + "\n}\n\n" + schema.join("\n");
-
-        // TODO: Generic
-        function resolve(meta: GraphMetadata, scope: GraphType, reg: Record<string, TypeMetadata>): GraphMetadata {
-            if (GraphType.isScalar(meta.type)) {
-                meta.ref = meta.type;
-                return meta;
-            }
-            if (meta.target && reg[meta.target.name]) {
-                return reg[meta.target.name];
-            }
-            if (GraphType.isRef(meta.type)) {
-                let type = meta.target();
-                let target = TypeMetadata.get(type);
-                if (target) {
-                    target = resolve(target, scope, reg) as TypeMetadata;
-                    meta.ref = target.ref;
-                } else {
-                    meta.ref = GraphType.Object;
-                }
-                return meta;
-            }
-            if (GraphType.isList(meta.type)) {
-                let type = resolve(meta.item, scope, reg);
-                if (type) {
-                    meta.ref = `[${type.ref}]`;
-                } else {
-                    meta.ref = `[${GraphType.Object}]`;
-                }
-                return meta;
-            }
-            if (GraphType.isEntity(meta.type) && scope !== GraphType.Result) {
-                // TODO: Register imports
-                meta.ref = meta.target.name;
-                return meta;
-            }
-
-            if (scope === GraphType.Metadata && !GraphType.isMetadata(meta.type))
-                throw new TypeError(`Metadata type can not reference [${meta.type}]`);
-
-            if (scope === GraphType.Input && !GraphType.isInput(meta.type))
-                throw new TypeError(`Input type can not reference [${meta.type}]`);
-
-            if (scope === GraphType.Result && !GraphType.isResult(meta.type) && !GraphType.isEntity(meta.type))
-                throw new TypeError(`Result type can not reference [${meta.type}]`);
-
-            let struc = meta as TypeMetadata;
-            if (!GraphType.isStruc(struc.type) || !struc.fields)
-                throw new TypeError(`Empty type difinition ${struc.target}`);
-
-            // Generate schema
-            struc.ref = struc.name;
-            reg[struc.ref] = struc;
-            reg[struc.target.name] = struc;
-            let def = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
-            let params = ""
-            for (let [key, field] of Object.entries(struc.fields)) {
-                let res = resolve(field, scope, reg);
-                def += `  ${key}: ${res.ref}\n`;
-                if (GraphType.isScalar(res.type))
-                    params += (params ? ", " : "") + `${key}: ${res.type}`;
-            }
-            def += "}";
-            schema.push(def);
-            if (GraphType.isMetadata(struc.type)) query.push(`  ${struc.name}(${params})`);
-
-            return meta;
-        }
+        return struc.name;
     }
 }
 
-function back(prefix: string, text: string) {
-    return text.split("\n").map(line => line.replace(prefix, "")).join("\n").trim();
+function back(text: string) {
+    let lines = text.split("\n");
+    let first = lines[0];
+    if (!first.trim().length) first = lines[1];
+    let pad = first.substr(0, first.indexOf(first.trim()));
+    text = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line).join("\n");
+    return text;
 }
 
 // function ww(path) {

@@ -6,7 +6,7 @@ export type OrderNode = Record<string, number>;
 
 // https://docs.mongodb.com/manual/reference/operator/
 
-export interface Expression {
+export interface ResolverExpression {
     if?: InputNode;
     eq?: InputNode;
     gt?: InputNode;
@@ -20,13 +20,13 @@ export interface Expression {
     in?: ArrayNode;
     nin?: ArrayNode;
     nil?: NullNode;
-    not?: Expression;
-    nor?: Expression;
-    and?: Expression[];
-    or?: Expression[];
+    not?: ResolverExpression;
+    nor?: ResolverExpression;
+    and?: ResolverExpression[];
+    or?: ResolverExpression[];
 }
 
-export interface ToolkitQuery extends Expression {
+export interface ResolverQuery extends ResolverExpression {
     order?: OrderNode;
     where?: string;
     offset?: number;
@@ -36,14 +36,14 @@ export interface ToolkitQuery extends Expression {
     take?: number;
 }
 
-export type ToolkitArgs = any;
+export type ResolverArgs = any;
 
 const ES = "`";
 
-export namespace ToolkitQuery {
+export namespace ResolverQuery {
     export const ALIAS = "target";
 
-    export function prepareSql(keys: ToolkitArgs, query: ToolkitQuery) {
+    export function prepareSql(keys: ResolverArgs, query: ResolverQuery) {
         let params: Record<string, any> = {};
         if (keys) Object.assign(params, keys);
         let { where, orex } = prepareWhere(query, true, params, { count: 0 });
@@ -64,7 +64,7 @@ export namespace ToolkitQuery {
         return { where, params, order, skip: query.skip, take: query.take };
     }
 
-    export function prepareWhere(node: Expression, and: boolean, params: ToolkitArgs, index: { count: number }): {
+    export function prepareWhere(node: ResolverExpression, and: boolean, params: ResolverArgs, index: { count: number }): {
         where: string,
         orex: boolean
     } {

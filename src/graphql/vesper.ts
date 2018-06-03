@@ -1,10 +1,11 @@
-import { EntitySchema, GET, MODEL, SEARCH, CoreSchema } from "./schema";
+import { DEF_DIRECTIVES, DEF_SCALARS } from "./base";
+import { CoreSchema, EntitySchema, GET, MODEL, SEARCH } from "./schema";
 
 export default function codegen(schema: CoreSchema, folder: string, ext?: string) {
     ext = ext || "gql";
     let fs = require("fs");
     fs.writeFileSync(`${folder}/schema/import.${ext}`,
-        CoreSchema.DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + CoreSchema.DEF_DIRECTIVES + "\n");
+        DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + DEF_DIRECTIVES + "\n");
     for (let target in schema.entities) {
         let entry = schema.entities[target];
         fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);

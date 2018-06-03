@@ -106,7 +106,6 @@ export namespace GraphType {
 
 export interface GraphMetadata {
     type: GraphType;
-    ref?: string;
     item?: GraphMetadata;
     target?: Class;
 }
@@ -128,7 +127,7 @@ export class TypeMetadata {
     public target: Class = undefined;
     public type: GraphType = undefined;
     public name: string = undefined;
-    public ref?: string = undefined;
+    // public ref?: string = undefined;
     // public schema?: string = undefined;
     public fields?: Record<string, FieldMetadata> = undefined;
 

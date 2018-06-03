@@ -4,15 +4,17 @@ import { ContentType, Get, Post } from "../decorators/http";
 import { Activator, Inject } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
+import { Registry } from "../metadata/registry";
 import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
-import { ToolkitContext, ToolkitProvider, CoreSchema } from "./schema";
+import { CoreSchema } from "./schema";
+import { EntityResolver, ToolkitContext } from "./types";
 
 const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
 
 export interface GraphQLApi {
-    graphql(ctx: ToolkitContext, req: HttpRequest, provider: ToolkitProvider): Promise<HttpResponse>;
+    graphql(ctx: ToolkitContext, req: HttpRequest, provider: EntityResolver): Promise<HttpResponse>;
     graphiql(ctx: Context, req: HttpRequest): Promise<string>;
     playground(ctx: Context, req: HttpRequest): Promise<string>;
 }
@@ -36,7 +38,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     }
 
     protected async initialize(): Promise<CoreSchema> {
-        let schema = new CoreSchema(this.database.metadata);
+        let schema = new CoreSchema(Registry.get());
         return schema;
     }
 

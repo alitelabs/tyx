@@ -5,7 +5,7 @@ import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method"
 import { ProxyMetadata } from "./proxy";
 import { RelationMetadata } from "./relation";
 import { ServiceMetadata } from "./service";
-import { GraphMetadata, GraphType, TypeMetadata } from "./type";
+import { TypeMetadata } from "./type";
 
 export interface TypeDecorationMetadata {
     target: Function;
