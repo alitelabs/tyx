@@ -1,46 +1,8 @@
-export type InputNode = Record<string, string | boolean | number>;
-export type ArrayNode = Record<string, string[] | boolean[] | number[]>;
-export type LikeNode = Record<string, string>;
-export type NullNode = Record<string, boolean>;
-export type OrderNode = Record<string, number>;
-
-// https://docs.mongodb.com/manual/reference/operator/
-
-export interface ResolverExpression {
-    if?: InputNode;
-    eq?: InputNode;
-    gt?: InputNode;
-    gte?: InputNode;
-    lt?: InputNode;
-    lte?: InputNode;
-    ne?: InputNode;
-    like?: LikeNode;
-    nlike?: LikeNode;
-    rlike?: LikeNode;
-    in?: ArrayNode;
-    nin?: ArrayNode;
-    nil?: NullNode;
-    not?: ResolverExpression;
-    nor?: ResolverExpression;
-    and?: ResolverExpression[];
-    or?: ResolverExpression[];
-}
-
-export interface ResolverQuery extends ResolverExpression {
-    order?: OrderNode;
-    where?: string;
-    offset?: number;
-    limit?: number;
-    exists?: boolean;
-    skip?: number;
-    take?: number;
-}
-
-export type ResolverArgs = any;
+import { ArrayNode, InputNode, LikeNode, ResolverArgs, ResolverExpression, ResolverQuery } from "./types";
 
 const ES = "`";
 
-export namespace ResolverQuery {
+export namespace QueryToolkit {
     export const ALIAS = "target";
 
     export function prepareSql(keys: ResolverArgs, query: ResolverQuery) {

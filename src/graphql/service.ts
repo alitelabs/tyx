@@ -8,13 +8,13 @@ import { Registry } from "../metadata/registry";
 import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { CoreSchema } from "./schema";
-import { EntityResolver, ToolkitContext } from "./types";
+import { EntityResolver, ResolverContext } from "./types";
 
 const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
 
 export interface GraphQLApi {
-    graphql(ctx: ToolkitContext, req: HttpRequest, provider: EntityResolver): Promise<HttpResponse>;
+    graphql(ctx: ResolverContext, req: HttpRequest, provider: EntityResolver): Promise<HttpResponse>;
     graphiql(ctx: Context, req: HttpRequest): Promise<string>;
     playground(ctx: Context, req: HttpRequest): Promise<string>;
 }
@@ -74,7 +74,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     @Get("/graphql/{authorization}")
     @Post("/graphql/{authorization}", false)
     @ContentType(HttpResponse)
-    public async graphql(ctx: ToolkitContext, req: HttpRequest): Promise<HttpResponse> {
+    public async graphql(ctx: ResolverContext, req: HttpRequest): Promise<HttpResponse> {
         this.executable = this.executable || this.schema.executable({ log: (msg) => this.log.info(msg) });
         let options = {
             schema: this.executable,

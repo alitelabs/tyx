@@ -2,11 +2,11 @@ import { GraphQLSchema } from "graphql";
 import { ILogger, makeExecutableSchema } from "graphql-tools";
 import { ColumnType } from "../metadata/column";
 import { EntityMetadata } from "../metadata/entity";
-import { MetadataRegistry } from "../metadata/registry";
-import { RelationMetadata, RelationType } from "../metadata/relation";
+import { MetadataRegistry, Registry } from "../metadata/registry";
+import { RelationType } from "../metadata/relation";
 import { GraphMetadata, GraphType, TypeMetadata } from "../metadata/type";
 import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from "./base";
-import { ToolkitResolver } from "./types";
+import { SchemaResolver } from "./types";
 
 export { GraphQLSchema } from "graphql";
 
@@ -28,16 +28,18 @@ export interface EntitySchema {
     simple: string;
     relations: Record<string, { target: string, type: string }>;
 
-    queries: Record<string, ToolkitResolver>;
-    mutations: Record<string, ToolkitResolver>;
-    navigation: Record<string, ToolkitResolver>;
+    queries: Record<string, SchemaResolver>;
+    mutations: Record<string, SchemaResolver>;
+    navigation: Record<string, SchemaResolver>;
 }
 
 export interface TypeSchema {
     target: TypeMetadata;
-    ref: string;
-    def: string;
+    model: string;
     query: string;
+    params: string;
+    registry: SchemaResolver;
+    navigation: Record<string, SchemaResolver>;
 }
 
 export interface ServiceSchema {
@@ -48,7 +50,7 @@ export interface ServiceSchema {
 export interface MethodSchema {
     method: string;
     signature: string;
-    resolver: ToolkitResolver;
+    resolver: SchemaResolver;
 }
 
 export class CoreSchema {
@@ -90,10 +92,14 @@ export class CoreSchema {
             #### Directives ####
             ${DEF_DIRECTIVES}\n
             #### Metadata Types ####
-            ${Object.values(this.metadata).map(m => m.def).join("\n")}\n
+            ${Object.values(this.metadata).map(m => m.model).join("\n")}\n
+            #### Registry ####
+            type MetadataRegistry {
+            ${Object.values(this.metadata).map(m => m.query).join("\n")}
+            }
             #### Metadata Resolvers ####
             type Query {
-            ${Object.values(this.metadata).map(m => m.query).join("\n")}    
+              Metadata: MetadataRegistry
             }
             type Mutation {
               reloadMetadata(role: String): JSON
@@ -107,12 +113,19 @@ export class CoreSchema {
     }
 
     public resolvers() {
-        let resolvers = { Query: {}, Mutation: {} };
-        for (let entry of Object.entries(this.entities)) {
-            let target = entry[0];
-            let schema = entry[1];
-            resolvers.Query = { ...resolvers.Query, ...schema.queries, [target + MODEL]: schema.navigation };
+        let resolvers = { Query: { Metadata: undefined }, Mutation: {}, MetadataRegistry: {} };
+        resolvers.Query.Metadata = () => {
+            return Registry.get();
+        }
+        for (let [target, schema] of Object.entries(this.entities)) {
+            resolvers.Query = { ...resolvers.Query, ...schema.queries };
             resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
+            resolvers[target + MODEL] = schema.navigation;
+        }
+        for (let [target, schema] of Object.entries(this.metadata)) {
+            if (!schema.registry) continue;
+            resolvers.MetadataRegistry[target] = schema.registry;
+            resolvers[target] = schema.navigation;
         }
         return resolvers;
     }
@@ -202,13 +215,13 @@ export class CoreSchema {
             simple: model,
             relations: {},
             queries: {
-                [`${GET}${name}`]: this.findResolver(target),
-                [`${SEARCH}${name}s`]: this.searchResolver(target)
+                [`${GET}${name}`]: (obj, args, ctx, info) => ctx.provider.get(target, obj, args, ctx, info),
+                [`${SEARCH}${name}s`]: (obj, args, ctx, info) => ctx.provider.search(target, obj, args, ctx, info)
             },
             mutations: {
-                [`${CREATE}${name}`]: this.createResolver(target),
-                [`${UPDATE}${name}`]: this.updateResolver(target),
-                [`${REMOVE}${name}`]: this.removeResolver(target)
+                [`${CREATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
+                [`${UPDATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
+                [`${REMOVE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info)
             },
             navigation: {}
         };
@@ -216,29 +229,29 @@ export class CoreSchema {
 
         let simple = model;
         let navigation = {};
-        for (let rel of target.relations) {
-            let property = rel.propertyName;
-            let inverse = rel.inverseEntityMetadata.name;
-            let rm = navigation[property] = { inverse } as any;
+        for (let relation of target.relations) {
+            let property = relation.propertyName;
+            let inverse = relation.inverseEntityMetadata.name;
+            let rm = schema.relations[property] = { inverse } as any;
             // TODO: Subset of entities
             // if (!entities.find(e => e.name === target)) continue;
-            if (rel.relationType === RelationType.ManyToOne) {
+            if (relation.relationType === RelationType.ManyToOne) {
                 rm.type = "manyToOne";
                 let args = "";
                 model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
                 simple += `,\n  ${property}: ${inverse}${MODEL}`;
-                schema.navigation[property] = this.manyToOneResolver(target, rel);
-            } else if (rel.relationType === RelationType.OneToOne) {
+                navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(target, relation, obj, args, ctx, info);;
+            } else if (relation.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";
                 model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
-                schema.navigation[property] = this.oneToOneResolver(target, rel);
-            } else if (rel.relationType === RelationType.OneToMany) {
+                navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(target, relation, obj, args, ctx, info);
+            } else if (relation.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
-                let temp = this.genEntity(rel.inverseEntityMetadata, schemas);
+                let temp = this.genEntity(relation.inverseEntityMetadata, schemas);
                 let args = ` (${temp.search}\n  )`;
                 model += `,\n  ${property}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
-                schema.navigation[property] = this.oneToManyResolver(target, rel);
+                navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(target, relation, obj, args, ctx, info);
             } else {
                 continue; // TODO: Implement
             }
@@ -252,38 +265,6 @@ export class CoreSchema {
         // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
 
         return schema;
-    }
-
-    private findResolver(entity: EntityMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.get(entity, obj, args, ctx, info);
-    }
-
-    private searchResolver(entity: EntityMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.search(entity, obj, args, ctx, info);
-    }
-
-    private createResolver(entity: EntityMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.create(entity, obj, args, ctx, info);
-    }
-
-    private updateResolver(entity: EntityMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.update(entity, obj, args, ctx, info);
-    }
-
-    private removeResolver(entity: EntityMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.remove(entity, obj, args, ctx, info);
-    }
-
-    private oneToManyResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.oneToMany(entity, relation, obj, args, ctx, info)
-    }
-
-    private manyToOneResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.manyToOne(entity, relation, obj, args, ctx, info)
-    }
-
-    private oneToOneResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
-        return (obj, args, ctx, info) => ctx.provider.oneToOne(entity, relation, obj, args, ctx, info)
     }
 
     // TODO: Generic
@@ -332,19 +313,33 @@ export class CoreSchema {
             throw new TypeError(`Empty type difinition ${struc.target}`);
 
         // Generate schema
-        let schema: TypeSchema = { target: struc, ref: struc.name, def: undefined, query: undefined };
+        let schema: TypeSchema = { target: struc, model: undefined, params: undefined, query: undefined, registry: undefined, navigation: {} };
         reg[struc.name] = schema;
-        let def = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
         let params = ""
         for (let field of Object.values(struc.fields)) {
-            let type = this.genType(field, scope, reg);
-            def += `  ${field.name}: ${type}\n`;
-            if (GraphType.isScalar(type as GraphType))
-                params += (params ? ",\n    " : "    ") + `${field.name}: ${type}`;
+            if (!GraphType.isScalar(field.type as GraphType)) continue;
+            params += (params ? ",\n    " : "    ") + `${field.name}: ${field.type}`;
         }
-        def += "}";
-        schema.def = def;
-        if (GraphType.isMetadata(struc.type)) schema.query = `  ${struc.name}(\n${params}\n  ): [${struc.name}]`;
+        schema.params = params;
+        let model = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        for (let field of Object.values(struc.fields)) {
+            let type = this.genType(field, scope, reg);
+            if (GraphType.isMetadata(struc.type) && GraphType.isList(field.type)) {
+                let ref = this.genType(field.item, scope, reg);
+                let args = reg[ref].params;
+                model += `  ${field.name}(\n${args}\n  ): ${type}\n`;
+            } else {
+                model += `  ${field.name}: ${type}\n`;
+            }
+            if ((struc.target as any)[field.name] instanceof Function)
+                schema.navigation[field.name] = (struc.target as any)[field.name];
+        }
+        model += "}";
+        schema.model = model;
+        if (GraphType.isMetadata(struc.type)) {
+            schema.query = `  ${struc.name}(\n${params}\n  ): [${struc.name}]`;
+            schema.registry = (struc.target as any).registry;
+        }
 
         return struc.name;
     }
@@ -355,7 +350,9 @@ function back(text: string) {
     let first = lines[0];
     if (!first.trim().length) first = lines[1];
     let pad = first.substr(0, first.indexOf(first.trim()));
-    text = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line).join("\n");
+    text = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
+        .map(line => line.trimRight())
+        .join("\n");
     return text;
 }
 
