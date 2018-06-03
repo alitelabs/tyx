@@ -1,4 +1,5 @@
 import { EntityMetadata } from "../metadata/entity";
+import { RelationMetadata } from "../metadata/relation";
 import { EntityManager, SelectQueryBuilder } from "../orm";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import { ToolkitContext, ToolkitInfo, ToolkitProvider } from "./schema";
@@ -12,37 +13,37 @@ export interface IRecord {
 export class TypeOrmProvider implements ToolkitProvider {
     public static readonly LIMIT = 1000;
 
-    constructor(private manager: EntityManager) { }
+    protected manager: EntityManager;
 
-    public create(type: string, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let record = this.manager.create<any>(type, args);
+    constructor(manager?: EntityManager) { this.manager = manager; }
+
+    public create(entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+        let record = this.manager.create<any>(entity.name, args);
         // TODO: Generate PK
         return this.manager.save(record);
     }
 
-    public update(type: string, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let record = this.manager.create(type, args);
+    public update(entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+        let record = this.manager.create(entity.name, args);
         // TODO: Generate PK
         return this.manager.save(record);
     }
 
-    public remove(type: string, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        let record = this.manager.create(type, args);
+    public remove(entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+        let record = this.manager.create(entity.name, args);
         // TODO: Generate PK
         return this.manager.remove(record);
     }
 
-    public get(type: string, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
-        return this.prepareQuery(type, args, null, context).getOne();
+    public get(entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any> {
+        return this.prepareQuery(entity.name, args, null, context).getOne();
     }
 
-    public search(type: string, obj: ToolkitArgs, args: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any[]> {
-        return this.prepareQuery(type, null, args, context).getMany();
+    public search(entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<any[]> {
+        return this.prepareQuery(entity.name, null, args, context).getMany();
     }
 
-    public oneToMany(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<object[]> {
-        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
-        let relation = entity.relations.find(r => r.propertyName === rel);
+    public oneToMany(entity: EntityMetadata, relation: RelationMetadata, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<object[]> {
         let target = relation.inverseEntityMetadata.name;
         let pks = entity.primaryColumns.map(col => col.propertyName);
         let fks = relation.inverseRelation.joinColumns.map(col => col.propertyName);
@@ -51,9 +52,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getMany();
     }
 
-    public oneToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
-        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
-        let relation = entity.relations.find(r => r.propertyName === rel);
+    public oneToOne(entity: EntityMetadata, relation: RelationMetadata, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
         let fks = relation.joinColumns.length ?
@@ -64,9 +63,7 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getOne();
     }
 
-    public manyToOne(type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
-        let entity: EntityMetadata = this.manager.connection.getMetadata(type) as any;
-        let relation = entity.relations.find(r => r.propertyName === rel);
+    public manyToOne(entity: EntityMetadata, relation: RelationMetadata, root: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext, info?: ToolkitInfo): Promise<object> {
         let target = relation.inverseEntityMetadata.name;
         let pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
         let fks = relation.joinColumns.map(col => col.propertyName);
@@ -75,9 +72,9 @@ export class TypeOrmProvider implements ToolkitProvider {
         return this.prepareQuery(target, keys, query, context).getOne();
     }
 
-    public prepareQuery(type: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): SelectQueryBuilder<any> {
+    public prepareQuery(target: string, keys: ToolkitArgs, query: ToolkitQuery, context: ToolkitContext): SelectQueryBuilder<any> {
         let sql = ToolkitQuery.prepareSql(keys, query);
-        let builder: SelectQueryBuilder<any> = this.manager.createQueryBuilder(type, ToolkitQuery.ALIAS)
+        let builder: SelectQueryBuilder<any> = this.manager.createQueryBuilder(target, ToolkitQuery.ALIAS)
             .where(sql.where, sql.params);
         sql.order.forEach(ord => builder.addOrderBy(ord.column, ord.asc ? "ASC" : "DESC"));
         if (sql.skip) builder.skip(sql.skip);

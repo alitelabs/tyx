@@ -6,7 +6,7 @@ import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
 import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
-import { ToolkitContext, ToolkitProvider, ToolkitSchema } from "./schema";
+import { ToolkitContext, ToolkitProvider, CoreSchema } from "./schema";
 
 const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
@@ -22,7 +22,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     @Inject(Database)
     protected database: Database;
 
-    protected schema: ToolkitSchema;
+    protected schema: CoreSchema;
     private executable: GraphQL.GraphQLSchema;
 
     constructor(prefix: string) {
@@ -35,8 +35,8 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         this.schema = await this.initialize();
     }
 
-    protected async initialize(): Promise<ToolkitSchema> {
-        let schema = new ToolkitSchema(this.database.metadata);
+    protected async initialize(): Promise<CoreSchema> {
+        let schema = new CoreSchema(this.database.metadata);
         return schema;
     }
 

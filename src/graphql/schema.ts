@@ -1,11 +1,12 @@
-import { GraphQLBoolean, GraphQLField, GraphQLFloat, GraphQLInt, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema, GraphQLString } from "graphql";
+import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType, GraphQLSchema } from "graphql";
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from "graphql-iso-date";
-import { ILogger, makeExecutableSchema, SchemaDirectiveVisitor } from "graphql-tools";
+import { makeExecutableSchema, SchemaDirectiveVisitor } from "graphql-tools";
 import { GraphQLResolveInfo } from "graphql/type/definition";
 import { ColumnType } from "../metadata/column";
 import { EntityMetadata } from "../metadata/entity";
-import { RelationType } from "../metadata/relation";
-import { GraphType } from "../metadata/type";
+import { MetadataRegistry } from "../metadata/registry";
+import { RelationMetadata, RelationType } from "../metadata/relation";
+import { GraphMetadata, GraphType, TypeMetadata } from "../metadata/type";
 import { ToolkitArgs, ToolkitQuery } from "./query";
 import GraphQLJSON = require("graphql-type-json");
 
@@ -22,18 +23,19 @@ export const UPDATE = "update";
 export const REMOVE = "remove";
 
 export interface EntitySchema {
+    entity: EntityMetadata;
+
     query: string;
     mutation: string;
     model: string;
     inputs: string[];
     search: string;
-    simple?: string;
+    simple: string;
+    relations: Record<string, { target: string, type: string }>;
 
-    // get: ToolkitResolver;
-    // sea
-
-    relations?: Record<string, { target: string, type: string }>;
-    // schema?: string;
+    queries: Record<string, ToolkitResolver>;
+    mutations: Record<string, ToolkitResolver>;
+    navigation: Record<string, ToolkitResolver>;
 }
 
 export interface ServiceSchema {
@@ -59,23 +61,23 @@ export interface ToolkitResolver {
 }
 
 export interface ToolkitMutation {
-    (target: string, obj: any, args: ToolkitQuery & ToolkitArgs, ctx: ToolkitContext, info: ToolkitInfo): Promise<any>;
+    (entity: EntityMetadata, obj: any, args: ToolkitQuery & ToolkitArgs, ctx: ToolkitContext, info: ToolkitInfo): Promise<any>;
 }
 
 export interface ToolkitRead {
-    (type: string, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any>;
+    (entity: EntityMetadata, obj: ToolkitArgs, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<any>;
 }
 
 export interface ToolkitRelation {
-    (type: string, rel: string, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any>;
+    (entity: EntityMetadata, rel: RelationMetadata, root: ToolkitArgs, query: ToolkitQuery, context?: ToolkitContext, info?: ToolkitInfo): Promise<any>;
 }
 
 export interface ToolkitProvider {
+    get: ToolkitRead;
+    search: ToolkitRead;
     create: ToolkitMutation;
     update: ToolkitMutation;
     remove: ToolkitMutation;
-    get: ToolkitRead;
-    search: ToolkitRead;
     oneToMany: ToolkitRelation;
     oneToOne: ToolkitRelation;
     manyToOne: ToolkitRelation;
@@ -114,16 +116,12 @@ export class RelationVisitor extends SchemaDirectiveVisitor {
     }
 }
 
-export class ToolkitSchema {
+export class CoreSchema {
     public static SCALARS: Record<string, GraphQLScalarType> = {
         Date: GraphQLDate,
         Time: GraphQLTime,
         DateTime: GraphQLDateTime,
-        JSON: GraphQLJSON,
-        string: GraphQLString,
-        number: GraphQLFloat,
-        int: GraphQLInt,
-        boolean: GraphQLBoolean
+        JSON: GraphQLJSON
     };
 
     public static DIRECTIVES = {
@@ -133,7 +131,7 @@ export class ToolkitSchema {
         relation: RelationVisitor
     };
 
-    public static DEF_SCALARS = Object.keys(ToolkitSchema.SCALARS).map(s => `scalar ${s}`).join("\n");
+    public static DEF_SCALARS = Object.keys(CoreSchema.SCALARS).map(s => `scalar ${s}`).join("\n");
 
     public static DEF_DIRECTIVES = back("        ", `
         enum RelationType {
@@ -148,16 +146,21 @@ export class ToolkitSchema {
     `);
 
     public entities: Record<string, EntitySchema> = {};
-    public inputs: Record<string, string> = {};
-    public results: Record<string, string> = {};
-    public services: Record<string, ServiceSchema> = {};
+
+    // public inputs: Record<string, string> = {};
+    // public results: Record<string, string> = {};
+    // public services: Record<string, ServiceSchema> = {};
 
     constructor(entities: EntityMetadata[]) {
+        // Metdata
         for (let meta of entities) this.genEntity(meta, this.entities);
+        // Inputs
+        // Results
+        // Services
     }
 
-    public genEntity(meta: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
-        let target = meta.name;
+    public genEntity(entity: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
+        let target = entity.name;
         if (schemas[target]) return schemas[target];
 
         let model = `type ${target}${MODEL} @entity(rem: "TODO") {`;
@@ -170,7 +173,7 @@ export class ToolkitSchema {
         let create = ``;
         let update = ``;
         let cm = true;
-        for (let col of meta.columns) {
+        for (let col of entity.columns) {
             let pn = col.propertyName;
             let dt = ColumnType.graphType(col.type);
             let nl = !col.isNullable ? "!" : "";
@@ -230,14 +233,34 @@ export class ToolkitSchema {
         mutation += `  ${REMOVE}${target}(${keys}): ${target}${MODEL}\n`;
         mutation += "}";
 
-        let schema: EntitySchema = { query, mutation, model, inputs, search };
+        let schema: EntitySchema = {
+            entity,
+
+            query,
+            mutation,
+            model,
+            inputs,
+            search,
+            simple: model,
+            relations: {},
+            queries: {
+                [`${GET}${target}`]: this.findResolver(entity),
+                [`${SEARCH}${target}s`]: this.searchResolver(entity)
+            },
+            mutations: {
+                [`${CREATE}${target}`]: this.createResolver(entity),
+                [`${UPDATE}${target}`]: this.updateResolver(entity),
+                [`${REMOVE}${target}`]: this.removeResolver(entity)
+            },
+            navigation: {}
+        };
         schemas[target] = schema;
 
         let simple = model;
-        let relations = {};
-        for (let rel of meta.relations) {
+        let navigation = {};
+        for (let rel of entity.relations) {
             let inverse = rel.inverseEntityMetadata.name;
-            let rm = relations[rel.propertyName] = { inverse } as any;
+            let rm = navigation[rel.propertyName] = { inverse } as any;
             // TODO: Subset of entities
             // if (!entities.find(e => e.name === target)) continue;
             if (rel.relationType === RelationType.ManyToOne) {
@@ -245,15 +268,18 @@ export class ToolkitSchema {
                 let args = "";
                 model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
                 simple += `,\n  ${rel.propertyName}: ${inverse}${MODEL}`;
+                schema.navigation[rel.propertyName] = this.manyToOneResolver(entity, rel);
             } else if (rel.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";
                 model += `,\n  ${rel.propertyName}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
+                schema.navigation[rel.propertyName] = this.oneToOneResolver(entity, rel);
             } else if (rel.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
                 let temp = this.genEntity(rel.inverseEntityMetadata, schemas);
-                let args = (rel.relationType === RelationType.OneToMany) ? ` (${temp.search}\n  )` : "";
+                let args = ` (${temp.search}\n  )`;
                 model += `,\n  ${rel.propertyName}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
+                schema.navigation[rel.propertyName] = this.oneToManyResolver(entity, rel);
             } else {
                 continue; // TODO: Implement
             }
@@ -263,30 +289,67 @@ export class ToolkitSchema {
 
         schema.model = model;
         schema.simple = simple;
-        schema.relations = relations;
+        schema.navigation = navigation;
         // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
 
         return schema;
+    }
+
+    public resolvers() {
+        let resolvers = { Query: {}, Mutation: {} };
+        for (let entry of Object.entries(this.entities)) {
+            let target = entry[0];
+            let schema = entry[1];
+            resolvers.Query = { ...resolvers.Query, ...schema.queries, [target + MODEL]: schema.navigation };
+            resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
+        }
+        return resolvers;
+    }
+
+    private findResolver(entity: EntityMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.get(entity, obj, args, ctx, info);
+    }
+
+    private searchResolver(entity: EntityMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.search(entity, obj, args, ctx, info);
+    }
+
+    private createResolver(entity: EntityMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.create(entity, obj, args, ctx, info);
+    }
+
+    private updateResolver(entity: EntityMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.update(entity, obj, args, ctx, info);
+    }
+
+    private removeResolver(entity: EntityMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.remove(entity, obj, args, ctx, info);
+    }
+
+    private oneToManyResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.oneToMany(entity, relation, obj, args, ctx, info)
+    }
+
+    private manyToOneResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.manyToOne(entity, relation, obj, args, ctx, info)
+    }
+
+    private oneToOneResolver(entity: EntityMetadata, relation: RelationMetadata): ToolkitResolver {
+        return (obj, args, ctx, info) => ctx.provider.oneToOne(entity, relation, obj, args, ctx, info)
     }
 
     public executable(logger?: ILogger): GraphQLSchema {
         return makeExecutableSchema({
             typeDefs: this.typeDefs(),
             resolvers: this.resolvers(),
-            schemaDirectives: ToolkitSchema.DIRECTIVES,
+            schemaDirectives: CoreSchema.DIRECTIVES,
             logger
         });
     }
 
-    public types() {
-        return Object.values(this.entities).map((s, i) =>
-            s.simple
-        ).join("\n\n");
-    }
-
     public typeDefs(): string {
-        return ToolkitSchema.DEF_SCALARS + "\n"
-            + ToolkitSchema.DEF_DIRECTIVES + "\n"
+        return CoreSchema.DEF_SCALARS + "\n"
+            + CoreSchema.DEF_DIRECTIVES + "\n"
             + Object.values(this.entities).map((s, i) =>
                 `${i ? "extend " : ""}${s.query}\n`
                 + `${i ? "extend " : ""}${s.mutation}\n`
@@ -295,29 +358,96 @@ export class ToolkitSchema {
         // "\n\n this.serviceDefs() + "\n";
     }
 
-    public resolvers() {
-        let resolvers = { Query: {}, Mutation: {} };
-        for (let entry of Object.entries(this.entities)) {
-            let target = entry[0];
-            resolvers.Query[`${GET}${target}`] = (obj, args, ctx, info) => ctx.provider.get(target, obj, args, ctx, info);
-            resolvers.Query[`${SEARCH}${target}s`] = (obj, args, ctx, info) => ctx.provider.search(target, obj, args, ctx, info);
-            resolvers.Mutation[`${CREATE}${target}`] = (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info);
-            resolvers.Mutation[`${UPDATE}${target}`] = (obj, args, ctx, info) => ctx.provider.update(target, obj, args, ctx, info);
-            resolvers.Mutation[`${REMOVE}${target}`] = (obj, args, ctx, info) => ctx.provider.remove(target, obj, args, ctx, info);
-            let resolver = resolvers[target + MODEL] = {};
-            for (let item of Object.entries(entry[1].relations)) {
-                let res: ToolkitResolver;
-                let rel = item[0];
-                switch (item[1].type) {
-                    case "oneToMany": res = (obj, args, ctx, info) => ctx.provider.oneToMany(target, rel, obj, args, ctx, info); break;
-                    case "manyToOne": res = (obj, args, ctx, info) => ctx.provider.manyToOne(target, rel, obj, args, ctx, info); break;
-                    case "oneToOne": res = (obj, args, ctx, info) => ctx.provider.oneToOne(target, rel, obj, args, ctx, info); break;
-                    default: continue;
-                }
-                resolver[rel] = res;
-            }
+    public api(registry: MetadataRegistry): string {
+        let schema: string[] = [];
+        let query: string[] = [];
+
+        schema.push("### Metadata Types");
+        let metaReg: Record<string, TypeMetadata> = {};
+        for (let type of Object.values(registry.metadata)) {
+            resolve(type, GraphType.Metadata, metaReg);
         }
-        return resolvers;
+
+        schema.push("\n### Input Types");
+        let inputReg: Record<string, TypeMetadata> = {};
+        for (let type of Object.values(registry.inputs)) {
+            resolve(type, GraphType.Input, inputReg);
+        }
+
+        schema.push("\n### Result Types");
+        let resultReg: Record<string, TypeMetadata> = {};
+        for (let type of Object.values(registry.results)) {
+            resolve(type, GraphType.Result, resultReg);
+        }
+
+        return "Query {\n" + query.join("\n") + "\n}\n\n" + schema.join("\n");
+
+        // TODO: Generic
+        function resolve(meta: GraphMetadata, scope: GraphType, reg: Record<string, TypeMetadata>): GraphMetadata {
+            if (GraphType.isScalar(meta.type)) {
+                meta.ref = meta.type;
+                return meta;
+            }
+            if (meta.target && reg[meta.target.name]) {
+                return reg[meta.target.name];
+            }
+            if (GraphType.isRef(meta.type)) {
+                let type = meta.target();
+                let target = TypeMetadata.get(type);
+                if (target) {
+                    target = resolve(target, scope, reg) as TypeMetadata;
+                    meta.ref = target.ref;
+                } else {
+                    meta.ref = GraphType.Object;
+                }
+                return meta;
+            }
+            if (GraphType.isList(meta.type)) {
+                let type = resolve(meta.item, scope, reg);
+                if (type) {
+                    meta.ref = `[${type.ref}]`;
+                } else {
+                    meta.ref = `[${GraphType.Object}]`;
+                }
+                return meta;
+            }
+            if (GraphType.isEntity(meta.type) && scope !== GraphType.Result) {
+                // TODO: Register imports
+                meta.ref = meta.target.name;
+                return meta;
+            }
+
+            if (scope === GraphType.Metadata && !GraphType.isMetadata(meta.type))
+                throw new TypeError(`Metadata type can not reference [${meta.type}]`);
+
+            if (scope === GraphType.Input && !GraphType.isInput(meta.type))
+                throw new TypeError(`Input type can not reference [${meta.type}]`);
+
+            if (scope === GraphType.Result && !GraphType.isResult(meta.type) && !GraphType.isEntity(meta.type))
+                throw new TypeError(`Result type can not reference [${meta.type}]`);
+
+            let struc = meta as TypeMetadata;
+            if (!GraphType.isStruc(struc.type) || !struc.fields)
+                throw new TypeError(`Empty type difinition ${struc.target}`);
+
+            // Generate schema
+            struc.ref = struc.name;
+            reg[struc.ref] = struc;
+            reg[struc.target.name] = struc;
+            let def = scope === GraphType.Input ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+            let params = ""
+            for (let [key, field] of Object.entries(struc.fields)) {
+                let res = resolve(field, scope, reg);
+                def += `  ${key}: ${res.ref}\n`;
+                if (GraphType.isScalar(res.type))
+                    params += (params ? ", " : "") + `${key}: ${res.type}`;
+            }
+            def += "}";
+            schema.push(def);
+            if (GraphType.isMetadata(struc.type)) query.push(`  ${struc.name}(${params})`);
+
+            return meta;
+        }
     }
 }
 

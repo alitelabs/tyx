@@ -1,17 +1,17 @@
-import { EntitySchema, GET, MODEL, SEARCH, ToolkitSchema } from "./schema";
+import { EntitySchema, GET, MODEL, SEARCH, CoreSchema } from "./schema";
 
-export default function codegen(schema: ToolkitSchema, folder: string, ext?: string) {
+export default function codegen(schema: CoreSchema, folder: string, ext?: string) {
     ext = ext || "gql";
     let fs = require("fs");
     fs.writeFileSync(`${folder}/schema/import.${ext}`,
-        ToolkitSchema.DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + ToolkitSchema.DEF_DIRECTIVES + "\n");
+        CoreSchema.DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + CoreSchema.DEF_DIRECTIVES + "\n");
     for (let target in schema.entities) {
         let entry = schema.entities[target];
         fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);
         fs.writeFileSync(`${folder}/schema/model/${target}${MODEL}.${ext}`, entry.model);
         fs.writeFileSync(`${folder}/schema/input/${target}Input.${ext}`, entry.inputs.join("\n\n"));
         fs.writeFileSync(`${folder}/controller/${target}Controller.ts`, controller(target));
-        if (!Object.keys(entry.relations).length) continue;
+        if (!Object.keys(entry.navigation).length) continue;
         fs.writeFileSync(`${folder}/resolver/${target}Resolver.ts`, resolver(target, entry.relations));
     }
     let { conIndex, resIndex } = indexes(schema.entities);
@@ -90,7 +90,7 @@ function indexes(schema: Record<string, EntitySchema>) {
         let entry = schema[name];
         conImport += `import { ${name}Controller } from "./${name}Controller";\n`;
         conArray += `        ${name}Controller,\n`;
-        if (!Object.keys(entry.relations).length) continue;
+        if (!Object.keys(entry.navigation).length) continue;
         resImport += `import { ${name}Resolver } from "./${name}Resolver";\n`;
         resArray += `        ${name}Resolver,\n`;
     }
