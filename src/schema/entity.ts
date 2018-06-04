@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
 import { List, Metadata, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { SchemaResolvers } from "../graphql/types";
 import { IColumnMetadata } from "../metadata/column";
 import { IEntityMetadata } from "../metadata/entity";
 import { IRelationMetadata } from "../metadata/relation";
@@ -16,19 +16,10 @@ export class EntityMetadataSchema implements IEntityMetadata {
     @List(item => ColumnMetadataSchema) primaryColumns: IColumnMetadata[];
     @List(item => RelationMetadataSchema) relations: IRelationMetadata[];
 
-    public static target(obj: IEntityMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
-
-    public static columns(obj: IEntityMetadata, args: ResolverArgs): IColumnMetadata[] {
-        return Lo.filter(obj.columns, args);
-    }
-
-    public static primaryColumns(obj: IEntityMetadata, args: ResolverArgs): IColumnMetadata[] {
-        return Lo.filter(obj.primaryColumns, args);
-    }
-
-    public static relations(obj: IEntityMetadata, args: ResolverArgs): IRelationMetadata[] {
-        return Lo.filter(obj.relations, args);
-    }
+    public static RESOLVERS: SchemaResolvers<IEntityMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        columns: (obj, args) => Lo.filter(obj.columns, args),
+        primaryColumns: (obj, args) => Lo.filter(obj.primaryColumns, args),
+        relations: (obj, args) => Lo.filter(obj.relations, args)
+    };
 }

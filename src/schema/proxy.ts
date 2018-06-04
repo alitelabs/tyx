@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
-import { Metadata, List, Ref, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { List, Metadata, Ref, Str } from "../decorators/type";
+import { SchemaResolvers } from "../graphql/types";
 import { IProxyMetadata } from "../metadata/proxy";
 import { HandlerMetadata, InjectMetadata } from "../metadata/service";
 import { Class } from "../types/core";
@@ -21,16 +21,9 @@ export class ProxyMetadataSchema implements IProxyMetadata {
     @Ref(ref => HandlerMetadataSchema) activator: HandlerMetadata;
     @Ref(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
-    public static target(obj: IProxyMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
-
-    public static dependencies(obj: IProxyMetadata, args: ResolverArgs): InjectMetadata[] {
-        return Lo.filter(Object.values(obj.dependencies), args);
-    }
-
-    public static handlers(obj: IProxyMetadata, args: ResolverArgs): HandlerMetadata[] {
-        return Lo.filter(Object.values(obj.handlers), args);
-    }
-
+    public static RESOLVERS: SchemaResolvers<IProxyMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        dependencies: (obj, args) => Lo.filter(Object.values(obj.dependencies), args),
+        handlers: (obj, args) => Lo.filter(Object.values(obj.handlers), args)
+    };
 }

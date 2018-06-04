@@ -4,7 +4,7 @@ import { EntityMetadata } from "../metadata/entity";
 import { Registry } from "../metadata/registry";
 import { Class } from "../types/core";
 
-export const Database = "database";
+export const Database = "Database";
 export interface Database {
     manager: Orm.EntityManager;
     metadata: EntityMetadata[];

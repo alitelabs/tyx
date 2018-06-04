@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
 import { Int, List, Metadata, Obj, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { SchemaResolvers } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { IColumnMetadata } from "../metadata/column";
 import { IDatabaseMetadata } from "../metadata/database";
@@ -22,15 +22,16 @@ import { RelationMetadataSchema } from "./relation";
 import { ServiceMetadataSchema } from "./service";
 import { TypeMetadataSchema } from "./type";
 
+
 @Metadata()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
     @Str() decorator: string;
     @Int() count: number;
     @List(GraphType.String) targets: Record<string, Class>;
 
-    public static targets(parent: DecoratorMetadata, args: ResolverArgs): string[] {
-        return Object.values(parent.targets).map(t => `[class: ${t.name}]`);
-    }
+    public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
+        targets: (obj) => Object.values(obj.targets).map(t => `[class: ${t.name}]`)
+    };
 }
 
 @Metadata()
@@ -42,10 +43,12 @@ export class DecorationMetadataSchema implements DecorationMetadata {
     @Int() index?: number;
     @Obj() args: Record<string, any>;
 
-    public static target(parent: IColumnMetadata, args: ResolverArgs): string {
-        if (typeof parent.target === "string") return parent.target;
-        return parent.target && `[class: ${parent.target.name}]`;
-    }
+    public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {
+        target: (obj) => {
+            if (typeof obj.target === "string") return obj.target;
+            return obj.target && `[class: ${obj.target.name}]`;
+        }
+    };
 }
 
 @Metadata()
@@ -72,69 +75,26 @@ export class MetadataRegistrySchema implements Partial<MetadataRegistry> {
     @List(item => HttpRouteMetadataSchema) HttpRouteMetadata: Record<string, HttpRouteMetadata>;
     @List(item => EventRouteMetadataSchema) EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 
-    public static RegistryMetadata(obj: MetadataRegistry, args: ResolverArgs): ITypeMetadata[] {
-        return Lo.filter(Object.values(obj.RegistryMetadata), args);
-    }
-
-    public static DecoratorMetadata(obj: MetadataRegistry, args: ResolverArgs): DecoratorMetadata[] {
-        return Lo.filter(Object.values(obj.DecoratorMetadata), args);
-    }
-
-    public static DecorationMetadata(obj: MetadataRegistry, args: ResolverArgs): DecorationMetadata[] {
-        if (args.target) args.target = `[class: ${args.target}]`;
-        let mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
-        return Lo.filter(mapped as any[], args);
-    }
-
-    public static ApiMetadata(obj: MetadataRegistry, args: ResolverArgs): IApiMetadata[] {
-        return Lo.filter(Object.values(obj.ApiMetadata), args);
-    }
-
-    public static ServiceMetadata(obj: MetadataRegistry, args: ResolverArgs): IServiceMetadata[] {
-        return Lo.filter(Object.values(obj.ServiceMetadata), args);
-    }
-
-    public static ProxyMetadata(obj: MetadataRegistry, args: ResolverArgs): IProxyMetadata[] {
-        return Lo.filter(Object.values(obj.ProxyMetadata), args);
-    }
-
-    public static DatabaseMetadata(obj: MetadataRegistry, args: ResolverArgs): IDatabaseMetadata[] {
-        return Lo.filter(Object.values(obj.DatabaseMetadata), args);
-    }
-
-    public static EntityMetadata(obj: MetadataRegistry, args: ResolverArgs): IEntityMetadata[] {
-        return Lo.filter(Object.values(obj.EntityMetadata), args);
-    }
-
-    public static ColumnMetadata(obj: MetadataRegistry, args: ResolverArgs): IColumnMetadata[] {
-        return Lo.filter(Object.values(obj.ColumnMetadata), args);
-    }
-
-    public static RelationMetadata(obj: MetadataRegistry, args: ResolverArgs): IRelationMetadata[] {
-        return Lo.filter(Object.values(obj.RelationMetadata), args);
-    }
-
-    public static InputMetadata(obj: MetadataRegistry, args: ResolverArgs): ITypeMetadata[] {
-        return Lo.filter(Object.values(obj.InputMetadata), args);
-    }
-
-    public static ResultMetadata(obj: MetadataRegistry, args: ResolverArgs): ITypeMetadata[] {
-        return Lo.filter(Object.values(obj.ResultMetadata), args);
-    }
-
-    public static MethodMetadata(obj: MetadataRegistry, args: ResolverArgs): IMethodMetadata[] {
-        return Lo.filter(Object.values(obj.MethodMetadata), args);
-    }
-
-    public static ResolverMetadata(obj: MetadataRegistry, args: ResolverArgs): IMethodMetadata[] {
-        return Lo.filter(Object.values(obj.ResolverMetadata), args);
-    }
-
-    public static HttpRouteMetadata(obj: MetadataRegistry, args: ResolverArgs): HttpRouteMetadata[] {
-        return Lo.filter(Object.values(obj.HttpRouteMetadata), args);
-    }
-
-    public static EventRouteMetadata(obj: MetadataRegistry, args: ResolverArgs): EventRouteMetadata[] {
-        return Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args);
-    }
+    public static RESOLVERS: SchemaResolvers<MetadataRegistry> = {
+        RegistryMetadata: (obj, args) => Lo.filter(Object.values(obj.RegistryMetadata), args),
+        DecoratorMetadata: (obj, args) => Lo.filter(Object.values(obj.DecoratorMetadata), args),
+        DecorationMetadata: (obj, args) => {
+            if (args.target) args.target = `[class: ${args.target}]`;
+            let mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
+            return Lo.filter(mapped as any[], args);
+        },
+        ApiMetadata: (obj, args) => Lo.filter(Object.values(obj.ApiMetadata), args),
+        ServiceMetadata: (obj, args) => Lo.filter(Object.values(obj.ServiceMetadata), args),
+        ProxyMetadata: (obj, args) => Lo.filter(Object.values(obj.ProxyMetadata), args),
+        DatabaseMetadata: (obj, args) => Lo.filter(Object.values(obj.DatabaseMetadata), args),
+        EntityMetadata: (obj, args) => Lo.filter(Object.values(obj.EntityMetadata), args),
+        ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
+        RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
+        InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
+        ResultMetadata: (obj, args) => Lo.filter(Object.values(obj.ResultMetadata), args),
+        MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
+        ResolverMetadata: (obj, args) => Lo.filter(Object.values(obj.ResolverMetadata), args),
+        HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),
+        EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args)
+    };
 }

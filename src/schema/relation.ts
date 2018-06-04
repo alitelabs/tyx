@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
 import { List, Metadata, Ref, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { SchemaResolvers } from "../graphql/types";
 import { IColumnMetadata } from "../metadata/column";
 import { IEntityMetadata } from "../metadata/entity";
 import { IRelationMetadata, RelationType } from "../metadata/relation";
@@ -18,11 +18,8 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
     @Ref(ref => RelationMetadataSchema) inverseRelation?: IRelationMetadata<any>;
     @List(item => ColumnMetadataSchema) joinColumns: IColumnMetadata[];
 
-    public static target(obj: IRelationMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
-
-    public static joinColumns(obj: IRelationMetadata, args: ResolverArgs): IColumnMetadata[] {
-        return Lo.filter(obj.joinColumns, args);
-    }
+    public static RESOLVERS: SchemaResolvers<IRelationMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        joinColumns: (obj, args) => Lo.filter(obj.joinColumns, args)
+    };
 }

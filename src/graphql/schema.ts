@@ -370,8 +370,8 @@ export class CoreSchema {
             } else {
                 schema.model += `  ${field.name}: ${type}\n`;
             }
-            if ((struc.target as any)[field.name] instanceof Function)
-                schema.resolvers[field.name] = (struc.target as any)[field.name];
+            let resolvers = (struc.target as any).RESOLVERS;
+            if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
         }
         schema.model += "}";
 

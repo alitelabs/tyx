@@ -7,7 +7,7 @@ import { ServiceMetadata } from "./service";
 
 export interface IDatabaseMetadata {
     target: Class;
-    serviceId: string;
+    alias: string;
 
     targets: Class[];
     entities: IEntityMetadata[];
@@ -17,7 +17,7 @@ export interface IDatabaseMetadata {
 
 export class DatabaseMetadata implements IDatabaseMetadata {
     public target: Class;
-    public serviceId: string;
+    public alias: string;
     public targets: Class[] = [];
     public entities: EntityMetadata[] = [];
     public columns: ColumnMetadata[] = [];
@@ -25,7 +25,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
 
     protected constructor(target: Class) {
         this.target = target;
-        this.serviceId = "database";
+        this.alias = "database";
     }
 
     public static has(target: Class | Prototype): boolean {
@@ -48,7 +48,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
     }
 
     public commit(alias?: string, entities?: Class[]): this {
-        this.serviceId = alias || this.target.name;
+        this.alias = alias || this.target.name;
         for (let target of entities) {
             let meta = EntityMetadata.get(target);
             if (!meta) throw new TypeError(`Type [${target.name}] missing @Entity decoration`);
@@ -57,7 +57,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
         }
         // TODO: Link entity metadata
         ServiceMetadata.define(this.target).commit(alias);
-        Registry.DatabaseMetadata[this.serviceId] = this;
+        Registry.DatabaseMetadata[this.alias] = this;
         this.entities.forEach(entity => entity.resolve(this));
         return this;
     }

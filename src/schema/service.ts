@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
 import { Int, List, Metadata, Ref, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { ResolverArgs, SchemaResolvers } from "../graphql/types";
 import { HandlerMetadata, InjectMetadata, IServiceMetadata } from "../metadata/service";
 import { Class } from "../types/core";
 
@@ -39,15 +39,9 @@ export class ServiceMetadataSchema implements IServiceMetadata {
     @Ref(ref => HandlerMetadataSchema) activator: HandlerMetadata;
     @Ref(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
-    public static target(obj: IServiceMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
-
-    public static dependencies(obj: IServiceMetadata, args: ResolverArgs): InjectMetadata[] {
-        return Lo.filter(Object.values(obj.dependencies), args);
-    }
-
-    public static handlers(obj: IServiceMetadata, args: ResolverArgs): HandlerMetadata[] {
-        return Lo.filter(Object.values(obj.handlers), args);
-    }
+    public static RESOLVERS: SchemaResolvers<IServiceMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        dependencies: (obj, args) => Lo.filter(Object.values(obj.dependencies), args),
+        handlers: (obj, args) => Lo.filter(Object.values(obj.handlers), args)
+    };
 }

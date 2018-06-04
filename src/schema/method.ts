@@ -1,6 +1,6 @@
 import * as Lo from "lodash";
 import { Bool, Int, List, Metadata, Obj, Ref, Str } from "../decorators/type";
-import { ResolverArgs } from "../graphql/types";
+import { ResolverArgs, SchemaResolvers } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
 import { GraphMetadata, GraphType } from "../metadata/type";
@@ -96,15 +96,9 @@ export class MethodMetadataSchema implements IMethodMetadata {
     @List(type => HttpRouteMetadataSchema) http: Record<string, HttpRouteMetadata>;
     @List(type => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata>;
 
-    public static target(obj: IMethodMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
-
-    public static http(obj: IMethodMetadata, args: ResolverArgs): HttpRouteMetadata[] {
-        return Lo.filter(Object.values(obj.http || {}), args);
-    }
-
-    public static events(obj: IMethodMetadata, args: ResolverArgs): EventRouteMetadata[] {
-        return Lo.filter(Object.values(obj.events || {}), args);
-    }
+    public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),
+        events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args)
+    };
 }

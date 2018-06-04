@@ -62,9 +62,11 @@ export interface ResolverContext {
 
 export type ResolverInfo = GraphQLResolveInfo;
 
-export interface SchemaResolver {
-    (obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo): Promise<any>;
+export interface SchemaResolver<O = any> {
+    (obj?: O, args?: ResolverQuery & ResolverArgs, ctx?: ResolverContext, info?: ResolverInfo): Promise<any> | any;
 }
+
+export type SchemaResolvers<T> = { [P in keyof T]?: SchemaResolver<T> };
 
 export interface EntityResolver {
     get: QueryResolver;
