@@ -32,6 +32,15 @@ export type DesignMetadata = {
     target: Function;
 };
 
+export type HttpAdapter = (
+    next: (...args: any[]) => Promise<any>,
+    ctx?: Context,
+    req?: HttpRequest,
+    path?: Record<string, string>,
+    query?: Record<string, string>
+) => Promise<any>;
+
+
 export interface HttpBindingMetadata {
     type: HttpBindingType;
     path: string;
@@ -54,14 +63,6 @@ export interface HttpRouteMetadata {
     // method: MethodMetadata;
 }
 
-export type HttpAdapter = (
-    next: (...args: any[]) => Promise<any>,
-    ctx?: Context,
-    req?: HttpRequest,
-    path?: Record<string, string>,
-    query?: Record<string, string>
-) => Promise<any>;
-
 export interface EventRouteMetadata {
     target: Class;
     eventId: string;
@@ -74,7 +75,7 @@ export interface EventRouteMetadata {
     adapter: EventAdapter;
 }
 
-export interface MethodMetadata {
+export interface IMethodMetadata {
     target: Class;
     methodId: string;
     serviceId: string;
@@ -94,7 +95,7 @@ export interface MethodMetadata {
     events: Record<string, EventRouteMetadata>;
 }
 
-export class MethodMetadata implements MethodMetadata {
+export class MethodMetadata implements IMethodMetadata {
 
     public target: Class;
 
@@ -235,16 +236,16 @@ export class MethodMetadata implements MethodMetadata {
 
     public commit(api: ApiMetadata): this {
         this.serviceId = api.alias;
-        Registry.methods[this.serviceId + "." + this.methodId] = this;
+        Registry.MethodMetadata[this.serviceId + "." + this.methodId] = this;
         if (this.http) for (let [route, meta] of Object.entries(this.http)) {
             meta.serviceId = this.serviceId;
-            if (Registry.routes[route] && Registry.routes[route] !== meta)
+            if (Registry.HttpRouteMetadata[route] && Registry.HttpRouteMetadata[route] !== meta)
                 throw new TypeError(`Duplicate HTTP route [${route}]`);
-            Registry.routes[route] = meta;
+            Registry.HttpRouteMetadata[route] = meta;
         }
         if (this.events) for (let [route, meta] of Object.entries(this.events)) {
             meta.serviceId = this.serviceId;
-            let handlers = Registry.events[route] = Registry.events[route] || [];
+            let handlers = Registry.EventRouteMetadata[route] = Registry.EventRouteMetadata[route] || [];
             if (!handlers.includes(meta)) handlers.push(meta);
         }
         return this;

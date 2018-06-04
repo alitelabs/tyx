@@ -172,7 +172,7 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
         if (!(this.inverseRelation instanceof RelationMetadata)) throw new TypeError(`Invalid inverse relation`);
         // TODO: More validations and optional inverse relation
         let key = `${entity.name}.${this.propertyName}`;
-        Registry.relations[key] = this;
+        Registry.RelationMetadata[key] = this;
         database.relations.push(this);
     }
 }

@@ -49,6 +49,7 @@
     "debug": "^3.1.0",
     "dotenv": "^5.0.1",
     "express": "^4.16.3",
+    "futil-js": "^1.48.0",
     "glob": "^7.1.2",
     "graphql": "^0.13.2",
     "graphql-iso-date": "^3.5.0",

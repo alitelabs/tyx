@@ -91,7 +91,7 @@ export class CoreInstance implements CoreContainer {
             let service = this.container.get(req.service);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
             let methodId = req.service + "." + req.method;
-            let metadata = Registry.methods[methodId];
+            let metadata = Registry.MethodMetadata[methodId];
             if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
 
             this.istate = ContainerState.Busy;
@@ -125,10 +125,10 @@ export class CoreInstance implements CoreContainer {
 
             let route = `${req.source} ${req.resource}`;
             let alias = this.config.resources && this.config.resources[req.resource];
-            let metadatas = Registry.events[route];
+            let metadatas = Registry.EventRouteMetadata[route];
             if (!metadatas) {
                 route = `${req.source} ${alias}`;
-                metadatas = Registry.events[route];
+                metadatas = Registry.EventRouteMetadata[route];
             }
             if (!metadatas) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
 
@@ -146,7 +146,7 @@ export class CoreInstance implements CoreContainer {
                 let service = this.container.get(target.serviceId);
                 if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
                 let methodId = target.serviceId + "." + target.methodId;
-                let method = Registry.methods[methodId];
+                let method = Registry.MethodMetadata[methodId];
 
                 if (!Utils.wildcardMatch(target.actionFilter, req.action)
                     || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
@@ -211,12 +211,12 @@ export class CoreInstance implements CoreContainer {
 
             let route = `${req.httpMethod} ${req.resource}`;
             if (req.contentType.domainModel) route += `:${req.contentType.domainModel}`;
-            let target = Registry.routes[route];
+            let target = Registry.HttpRouteMetadata[route];
             if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
             let service = this.container.get(target.serviceId);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
             let methodId = target.serviceId + "." + target.methodId;
-            let method = Registry.methods[methodId] as MethodMetadata;
+            let method = Registry.MethodMetadata[methodId] as MethodMetadata;
 
             req.application = this.application;
             req.service = target.serviceId;
@@ -272,7 +272,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async activate(ctx: Context): Promise<Context> {
-        for (let [sid, meta] of Object.entries(Registry.services)) {
+        for (let [sid, meta] of Object.entries(Registry.ServiceMetadata)) {
             if (!meta.activator) continue;
             if (!this.container.has(sid)) continue;
             try {
@@ -290,7 +290,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async release(ctx: Context): Promise<void> {
-        for (let [sid, meta] of Object.entries(Registry.services)) {
+        for (let [sid, meta] of Object.entries(Registry.ServiceMetadata)) {
             if (!meta.releasor) continue;
             if (!this.container.has(sid)) continue;
             try {

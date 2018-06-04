@@ -40,7 +40,7 @@ export class ServiceMetadata implements IServiceMetadata {
 
     constructor(target: Class) {
         this.target = target;
-        this.serviceId = this.serviceId = target.name;
+        this.serviceId = target.name;
     }
 
     public static has(target: Class | Prototype): boolean {
@@ -116,9 +116,9 @@ export class ServiceMetadata implements IServiceMetadata {
         if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.serviceId);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
-        let prev = Registry.services[this.serviceId];
+        let prev = Registry.ServiceMetadata[this.serviceId];
         if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.serviceId}]`);
-        Registry.services[this.serviceId] = this;
+        Registry.ServiceMetadata[this.serviceId] = this;
         return this;
     }
 }

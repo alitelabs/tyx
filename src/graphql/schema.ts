@@ -2,9 +2,10 @@ import { GraphQLSchema } from "graphql";
 import { ILogger, makeExecutableSchema } from "graphql-tools";
 import { ColumnType } from "../metadata/column";
 import { EntityMetadata } from "../metadata/entity";
-import { MetadataRegistry, Registry } from "../metadata/registry";
+import { Registry } from "../metadata/registry";
 import { RelationType } from "../metadata/relation";
 import { GraphMetadata, GraphType, TypeMetadata } from "../metadata/type";
+import "../schema/registry";
 import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from "./base";
 import { SchemaResolver } from "./types";
 
@@ -16,6 +17,7 @@ export const SEARCH = "";
 export const CREATE = "create";
 export const UPDATE = "update";
 export const REMOVE = "remove";
+
 
 export interface EntitySchema {
     target: EntityMetadata;
@@ -36,10 +38,10 @@ export interface EntitySchema {
 export interface TypeSchema {
     target: TypeMetadata;
     model: string;
-    query: string;
+    // query: string;
     params: string;
-    registry: SchemaResolver;
-    navigation: Record<string, SchemaResolver>;
+    // registry: SchemaResolver;
+    resolvers: Record<string, SchemaResolver>;
 }
 
 export interface ServiceSchema {
@@ -60,18 +62,18 @@ export class CoreSchema {
     public results: Record<string, TypeSchema> = {};
     // public services: Record<string, ServiceSchema> = {};
 
-    constructor(registry: MetadataRegistry) {
+    constructor() {
         // Metadata
-        for (let type of Object.values(registry.metadata))
+        for (let type of Object.values(Registry.RegistryMetadata))
             this.genType(type, GraphType.Metadata, this.metadata);
         // Entities
-        for (let meta of Object.values(registry.entities))
+        for (let meta of Object.values(Registry.EntityMetadata))
             this.genEntity(meta, this.entities);
         // Inputs
-        for (let type of Object.values(registry.inputs))
+        for (let type of Object.values(Registry.InputMetadata))
             this.genType(type, GraphType.Input, this.inputs);
         // Results
-        for (let type of Object.values(registry.results))
+        for (let type of Object.values(Registry.ResultMetadata))
             this.genType(type, GraphType.Result, this.results);
         // Services
     }
@@ -93,13 +95,9 @@ export class CoreSchema {
             ${DEF_DIRECTIVES}\n
             #### Metadata Types ####
             ${Object.values(this.metadata).map(m => m.model).join("\n")}\n
-            #### Registry ####
-            type MetadataRegistry {
-            ${Object.values(this.metadata).map(m => m.query).join("\n")}
-            }
             #### Metadata Resolvers ####
             type Query {
-              Metadata: MetadataRegistry
+              Registry: MetadataRegistry
             }
             type Mutation {
               reloadMetadata(role: String): JSON
@@ -113,8 +111,8 @@ export class CoreSchema {
     }
 
     public resolvers() {
-        let resolvers = { Query: { Metadata: undefined }, Mutation: {}, MetadataRegistry: {} };
-        resolvers.Query.Metadata = () => {
+        let resolvers = { Query: { Registry: undefined }, Mutation: {}, MetadataRegistry: {} };
+        resolvers.Query.Registry = () => {
             return Registry.get();
         }
         for (let [target, schema] of Object.entries(this.entities)) {
@@ -123,9 +121,7 @@ export class CoreSchema {
             resolvers[target + MODEL] = schema.navigation;
         }
         for (let [target, schema] of Object.entries(this.metadata)) {
-            if (!schema.registry) continue;
-            resolvers.MetadataRegistry[target] = schema.registry;
-            resolvers[target] = schema.navigation;
+            resolvers[target] = schema.resolvers;
         }
         return resolvers;
     }
@@ -281,7 +277,7 @@ export class CoreSchema {
                 return GraphType.Object;
             }
         }
-        if (GraphType.isList(target.type)) {
+        if (GraphType.isArray(target.type)) {
             let type = this.genType(target.item, scope, reg);
             if (type) {
                 return `[${type}]`;
@@ -313,7 +309,7 @@ export class CoreSchema {
             throw new TypeError(`Empty type difinition ${struc.target}`);
 
         // Generate schema
-        let schema: TypeSchema = { target: struc, model: undefined, params: undefined, query: undefined, registry: undefined, navigation: {} };
+        let schema: TypeSchema = { target: struc, model: undefined, params: undefined, resolvers: {} };
         reg[struc.name] = schema;
         schema.params = "";
         for (let field of Object.values(struc.fields)) {
@@ -323,21 +319,22 @@ export class CoreSchema {
         schema.model = (scope === GraphType.Input) ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
         for (let field of Object.values(struc.fields)) {
             let type = this.genType(field, scope, reg);
-            if (GraphType.isMetadata(struc.type) && GraphType.isList(field.type)) {
+            if (GraphType.isMetadata(struc.type) && GraphType.isArray(field.type)) {
                 let ref = this.genType(field.item, scope, reg);
-                let args = GraphType.isScalar(ref as GraphType) ? "" : `(\n${reg[ref].params}\n  )`;
+                let sch = !GraphType.isScalar(ref as GraphType) && reg[ref];
+                let args = (sch && sch.params) ? `(\n${reg[ref].params}\n  )` : "";
                 schema.model += `  ${field.name}${args}: ${type}\n`;
             } else {
                 schema.model += `  ${field.name}: ${type}\n`;
             }
             if ((struc.target as any)[field.name] instanceof Function)
-                schema.navigation[field.name] = (struc.target as any)[field.name];
+                schema.resolvers[field.name] = (struc.target as any)[field.name];
         }
         schema.model += "}";
-        if (GraphType.isMetadata(struc.type)) {
-            schema.query = `  ${struc.name}(\n${schema.params}\n  ): [${struc.name}]`;
-            schema.registry = (struc.target as any).registry;
-        }
+        // if (GraphType.isMetadata(struc.type)) {
+        //     schema.query = `  ${struc.name}(\n${schema.params}\n  ): [${struc.name}]`;
+        //     schema.registry = (struc.target as any).registry;
+        // }
 
         return struc.name;
     }

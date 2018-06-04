@@ -1,17 +1,17 @@
 import { Class, Prototype } from "../types/core";
-import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "./method";
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata, IMethodMetadata } from "./method";
 import { Registry } from "./registry";
 
-export interface ApiMetadata {
+export interface IApiMetadata {
     target: Class;
     alias: string;
 
-    methods: Record<string, MethodMetadata>;
+    methods: Record<string, IMethodMetadata>;
     routes: Record<string, HttpRouteMetadata>;
     events: Record<string, EventRouteMetadata[]>;
 }
 
-export class ApiMetadata implements ApiMetadata {
+export class ApiMetadata implements IApiMetadata {
     public target: Class;
     public alias: string;
 
@@ -59,9 +59,9 @@ export class ApiMetadata implements ApiMetadata {
 
     public commit(alias?: string): this {
         this.alias = alias || this.target.name;
-        let prev = Registry.apis[this.alias];
+        let prev = Registry.ApiMetadata[this.alias];
         if (prev && prev !== this) throw new TypeError(`Duplicate API alias [${this.alias}]`);
-        Registry.apis[this.alias] = this;
+        Registry.ApiMetadata[this.alias] = this;
         Object.values(this.methods).forEach(item => item.commit(this));
         // this.schema();
         return this;

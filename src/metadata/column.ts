@@ -360,7 +360,7 @@ export class ColumnMetadata implements IColumnMetadata {
     public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
         this.entityMetadata = entity;
         let key = `${entity.name}.${this.propertyName}`;
-        Registry.columns[key] = this;
+        Registry.ColumnMetadata[key] = this;
         database.columns.push(this);
     }
 }

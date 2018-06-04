@@ -53,7 +53,7 @@ export abstract class Core {
             database: tokens[5],
             // timezone: "Z",
             logging: logQueries ? "all" : ["error"],
-            entities: Object.values(Registry.entities).map(meta => meta.target)
+            entities: Object.values(Registry.EntityMetadata).map(meta => meta.target)
         };
         this.instance = new CoreInstance(application, Core.name);
         this.pool.push(this.instance);

@@ -37,7 +37,7 @@ export class ExpressAdapter {
         let used = {};
         let paths = [];
 
-        let httpMetadata = Registry.routes;
+        let httpMetadata = Registry.HttpRouteMetadata;
         for (let meta of Object.values(httpMetadata)) {
             let httpMethod = meta.verb;
             let resource = meta.resource;

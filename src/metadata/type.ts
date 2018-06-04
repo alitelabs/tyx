@@ -72,7 +72,7 @@ export namespace GraphType {
     export function isRef(type: GraphType) {
         return type === GraphType.Ref;
     }
-    export function isList(type: GraphType) {
+    export function isArray(type: GraphType) {
         return type === GraphType.List;
     }
     export function isItem(type: GraphType) {
@@ -116,19 +116,17 @@ export interface FieldMetadata extends GraphMetadata {
     design: DesignMetadata;
 }
 
-export interface TypeMetadata extends GraphMetadata {
+export interface ITypeMetadata extends GraphMetadata {
     target: Class;
     name: string;
     item?: never;
     fields?: Record<string, FieldMetadata>;
 }
 
-export class TypeMetadata {
+export class TypeMetadata implements ITypeMetadata {
     public target: Class = undefined;
-    public type: GraphType = undefined;
     public name: string = undefined;
-    // public ref?: string = undefined;
-    // public schema?: string = undefined;
+    public type: GraphType = undefined;
     public fields?: Record<string, FieldMetadata> = undefined;
 
     constructor(target: Class) {
@@ -170,7 +168,7 @@ export class TypeMetadata {
             item: item && itemInfo,
             target: (type === GraphType.Ref) ? item as any : undefined,
             required,
-            design: { type: design.name, target: design }
+            design: design && { type: design.name, target: design }
         };
         return this;
     }
@@ -182,13 +180,13 @@ export class TypeMetadata {
         // this.name = name;
         switch (type) {
             case GraphType.Metadata:
-                Registry.metadata[this.target.name] = this; break;
+                Registry.RegistryMetadata[this.target.name] = this; break;
             case GraphType.Result:
             case GraphType.ResultItem:
-                Registry.results[this.target.name] = this; break;
+                Registry.ResultMetadata[this.target.name] = this; break;
             case GraphType.Input:
             case GraphType.InputItem:
-                Registry.inputs[this.target.name] = this; break;
+                Registry.InputMetadata[this.target.name] = this; break;
             default:
                 throw new TypeError(`Not Implemented: ${type}`);
         }

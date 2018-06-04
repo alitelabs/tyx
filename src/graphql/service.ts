@@ -4,7 +4,6 @@ import { ContentType, Get, Post } from "../decorators/http";
 import { Activator, Inject } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
-import { Registry } from "../metadata/registry";
 import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { CoreSchema } from "./schema";
@@ -38,7 +37,7 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
     }
 
     protected async initialize(): Promise<CoreSchema> {
-        let schema = new CoreSchema(Registry.get());
+        let schema = new CoreSchema();
         return schema;
     }
 

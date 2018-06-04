@@ -1,15 +1,15 @@
 import { Class, Prototype } from "../types/core";
 import { Registry } from "./registry";
-import { ServiceMetadata } from "./service";
+import { IServiceMetadata, ServiceMetadata } from "./service";
 
-export interface ProxyMetadata extends ServiceMetadata {
+export interface IProxyMetadata extends IServiceMetadata {
     application: string;
     functionName: string;
 }
 
-export class ProxyMetadata extends ServiceMetadata implements ProxyMetadata {
-    public functionName: string;
-    public application: string;
+export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
+    public functionName: string = undefined;
+    public application: string = undefined;
 
     protected constructor(target: Class) {
         super(target);

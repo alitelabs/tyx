@@ -61,6 +61,3 @@ export * from "./graphql";
 
 export { Orm, Di } from "./import";
 
-// --- LAST ---
-export * from "./schema/metadata";
-export * from "./schema/database";

@@ -102,7 +102,7 @@ export class EntityMetadata implements IEntityMetadata {
 
     public commit(options?: EntityOptions): void {
         if (options && options.name) this.name = options.name;
-        Registry.entities[this.name] = this;
+        Registry.EntityMetadata[this.name] = this;
     }
 
     public resolve(database: DatabaseMetadata): void {
