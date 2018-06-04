@@ -44,17 +44,17 @@ export class ApiMetadata implements IApiMetadata {
     }
 
     public addMethod(meta: MethodMetadata) {
-        this.methods[meta.methodId] = meta;
+        this.methods[meta.name] = meta;
     }
 
     public addRoute(meta: HttpRouteMetadata) {
-        if (this.routes[meta.routeId]) throw new Error(`Duplicate route: ${meta.routeId}`);
-        this.routes[meta.routeId] = meta;
+        if (this.routes[meta.route]) throw new Error(`Duplicate route: ${meta.route}`);
+        this.routes[meta.route] = meta;
     }
 
     public addEvent(meta: EventRouteMetadata) {
-        this.events[meta.eventId] = this.events[meta.eventId] || [];
-        this.events[meta.eventId].push(meta);
+        this.events[meta.route] = this.events[meta.route] || [];
+        this.events[meta.route].push(meta);
     }
 
     public commit(alias?: string): this {

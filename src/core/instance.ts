@@ -1,7 +1,7 @@
 import { InternalServerError, NotFound } from "../errors/http";
 import { Container, ContainerInstance } from "../import/typedi";
 import { Logger } from "../logger";
-import { MethodMetadata } from "../metadata/method";
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "../metadata/method";
 import { ProxyMetadata } from "../metadata/proxy";
 import { Registry } from "../metadata/registry";
 import { ServiceMetadata } from "../metadata/service";
@@ -72,9 +72,9 @@ export class CoreInstance implements CoreContainer {
     public get<T>(type: ObjectType<T> | string): T {
         if (typeof type === "string") return this.container.get<T>(type);
         let proxy = ProxyMetadata.get(type);
-        if (proxy) return this.container.get(proxy.serviceId);
+        if (proxy) return this.container.get(proxy.alias);
         let service = ServiceMetadata.get(type);
-        if (service) return this.container.get(service.serviceId);
+        if (service) return this.container.get(service.alias);
         return undefined;
     }
 
@@ -90,7 +90,7 @@ export class CoreInstance implements CoreContainer {
             if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
             let service = this.container.get(req.service);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-            let methodId = req.service + "." + req.method;
+            let methodId = MethodMetadata.id(req.service, req.method);
             let metadata = Registry.MethodMetadata[methodId];
             if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
 
@@ -101,13 +101,13 @@ export class CoreInstance implements CoreContainer {
             let startTime = log.time();
             try {
                 await this.activate(ctx);
-                let handler: Function = service[metadata.methodId];
+                let handler: Function = service[metadata.name];
                 let result = await handler.apply(service, req.args);
                 return result;
             } catch (e) {
                 throw this.log.error(e);
             } finally {
-                log.timeEnd(startTime, `${metadata.methodId}`);
+                log.timeEnd(startTime, `${metadata.name}`);
                 await this.release(ctx);
             }
         } finally {
@@ -123,11 +123,11 @@ export class CoreInstance implements CoreContainer {
             req.type = "event";
             this.log.debug("Event Request: %j", req);
 
-            let route = `${req.source} ${req.resource}`;
+            let route = EventRouteMetadata.route(req.source, req.resource);
             let alias = this.config.resources && this.config.resources[req.resource];
             let metadatas = Registry.EventRouteMetadata[route];
             if (!metadatas) {
-                route = `${req.source} ${alias}`;
+                route = EventRouteMetadata.route(req.source, alias);
                 metadatas = Registry.EventRouteMetadata[route];
             }
             if (!metadatas) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
@@ -143,17 +143,17 @@ export class CoreInstance implements CoreContainer {
 
             this.istate = ContainerState.Busy;
             for (let target of metadatas) {
-                let service = this.container.get(target.serviceId);
+                let service = this.container.get(target.alias);
                 if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-                let methodId = target.serviceId + "." + target.methodId;
+                let methodId = MethodMetadata.id(target.alias, target.handler);
                 let method = Registry.MethodMetadata[methodId];
 
                 if (!Utils.wildcardMatch(target.actionFilter, req.action)
                     || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
 
                 req.application = this.application;
-                req.service = target.serviceId;
-                req.method = target.methodId;
+                req.service = target.alias;
+                req.method = target.handler;
 
                 let ctx = await this.security.eventAuth(this, req, method);
 
@@ -163,7 +163,7 @@ export class CoreInstance implements CoreContainer {
                     await this.activate(ctx);
                     for (let record of req.records) {
                         req.record = record;
-                        let handler = service[target.methodId];
+                        let handler = service[target.handler];
                         let data: any;
                         if (target.adapter) {
                             data = await target.adapter(handler.bind(service), ctx, req);
@@ -172,8 +172,8 @@ export class CoreInstance implements CoreContainer {
                         }
                         result.status = result.status || "OK";
                         result.returns.push({
-                            service: target.serviceId,
-                            method: target.methodId,
+                            service: target.alias,
+                            method: target.handler,
                             error: null,
                             data
                         });
@@ -182,13 +182,13 @@ export class CoreInstance implements CoreContainer {
                     this.log.error(e);
                     result.status = "FAILED";
                     result.returns.push({
-                        service: target.serviceId,
-                        method: target.methodId,
+                        service: target.alias,
+                        method: target.handler,
                         error: InternalServerError.wrap(e),
                         data: null
                     });
                 } finally {
-                    log.timeEnd(startTime, `${target.methodId}`);
+                    log.timeEnd(startTime, `${target.handler}`);
                     await this.release(ctx);
                 }
             }
@@ -209,18 +209,17 @@ export class CoreInstance implements CoreContainer {
 
             HttpUtils.request(req);
 
-            let route = `${req.httpMethod} ${req.resource}`;
-            if (req.contentType.domainModel) route += `:${req.contentType.domainModel}`;
+            let route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
             let target = Registry.HttpRouteMetadata[route];
             if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
-            let service = this.container.get(target.serviceId);
+            let service = this.container.get(target.alias);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-            let methodId = target.serviceId + "." + target.methodId;
+            let methodId = MethodMetadata.id(target.alias, target.handler);
             let method = Registry.MethodMetadata[methodId] as MethodMetadata;
 
             req.application = this.application;
-            req.service = target.serviceId;
-            req.method = target.methodId;
+            req.service = target.alias;
+            req.method = target.handler;
 
             this.istate = ContainerState.Busy;
             let ctx = await this.security.httpAuth(this, req, method);
@@ -233,7 +232,7 @@ export class CoreInstance implements CoreContainer {
                 this.log.debug("HTTP Context: %j", ctx);
                 this.log.debug("HTTP Request: %j", req);
 
-                let handler: Function = service[method.methodId];
+                let handler: Function = service[method.name];
                 let http = method.http[route];
                 let result: any;
                 if (http.adapter) {
@@ -263,7 +262,7 @@ export class CoreInstance implements CoreContainer {
                 this.log.error(e);
                 throw InternalServerError.wrap(e);
             } finally {
-                log.timeEnd(startTime, `${method.methodId}`);
+                log.timeEnd(startTime, `${method.name}`);
                 await this.release(ctx);
             }
         } finally {

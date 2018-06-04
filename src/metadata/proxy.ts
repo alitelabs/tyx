@@ -36,8 +36,8 @@ export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
     }
 
     public commit(service?: string, application?: string, functionName?: string): this {
-        this.serviceId = service || this.target.name.replace("Proxy", "");
-        this.functionName = functionName || (this.serviceId + "-function");
+        this.alias = service || this.target.name.replace("Proxy", "");
+        this.functionName = functionName || (this.alias + "-function");
         this.application = application;
         super.commit(service);
         return this;

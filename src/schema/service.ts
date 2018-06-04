@@ -29,7 +29,7 @@ export class HandlerMetadataSchema implements HandlerMetadata {
 @Metadata()
 export class ServiceMetadataSchema implements IServiceMetadata {
     @Str() target: Class;
-    @Str() serviceId: string;
+    @Str() alias: string;
 
     @List(item => InjectMetadataSchema) dependencies: Record<string, InjectMetadata>;
     @List(item => HandlerMetadataSchema) handlers: Record<string, HandlerMetadata>;

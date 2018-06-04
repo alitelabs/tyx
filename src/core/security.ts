@@ -76,16 +76,16 @@ export class CoreSecurity implements Security {
 
     public async remoteAuth(container: CoreContainer, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Remote && !method.roles.Internal)
-            throw new Forbidden(`Remote requests not allowed for method [${method.methodId}]`);
+            throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
         let auth = await this.verify(req.requestId, req.token, method, null);
         if (auth.remote && !method.roles.Remote)
-            throw new Unauthorized(`Internal request allowed only for method [${method.methodId}]`);
+            throw new Unauthorized(`Internal request allowed only for method [${method.name}]`);
         return new Context({ container, requestId: req.requestId, method, auth });
     }
 
     public async eventAuth(container: CoreContainer, req: EventRequest, method: MethodMetadata): Promise<Context> {
         if (!method.roles.Internal)
-            throw new Forbidden(`Internal events not allowed for method [${method.methodId}]`);
+            throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
         let ctx = new Context({
             container,
             requestId: req.requestId,
@@ -155,7 +155,7 @@ export class CoreSecurity implements Security {
             throw new Unauthorized(`Invalid request IP address: ${jwt.ipaddr}`);
 
         if (jwt.role !== "Application" && permission.roles[jwt.role] !== true)
-            throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.methodId}]`);
+            throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.name}]`);
 
         let expiry = new Date(jwt.iss).getTime() + MS(this.timeout(jwt.sub, jwt.iss, jwt.aud));
         // Check age of application token

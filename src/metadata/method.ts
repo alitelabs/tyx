@@ -3,7 +3,7 @@ import { EventAdapter } from "../types/event";
 import { HttpCode, HttpRequest } from "../types/http";
 import { Roles } from "../types/security";
 import * as Utils from "../utils/misc";
-import { ApiMetadata } from "./api";
+import { ApiMetadata, IApiMetadata } from "./api";
 import { Registry } from "./registry";
 import { GraphMetadata, GraphType } from "./type";
 
@@ -49,13 +49,17 @@ export interface HttpBindingMetadata {
 
 export interface HttpRouteMetadata {
     target: Class;
-    routeId: string;
-    serviceId: string;
-    methodId: string;
+    api: IApiMetadata;
+    method: IMethodMetadata;
+
+    route: string;
+    alias: string;
+    handler: string;
     // route: string;
     verb: string;
     resource: string;
     model: string;
+    params: string[];
     code: HttpCode;
     adapter: HttpAdapter;
     // Relations
@@ -63,11 +67,20 @@ export interface HttpRouteMetadata {
     // method: MethodMetadata;
 }
 
+export namespace HttpRouteMetadata {
+    export function route(verb: string, resource: string, model?: string) {
+        return `${verb}:${resource}` + (model ? `:${model}` : "");
+    }
+}
+
 export interface EventRouteMetadata {
     target: Class;
-    eventId: string;
-    serviceId: string;
-    methodId: string;
+    api: IApiMetadata;
+    method: IMethodMetadata;
+
+    route: string;
+    alias: string;
+    handler: string;
     source: string;
     resource: string;
     objectFilter: string;
@@ -75,10 +88,18 @@ export interface EventRouteMetadata {
     adapter: EventAdapter;
 }
 
+export namespace EventRouteMetadata {
+    export function route(source: string, resource: string) {
+        return `${source}/${resource}`;
+    }
+}
+
 export interface IMethodMetadata {
     target: Class;
-    methodId: string;
-    serviceId: string;
+    api: IApiMetadata;
+
+    name: string;
+    alias: string;
     design: DesignMetadata[];
 
     auth: string;
@@ -98,9 +119,10 @@ export interface IMethodMetadata {
 export class MethodMetadata implements IMethodMetadata {
 
     public target: Class;
+    public api: IApiMetadata;
 
-    public serviceId: string = undefined;
-    public methodId: string;
+    public alias: string = undefined;
+    public name: string;
     public design: DesignMetadata[] = undefined;
 
     public auth: string = undefined;
@@ -118,7 +140,11 @@ export class MethodMetadata implements IMethodMetadata {
 
     private constructor(target: Prototype, method: string) {
         this.target = target.constructor;
-        this.methodId = method;
+        this.name = method;
+    }
+
+    public static id(scope: string, name: string): string {
+        return `${scope}.${name}`;
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
@@ -176,26 +202,29 @@ export class MethodMetadata implements IMethodMetadata {
     }
 
     public addRoute(verb: string, resource: string, model: string, code: HttpCode, adapter?: HttpAdapter): this {
-        let meta = this;
-        let routeId = `${verb} ${resource}`;
-        routeId += model ? `:${model}` : "";
-        meta.http = meta.http || {};
-        if (this.http[routeId]) throw new TypeError(`Duplicate HTTP route: [${routeId}]`);
-        let route: HttpRouteMetadata = {
+        let route = HttpRouteMetadata.route(verb, resource, model);
+        this.http = this.http || {};
+        if (this.http[route]) throw new TypeError(`Duplicate HTTP route: [${route}]`);
+        let params = (resource.match(/\{([^}]+)\}/gi) || []).map(v => v.replace(/[\{\}]/g, ""));
+        let meta: HttpRouteMetadata = {
             target: this.target,
-            routeId,
-            serviceId: this.serviceId,
-            methodId: this.methodId,
+            api: undefined,
+            method: this,
+
+            route,
+            alias: this.alias,
+            handler: this.name,
             verb,
             resource,
             model,
+            params,
             code,
             adapter,
             // api: () => this.service,
             // method: () => this
         };
-        ApiMetadata.define(this.target).addRoute(route);
-        meta.http[routeId] = route;
+        ApiMetadata.define(this.target).addRoute(meta);
+        this.http[route] = meta;
         return this;
     }
 
@@ -211,17 +240,20 @@ export class MethodMetadata implements IMethodMetadata {
     }
 
     public addEvent(source: string, resource: string, actionFilter: string | boolean, objectFilter: string, adapter: EventAdapter): this {
-        let route = `${source} ${resource}`;
-        actionFilter = actionFilter === true ? this.methodId : actionFilter;
+        let route = `${source}/${resource}`;
+        actionFilter = actionFilter === true ? this.name : actionFilter;
         actionFilter = actionFilter || "*";
         objectFilter = objectFilter || "*";
         this.events = this.events || {};
         if (this.events[route]) throw new TypeError(`Duplicate event route: [${route}]`);
         let event: EventRouteMetadata = {
             target: this.target,
-            eventId: route,
-            serviceId: this.serviceId,
-            methodId: this.methodId,
+            api: undefined,
+            method: this,
+
+            route: route,
+            alias: this.alias,
+            handler: this.name,
             source,
             resource,
             actionFilter,
@@ -235,16 +267,20 @@ export class MethodMetadata implements IMethodMetadata {
     }
 
     public commit(api: ApiMetadata): this {
-        this.serviceId = api.alias;
-        Registry.MethodMetadata[this.serviceId + "." + this.methodId] = this;
+        this.api = api;
+        this.alias = api.alias;
+        let id = MethodMetadata.id(this.alias, this.name);
+        Registry.MethodMetadata[id] = this;
         if (this.http) for (let [route, meta] of Object.entries(this.http)) {
-            meta.serviceId = this.serviceId;
+            meta.api = api;
+            meta.alias = this.alias;
             if (Registry.HttpRouteMetadata[route] && Registry.HttpRouteMetadata[route] !== meta)
                 throw new TypeError(`Duplicate HTTP route [${route}]`);
             Registry.HttpRouteMetadata[route] = meta;
         }
         if (this.events) for (let [route, meta] of Object.entries(this.events)) {
-            meta.serviceId = this.serviceId;
+            meta.api = api;
+            meta.alias = this.alias;
             let handlers = Registry.EventRouteMetadata[route] = Registry.EventRouteMetadata[route] || [];
             if (!handlers.includes(meta)) handlers.push(meta);
         }

@@ -97,7 +97,7 @@ export class CoreSchema {
             ${Object.values(this.metadata).map(m => m.model).join("\n")}\n
             #### Metadata Resolvers ####
             type Query {
-              Registry: MetadataRegistry
+              Metadata: MetadataRegistry
             }
             type Mutation {
               reloadMetadata(role: String): JSON
@@ -111,8 +111,8 @@ export class CoreSchema {
     }
 
     public resolvers() {
-        let resolvers = { Query: { Registry: undefined }, Mutation: {}, MetadataRegistry: {} };
-        resolvers.Query.Registry = () => {
+        let resolvers = { Query: { Metadata: undefined }, Mutation: {}, MetadataRegistry: {} };
+        resolvers.Query.Metadata = () => {
             return Registry.get();
         };
         for (let [target, schema] of Object.entries(this.entities)) {

@@ -9,7 +9,7 @@ import { HandlerMetadataSchema, InjectMetadataSchema } from "./service";
 @Metadata()
 export class ProxyMetadataSchema implements IProxyMetadata {
     @Str() target: Class;
-    @Str() serviceId: string;
+    @Str() alias: string;
     @Str() application: string = undefined;
     @Str() functionName: string = undefined;
 

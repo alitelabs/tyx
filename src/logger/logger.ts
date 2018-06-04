@@ -30,7 +30,7 @@ export namespace Logger {
             let api = ApiMetadata.get(logNameOrEmitter);
             // let db = DatabaseMetadata.get(logNameOrEmitter);
             if (service) {
-                logName = service.serviceId || service.target.name;
+                logName = service.alias || service.target.name;
                 emitter = logNameOrEmitter;
             } else if (api) {
                 logName = api.alias || api.target.name;

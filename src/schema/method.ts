@@ -1,12 +1,14 @@
 import * as Lo from "lodash";
 import { Bool, Int, List, Metadata, Obj, Ref, Str } from "../decorators/type";
 import { ResolverArgs } from "../graphql/types";
+import { IApiMetadata } from "../metadata/api";
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
-import { GraphMetadata } from "../metadata/type";
+import { GraphMetadata, GraphType } from "../metadata/type";
 import { Class } from "../types/core";
 import { EventAdapter } from "../types/event";
 import { HttpCode } from "../types/http";
 import { Roles } from "../types/security";
+import { ApiMetadataSchema } from "./api";
 import { GraphMetadataSchema } from "./type";
 
 @Metadata()
@@ -23,12 +25,16 @@ export class HttpBindingMetadataSchema implements HttpBindingMetadata {
 @Metadata()
 export class HttpRouteMetadataSchema implements HttpRouteMetadata {
     @Str() target: Class;
-    @Str() routeId: string;
-    @Str() serviceId: string;
-    @Str() methodId: string;
+    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Ref(ref => MethodMetadataSchema) method: IMethodMetadata;
+
+    @Str() route: string;
+    @Str() alias: string;
+    @Str() handler: string;
     @Str() verb: string;
     @Str() resource: string;
     @Str() model: string;
+    @List(GraphType.String) params: string[];
     @Int() code: HttpCode;
     @Str() adapter: HttpAdapter;
     // Relations
@@ -47,9 +53,12 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
 @Metadata()
 export class EventRouteMetadataSchema implements EventRouteMetadata {
     @Str() target: Class;
-    @Str() eventId: string;
-    @Str() serviceId: string;
-    @Str() methodId: string;
+    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Ref(ref => MethodMetadataSchema) method: IMethodMetadata;
+
+    @Str() route: string;
+    @Str() alias: string;
+    @Str() handler: string;
     @Str() source: string;
     @Str() resource: string;
     @Str() objectFilter: string;
@@ -68,8 +77,10 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
 @Metadata()
 export class MethodMetadataSchema implements IMethodMetadata {
     @Str() target: Class;
-    @Str() methodId: string;
-    @Str() serviceId: string;
+    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
+
+    @Str() alias: string;
+    @Str() name: string;
     @Obj() design: DesignMetadata[];
 
     @Str() auth: string;
@@ -90,10 +101,10 @@ export class MethodMetadataSchema implements IMethodMetadata {
     }
 
     public static http(obj: IMethodMetadata, args: ResolverArgs): HttpRouteMetadata[] {
-        return Lo.filter(Object.values(obj.http), args);
+        return Lo.filter(Object.values(obj.http || {}), args);
     }
 
     public static events(obj: IMethodMetadata, args: ResolverArgs): EventRouteMetadata[] {
-        return Lo.filter(Object.values(obj.events), args);
+        return Lo.filter(Object.values(obj.events || {}), args);
     }
 }
