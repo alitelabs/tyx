@@ -3,6 +3,7 @@ import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";
 import { AuthInfo } from "./security";
+import { ResolverContainer } from "../graphql";
 
 // export type _ObjectType<T> = {
 //     new(): T;
@@ -48,7 +49,7 @@ export enum ContainerState {
 
 export const CoreContainer = "container";
 
-export interface CoreContainer {
+export interface CoreContainer extends ResolverContainer {
     state: ContainerState;
 
     httpRequest(req: HttpRequest): Promise<HttpResponse>;

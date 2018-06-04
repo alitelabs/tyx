@@ -7,7 +7,11 @@ export const SCALARS: Record<string, GraphQLScalarType> = {
     Date: GraphQLDate,
     Time: GraphQLTime,
     DateTime: GraphQLDateTime,
-    JSON: GraphQLJSON
+    JSON: GraphQLJSON,
+    ANY: new GraphQLScalarType({
+        name: "ANY",
+        serialize(value) { return value; }
+    })
 };
 export const DEF_SCALARS = Object.keys(SCALARS).map(s => `scalar ${s}`).join("\n");
 

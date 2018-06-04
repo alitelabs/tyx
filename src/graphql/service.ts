@@ -88,7 +88,6 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         let query = req.json || req.queryStringParameters;
         let result: HttpResponse = { statusCode: null, body: null, headers: {} };
         try {
-            // : GraphContext = { ...ctx, db: this.database.getConnection() };
             result.body = await GraphQL.runHttpQuery([req, ctx], { method: req.httpMethod, options, query });
             result.headers["Content-Type"] = "application/json";
             result.statusCode = 200;

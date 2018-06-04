@@ -1,4 +1,4 @@
-import { Class, Context, Prototype } from "../types/core";
+import { Class, Context, Prototype, TypeRef } from "../types/core";
 import { EventAdapter } from "../types/event";
 import { HttpCode, HttpRequest } from "../types/http";
 import { Roles } from "../types/security";
@@ -182,18 +182,28 @@ export class MethodMetadata implements IMethodMetadata {
         return this;
     }
 
-    public setQuery(input?: Class, result?: Class): this {
+    public setQuery(input?: GraphType | TypeRef<any>, result?: GraphType | TypeRef<any>, listInput?: boolean, listResult?: boolean): this {
         this.query = true;
-        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
-        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
+        this.input = this.getType(input, listInput);
+        this.result = this.getType(result, listResult);
         return this;
     }
 
-    public setMutation(input?: Class, result?: Class): this {
+    public setMutation(input?: GraphType | TypeRef<any>, result?: GraphType | TypeRef<any>, listInput?: boolean, listResult?: boolean): this {
         this.mutation = true;
-        this.input = input ? { type: GraphType.Ref, target: input } : { type: GraphType.ANY };
-        this.result = result ? { type: GraphType.Ref, target: result } : { type: GraphType.ANY };
+        this.input = this.getType(input, listInput);
+        this.result = this.getType(result, listResult);
         return this;
+    }
+
+    private getType(type?: GraphType | TypeRef<any>, list?: boolean): GraphMetadata {
+        if (!type) {
+            return { type: GraphType.ANY };
+        } else if (typeof type === "string") {
+            return list ? { type: GraphType.List, item: { type } } : { type };
+        } else {
+            return list ? { type: GraphType.List, item: { type: GraphType.Ref, target: type } } : { type: GraphType.Ref, target: type };
+        }
     }
 
     public setContentType(type: string): this {

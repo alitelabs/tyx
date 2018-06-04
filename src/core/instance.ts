@@ -1,4 +1,5 @@
 import { InternalServerError, NotFound } from "../errors/http";
+import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from "../graphql/types";
 import { Container, ContainerInstance } from "../import/typedi";
 import { Logger } from "../logger";
 import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "../metadata/method";
@@ -14,6 +15,7 @@ import { RemoteRequest } from "../types/proxy";
 import { Security } from "../types/security";
 import { Utils } from "../utils";
 import { CoreConfiguration } from "./config";
+import { Core } from "./core";
 import { HttpUtils } from "./http";
 import { CoreSecurity } from "./security";
 
@@ -34,6 +36,7 @@ export class CoreInstance implements CoreContainer {
         if (index !== undefined) this.name += ":" + index;
 
         this.container = Container.of(this.name);
+        this.container.set(CoreContainer, this);
 
         this.log = Logger.get(this.application, this.name);
         this.istate = ContainerState.Pending;
@@ -69,6 +72,12 @@ export class CoreInstance implements CoreContainer {
         return this.istate;
     }
 
+    public reserve() {
+        if (this.istate !== ContainerState.Ready)
+            throw new InternalServerError("Invalid container state");
+        this.istate = ContainerState.Reserved;
+    }
+
     public get<T>(type: ObjectType<T> | string): T {
         if (typeof type === "string") return this.container.get<T>(type);
         let proxy = ProxyMetadata.get(type);
@@ -80,10 +89,20 @@ export class CoreInstance implements CoreContainer {
 
     // --------------------------------------------------
 
-    public async remoteRequest(req: RemoteRequest): Promise<any> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
+    public async invoke(method: MethodInfo, obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo): Promise<any> {
+        return Core.remoteRequest({
+            type: "graphql",
+            requestId: ctx.requestId,
+            application: this.application,
+            service: method.api,
+            method: method.method,
+            args: [args],
+            token: ctx.auth.token
+        });
+    }
 
-        this.istate = ContainerState.Reserved;
+    public async remoteRequest(req: RemoteRequest): Promise<any> {
+        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
         try {
             this.log.debug("Remote Request: %j", req);
 
@@ -116,9 +135,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async eventRequest(req: EventRequest): Promise<EventResult> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-
-        this.istate = ContainerState.Reserved;
+        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
         try {
             req.type = "event";
             this.log.debug("Event Request: %j", req);
@@ -200,9 +217,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
-        if (this.istate !== ContainerState.Ready) throw new InternalServerError("Invalid container state");
-
-        this.istate = ContainerState.Reserved;
+        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
         try {
             req.type = "http";
             this.log.debug("HTTP Event: %j", req);

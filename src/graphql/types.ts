@@ -1,6 +1,7 @@
 import { GraphQLResolveInfo } from "graphql";
 import { EntityMetadata } from "../metadata/entity";
 import { RelationMetadata } from "../metadata/relation";
+import { AuthInfo } from "../types/security";
 
 export type InputNode = Record<string, string | boolean | number>;
 export type ArrayNode = Record<string, string[] | boolean[] | number[]>;
@@ -42,8 +43,20 @@ export interface ResolverQuery extends ResolverExpression {
 
 export type ResolverArgs = any;
 
+export interface MethodInfo {
+    api: string;
+    method: string;
+}
+
+export interface ResolverContainer {
+    invoke: (method: MethodInfo, obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo) => Promise<any>;
+}
+
 export interface ResolverContext {
+    requestId: string;
+    auth: AuthInfo;
     provider: EntityResolver;
+    container: ResolverContainer;
     results?: Record<string, any[]>;
 }
 

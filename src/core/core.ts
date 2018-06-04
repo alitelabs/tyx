@@ -66,8 +66,11 @@ export abstract class Core {
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
             instance = new CoreInstance(this.application, Core.name, this.counter++);
+            instance.reserve();
             this.pool.push(instance);
             this.instance = this.instance || instance;
+        } else {
+            instance.reserve();
         }
         return instance;
     }
