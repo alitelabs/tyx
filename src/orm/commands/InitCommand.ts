@@ -1,7 +1,7 @@
-import {CommandUtils} from "./CommandUtils";
-import {ObjectLiteral} from "../common/ObjectLiteral";
-const chalk = require("chalk");
 import * as path from "path";
+import { ObjectLiteral } from "../common/ObjectLiteral";
+import { CommandUtils } from "./CommandUtils";
+const chalk = require("chalk");
 
 /**
  * Generates a new project with TypeORM.
@@ -84,7 +84,7 @@ export class InitCommand {
      * Gets contents of the ormconfig file.
      */
     protected static getOrmConfigTemplate(database: string): string {
-        const options: ObjectLiteral = { };
+        const options: ObjectLiteral = {};
         switch (database) {
             case "mysql":
                 Object.assign(options, {
@@ -185,7 +185,7 @@ export class InitCommand {
                 sourceMap: true
             }
         }
-        , undefined, 3);
+            , undefined, 3);
     }
 
     /**
@@ -204,13 +204,13 @@ temp/`;
      * Gets contents of the user entity.
      */
     protected static getUserEntityTemplate(database: string): string {
-        return `import {Entity, ${ database === "mongodb" ? "ObjectIdColumn, ObjectID" : "PrimaryGeneratedColumn" }, Column} from "typeorm";
+        return `import {Entity, ${database === "mongodb" ? "ObjectIdColumn, ObjectID" : "PrimaryGeneratedColumn"}, Column} from "typeorm";
 
 @Entity()
 export class User {
 
-    ${ database === "mongodb" ? "@ObjectIdColumn()" : "@PrimaryGeneratedColumn()" }
-    id: ${ database === "mongodb" ? "ObjectID" : "number" };
+    ${ database === "mongodb" ? "@ObjectIdColumn()" : "@PrimaryGeneratedColumn()"}
+    id: ${ database === "mongodb" ? "ObjectID" : "number"};
 
     @Column()
     firstName: string;
@@ -354,13 +354,13 @@ createConnection().then(async connection => {
     user.age = 25;
     await connection.manager.save(user);
     console.log("Saved a new user with id: " + user.id);
-    
+
     console.log("Loading users from the database...");
     const users = await connection.manager.find(User);
     console.log("Loaded users: ", users);
-     
+
     console.log("Here you can setup and run express/koa/any other framework.");
-    
+
 }).catch(error => console.log(error));
 `;
         }
@@ -473,7 +473,7 @@ services:
      */
     protected static getReadmeTemplate(options: { docker: boolean }): string {
         let template = `# Awesome Project Build with TypeORM
-        
+
 Steps to run this project:
 
 1. Run \`npm i\` command

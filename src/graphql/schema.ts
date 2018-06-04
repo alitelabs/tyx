@@ -114,7 +114,7 @@ export class CoreSchema {
         let resolvers = { Query: { Registry: undefined }, Mutation: {}, MetadataRegistry: {} };
         resolvers.Query.Registry = () => {
             return Registry.get();
-        }
+        };
         for (let [target, schema] of Object.entries(this.entities)) {
             resolvers.Query = { ...resolvers.Query, ...schema.queries };
             resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
@@ -236,7 +236,7 @@ export class CoreSchema {
                 let args = "";
                 model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
                 simple += `,\n  ${property}: ${inverse}${MODEL}`;
-                navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(target, relation, obj, args, ctx, info);;
+                navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";

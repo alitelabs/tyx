@@ -1,5 +1,5 @@
 import * as Lo from "lodash";
-import { QlArray, Metadata, QlString } from "../decorators/type";
+import { List, Metadata, Str } from "../decorators/type";
 import { ResolverArgs } from "../graphql/types";
 import { IColumnMetadata } from "../metadata/column";
 import { IEntityMetadata } from "../metadata/entity";
@@ -10,11 +10,11 @@ import { RelationMetadataSchema } from "./relation";
 
 @Metadata()
 export class EntityMetadataSchema implements IEntityMetadata {
-    @QlString() target: Class;
-    @QlString() name: string;
-    @QlArray(item => ColumnMetadataSchema) columns: IColumnMetadata[];
-    @QlArray(item => ColumnMetadataSchema) primaryColumns: IColumnMetadata[];
-    @QlArray(item => RelationMetadataSchema) relations: IRelationMetadata[];
+    @Str() target: Class;
+    @Str() name: string;
+    @List(item => ColumnMetadataSchema) columns: IColumnMetadata[];
+    @List(item => ColumnMetadataSchema) primaryColumns: IColumnMetadata[];
+    @List(item => RelationMetadataSchema) relations: IRelationMetadata[];
 
     public static target(obj: IEntityMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;

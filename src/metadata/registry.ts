@@ -97,7 +97,7 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly HttpRouteMetadata: Record<string, HttpRouteMetadata> = {};
     public static readonly EventRouteMetadata: Record<string, EventRouteMetadata[]> = {};
 
-    // --- 
+    // ---
 
     public abstract RegistryMetadata: Record<string, TypeMetadata>;
     public abstract DecoratorMetadata: Record<string, DecoratorMetadata>;

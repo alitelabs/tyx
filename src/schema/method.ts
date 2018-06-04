@@ -1,5 +1,5 @@
 import * as Lo from "lodash";
-import { QlBoolean, QlInt, QlArray, Metadata, QlObject, QlRef, QlString } from "../decorators/type";
+import { Bool, Int, List, Metadata, Obj, Ref, Str } from "../decorators/type";
 import { ResolverArgs } from "../graphql/types";
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
 import { GraphMetadata } from "../metadata/type";
@@ -11,26 +11,26 @@ import { GraphMetadataSchema } from "./type";
 
 @Metadata()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
-    @QlString() type: HttpBindingType;
-    @QlString() path: string;
-    @QlString() binder: HttpBinder;
+    @Str() type: HttpBindingType;
+    @Str() path: string;
+    @Str() binder: HttpBinder;
 
     public static binder(obj: HttpBindingMetadata): string {
-        return obj.binder && `[function: ${obj.binder.toString()}]`
+        return obj.binder && `[function: ${obj.binder.toString()}]`;
     }
 }
 
 @Metadata()
 export class HttpRouteMetadataSchema implements HttpRouteMetadata {
-    @QlString() target: Class;
-    @QlString() routeId: string;
-    @QlString() serviceId: string;
-    @QlString() methodId: string;
-    @QlString() verb: string;
-    @QlString() resource: string;
-    @QlString() model: string;
-    @QlInt() code: HttpCode;
-    @QlString() adapter: HttpAdapter;
+    @Str() target: Class;
+    @Str() routeId: string;
+    @Str() serviceId: string;
+    @Str() methodId: string;
+    @Str() verb: string;
+    @Str() resource: string;
+    @Str() model: string;
+    @Int() code: HttpCode;
+    @Str() adapter: HttpAdapter;
     // Relations
     // api: ApiMetadata;
     // method: MethodMetadata;
@@ -40,50 +40,50 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
     }
 
     public static adapter(obj: HttpRouteMetadata): string {
-        return obj.adapter && `[function: ${obj.adapter.toString()}]`
+        return obj.adapter && `[function: ${obj.adapter.toString()}]`;
     }
 }
 
 @Metadata()
 export class EventRouteMetadataSchema implements EventRouteMetadata {
-    @QlString() target: Class;
-    @QlString() eventId: string;
-    @QlString() serviceId: string;
-    @QlString() methodId: string;
-    @QlString() source: string;
-    @QlString() resource: string;
-    @QlString() objectFilter: string;
-    @QlString() actionFilter: string;
-    @QlString() adapter: EventAdapter;
+    @Str() target: Class;
+    @Str() eventId: string;
+    @Str() serviceId: string;
+    @Str() methodId: string;
+    @Str() source: string;
+    @Str() resource: string;
+    @Str() objectFilter: string;
+    @Str() actionFilter: string;
+    @Str() adapter: EventAdapter;
 
     public static target(obj: EventRouteMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;
     }
 
     public static adapter(obj: EventRouteMetadata): string {
-        return obj.adapter && `[function: ${obj.adapter.toString()}]`
+        return obj.adapter && `[function: ${obj.adapter.toString()}]`;
     }
 }
 
 @Metadata()
 export class MethodMetadataSchema implements IMethodMetadata {
-    @QlString() target: Class;
-    @QlString() methodId: string;
-    @QlString() serviceId: string;
-    @QlObject() design: DesignMetadata[];
+    @Str() target: Class;
+    @Str() methodId: string;
+    @Str() serviceId: string;
+    @Obj() design: DesignMetadata[];
 
-    @QlString() auth: string;
-    @QlObject() roles: Roles;
+    @Str() auth: string;
+    @Obj() roles: Roles;
 
-    @QlBoolean() query: boolean;
-    @QlBoolean() mutation: boolean;
-    @QlRef(type => GraphMetadataSchema) input: GraphMetadata;
-    @QlRef(type => GraphMetadataSchema) result: GraphMetadata;
+    @Bool() query: boolean;
+    @Bool() mutation: boolean;
+    @Ref(type => GraphMetadataSchema) input: GraphMetadata;
+    @Ref(type => GraphMetadataSchema) result: GraphMetadata;
 
-    @QlString() contentType: string;
-    @QlArray(type => HttpBindingMetadataSchema) bindings: HttpBindingMetadata[];
-    @QlArray(type => HttpRouteMetadataSchema) http: Record<string, HttpRouteMetadata>;
-    @QlArray(type => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata>;
+    @Str() contentType: string;
+    @List(type => HttpBindingMetadataSchema) bindings: HttpBindingMetadata[];
+    @List(type => HttpRouteMetadataSchema) http: Record<string, HttpRouteMetadata>;
+    @List(type => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata>;
 
     public static target(obj: IMethodMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;

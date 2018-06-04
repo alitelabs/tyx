@@ -1,19 +1,19 @@
-import {QueryRunnerAlreadyReleasedError} from "../../error/QueryRunnerAlreadyReleasedError";
-import {AbstractSqliteQueryRunner} from "../sqlite-abstract/AbstractSqliteQueryRunner";
-import {SqljsDriver} from "./SqljsDriver";
-import {Broadcaster} from "../../subscriber/Broadcaster";
-import {QueryFailedError} from "../../error/QueryFailedError";
+import { QueryFailedError } from "../../error/QueryFailedError";
+import { QueryRunnerAlreadyReleasedError } from "../../error/QueryRunnerAlreadyReleasedError";
+import { Broadcaster } from "../../subscriber/Broadcaster";
+import { AbstractSqliteQueryRunner } from "../sqlite-abstract/AbstractSqliteQueryRunner";
+import { SqljsDriver } from "./SqljsDriver";
 
 /**
  * Runs queries on a single sqlite database connection.
  */
 export class SqljsQueryRunner extends AbstractSqliteQueryRunner {
-    
+
     /**
      * Database driver used by connection.
      */
     driver: SqljsDriver;
-    
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -28,7 +28,7 @@ export class SqljsQueryRunner extends AbstractSqliteQueryRunner {
     // -------------------------------------------------------------------------
     // Public methods
     // -------------------------------------------------------------------------
-    
+
     /**
      * Commits transaction.
      * Error will be thrown if transaction was not started.
@@ -52,7 +52,7 @@ export class SqljsQueryRunner extends AbstractSqliteQueryRunner {
             try {
                 const statement = databaseConnection.prepare(query);
                 statement.bind(parameters);
-                
+
                 // log slow queries if maxQueryExecution time is set
                 const maxQueryExecutionTime = this.driver.connection.options.maxQueryExecutionTime;
                 const queryEndTime = +new Date();
@@ -65,7 +65,7 @@ export class SqljsQueryRunner extends AbstractSqliteQueryRunner {
                 while (statement.step()) {
                     result.push(statement.getAsObject());
                 }
-                
+
                 statement.free();
                 ok(result);
             }

@@ -1,5 +1,5 @@
-import {ColumnType} from "../../driver/types/ColumnTypes";
-import {ValueTransformer} from "./ValueTransformer";
+import { ColumnType } from "../../driver/types/ColumnTypes";
+import { ValueTransformer } from "./ValueTransformer";
 
 /**
  * Describes all column's options.
@@ -20,7 +20,7 @@ export interface ColumnOptions {
      * Column type's length. Used only on some column types.
      * For example type = "string" and length = "100" means that ORM will create a column with type varchar(100).
      */
-    length?: string|number;
+    length?: string | number;
 
     /**
      * Column type's display width. Used only on some column types in MySQL.
@@ -76,7 +76,7 @@ export interface ColumnOptions {
      * The precision for a decimal (exact numeric) column (applies only for decimal column), which is the maximum
      * number of digits that are stored for the values.
      */
-    precision?: number|null;
+    precision?: number | null;
 
     /**
      * The scale for a decimal (exact numeric) column (applies only for decimal column), which represents the number
@@ -109,7 +109,7 @@ export interface ColumnOptions {
     /**
      * Array of possible enumerated values.
      */
-    enum?: any[]|Object;
+    enum?: any[] | Object;
 
     /**
      * Generated column expression. Supports only in MySQL.
@@ -119,13 +119,13 @@ export interface ColumnOptions {
     /**
      * Generated column type. Supports only in MySQL.
      */
-    generatedType?: "VIRTUAL"|"STORED";
+    generatedType?: "VIRTUAL" | "STORED";
 
     /**
      * Return type of HSTORE column.
      * Returns value as string or as object.
      */
-    hstoreType?: "object"|"string";
+    hstoreType?: "object" | "string";
 
     /**
      * Indicates if this column is an array.
@@ -139,5 +139,5 @@ export interface ColumnOptions {
      * this column when reading or writing to the database.
      */
     transformer?: ValueTransformer;
-    
+
 }

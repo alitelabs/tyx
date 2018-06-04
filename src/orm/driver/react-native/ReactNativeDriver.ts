@@ -1,14 +1,14 @@
-import {AbstractSqliteDriver} from "../sqlite-abstract/AbstractSqliteDriver";
-import {ReactNativeConnectionOptions} from "./ReactNativeConnectionOptions";
-import {ReactNativeQueryRunner} from "./ReactNativeQueryRunner";
-import {QueryRunner} from "../../query-runner/QueryRunner";
-import {Connection} from "../../connection/Connection";
-import {DriverOptionNotSetError} from "../../error/DriverOptionNotSetError";
-import {DriverPackageNotInstalledError} from "../../error/DriverPackageNotInstalledError";
+import { Connection } from "../../connection/Connection";
+import { DriverOptionNotSetError } from "../../error/DriverOptionNotSetError";
+import { DriverPackageNotInstalledError } from "../../error/DriverPackageNotInstalledError";
+import { QueryRunner } from "../../query-runner/QueryRunner";
+import { AbstractSqliteDriver } from "../sqlite-abstract/AbstractSqliteDriver";
+import { ReactNativeConnectionOptions } from "./ReactNativeConnectionOptions";
+import { ReactNativeQueryRunner } from "./ReactNativeQueryRunner";
 
 export class ReactNativeDriver extends AbstractSqliteDriver {
     options: ReactNativeConnectionOptions;
-    
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -28,7 +28,7 @@ export class ReactNativeDriver extends AbstractSqliteDriver {
         // load sqlite package
         this.loadDependencies();
     }
-    
+
 
     // -------------------------------------------------------------------------
     // Public Methods
@@ -43,17 +43,17 @@ export class ReactNativeDriver extends AbstractSqliteDriver {
             this.databaseConnection.close(ok, fail);
         });
     }
-    
+
     /**
      * Creates a query runner used to execute database queries.
      */
-    createQueryRunner(mode: "master"|"slave" = "master"): QueryRunner {
+    createQueryRunner(mode: "master" | "slave" = "master"): QueryRunner {
         if (!this.queryRunner)
             this.queryRunner = new ReactNativeQueryRunner(this);
 
         return this.queryRunner;
     }
-    
+
     // -------------------------------------------------------------------------
     // Protected Methods
     // -------------------------------------------------------------------------

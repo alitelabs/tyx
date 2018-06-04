@@ -12,7 +12,7 @@ import { RemoteRequest } from "../types/proxy";
 import { CoreInstance } from "./instance";
 
 export abstract class Core {
-    public static log = Logger.get("TYX", Core.name);;
+    public static log = Logger.get("TYX", Core.name);
 
     private static application: string;
     private static instance: CoreInstance;

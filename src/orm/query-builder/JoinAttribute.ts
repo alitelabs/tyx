@@ -1,9 +1,9 @@
-import {EntityMetadata} from "../metadata/EntityMetadata";
-import {Connection} from "../connection/Connection";
-import {RelationMetadata} from "../metadata/RelationMetadata";
-import {QueryBuilderUtils} from "./QueryBuilderUtils";
-import {QueryExpressionMap} from "./QueryExpressionMap";
-import {Alias} from "./Alias";
+import { Connection } from "../connection/Connection";
+import { EntityMetadata } from "../metadata/EntityMetadata";
+import { RelationMetadata } from "../metadata/RelationMetadata";
+import { Alias } from "./Alias";
+import { QueryBuilderUtils } from "./QueryBuilderUtils";
+import { QueryExpressionMap } from "./QueryExpressionMap";
 
 /**
  * Stores all join attributes which will be used to build a JOIN query.
@@ -17,7 +17,7 @@ export class JoinAttribute {
     /**
      * Join direction.
      */
-    direction: "LEFT"|"INNER";
+    direction: "LEFT" | "INNER";
 
     /**
      * Alias of the joined (destination) table.
@@ -27,7 +27,7 @@ export class JoinAttribute {
     /**
      * Joined table, entity target, or relation in "post.category" format.
      */
-    entityOrProperty: Function|string;
+    entityOrProperty: Function | string;
 
     /**
      * Extra condition applied to "ON" section of join.
@@ -49,8 +49,8 @@ export class JoinAttribute {
     // -------------------------------------------------------------------------
 
     constructor(private connection: Connection,
-                private queryExpressionMap: QueryExpressionMap,
-                joinAttribute?: JoinAttribute) {
+        private queryExpressionMap: QueryExpressionMap,
+        joinAttribute?: JoinAttribute) {
         Object.assign(this, joinAttribute || {});
     }
 
@@ -96,7 +96,7 @@ export class JoinAttribute {
      * This value is extracted from entityOrProperty value.
      * This is available when join was made using "post.category" syntax.
      */
-    get parentAlias(): string|undefined {
+    get parentAlias(): string | undefined {
         if (!QueryBuilderUtils.isAliasProperty(this.entityOrProperty))
             return undefined;
 
@@ -110,7 +110,7 @@ export class JoinAttribute {
      * This value is extracted from entityOrProperty value.
      * This is available when join was made using "post.category" syntax.
      */
-    get relationPropertyPath(): string|undefined {
+    get relationPropertyPath(): string | undefined {
         if (!QueryBuilderUtils.isAliasProperty(this.entityOrProperty))
             return undefined;
 
@@ -123,13 +123,13 @@ export class JoinAttribute {
      * This is available when join was made using "post.category" syntax.
      * Relation can be undefined if entityOrProperty is regular entity or custom table.
      */
-    get relation(): RelationMetadata|undefined {
+    get relation(): RelationMetadata | undefined {
         if (!QueryBuilderUtils.isAliasProperty(this.entityOrProperty))
             return undefined;
 
         const relationOwnerSelection = this.queryExpressionMap.findAliasByName(this.parentAlias!);
         let relation = relationOwnerSelection.metadata.findRelationWithPropertyPath(this.relationPropertyPath!);
-        
+
         if (relation) {
             return relation;
         }
@@ -141,14 +141,14 @@ export class JoinAttribute {
             }
         }
 
-        throw new Error(`Relation with property path ${this.relationPropertyPath} in entity was not found.`);  
+        throw new Error(`Relation with property path ${this.relationPropertyPath} in entity was not found.`);
     }
 
     /**
      * Metadata of the joined entity.
      * If table without entity was joined, then it will return undefined.
      */
-    get metadata(): EntityMetadata|undefined {
+    get metadata(): EntityMetadata | undefined {
 
         // entityOrProperty is relation, e.g. "post.category"
         if (this.relation)
@@ -183,14 +183,14 @@ export class JoinAttribute {
         return this.relation.isOwning ? this.parentAlias + "_" + this.alias.name : this.alias.name + "_" + this.parentAlias;
     }
 
-    get mapToPropertyParentAlias(): string|undefined {
+    get mapToPropertyParentAlias(): string | undefined {
         if (!this.mapToProperty)
             return undefined;
 
         return this.mapToProperty!.split(".")[0];
     }
 
-    get mapToPropertyPropertyName(): string|undefined {
+    get mapToPropertyPropertyName(): string | undefined {
         if (!this.mapToProperty)
             return undefined;
 

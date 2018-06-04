@@ -38,53 +38,54 @@ function GraphClass(decorator: string, type: GraphType, name?: string): ClassDec
 
 /// Fields
 
-export function QlID(req?: boolean): PropertyDecorator {
-    return Field(QlID.name, GraphType.ID, req);
+export function ID(req?: boolean): PropertyDecorator {
+    return Field(ID.name, GraphType.ID, req);
 }
-export function QlInt(req?: boolean): PropertyDecorator {
-    return Field(QlInt.name, GraphType.Int, req);
+export function Int(req?: boolean): PropertyDecorator {
+    return Field(Int.name, GraphType.Int, req);
 }
-export function QlFloat(req?: boolean): PropertyDecorator {
-    return Field(QlFloat.name, GraphType.Float, req);
+export function Float(req?: boolean): PropertyDecorator {
+    return Field(Float.name, GraphType.Float, req);
 }
-export function QlString(req?: boolean): PropertyDecorator {
-    return Field(QlString.name, GraphType.String, req);
+export function Str(req?: boolean): PropertyDecorator {
+    return Field(Str.name, GraphType.String, req);
 }
-export function QlOption(req?: boolean): PropertyDecorator {
-    return Field(QlOption.name, GraphType.Option, req);
+export function Option(req?: boolean): PropertyDecorator {
+    return Field(Option.name, GraphType.Option, req);
 }
-export function QlBoolean(req?: boolean): PropertyDecorator {
-    return Field(QlBoolean.name, GraphType.Boolean, req);
+export function Bool(req?: boolean): PropertyDecorator {
+    return Field(Bool.name, GraphType.Boolean, req);
 }
-export function QlDate(req?: boolean): PropertyDecorator {
-    return Field(QlDate.name, GraphType.Date, req);
+export function Datum(req?: boolean): PropertyDecorator {
+    return Field(Datum.name, GraphType.Date, req);
 }
-export function QlDateTime(req?: boolean): PropertyDecorator {
-    return Field(QlDateTime.name, GraphType.DateTime, req);
+export function DateTime(req?: boolean): PropertyDecorator {
+    return Field(DateTime.name, GraphType.DateTime, req);
 }
-export function QlTimestamp(req?: boolean): PropertyDecorator {
-    return Field(QlTimestamp.name, GraphType.Date, req);
+export function Timestamp(req?: boolean): PropertyDecorator {
+    return Field(Timestamp.name, GraphType.Date, req);
 }
-export function QlEmail(req?: boolean): PropertyDecorator {
-    return Field(QlEmail.name, GraphType.Email, req);
+export function Email(req?: boolean): PropertyDecorator {
+    return Field(Email.name, GraphType.Email, req);
 }
-export function QlObject(req?: boolean): PropertyDecorator {
-    return Field(QlObject.name, GraphType.Object, req);
+export function Obj(req?: boolean): PropertyDecorator {
+    return Field(Obj.name, GraphType.Object, req);
 }
-export function QlAny(req?: boolean): PropertyDecorator {
-    return Field(QlAny.name, GraphType.ANY, req);
+export function Any(req?: boolean): PropertyDecorator {
+    return Field(Any.name, GraphType.ANY, req);
 }
-export function QlRef<T>(ref: TypeRef<T>, req?: boolean): PropertyDecorator {
-    return Field(QlRef.name, GraphType.Ref, req, ref);
+export function Ref<T>(ref: TypeRef<T>, req?: boolean): PropertyDecorator {
+    return Field(Ref.name, GraphType.Ref, req, ref);
 }
+
 // export function QlInputItem(req?: boolean): PropertyDecorator {
 //     return Field(QlInputItem.name, GraphType.InputItem, req);
 // }
 // export function QlResultItem(req?: boolean): PropertyDecorator {
 //     return Field(QlResultItem.name, GraphType.ResultItem, req);
 // }
-export function QlArray<T>(item: GraphType | TypeRef<T>, req?: boolean): PropertyDecorator {
-    return Field(QlArray.name, GraphType.List, req, item);
+export function List<T>(item: GraphType | TypeRef<T>, req?: boolean): PropertyDecorator {
+    return Field(List.name, GraphType.List, req, item);
 }
 export function EnumField(req?: boolean): PropertyDecorator {
     return Field(EnumField.name, GraphType.Enum, req);

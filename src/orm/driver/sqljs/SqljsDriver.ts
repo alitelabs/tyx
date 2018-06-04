@@ -1,14 +1,14 @@
-import {AbstractSqliteDriver} from "../sqlite-abstract/AbstractSqliteDriver";
-import {SqljsConnectionOptions} from "./SqljsConnectionOptions";
-import {SqljsQueryRunner} from "./SqljsQueryRunner";
-import {QueryRunner} from "../../query-runner/QueryRunner";
-import {Connection} from "../../connection/Connection";
-import {DriverPackageNotInstalledError} from "../../error/DriverPackageNotInstalledError";
-import {DriverOptionNotSetError} from "../../error/DriverOptionNotSetError";
-import {PlatformTools} from "../../platform/PlatformTools";
-import {EntityMetadata} from "../../metadata/EntityMetadata";
-import {OrmUtils} from "../../util/OrmUtils";
-import {ObjectLiteral} from "../../common/ObjectLiteral";
+import { ObjectLiteral } from "../../common/ObjectLiteral";
+import { Connection } from "../../connection/Connection";
+import { DriverOptionNotSetError } from "../../error/DriverOptionNotSetError";
+import { DriverPackageNotInstalledError } from "../../error/DriverPackageNotInstalledError";
+import { EntityMetadata } from "../../metadata/EntityMetadata";
+import { PlatformTools } from "../../platform/PlatformTools";
+import { QueryRunner } from "../../query-runner/QueryRunner";
+import { OrmUtils } from "../../util/OrmUtils";
+import { AbstractSqliteDriver } from "../sqlite-abstract/AbstractSqliteDriver";
+import { SqljsConnectionOptions } from "./SqljsConnectionOptions";
+import { SqljsQueryRunner } from "./SqljsQueryRunner";
 
 // This is needed to satisfy the typescript compiler.
 interface Window {
@@ -59,7 +59,7 @@ export class SqljsDriver extends AbstractSqliteDriver {
                 this.databaseConnection.close();
                 ok();
             }
-            catch (e)  {
+            catch (e) {
                 fail(e);
             }
         });
@@ -74,7 +74,7 @@ export class SqljsDriver extends AbstractSqliteDriver {
 
         return this.queryRunner;
     }
-    
+
     /**
      * Loads a database from a given file (Node.js), local storage key (browser) or array.
      * This will delete the current database!
@@ -98,12 +98,12 @@ export class SqljsDriver extends AbstractSqliteDriver {
                     // File will be written on first write operation.
                     return this.createDatabaseConnectionWithImport();
                 }
-            } 
+            }
             else {
                 // browser
                 // fileNameOrLocalStorageOrData should be a local storage key
                 const localStorageContent = PlatformTools.getGlobalVariable().localStorage.getItem(fileNameOrLocalStorageOrData);
-                
+
                 if (localStorageContent != null) {
                     // localStorage value exists.
                     return this.createDatabaseConnectionWithImport(JSON.parse(localStorageContent));
@@ -132,7 +132,7 @@ export class SqljsDriver extends AbstractSqliteDriver {
         if (!location && !this.options.location) {
             throw new Error(`No location is set, specify a location parameter or add the location option to your configuration`);
         }
-        
+
         let path = "";
         if (location) {
             path = location;
@@ -173,7 +173,7 @@ export class SqljsDriver extends AbstractSqliteDriver {
             }
         }
     }
-    
+
     /**
      * Returns the current database as Uint8Array.
      */

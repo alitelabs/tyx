@@ -1,25 +1,25 @@
-import {RelationMetadataArgs} from "./RelationMetadataArgs";
-import {ColumnMetadataArgs} from "./ColumnMetadataArgs";
-import {RelationCountMetadataArgs} from "./RelationCountMetadataArgs";
-import {IndexMetadataArgs} from "./IndexMetadataArgs";
-import {EntityListenerMetadataArgs} from "./EntityListenerMetadataArgs";
-import {TableMetadataArgs} from "./TableMetadataArgs";
-import {NamingStrategyMetadataArgs} from "./NamingStrategyMetadataArgs";
-import {JoinTableMetadataArgs} from "./JoinTableMetadataArgs";
-import {JoinColumnMetadataArgs} from "./JoinColumnMetadataArgs";
-import {EmbeddedMetadataArgs} from "./EmbeddedMetadataArgs";
-import {EntitySubscriberMetadataArgs} from "./EntitySubscriberMetadataArgs";
-import {RelationIdMetadataArgs} from "./RelationIdMetadataArgs";
-import {InheritanceMetadataArgs} from "./InheritanceMetadataArgs";
-import {DiscriminatorValueMetadataArgs} from "./DiscriminatorValueMetadataArgs";
-import {EntityRepositoryMetadataArgs} from "./EntityRepositoryMetadataArgs";
-import {TransactionEntityMetadataArgs} from "./TransactionEntityMetadataArgs";
-import {TransactionRepositoryMetadataArgs} from "./TransactionRepositoryMetadataArgs";
-import {MetadataUtils} from "../metadata-builder/MetadataUtils";
-import {GeneratedMetadataArgs} from "./GeneratedMetadataArgs";
-import {TreeMetadataArgs} from "./TreeMetadataArgs";
-import {UniqueMetadataArgs} from "./UniqueMetadataArgs";
-import {CheckMetadataArgs} from "./CheckMetadataArgs";
+import { MetadataUtils } from "../metadata-builder/MetadataUtils";
+import { CheckMetadataArgs } from "./CheckMetadataArgs";
+import { ColumnMetadataArgs } from "./ColumnMetadataArgs";
+import { DiscriminatorValueMetadataArgs } from "./DiscriminatorValueMetadataArgs";
+import { EmbeddedMetadataArgs } from "./EmbeddedMetadataArgs";
+import { EntityListenerMetadataArgs } from "./EntityListenerMetadataArgs";
+import { EntityRepositoryMetadataArgs } from "./EntityRepositoryMetadataArgs";
+import { EntitySubscriberMetadataArgs } from "./EntitySubscriberMetadataArgs";
+import { GeneratedMetadataArgs } from "./GeneratedMetadataArgs";
+import { IndexMetadataArgs } from "./IndexMetadataArgs";
+import { InheritanceMetadataArgs } from "./InheritanceMetadataArgs";
+import { JoinColumnMetadataArgs } from "./JoinColumnMetadataArgs";
+import { JoinTableMetadataArgs } from "./JoinTableMetadataArgs";
+import { NamingStrategyMetadataArgs } from "./NamingStrategyMetadataArgs";
+import { RelationCountMetadataArgs } from "./RelationCountMetadataArgs";
+import { RelationIdMetadataArgs } from "./RelationIdMetadataArgs";
+import { RelationMetadataArgs } from "./RelationMetadataArgs";
+import { TableMetadataArgs } from "./TableMetadataArgs";
+import { TransactionEntityMetadataArgs } from "./TransactionEntityMetadataArgs";
+import { TransactionRepositoryMetadataArgs } from "./TransactionRepositoryMetadataArgs";
+import { TreeMetadataArgs } from "./TreeMetadataArgs";
+import { UniqueMetadataArgs } from "./UniqueMetadataArgs";
 
 /**
  * Storage all metadatas args of all available types: tables, columns, subscribers, relations, etc.
@@ -58,125 +58,125 @@ export class MetadataArgsStorage {
     // Public Methods
     // -------------------------------------------------------------------------
 
-    filterTables(target: Function|string): TableMetadataArgs[];
-    filterTables(target: (Function|string)[]): TableMetadataArgs[];
-    filterTables(target: (Function|string)|(Function|string)[]): TableMetadataArgs[] {
+    filterTables(target: Function | string): TableMetadataArgs[];
+    filterTables(target: (Function | string)[]): TableMetadataArgs[];
+    filterTables(target: (Function | string) | (Function | string)[]): TableMetadataArgs[] {
         return this.filterByTarget(this.tables, target);
     }
 
-    filterColumns(target: Function|string): ColumnMetadataArgs[];
-    filterColumns(target: (Function|string)[]): ColumnMetadataArgs[];
-    filterColumns(target: (Function|string)|(Function|string)[]): ColumnMetadataArgs[] {
+    filterColumns(target: Function | string): ColumnMetadataArgs[];
+    filterColumns(target: (Function | string)[]): ColumnMetadataArgs[];
+    filterColumns(target: (Function | string) | (Function | string)[]): ColumnMetadataArgs[] {
         return this.filterByTargetAndWithoutDuplicateProperties(this.columns, target);
     }
 
-    findGenerated(target: Function|string, propertyName: string): GeneratedMetadataArgs|undefined;
-    findGenerated(target: (Function|string)[], propertyName: string): GeneratedMetadataArgs|undefined;
-    findGenerated(target: (Function|string)|(Function|string)[], propertyName: string): GeneratedMetadataArgs|undefined {
+    findGenerated(target: Function | string, propertyName: string): GeneratedMetadataArgs | undefined;
+    findGenerated(target: (Function | string)[], propertyName: string): GeneratedMetadataArgs | undefined;
+    findGenerated(target: (Function | string) | (Function | string)[], propertyName: string): GeneratedMetadataArgs | undefined {
         return this.generations.find(generated => {
             return (target instanceof Array ? target.indexOf(generated.target) !== -1 : generated.target === target) && generated.propertyName === propertyName;
         });
     }
 
-    findTree(target: (Function|string)|(Function|string)[]): TreeMetadataArgs|undefined {
+    findTree(target: (Function | string) | (Function | string)[]): TreeMetadataArgs | undefined {
         return this.trees.find(tree => {
             return (target instanceof Array ? target.indexOf(tree.target) !== -1 : tree.target === target);
         });
     }
 
-    filterRelations(target: Function|string): RelationMetadataArgs[];
-    filterRelations(target: (Function|string)[]): RelationMetadataArgs[];
-    filterRelations(target: (Function|string)|(Function|string)[]): RelationMetadataArgs[] {
+    filterRelations(target: Function | string): RelationMetadataArgs[];
+    filterRelations(target: (Function | string)[]): RelationMetadataArgs[];
+    filterRelations(target: (Function | string) | (Function | string)[]): RelationMetadataArgs[] {
         return this.filterByTargetAndWithoutDuplicateProperties(this.relations, target);
     }
 
-    filterRelationIds(target: Function|string): RelationIdMetadataArgs[];
-    filterRelationIds(target: (Function|string)[]): RelationIdMetadataArgs[];
-    filterRelationIds(target: (Function|string)|(Function|string)[]): RelationIdMetadataArgs[] {
+    filterRelationIds(target: Function | string): RelationIdMetadataArgs[];
+    filterRelationIds(target: (Function | string)[]): RelationIdMetadataArgs[];
+    filterRelationIds(target: (Function | string) | (Function | string)[]): RelationIdMetadataArgs[] {
         return this.filterByTargetAndWithoutDuplicateProperties(this.relationIds, target);
     }
 
-    filterRelationCounts(target: Function|string): RelationCountMetadataArgs[];
-    filterRelationCounts(target: (Function|string)[]): RelationCountMetadataArgs[];
-    filterRelationCounts(target: (Function|string)|(Function|string)[]): RelationCountMetadataArgs[] {
+    filterRelationCounts(target: Function | string): RelationCountMetadataArgs[];
+    filterRelationCounts(target: (Function | string)[]): RelationCountMetadataArgs[];
+    filterRelationCounts(target: (Function | string) | (Function | string)[]): RelationCountMetadataArgs[] {
         return this.filterByTargetAndWithoutDuplicateProperties(this.relationCounts, target);
     }
 
-    filterIndices(target: Function|string): IndexMetadataArgs[];
-    filterIndices(target: (Function|string)[]): IndexMetadataArgs[];
-    filterIndices(target: (Function|string)|(Function|string)[]): IndexMetadataArgs[] {
+    filterIndices(target: Function | string): IndexMetadataArgs[];
+    filterIndices(target: (Function | string)[]): IndexMetadataArgs[];
+    filterIndices(target: (Function | string) | (Function | string)[]): IndexMetadataArgs[] {
         // todo: implement parent-entity overrides?
         return this.indices.filter(index => {
             return target instanceof Array ? target.indexOf(index.target) !== -1 : index.target === target;
         });
     }
 
-    filterUniques(target: Function|string): UniqueMetadataArgs[];
-    filterUniques(target: (Function|string)[]): UniqueMetadataArgs[];
-    filterUniques(target: (Function|string)|(Function|string)[]): UniqueMetadataArgs[] {
+    filterUniques(target: Function | string): UniqueMetadataArgs[];
+    filterUniques(target: (Function | string)[]): UniqueMetadataArgs[];
+    filterUniques(target: (Function | string) | (Function | string)[]): UniqueMetadataArgs[] {
         return this.uniques.filter(unique => {
             return target instanceof Array ? target.indexOf(unique.target) !== -1 : unique.target === target;
         });
     }
 
-    filterChecks(target: Function|string): CheckMetadataArgs[];
-    filterChecks(target: (Function|string)[]): CheckMetadataArgs[];
-    filterChecks(target: (Function|string)|(Function|string)[]): CheckMetadataArgs[] {
+    filterChecks(target: Function | string): CheckMetadataArgs[];
+    filterChecks(target: (Function | string)[]): CheckMetadataArgs[];
+    filterChecks(target: (Function | string) | (Function | string)[]): CheckMetadataArgs[] {
         return this.checks.filter(check => {
             return target instanceof Array ? target.indexOf(check.target) !== -1 : check.target === target;
         });
     }
 
-    filterListeners(target: Function|string): EntityListenerMetadataArgs[];
-    filterListeners(target: (Function|string)[]): EntityListenerMetadataArgs[];
-    filterListeners(target: (Function|string)|(Function|string)[]): EntityListenerMetadataArgs[] {
+    filterListeners(target: Function | string): EntityListenerMetadataArgs[];
+    filterListeners(target: (Function | string)[]): EntityListenerMetadataArgs[];
+    filterListeners(target: (Function | string) | (Function | string)[]): EntityListenerMetadataArgs[] {
         return this.filterByTarget(this.entityListeners, target);
     }
 
-    filterEmbeddeds(target: Function|string): EmbeddedMetadataArgs[];
-    filterEmbeddeds(target: (Function|string)[]): EmbeddedMetadataArgs[];
-    filterEmbeddeds(target: (Function|string)|(Function|string)[]): EmbeddedMetadataArgs[] {
+    filterEmbeddeds(target: Function | string): EmbeddedMetadataArgs[];
+    filterEmbeddeds(target: (Function | string)[]): EmbeddedMetadataArgs[];
+    filterEmbeddeds(target: (Function | string) | (Function | string)[]): EmbeddedMetadataArgs[] {
         return this.filterByTargetAndWithoutDuplicateProperties(this.embeddeds, target);
     }
 
-    findJoinTable(target: Function|string, propertyName: string): JoinTableMetadataArgs|undefined {
+    findJoinTable(target: Function | string, propertyName: string): JoinTableMetadataArgs | undefined {
         return this.joinTables.find(joinTable => {
             return joinTable.target === target && joinTable.propertyName === propertyName;
         });
     }
 
-    filterJoinColumns(target: Function|string, propertyName: string): JoinColumnMetadataArgs[] {
+    filterJoinColumns(target: Function | string, propertyName: string): JoinColumnMetadataArgs[] {
         // todo: implement parent-entity overrides?
         return this.joinColumns.filter(joinColumn => {
             return joinColumn.target === target && joinColumn.propertyName === propertyName;
         });
     }
 
-    filterSubscribers(target: Function|string): EntitySubscriberMetadataArgs[];
-    filterSubscribers(target: (Function|string)[]): EntitySubscriberMetadataArgs[];
-    filterSubscribers(target: (Function|string)|(Function|string)[]): EntitySubscriberMetadataArgs[] {
+    filterSubscribers(target: Function | string): EntitySubscriberMetadataArgs[];
+    filterSubscribers(target: (Function | string)[]): EntitySubscriberMetadataArgs[];
+    filterSubscribers(target: (Function | string) | (Function | string)[]): EntitySubscriberMetadataArgs[] {
         return this.filterByTarget(this.entitySubscribers, target);
     }
 
-    filterNamingStrategies(target: Function|string): NamingStrategyMetadataArgs[];
-    filterNamingStrategies(target: (Function|string)[]): NamingStrategyMetadataArgs[];
-    filterNamingStrategies(target: (Function|string)|(Function|string)[]): NamingStrategyMetadataArgs[] {
+    filterNamingStrategies(target: Function | string): NamingStrategyMetadataArgs[];
+    filterNamingStrategies(target: (Function | string)[]): NamingStrategyMetadataArgs[];
+    filterNamingStrategies(target: (Function | string) | (Function | string)[]): NamingStrategyMetadataArgs[] {
         return this.filterByTarget(this.namingStrategies, target);
     }
 
-    filterTransactionEntityManagers(target: Function|string, propertyName: string): TransactionEntityMetadataArgs[] {
+    filterTransactionEntityManagers(target: Function | string, propertyName: string): TransactionEntityMetadataArgs[] {
         return this.transactionEntityManagers.filter(transactionEm => {
             return (target instanceof Array ? target.indexOf(transactionEm.target) !== -1 : transactionEm.target === target) && transactionEm.methodName === propertyName;
         });
     }
-    
-    filterTransactionRepository(target: Function|string, propertyName: string): TransactionRepositoryMetadataArgs[] {
+
+    filterTransactionRepository(target: Function | string, propertyName: string): TransactionRepositoryMetadataArgs[] {
         return this.transactionRepositories.filter(transactionEm => {
             return (target instanceof Array ? target.indexOf(transactionEm.target) !== -1 : transactionEm.target === target) && transactionEm.methodName === propertyName;
         });
     }
 
-    filterSingleTableChildren(target: Function|string): TableMetadataArgs[] {
+    filterSingleTableChildren(target: Function | string): TableMetadataArgs[] {
         return this.tables.filter(table => {
             return table.target instanceof Function
                 && target instanceof Function
@@ -185,11 +185,11 @@ export class MetadataArgsStorage {
         });
     }
 
-    findInheritanceType(target: Function|string): InheritanceMetadataArgs|undefined {
+    findInheritanceType(target: Function | string): InheritanceMetadataArgs | undefined {
         return this.inheritances.find(inheritance => inheritance.target === target);
     }
 
-    findDiscriminatorValue(target: Function|string): DiscriminatorValueMetadataArgs|undefined {
+    findDiscriminatorValue(target: Function | string): DiscriminatorValueMetadataArgs | undefined {
         return this.discriminatorValues.find(discriminatorValue => discriminatorValue.target === target);
     }
 
@@ -200,7 +200,7 @@ export class MetadataArgsStorage {
     /**
      * Filters given array by a given target or targets.
      */
-    protected filterByTarget<T extends { target: Function|string }>(array: T[], target: (Function|string)|(Function|string)[]): T[] {
+    protected filterByTarget<T extends { target: Function | string }>(array: T[], target: (Function | string) | (Function | string)[]): T[] {
         return array.filter(table => {
             return target instanceof Array ? target.indexOf(table.target) !== -1 : table.target === target;
         });
@@ -209,7 +209,7 @@ export class MetadataArgsStorage {
     /**
      * Filters given array by a given target or targets and prevents duplicate property names.
      */
-    protected filterByTargetAndWithoutDuplicateProperties<T extends { target: Function|string, propertyName: string }>(array: T[], target: (Function|string)|(Function|string)[]): T[] {
+    protected filterByTargetAndWithoutDuplicateProperties<T extends { target: Function | string, propertyName: string }>(array: T[], target: (Function | string) | (Function | string)[]): T[] {
         const newArray: T[] = [];
         array.forEach(item => {
             const sameTarget = target instanceof Array ? target.indexOf(item.target) !== -1 : item.target === target;

@@ -1,5 +1,5 @@
 import * as Lo from "lodash";
-import { Metadata, QlArray, QlRef, QlString } from "../decorators/type";
+import { Metadata, List, Ref, Str } from "../decorators/type";
 import { ResolverArgs } from "../graphql/types";
 import { IProxyMetadata } from "../metadata/proxy";
 import { HandlerMetadata, InjectMetadata } from "../metadata/service";
@@ -8,18 +8,18 @@ import { HandlerMetadataSchema, InjectMetadataSchema } from "./service";
 
 @Metadata()
 export class ProxyMetadataSchema implements IProxyMetadata {
-    @QlString() target: Class;
-    @QlString() serviceId: string;
-    @QlString() application: string = undefined;
-    @QlString() functionName: string = undefined;
+    @Str() target: Class;
+    @Str() serviceId: string;
+    @Str() application: string = undefined;
+    @Str() functionName: string = undefined;
 
-    @QlArray(item => InjectMetadataSchema) dependencies: Record<string, InjectMetadata>;
-    @QlArray(item => HandlerMetadataSchema) handlers: Record<string, HandlerMetadata>;
+    @List(item => InjectMetadataSchema) dependencies: Record<string, InjectMetadata>;
+    @List(item => HandlerMetadataSchema) handlers: Record<string, HandlerMetadata>;
 
-    @QlRef(ref => HandlerMetadataSchema) initializer: HandlerMetadata;
-    @QlRef(ref => HandlerMetadataSchema) selector: HandlerMetadata;
-    @QlRef(ref => HandlerMetadataSchema) activator: HandlerMetadata;
-    @QlRef(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
+    @Ref(ref => HandlerMetadataSchema) initializer: HandlerMetadata;
+    @Ref(ref => HandlerMetadataSchema) selector: HandlerMetadata;
+    @Ref(ref => HandlerMetadataSchema) activator: HandlerMetadata;
+    @Ref(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
     public static target(obj: IProxyMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;

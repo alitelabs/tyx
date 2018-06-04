@@ -1,5 +1,5 @@
-import {BaseConnectionOptions} from "../../connection/BaseConnectionOptions";
-import {ReadPreference} from "./typings";
+import { BaseConnectionOptions } from "../../connection/BaseConnectionOptions";
+import { ReadPreference } from "./typings";
 
 /**
  * MongoDB specific connection options.
@@ -30,7 +30,7 @@ export interface MongoConnectionOptions extends BaseConnectionOptions {
      * Database username.
      */
     readonly username?: string;
-    
+
     /**
      * Database password.
      */
@@ -61,25 +61,25 @@ export interface MongoConnectionOptions extends BaseConnectionOptions {
      * Array of valid certificates either as Buffers or Strings
      * (needs to have a mongod server with ssl support, 2.4 or higher).
      */
-    readonly sslCA?: string[]|Buffer[];
+    readonly sslCA?: string[] | Buffer[];
 
     /**
      * String or buffer containing the certificate we wish to present
      * (needs to have a mongod server with ssl support, 2.4 or higher)
      */
-    readonly sslCert?: string|Buffer;
+    readonly sslCert?: string | Buffer;
 
     /**
      * String or buffer containing the certificate private key we wish to present
      * (needs to have a mongod server with ssl support, 2.4 or higher)
      */
-    readonly sslKey?: string|Buffer;
+    readonly sslKey?: string | Buffer;
 
     /**
      * String or buffer containing the certificate password
      * (needs to have a mongod server with ssl support, 2.4 or higher)
      */
-    readonly sslPass?: string|Buffer;
+    readonly sslPass?: string | Buffer;
 
     /**
      * Reconnect on error. Default: true
@@ -156,7 +156,7 @@ export interface MongoConnectionOptions extends BaseConnectionOptions {
     /**
      * The write concern.
      */
-    readonly w?: string|number;
+    readonly w?: string | number;
 
     /**
      * The write concern timeout value.
@@ -243,7 +243,7 @@ export interface MongoConnectionOptions extends BaseConnectionOptions {
     /**
      * Specify the log level used by the driver logger (error/warn/info/debug).
      */
-    readonly loggerLevel?: "error"|"warn"|"info"|"debug";
+    readonly loggerLevel?: "error" | "warn" | "info" | "debug";
 
     /**
      * Sets the authentication mechanism that MongoDB will use to authenticate the connection

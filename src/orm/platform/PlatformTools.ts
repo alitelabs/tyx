@@ -1,9 +1,9 @@
-import * as path from "path";
+import { highlight, Theme } from "cli-highlight";
 import * as fs from "fs";
-import {highlight, Theme} from "cli-highlight";
-export {ReadStream} from "fs";
-export {EventEmitter} from "events";
-export {Readable, Writable} from "stream";
+import * as path from "path";
+export { EventEmitter } from "events";
+export { ReadStream } from "fs";
+export { Readable, Writable } from "stream";
 
 const chalk = require("chalk");
 
@@ -15,7 +15,7 @@ export class PlatformTools {
     /**
      * Type of the currently running platform.
      */
-    static type: "browser"|"node" = "node";
+    static type: "browser" | "node" = "node";
 
     /**
      * Gets global variable where global stuff can be stored.
@@ -147,7 +147,7 @@ export class PlatformTools {
     static fileExist(pathStr: string): boolean {
         return fs.existsSync(pathStr);
     }
-    
+
     static readFileSync(filename: string): Buffer {
         return fs.readFileSync(filename);
     }
@@ -204,11 +204,11 @@ export class PlatformTools {
     static logError(prefix: string, error: any) {
         console.log(chalk.underline.red(prefix), error);
     }
-    
+
     static logWarn(prefix: string, warning: any) {
         console.log(chalk.underline.yellow(prefix), warning);
     }
-    
+
     static log(message: string) {
         console.log(chalk.underline(message));
     }

@@ -102,12 +102,9 @@
         "prefer-for-of": true,
         "ban": true,
         "member-access": [
-            false,
+            false
         ],
         "linebreak-style": [
-            true
-        ],
-        "no-shadowed-variable": [
             true
         ],
         "import-blacklist": [

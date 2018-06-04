@@ -1,20 +1,20 @@
-import {ObjectLiteral} from "../../common/ObjectLiteral";
-import {QueryRunnerAlreadyReleasedError} from "../../error/QueryRunnerAlreadyReleasedError";
-import {QueryFailedError} from "../../error/QueryFailedError";
-import {AbstractSqliteQueryRunner} from "../sqlite-abstract/AbstractSqliteQueryRunner";
-import {ReactNativeDriver} from "./ReactNativeDriver";
-import {Broadcaster} from "../../subscriber/Broadcaster";
+import { ObjectLiteral } from "../../common/ObjectLiteral";
+import { QueryFailedError } from "../../error/QueryFailedError";
+import { QueryRunnerAlreadyReleasedError } from "../../error/QueryRunnerAlreadyReleasedError";
+import { Broadcaster } from "../../subscriber/Broadcaster";
+import { AbstractSqliteQueryRunner } from "../sqlite-abstract/AbstractSqliteQueryRunner";
+import { ReactNativeDriver } from "./ReactNativeDriver";
 
 /**
  * Runs queries on a single sqlite database connection.
  */
 export class ReactNativeQueryRunner extends AbstractSqliteQueryRunner {
-    
+
     /**
      * Database driver used by connection.
      */
     driver: ReactNativeDriver;
-    
+
     // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
@@ -55,7 +55,7 @@ export class ReactNativeQueryRunner extends AbstractSqliteQueryRunner {
                     for (let i = 0; i < result.rows.length; i++) {
                         resultSet.push(result.rows.item(i));
                     }
-                    
+
                     ok(resultSet);
                 }
             }, (err: any) => {

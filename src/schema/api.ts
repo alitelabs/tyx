@@ -1,5 +1,5 @@
 import * as Lo from "lodash";
-import { QlArray, Metadata, QlString } from "../decorators/type";
+import { List, Metadata, Str } from "../decorators/type";
 import { ResolverArgs } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
@@ -8,12 +8,12 @@ import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema
 
 @Metadata()
 export class ApiMetadataSchema implements IApiMetadata {
-    @QlString() target: Class;
-    @QlString() alias: string;
+    @Str() target: Class;
+    @Str() alias: string;
 
-    @QlArray(item => MethodMetadataSchema) methods: Record<string, IMethodMetadata>;
-    @QlArray(item => HttpRouteMetadataSchema) routes: Record<string, HttpRouteMetadata>;
-    @QlArray(item => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata[]>;
+    @List(item => MethodMetadataSchema) methods: Record<string, IMethodMetadata>;
+    @List(item => HttpRouteMetadataSchema) routes: Record<string, HttpRouteMetadata>;
+    @List(item => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata[]>;
 
     public static target(obj: IApiMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;

@@ -1,7 +1,7 @@
-import {Subject} from "./Subject";
-import {DateUtils} from "../util/DateUtils";
-import {ObjectLiteral} from "../common/ObjectLiteral";
-import {EntityMetadata} from "../metadata/EntityMetadata";
+import { ObjectLiteral } from "../common/ObjectLiteral";
+import { EntityMetadata } from "../metadata/EntityMetadata";
+import { DateUtils } from "../util/DateUtils";
+import { Subject } from "./Subject";
 
 /**
  * Finds what columns are changed in the subject entities.
@@ -21,7 +21,7 @@ export class SubjectChangedColumnsComputer {
             this.computeDiffRelationalColumns(subjects, subject);
         });
     }
-    
+
     // -------------------------------------------------------------------------
     // Protected Methods
     // -------------------------------------------------------------------------

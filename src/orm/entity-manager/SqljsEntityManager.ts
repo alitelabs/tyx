@@ -1,7 +1,7 @@
-import {Connection} from "../connection/Connection";
-import {QueryRunner} from "../query-runner/QueryRunner";
-import {EntityManager} from "./EntityManager";
-import {SqljsDriver} from "../driver/sqljs/SqljsDriver";
+import { Connection } from "../connection/Connection";
+import { SqljsDriver } from "../driver/sqljs/SqljsDriver";
+import { QueryRunner } from "../query-runner/QueryRunner";
+import { EntityManager } from "./EntityManager";
 
 /**
  * A special EntityManager that includes import/export and load/save function
@@ -18,7 +18,7 @@ export class SqljsEntityManager extends EntityManager {
         super(connection, queryRunner);
         this.driver = connection.driver as SqljsDriver;
     }
-    
+
     // -------------------------------------------------------------------------
     // Public Methods
     // -------------------------------------------------------------------------
@@ -30,7 +30,7 @@ export class SqljsEntityManager extends EntityManager {
     loadDatabase(fileNameOrLocalStorageOrData: string | Uint8Array) {
         this.driver.load(fileNameOrLocalStorageOrData);
     }
-    
+
     /**
      * Saves the current database to a file (Node.js) or localstorage (browser)
      * if fileNameOrLocalStorage is not set options.location is used.
@@ -46,4 +46,4 @@ export class SqljsEntityManager extends EntityManager {
         return this.driver.export();
     }
 
- }
+}

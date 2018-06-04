@@ -1,22 +1,22 @@
-import {QueryRunner} from "../../query-runner/QueryRunner";
-import {ObjectLiteral} from "../../common/ObjectLiteral";
-import {TransactionAlreadyStartedError} from "../../error/TransactionAlreadyStartedError";
-import {TransactionNotStartedError} from "../../error/TransactionNotStartedError";
-import {TableColumn} from "../../schema-builder/table/TableColumn";
-import {Table} from "../../schema-builder/table/Table";
-import {TableForeignKey} from "../../schema-builder/table/TableForeignKey";
-import {TableIndex} from "../../schema-builder/table/TableIndex";
-import {QueryRunnerAlreadyReleasedError} from "../../error/QueryRunnerAlreadyReleasedError";
-import {MysqlDriver} from "./MysqlDriver";
-import {ReadStream} from "../../platform/PlatformTools";
-import {OrmUtils} from "../../util/OrmUtils";
-import {QueryFailedError} from "../../error/QueryFailedError";
-import {TableIndexOptions} from "../../schema-builder/options/TableIndexOptions";
-import {TableUnique} from "../../schema-builder/table/TableUnique";
-import {BaseQueryRunner} from "../../query-runner/BaseQueryRunner";
-import {Broadcaster} from "../../subscriber/Broadcaster";
-import {ColumnType, PromiseUtils} from "../../index";
-import {TableCheck} from "../../schema-builder/table/TableCheck";
+import { ObjectLiteral } from "../../common/ObjectLiteral";
+import { QueryFailedError } from "../../error/QueryFailedError";
+import { QueryRunnerAlreadyReleasedError } from "../../error/QueryRunnerAlreadyReleasedError";
+import { TransactionAlreadyStartedError } from "../../error/TransactionAlreadyStartedError";
+import { TransactionNotStartedError } from "../../error/TransactionNotStartedError";
+import { ColumnType, PromiseUtils } from "../../index";
+import { ReadStream } from "../../platform/PlatformTools";
+import { BaseQueryRunner } from "../../query-runner/BaseQueryRunner";
+import { QueryRunner } from "../../query-runner/QueryRunner";
+import { TableIndexOptions } from "../../schema-builder/options/TableIndexOptions";
+import { Table } from "../../schema-builder/table/Table";
+import { TableCheck } from "../../schema-builder/table/TableCheck";
+import { TableColumn } from "../../schema-builder/table/TableColumn";
+import { TableForeignKey } from "../../schema-builder/table/TableForeignKey";
+import { TableIndex } from "../../schema-builder/table/TableIndex";
+import { TableUnique } from "../../schema-builder/table/TableUnique";
+import { Broadcaster } from "../../subscriber/Broadcaster";
+import { OrmUtils } from "../../util/OrmUtils";
+import { MysqlDriver } from "./MysqlDriver";
 
 /**
  * Runs queries on a single mysql database connection.
@@ -45,7 +45,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     // Constructor
     // -------------------------------------------------------------------------
 
-    constructor(driver: MysqlDriver, mode: "master"|"slave" = "master") {
+    constructor(driver: MysqlDriver, mode: "master" | "slave" = "master") {
         super();
         this.driver = driver;
         this.connection = driver.connection;
@@ -221,7 +221,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Checks if table with the given name exist in the database.
      */
-    async hasTable(tableOrName: Table|string): Promise<boolean> {
+    async hasTable(tableOrName: Table | string): Promise<boolean> {
         const parsedTableName = this.parseTableName(tableOrName);
         const sql = `SELECT * FROM \`INFORMATION_SCHEMA\`.\`COLUMNS\` WHERE \`TABLE_SCHEMA\` = '${parsedTableName.database}' AND \`TABLE_NAME\` = '${parsedTableName.tableName}'`;
         const result = await this.query(sql);
@@ -231,7 +231,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Checks if column with the given name exist in the given table.
      */
-    async hasColumn(tableOrName: Table|string, column: TableColumn|string): Promise<boolean> {
+    async hasColumn(tableOrName: Table | string, column: TableColumn | string): Promise<boolean> {
         const parsedTableName = this.parseTableName(tableOrName);
         const columnName = column instanceof TableColumn ? column.name : column;
         const sql = `SELECT * FROM \`INFORMATION_SCHEMA\`.\`COLUMNS\` WHERE \`TABLE_SCHEMA\` = '${parsedTableName.database}' AND \`TABLE_NAME\` = '${parsedTableName.tableName}' AND \`COLUMN_NAME\` = '${columnName}'`;
@@ -303,7 +303,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drop the table.
      */
-    async dropTable(target: Table|string, ifExist?: boolean, dropForeignKeys: boolean = true): Promise<void> {
+    async dropTable(target: Table | string, ifExist?: boolean, dropForeignKeys: boolean = true): Promise<void> {
         // It needs because if table does not exist and dropForeignKeys or dropIndices is true, we don't need
         // to perform drop queries for foreign keys and indices.
         if (ifExist) {
@@ -332,7 +332,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Renames a table.
      */
-    async renameTable(oldTableOrName: Table|string, newTableName: string): Promise<void> {
+    async renameTable(oldTableOrName: Table | string, newTableName: string): Promise<void> {
         const upQueries: string[] = [];
         const downQueries: string[] = [];
         const oldTable = oldTableOrName instanceof Table ? oldTableOrName : await this.getCachedTable(oldTableOrName);
@@ -404,7 +404,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new column from the column in the table.
      */
-    async addColumn(tableOrName: Table|string, column: TableColumn): Promise<void> {
+    async addColumn(tableOrName: Table | string, column: TableColumn): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const clonedTable = table.clone();
         const upQueries: string[] = [];
@@ -476,20 +476,20 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new columns from the column in the table.
      */
-    async addColumns(tableOrName: Table|string, columns: TableColumn[]): Promise<void> {
+    async addColumns(tableOrName: Table | string, columns: TableColumn[]): Promise<void> {
         await PromiseUtils.runInSequence(columns, column => this.addColumn(tableOrName, column));
     }
 
     /**
      * Renames column in the given table.
      */
-    async renameColumn(tableOrName: Table|string, oldTableColumnOrName: TableColumn|string, newTableColumnOrName: TableColumn|string): Promise<void> {
+    async renameColumn(tableOrName: Table | string, oldTableColumnOrName: TableColumn | string, newTableColumnOrName: TableColumn | string): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const oldColumn = oldTableColumnOrName instanceof TableColumn ? oldTableColumnOrName : table.columns.find(c => c.name === oldTableColumnOrName);
         if (!oldColumn)
             throw new Error(`Column "${oldTableColumnOrName}" was not found in the "${table.name}" table.`);
 
-        let newColumn: TableColumn|undefined = undefined;
+        let newColumn: TableColumn | undefined = undefined;
         if (newTableColumnOrName instanceof TableColumn) {
             newColumn = newTableColumnOrName;
         } else {
@@ -503,7 +503,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Changes a column in the table.
      */
-    async changeColumn(tableOrName: Table|string, oldColumnOrName: TableColumn|string, newColumn: TableColumn): Promise<void> {
+    async changeColumn(tableOrName: Table | string, oldColumnOrName: TableColumn | string, newColumn: TableColumn): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         let clonedTable = table.clone();
         const upQueries: string[] = [];
@@ -689,14 +689,14 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Changes a column in the table.
      */
-    async changeColumns(tableOrName: Table|string, changedColumns: { newColumn: TableColumn, oldColumn: TableColumn }[]): Promise<void> {
+    async changeColumns(tableOrName: Table | string, changedColumns: { newColumn: TableColumn, oldColumn: TableColumn }[]): Promise<void> {
         await PromiseUtils.runInSequence(changedColumns, changedColumn => this.changeColumn(tableOrName, changedColumn.oldColumn, changedColumn.newColumn));
     }
 
     /**
      * Drops column in the table.
      */
-    async dropColumn(tableOrName: Table|string, columnOrName: TableColumn|string): Promise<void> {
+    async dropColumn(tableOrName: Table | string, columnOrName: TableColumn | string): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const column = columnOrName instanceof TableColumn ? columnOrName : table.findColumnByName(columnOrName);
         if (!column)
@@ -781,14 +781,14 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops the columns in the table.
      */
-    async dropColumns(tableOrName: Table|string, columns: TableColumn[]): Promise<void> {
+    async dropColumns(tableOrName: Table | string, columns: TableColumn[]): Promise<void> {
         await PromiseUtils.runInSequence(columns, column => this.dropColumn(tableOrName, column));
     }
 
     /**
      * Creates a new primary key.
      */
-    async createPrimaryKey(tableOrName: Table|string, columnNames: string[]): Promise<void> {
+    async createPrimaryKey(tableOrName: Table | string, columnNames: string[]): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const clonedTable = table.clone();
 
@@ -806,7 +806,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Updates composite primary keys.
      */
-    async updatePrimaryKeys(tableOrName: Table|string, columns: TableColumn[]): Promise<void> {
+    async updatePrimaryKeys(tableOrName: Table | string, columns: TableColumn[]): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const clonedTable = table.clone();
         const columnNames = columns.map(column => column.name);
@@ -864,7 +864,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops a primary key.
      */
-    async dropPrimaryKey(tableOrName: Table|string): Promise<void> {
+    async dropPrimaryKey(tableOrName: Table | string): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const up = this.dropPrimaryKeySql(table);
         const down = this.createPrimaryKeySql(table, table.primaryColumns.map(column => column.name));
@@ -877,63 +877,63 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new unique constraint.
      */
-    async createUniqueConstraint(tableOrName: Table|string, uniqueConstraint: TableUnique): Promise<void> {
+    async createUniqueConstraint(tableOrName: Table | string, uniqueConstraint: TableUnique): Promise<void> {
         throw new Error(`MySql does not support unique constraints. Use unique index instead.`);
     }
 
     /**
      * Creates a new unique constraints.
      */
-    async createUniqueConstraints(tableOrName: Table|string, uniqueConstraints: TableUnique[]): Promise<void> {
+    async createUniqueConstraints(tableOrName: Table | string, uniqueConstraints: TableUnique[]): Promise<void> {
         throw new Error(`MySql does not support unique constraints. Use unique index instead.`);
     }
 
     /**
      * Drops an unique constraint.
      */
-    async dropUniqueConstraint(tableOrName: Table|string, uniqueOrName: TableUnique|string): Promise<void> {
+    async dropUniqueConstraint(tableOrName: Table | string, uniqueOrName: TableUnique | string): Promise<void> {
         throw new Error(`MySql does not support unique constraints. Use unique index instead.`);
     }
 
     /**
      * Drops an unique constraints.
      */
-    async dropUniqueConstraints(tableOrName: Table|string, uniqueConstraints: TableUnique[]): Promise<void> {
+    async dropUniqueConstraints(tableOrName: Table | string, uniqueConstraints: TableUnique[]): Promise<void> {
         throw new Error(`MySql does not support unique constraints. Use unique index instead.`);
     }
 
     /**
      * Creates a new check constraint.
      */
-    async createCheckConstraint(tableOrName: Table|string, checkConstraint: TableCheck): Promise<void> {
+    async createCheckConstraint(tableOrName: Table | string, checkConstraint: TableCheck): Promise<void> {
         throw new Error(`MySql does not support check constraints.`);
     }
 
     /**
      * Creates a new check constraints.
      */
-    async createCheckConstraints(tableOrName: Table|string, checkConstraints: TableCheck[]): Promise<void> {
+    async createCheckConstraints(tableOrName: Table | string, checkConstraints: TableCheck[]): Promise<void> {
         throw new Error(`MySql does not support check constraints.`);
     }
 
     /**
      * Drops check constraint.
      */
-    async dropCheckConstraint(tableOrName: Table|string, checkOrName: TableCheck|string): Promise<void> {
+    async dropCheckConstraint(tableOrName: Table | string, checkOrName: TableCheck | string): Promise<void> {
         throw new Error(`MySql does not support check constraints.`);
     }
 
     /**
      * Drops check constraints.
      */
-    async dropCheckConstraints(tableOrName: Table|string, checkConstraints: TableCheck[]): Promise<void> {
+    async dropCheckConstraints(tableOrName: Table | string, checkConstraints: TableCheck[]): Promise<void> {
         throw new Error(`MySql does not support check constraints.`);
     }
 
     /**
      * Creates a new foreign key.
      */
-    async createForeignKey(tableOrName: Table|string, foreignKey: TableForeignKey): Promise<void> {
+    async createForeignKey(tableOrName: Table | string, foreignKey: TableForeignKey): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
 
         // new FK may be passed without name. In this case we generate FK name manually.
@@ -949,7 +949,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new foreign keys.
      */
-    async createForeignKeys(tableOrName: Table|string, foreignKeys: TableForeignKey[]): Promise<void> {
+    async createForeignKeys(tableOrName: Table | string, foreignKeys: TableForeignKey[]): Promise<void> {
         const promises = foreignKeys.map(foreignKey => this.createForeignKey(tableOrName, foreignKey));
         await Promise.all(promises);
     }
@@ -957,7 +957,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops a foreign key.
      */
-    async dropForeignKey(tableOrName: Table|string, foreignKeyOrName: TableForeignKey|string): Promise<void> {
+    async dropForeignKey(tableOrName: Table | string, foreignKeyOrName: TableForeignKey | string): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const foreignKey = foreignKeyOrName instanceof TableForeignKey ? foreignKeyOrName : table.foreignKeys.find(fk => fk.name === foreignKeyOrName);
         if (!foreignKey)
@@ -972,7 +972,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops a foreign keys from the table.
      */
-    async dropForeignKeys(tableOrName: Table|string, foreignKeys: TableForeignKey[]): Promise<void> {
+    async dropForeignKeys(tableOrName: Table | string, foreignKeys: TableForeignKey[]): Promise<void> {
         const promises = foreignKeys.map(foreignKey => this.dropForeignKey(tableOrName, foreignKey));
         await Promise.all(promises);
     }
@@ -980,7 +980,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new index.
      */
-    async createIndex(tableOrName: Table|string, index: TableIndex): Promise<void> {
+    async createIndex(tableOrName: Table | string, index: TableIndex): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
 
         // new index may be passed without name. In this case we generate index name manually.
@@ -996,7 +996,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Creates a new indices
      */
-    async createIndices(tableOrName: Table|string, indices: TableIndex[]): Promise<void> {
+    async createIndices(tableOrName: Table | string, indices: TableIndex[]): Promise<void> {
         const promises = indices.map(index => this.createIndex(tableOrName, index));
         await Promise.all(promises);
     }
@@ -1004,7 +1004,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops an index.
      */
-    async dropIndex(tableOrName: Table|string, indexOrName: TableIndex|string): Promise<void> {
+    async dropIndex(tableOrName: Table | string, indexOrName: TableIndex | string): Promise<void> {
         const table = tableOrName instanceof Table ? tableOrName : await this.getCachedTable(tableOrName);
         const index = indexOrName instanceof TableIndex ? indexOrName : table.indices.find(i => i.name === indexOrName);
         if (!index)
@@ -1019,7 +1019,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Drops an indices from the table.
      */
-    async dropIndices(tableOrName: Table|string, indices: TableIndex[]): Promise<void> {
+    async dropIndices(tableOrName: Table | string, indices: TableIndex[]): Promise<void> {
         const promises = indices.map(index => this.dropIndex(tableOrName, index));
         await Promise.all(promises);
     }
@@ -1028,7 +1028,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
      * Clears all table contents.
      * Note: this operation uses SQL's TRUNCATE query which cannot be reverted in transactions.
      */
-    async clearTable(tableOrName: Table|string): Promise<void> {
+    async clearTable(tableOrName: Table | string): Promise<void> {
         await this.query(`TRUNCATE TABLE ${this.escapeTableName(tableOrName)}`);
     }
 
@@ -1099,7 +1099,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
             return `(\`TABLE_SCHEMA\` = '${database}' AND \`TABLE_NAME\` = '${name}')`;
         }).join(" OR ");
         const tablesSql = `SELECT * FROM \`INFORMATION_SCHEMA\`.\`TABLES\` WHERE ` + tablesCondition;
-        
+
         const columnsSql = `SELECT * FROM \`INFORMATION_SCHEMA\`.\`COLUMNS\` WHERE ` + tablesCondition;
 
         const primaryKeySql = `SELECT * FROM \`INFORMATION_SCHEMA\`.\`KEY_COLUMN_USAGE\` WHERE \`CONSTRAINT_NAME\` = 'PRIMARY' AND (${tablesCondition})`;
@@ -1386,7 +1386,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Builds drop table sql
      */
-    protected dropTableSql(tableOrName: Table|string): string {
+    protected dropTableSql(tableOrName: Table | string): string {
         return `DROP TABLE ${this.escapeTableName(tableOrName)}`;
     }
 
@@ -1408,7 +1408,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Builds drop index sql.
      */
-    protected dropIndexSql(table: Table, indexOrName: TableIndex|string): string {
+    protected dropIndexSql(table: Table, indexOrName: TableIndex | string): string {
         let indexName = indexOrName instanceof TableIndex ? indexOrName.name : indexOrName;
         return `DROP INDEX \`${indexName}\` ON ${this.escapeTableName(table)}`;
     }
@@ -1447,12 +1447,12 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Builds drop foreign key sql.
      */
-    protected dropForeignKeySql(table: Table, foreignKeyOrName: TableForeignKey|string): string {
+    protected dropForeignKeySql(table: Table, foreignKeyOrName: TableForeignKey | string): string {
         const foreignKeyName = foreignKeyOrName instanceof TableForeignKey ? foreignKeyOrName.name : foreignKeyOrName;
         return `ALTER TABLE ${this.escapeTableName(table)} DROP FOREIGN KEY \`${foreignKeyName}\``;
     }
 
-    protected parseTableName(target: Table|string) {
+    protected parseTableName(target: Table | string) {
         const tableName = target instanceof Table ? target.name : target;
         return {
             database: tableName.indexOf(".") !== -1 ? tableName.split(".")[0] : this.driver.database,
@@ -1463,7 +1463,7 @@ export class MysqlQueryRunner extends BaseQueryRunner implements QueryRunner {
     /**
      * Escapes given table name.
      */
-    protected escapeTableName(target: Table|string, disableEscape?: boolean): string {
+    protected escapeTableName(target: Table | string, disableEscape?: boolean): string {
         const tableName = target instanceof Table ? target.name : target;
         return tableName.split(".").map(i => disableEscape ? i : `\`${i}\``).join(".");
     }
