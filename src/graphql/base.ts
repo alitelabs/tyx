@@ -17,10 +17,15 @@ enum RelationType {
     OneToMany,
     ManyToOne
 }
-directive @entity(rem: String) on OBJECT
-directive @column(rem: String) on OBJECT
+directive @metadata on OBJECT
+directive @input on OBJECT
+directive @result on OBJECT
+directive @entity on OBJECT
+directive @expression on OBJECT
+directive @crud(auth: JSON) on FIELD_DEFINITION
+directive @query(auth: JSON) on FIELD_DEFINITION
+directive @mutation(auth: JSON) on FIELD_DEFINITION
 directive @relation(type: RelationType) on FIELD_DEFINITION
-directive @query(type: RelationType) on FIELD_DEFINITION
 `.trim();
 
 export class QueryVisitor extends SchemaDirectiveVisitor {

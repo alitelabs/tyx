@@ -1,5 +1,5 @@
 import { DEF_DIRECTIVES, DEF_SCALARS } from "./base";
-import { CoreSchema, EntitySchema, GET, MODEL, SEARCH } from "./schema";
+import { CoreSchema, EntitySchema, GET, ENTITY, SEARCH } from "./schema";
 
 export default function codegen(schema: CoreSchema, folder: string, ext?: string) {
     ext = ext || "gql";
@@ -9,7 +9,7 @@ export default function codegen(schema: CoreSchema, folder: string, ext?: string
     for (let target in schema.entities) {
         let entry = schema.entities[target];
         fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);
-        fs.writeFileSync(`${folder}/schema/model/${target}${MODEL}.${ext}`, entry.model);
+        fs.writeFileSync(`${folder}/schema/model/${target}${ENTITY}.${ext}`, entry.model);
         fs.writeFileSync(`${folder}/schema/input/${target}Input.${ext}`, entry.inputs.join("\n\n"));
         fs.writeFileSync(`${folder}/controller/${target}Controller.ts`, controller(target));
         if (!Object.keys(entry.navigation).length) continue;

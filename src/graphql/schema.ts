@@ -11,7 +11,7 @@ import { SchemaResolver } from "./types";
 
 export { GraphQLSchema } from "graphql";
 
-export const MODEL = "";
+export const ENTITY = "";
 export const GET = "";
 export const SEARCH = "";
 export const CREATE = "create";
@@ -103,11 +103,16 @@ export class CoreSchema {
               reloadMetadata(role: String): JSON
             }
         \n`) + Object.values(this.entities).map((e) => {
-                return `#### Entity: ${e.target.name} ####\n`
+                return `\n#### Entity: ${e.target.name} ####\n`
                     + `extend ${e.query}\n`
                     + `extend ${e.mutation}\n`
                     + `${e.model}\n${e.inputs.join("\n")}`;
-            });
+            })
+            + "\n"
+            + Object.values(this.inputs).map(i => `#### Input: ${i.target.name} ####\n${i.model}`).join("\n")
+            + "\n"
+            + Object.values(this.results).map(r => `#### Result: ${r.target.name} ####\n${r.model}`).join("\n")
+            + "\n";
     }
 
     public resolvers() {
@@ -118,7 +123,7 @@ export class CoreSchema {
         for (let [target, schema] of Object.entries(this.entities)) {
             resolvers.Query = { ...resolvers.Query, ...schema.queries };
             resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
-            resolvers[target + MODEL] = schema.navigation;
+            resolvers[target + ENTITY] = schema.navigation;
         }
         for (let [target, schema] of Object.entries(this.metadata)) {
             resolvers[target] = schema.resolvers;
@@ -130,12 +135,12 @@ export class CoreSchema {
         let name = target.name;
         if (schemas[name]) return schemas[name];
 
-        let model = `type ${name}${MODEL} @entity(rem: "TODO") {`;
-        let input = `Input {`;
-        let nil = `Null {`;
-        let multi = `Multi {`;
-        let like = `Like {`;
-        let order = `Order {`;
+        let model = `type ${name}${ENTITY} @entity {`;
+        let input = `Input @expression {`;
+        let nil = `Null @expression {`;
+        let multi = `Multi @expression {`;
+        let like = `Like @expression {`;
+        let order = `Order @expression {`;
         let keys = "";
         let create = ``;
         let update = ``;
@@ -186,18 +191,18 @@ export class CoreSchema {
             + `\n    skip: Int,`
             + `\n    take: Int,`
             + `\n    exists: Boolean`;
-        let where = `Where {\n  `
+        let where = `Where @expression {\n  `
             + opers.join(",\n  ");
         let inputs = [input, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
 
         let query = `type Query {\n`;
-        query += `  ${GET}${name}(${keys}): ${name}${MODEL} @query(rem: "TODO"),\n`;
-        query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${MODEL}] @query(rem: "TODO")\n`;
+        query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
+        query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${ENTITY}] @crud(auth: {})\n`;
         query += `}`;
         let mutation = "type Mutation {\n";
-        mutation += `  ${CREATE}${name}(${create}\n  ): ${name}${MODEL},\n`;
-        mutation += `  ${UPDATE}${name}(${update}\n  ): ${name}${MODEL},\n`;
-        mutation += `  ${REMOVE}${name}(${keys}): ${name}${MODEL}\n`;
+        mutation += `  ${CREATE}${name}(${create}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
+        mutation += `  ${UPDATE}${name}(${update}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
+        mutation += `  ${REMOVE}${name}(${keys}): ${name}${ENTITY} @crud(auth: {})\n`;
         mutation += "}";
 
         let schema: EntitySchema = {
@@ -234,19 +239,19 @@ export class CoreSchema {
             if (relation.relationType === RelationType.ManyToOne) {
                 rm.type = "manyToOne";
                 let args = "";
-                model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: ManyToOne)`;
-                simple += `,\n  ${property}: ${inverse}${MODEL}`;
+                model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: ManyToOne)`;
+                simple += `,\n  ${property}: ${inverse}${ENTITY}`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";
-                model += `,\n  ${property}${args}: ${inverse}${MODEL} @relation(type: OneToOne)`;
+                model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: OneToOne)`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
                 let temp = this.genEntity(relation.inverseEntityMetadata, schemas);
                 let args = ` (${temp.search}\n  )`;
-                model += `,\n  ${property}${args}: [${inverse}${MODEL}] @relation(type: OneToMany)`;
+                model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(target, relation, obj, args, ctx, info);
             } else {
                 continue; // TODO: Implement
@@ -316,7 +321,9 @@ export class CoreSchema {
             if (!GraphType.isScalar(field.type as GraphType)) continue;
             schema.params += (schema.params ? ",\n    " : "    ") + `${field.name}: ${field.type}`;
         }
-        schema.model = (scope === GraphType.Input) ? `input ${struc.name} {\n` : `type ${struc.name} {\n`;
+        schema.model = (scope === GraphType.Input)
+            ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
+            : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
         for (let field of Object.values(struc.fields)) {
             let type = this.genType(field, scope, reg);
             if (GraphType.isMetadata(struc.type) && GraphType.isArray(field.type)) {
