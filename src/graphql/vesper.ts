@@ -6,16 +6,16 @@ export default function codegen(schema: CoreSchema, folder: string, ext?: string
     let fs = require("fs");
     fs.writeFileSync(`${folder}/schema/import.${ext}`,
         DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + DEF_DIRECTIVES + "\n");
-    for (let target in schema.entities) {
-        let entry = schema.entities[target];
+    for (let target in schema._entities) {
+        let entry = schema._entities[target];
         fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);
         fs.writeFileSync(`${folder}/schema/model/${target}${ENTITY}.${ext}`, entry.model);
         fs.writeFileSync(`${folder}/schema/input/${target}Input.${ext}`, entry.inputs.join("\n\n"));
         fs.writeFileSync(`${folder}/controller/${target}Controller.ts`, controller(target));
-        if (!Object.keys(entry.navigation).length) continue;
+        if (!Object.keys(entry.resolvers).length) continue;
         fs.writeFileSync(`${folder}/resolver/${target}Resolver.ts`, resolver(target, entry.relations));
     }
-    let { conIndex, resIndex } = indexes(schema.entities);
+    let { conIndex, resIndex } = indexes(schema._entities);
     fs.writeFileSync(`${folder}/controller/index.ts`, conIndex);
     fs.writeFileSync(`${folder}/resolver/index.ts`, resIndex);
     // fs.writeFileSync(`${folder}/schema/prisma.graphql`, ToolkitSchema.genPrisma(schema));
@@ -91,7 +91,7 @@ function indexes(schema: Record<string, EntitySchema>) {
         let entry = schema[name];
         conImport += `import { ${name}Controller } from "./${name}Controller";\n`;
         conArray += `        ${name}Controller,\n`;
-        if (!Object.keys(entry.navigation).length) continue;
+        if (!Object.keys(entry.resolvers).length) continue;
         resImport += `import { ${name}Resolver } from "./${name}Resolver";\n`;
         resArray += `        ${name}Resolver,\n`;
     }

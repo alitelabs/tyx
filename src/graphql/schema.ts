@@ -2,6 +2,7 @@ import { GraphQLSchema } from "graphql";
 import { ILogger, makeExecutableSchema } from "graphql-tools";
 import { ApiMetadata } from "../metadata/api";
 import { ColumnType } from "../metadata/column";
+import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
 import { MethodMetadata } from "../metadata/method";
 import { Registry } from "../metadata/registry";
@@ -21,6 +22,19 @@ export const UPDATE = "update";
 export const REMOVE = "remove";
 
 
+export interface DatabaseSchema {
+    target: DatabaseMetadata;
+    name: string;
+    alias: string;
+    query: string;
+    meta: string;
+    model: string;
+    entities: Record<string, EntitySchema>;
+    root: SchemaResolver;
+    queries: Record<string, SchemaResolver>;
+    mutations: Record<string, SchemaResolver>;
+}
+
 export interface EntitySchema {
     target: EntityMetadata;
 
@@ -32,9 +46,7 @@ export interface EntitySchema {
     simple: string;
     relations: Record<string, { target: string, type: string }>;
 
-    queries: Record<string, SchemaResolver>;
-    mutations: Record<string, SchemaResolver>;
-    navigation: Record<string, SchemaResolver>;
+    resolvers: Record<string, SchemaResolver>;
 }
 
 export interface TypeSchema {
@@ -64,7 +76,8 @@ export interface MethodSchema {
 
 export class CoreSchema {
     public metadata: Record<string, TypeSchema> = {};
-    public entities: Record<string, EntitySchema> = {};
+    public databases: Record<string, DatabaseSchema> = {};
+    public _entities: Record<string, EntitySchema> = {};
     public inputs: Record<string, TypeSchema> = {};
     public results: Record<string, TypeSchema> = {};
     public apis: Record<string, ApiSchema> = {};
@@ -73,9 +86,9 @@ export class CoreSchema {
         // Metadata
         for (let type of Object.values(Registry.RegistryMetadata))
             this.genType(type, GraphType.Metadata, this.metadata);
-        // Entities
-        for (let meta of Object.values(Registry.EntityMetadata))
-            this.genEntity(meta, this.entities);
+        // Databases & Entities
+        for (let type of Object.values(Registry.DatabaseMetadata))
+            this.genDatabase(type);
         // Inputs
         for (let type of Object.values(Registry.InputMetadata))
             this.genType(type, GraphType.Input, this.inputs);
@@ -112,12 +125,18 @@ export class CoreSchema {
             type Mutation {
               reloadMetadata(role: String): JSON
             }
-        \n`) + Object.values(this.entities).map((e) => {
-                return `\n#### Entity: ${e.target.name} ####\n`
-                    + `extend ${e.query}\n`
-                    + `extend ${e.mutation}\n`
-                    + `${e.model}\n${e.inputs.join("\n")}`;
-            })
+        \n`) + Object.values(this.databases).map(db => {
+                return `\n#### Database: ${db.target.target.name} ####\n`
+                    + `extend ${db.query}\n`
+                    + db.meta + "\n"
+                    + db.model + "\n"
+                    + Object.values(db.entities).map((e) => {
+                        return `\n#### Entity: ${e.target.name} ####\n`
+                            + `extend ${e.query}\n`
+                            + `extend ${e.mutation}\n`
+                            + `${e.model}\n${e.inputs.join("\n")}`;
+                    });
+            }).join("\n")
             + "\n"
             + Object.values(this.inputs).map(i => `#### Input: ${i.target.name} ####\n${i.model}`).join("\n")
             + "\n"
@@ -144,10 +163,12 @@ export class CoreSchema {
         resolvers.Query.Metadata = () => {
             return Registry.get();
         };
-        for (let [target, schema] of Object.entries(this.entities)) {
-            resolvers.Query = { ...resolvers.Query, ...schema.queries };
+        for (let schema of Object.values(this.databases)) {
+            resolvers.Query = { ...resolvers.Query, [schema.alias]: schema.root };
             resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
-            resolvers[target + ENTITY] = schema.navigation;
+            resolvers[schema.name] = schema.queries;
+            for (let [name, entity] of Object.entries(schema.entities))
+                resolvers[name + ENTITY] = entity.resolvers;
         }
         for (let [target, schema] of Object.entries(this.metadata)) {
             resolvers[target] = schema.resolvers;
@@ -163,9 +184,35 @@ export class CoreSchema {
         return resolvers;
     }
 
-    private genEntity(target: EntityMetadata, schemas: Record<string, EntitySchema>): EntitySchema {
+    private genDatabase(target: DatabaseMetadata): DatabaseSchema {
+        let meta: Record<string, EntityMetadata> = {};
+        let typeName = target.target.name;
+        let db: DatabaseSchema = {
+            target,
+            name: typeName,
+            alias: target.alias,
+            meta: `type ${typeName}Metadata {\n`,
+            model: `type ${typeName} {\n  Metadata: ${typeName}Metadata\n}`,
+            query: `type Query {\n  ${target.alias}: ${typeName}\n}`,
+            entities: {},
+            root: () => ({}),
+            queries: {
+                Metadata: () => meta
+            },
+            mutations: {}
+        };
+        for (let entity of target.entities) {
+            db.meta += `  ${entity.name}: EntityMetadata\n`;
+            meta[entity.name] = entity;
+            this.genEntity(db, entity);
+        }
+        db.meta += "}";
+        return this.databases[db.name] = db;
+    }
+
+    private genEntity(db: DatabaseSchema, target: EntityMetadata): EntitySchema {
         let name = target.name;
-        if (schemas[name]) return schemas[name];
+        if (db.entities[name]) return db.entities[name];
 
         let model = `type ${name}${ENTITY} @entity {`;
         let input = `Input @expression {`;
@@ -227,14 +274,14 @@ export class CoreSchema {
             + opers.join(",\n  ");
         let inputs = [input, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
 
-        let query = `type Query {\n`;
+        let query = `type ${db.name} {\n`;
         query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
         query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${ENTITY}] @crud(auth: {})\n`;
         query += `}`;
         let mutation = "type Mutation {\n";
-        mutation += `  ${CREATE}${name}(${create}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
-        mutation += `  ${UPDATE}${name}(${update}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
-        mutation += `  ${REMOVE}${name}(${keys}): ${name}${ENTITY} @crud(auth: {})\n`;
+        mutation += `  ${db.name}_${CREATE}${name}(${create}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
+        mutation += `  ${db.name}_${UPDATE}${name}(${update}\n  ): ${name}${ENTITY} @crud(auth: {}),\n`;
+        mutation += `  ${db.name}_${REMOVE}${name}(${keys}): ${name}${ENTITY} @crud(auth: {})\n`;
         mutation += "}";
 
         let schema: EntitySchema = {
@@ -247,18 +294,20 @@ export class CoreSchema {
             search,
             simple: model,
             relations: {},
-            queries: {
-                [`${GET}${name}`]: (obj, args, ctx, info) => ctx.provider.get(target, obj, args, ctx, info),
-                [`${SEARCH}${name}s`]: (obj, args, ctx, info) => ctx.provider.search(target, obj, args, ctx, info)
-            },
-            mutations: {
-                [`${CREATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
-                [`${UPDATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
-                [`${REMOVE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info)
-            },
-            navigation: {}
+            resolvers: {}
         };
-        schemas[name] = schema;
+        db.queries = {
+            ...db.queries,
+            [`${GET}${name}`]: (obj, args, ctx, info) => ctx.provider.get(target, obj, args, ctx, info),
+            [`${SEARCH}${name}s`]: (obj, args, ctx, info) => ctx.provider.search(target, obj, args, ctx, info)
+        };
+        db.mutations = {
+            ...db.mutations,
+            [`${db.name}_${CREATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
+            [`${db.name}_${UPDATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info),
+            [`${db.name}_${REMOVE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(target, obj, args, ctx, info)
+        };
+        db.entities[name] = schema;
 
         let simple = model;
         let navigation = {};
@@ -281,7 +330,7 @@ export class CoreSchema {
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
-                let temp = this.genEntity(relation.inverseEntityMetadata, schemas);
+                let temp = this.genEntity(db, relation.inverseEntityMetadata);
                 let args = ` (${temp.search}\n  )`;
                 model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(target, relation, obj, args, ctx, info);
@@ -294,7 +343,7 @@ export class CoreSchema {
 
         schema.model = model;
         schema.simple = simple;
-        schema.navigation = navigation;
+        schema.resolvers = navigation;
         // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
 
         return schema;
