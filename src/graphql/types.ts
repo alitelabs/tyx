@@ -54,6 +54,7 @@ export interface ResolverContainer {
 
 export interface ResolverContext {
     requestId: string;
+    sourceIp: string;
     auth: AuthInfo;
     provider: EntityResolver;
     container: ResolverContainer;

@@ -8,7 +8,7 @@ export interface InjectMetadata {
     index?: number;
 }
 
-export interface HandlerMetadata {
+export interface ResolverMetadata {
     service?: string;
     method: string;
     target: Class;
@@ -19,24 +19,24 @@ export interface IServiceMetadata {
     alias: string;
 
     dependencies: Record<string, InjectMetadata>;
-    handlers: Record<string, HandlerMetadata>;
+    resolvers: Record<string, ResolverMetadata>;
 
-    initializer: HandlerMetadata;
-    selector: HandlerMetadata;
-    activator: HandlerMetadata;
-    releasor: HandlerMetadata;
+    initializer: ResolverMetadata;
+    selector: ResolverMetadata;
+    activator: ResolverMetadata;
+    releasor: ResolverMetadata;
 }
 
 export class ServiceMetadata implements IServiceMetadata {
     public target: Class;
     public alias: string;
     public dependencies: Record<string, InjectMetadata> = {};
-    public handlers: Record<string, HandlerMetadata> = {};
+    public resolvers: Record<string, ResolverMetadata> = {};
 
-    public initializer: HandlerMetadata = undefined;
-    public selector: HandlerMetadata = undefined;
-    public activator: HandlerMetadata = undefined;
-    public releasor: HandlerMetadata = undefined;
+    public initializer: ResolverMetadata = undefined;
+    public selector: ResolverMetadata = undefined;
+    public activator: ResolverMetadata = undefined;
+    public releasor: ResolverMetadata = undefined;
 
     constructor(target: Class) {
         this.target = target;
@@ -78,8 +78,8 @@ export class ServiceMetadata implements IServiceMetadata {
         this.dependencies[key] = { resource, target, index };
     }
 
-    public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
-        this.handlers[propertyKey] = { method: propertyKey, target: descriptor.value };
+    public addResolver(propertyKey: string, descriptor: PropertyDescriptor): this {
+        this.resolvers[propertyKey] = { method: propertyKey, target: descriptor.value };
         return this;
     }
 
@@ -111,7 +111,7 @@ export class ServiceMetadata implements IServiceMetadata {
         if (this.selector) this.selector.service = this.alias;
         if (this.activator) this.activator.service = this.alias;
         if (this.releasor) this.releasor.service = this.alias;
-        if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
+        if (this.resolvers) Object.values(this.resolvers).forEach(item => item.service = this.alias);
         let api = ApiMetadata.get(this.target);
         if (api) api.commit(alias);
         let prev = Registry.ServiceMetadata[this.alias];

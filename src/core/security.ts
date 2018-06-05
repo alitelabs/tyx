@@ -5,6 +5,7 @@ import { MethodMetadata } from "../metadata/method";
 import { Configuration } from "../types/config";
 import { Context, CoreContainer } from "../types/core";
 import { EventRequest } from "../types/event";
+import { GraphRequest } from "../types/graphql";
 import { HttpRequest } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
 import { AuthInfo, IssueRequest, Security, WebToken } from "../types/security";
@@ -27,14 +28,21 @@ export class CoreSecurity implements Security {
         let token = req.headers && (req.headers["Authorization"] || req.headers["authorization"])
             || req.queryStringParameters && (req.queryStringParameters["authorization"] || req.queryStringParameters["token"])
             || req.pathParameters && req.pathParameters["authorization"];
+        return this.userAuth(container, method, token, req.requestId, req.sourceIp);
+    }
 
-        let localhost = req.sourceIp === "127.0.0.1" || req.sourceIp === "::1";
+    public async graphAuth(container: CoreContainer, req: GraphRequest, method: MethodMetadata): Promise<Context> {
+        return this.userAuth(container, method, req.token, req.requestId, req.sourceIp);
+    }
+
+    private async userAuth(container: CoreContainer, method: MethodMetadata, token: string, requestId: string, sourceIp: string): Promise<Context> {
+        let localhost = sourceIp === "127.0.0.1" || sourceIp === "::1";
 
         if (!method.roles.Public && !(method.roles.Debug && localhost)) {
             if (!token) throw new Unauthorized("Missing authorization token");
-            let auth = await this.verify(req.requestId, token, method, req.sourceIp);
+            let auth = await this.verify(requestId, token, method, sourceIp);
             auth = this.renew(auth);
-            return new Context({ container, requestId: req.requestId, method, auth });
+            return new Context({ container, requestId: requestId, sourceIp, method, auth });
         }
 
         if (method.roles.Public && token)
@@ -42,10 +50,11 @@ export class CoreSecurity implements Security {
 
         let ctx = new Context({
             container,
-            requestId: req.requestId,
+            requestId,
+            sourceIp,
             method,
             auth: {
-                tokenId: req.requestId,
+                tokenId: requestId,
                 subject: "user:public",
                 issuer: this.config.appId,
                 audience: this.config.appId,
@@ -64,7 +73,7 @@ export class CoreSecurity implements Security {
             ctx.auth.subject = "user:debug";
             ctx.auth.role = "Debug";
             if (token) try {
-                ctx.auth = await this.verify(req.requestId, token, method, req.sourceIp);
+                ctx.auth = await this.verify(requestId, token, method, sourceIp);
                 ctx.auth = this.renew(ctx.auth);
             } catch (err) {
                 this.log.debug("Ignore invalid token on debug permission", err);
@@ -80,7 +89,7 @@ export class CoreSecurity implements Security {
         let auth = await this.verify(req.requestId, req.token, method, null);
         if (auth.remote && !method.roles.Remote)
             throw new Unauthorized(`Internal request allowed only for method [${method.name}]`);
-        return new Context({ container, requestId: req.requestId, method, auth });
+        return new Context({ container, requestId: req.requestId, sourceIp: null, method, auth });
     }
 
     public async eventAuth(container: CoreContainer, req: EventRequest, method: MethodMetadata): Promise<Context> {
@@ -89,6 +98,7 @@ export class CoreSecurity implements Security {
         let ctx = new Context({
             container,
             requestId: req.requestId,
+            sourceIp: null,
             method,
             auth: {
                 tokenId: req.requestId,

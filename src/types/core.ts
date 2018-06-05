@@ -1,9 +1,9 @@
+import { ResolverContainer } from "../graphql";
 import { MethodMetadata } from "../metadata/method";
 import { EventRequest, EventResult } from "./event";
 import { HttpRequest, HttpResponse } from "./http";
 import { RemoteRequest, RemoteResponse } from "./proxy";
 import { AuthInfo } from "./security";
-import { ResolverContainer } from "../graphql";
 
 // export type _ObjectType<T> = {
 //     new(): T;
@@ -24,6 +24,7 @@ export interface Prototype extends Object { }
 export class Context {
     public container: CoreContainer = undefined;
     public requestId: string;
+    public sourceIp: string;
     public method: MethodMetadata;
     public auth: AuthInfo;
     constructor(ctx: Context) {

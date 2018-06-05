@@ -30,7 +30,7 @@ export function Inject(resource?: string): PropertyDecorator & ParameterDecorato
  */
 export function Initializer(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Handler, {}, target);
+        Registry.trace(Resolver, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ServiceMetadata.define(target.constructor).setInitializer(propertyKey, descriptor);
     };
@@ -73,11 +73,11 @@ export function Releasor(): MethodDecorator {
 /**
  * Decorate methods providing Api implementation.
  */
-export function Handler(): MethodDecorator {
+export function Resolver(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Handler, {}, target);
+        Registry.trace(Resolver, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        ServiceMetadata.define(target.constructor).addHandler(propertyKey, descriptor);
+        ServiceMetadata.define(target.constructor).addResolver(propertyKey, descriptor);
     };
 }
 

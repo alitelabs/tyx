@@ -1,6 +1,7 @@
 import { MethodMetadata } from "../metadata/method";
 import { Context, CoreContainer } from "./core";
 import { EventRequest } from "./event";
+import { GraphRequest } from "./graphql";
 import { HttpRequest } from "./http";
 import { RemoteRequest } from "./proxy";
 
@@ -103,6 +104,7 @@ export const Security = "security";
 
 export interface Security {
     httpAuth(container: CoreContainer, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
+    graphAuth(container: CoreContainer, req: GraphRequest, permission: MethodMetadata): Promise<Context>;
     remoteAuth(container: CoreContainer, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
     eventAuth(container: CoreContainer, req: EventRequest, permission: MethodMetadata): Promise<Context>;
     issueToken(req: IssueRequest): string;

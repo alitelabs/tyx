@@ -1,11 +1,11 @@
-import { Class, Context, Prototype, TypeRef } from "../types/core";
+import { Class, Context, Prototype } from "../types/core";
 import { EventAdapter } from "../types/event";
 import { HttpCode, HttpRequest } from "../types/http";
 import { Roles } from "../types/security";
 import * as Utils from "../utils/misc";
 import { ApiMetadata, IApiMetadata } from "./api";
 import { Registry } from "./registry";
-import { GraphMetadata, GraphType } from "./type";
+import { GraphMetadata, GraphType, InputType, ResultType } from "./type";
 
 export enum HttpBindingType {
     PathParam = "PathParam",
@@ -182,21 +182,26 @@ export class MethodMetadata implements IMethodMetadata {
         return this;
     }
 
-    public setQuery(input?: GraphType | TypeRef<any>, result?: GraphType | TypeRef<any>, listInput?: boolean, listResult?: boolean): this {
+    public setQuery(input?: InputType, result?: ResultType, listInput?: boolean, listResult?: boolean): this {
         this.query = true;
         this.input = this.getType(input, listInput);
         this.result = this.getType(result, listResult);
         return this;
     }
 
-    public setMutation(input?: GraphType | TypeRef<any>, result?: GraphType | TypeRef<any>, listInput?: boolean, listResult?: boolean): this {
+    public setMutation(input?: InputType, result?: ResultType, listInput?: boolean, listResult?: boolean): this {
         this.mutation = true;
         this.input = this.getType(input, listInput);
         this.result = this.getType(result, listResult);
         return this;
     }
 
-    private getType(type?: GraphType | TypeRef<any>, list?: boolean): GraphMetadata {
+    private getType(type?: InputType | ResultType, list?: boolean): GraphMetadata {
+        if (Array.isArray(type)) {
+            type = type[0];
+            list = !!type;
+            type = type || GraphType.Void;
+        }
         if (!type) {
             return { type: GraphType.ANY };
         } else if (typeof type === "string") {

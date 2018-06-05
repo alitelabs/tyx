@@ -1,6 +1,12 @@
-import { Class, Prototype, TypeRef } from "../types/core";
+import { Class, ObjectType, Prototype, TypeRef } from "../types/core";
 import { DesignMetadata } from "./method";
 import { Registry } from "./registry";
+
+export type GraphRef = (type?: any) => GraphType;
+export type ClassRef<T> = (type?: any) => ObjectType<T> | [ObjectType<T>];
+export type TypeDef<T> = GraphType | ClassRef<T> | GraphRef;
+export type InputType<T = any> = TypeDef<T> | [TypeDef<T>] | [undefined];
+export type ResultType<T = any> = TypeDef<T> | [TypeDef<T>];
 
 export enum GraphType {
     ID = "ID",
@@ -27,11 +33,13 @@ export enum GraphType {
     Result = "Result",
     Entity = "Entity",
     // Ref
-    Ref = "#REF"
+    Ref = "#REF",
+    // Void
+    Void = "#VOID"
 }
 
 export namespace GraphType {
-    export function isScalar(type: GraphType) {
+    export function isScalar(type: GraphType | string) {
         switch (type) {
             case GraphType.ID:
             case GraphType.Int:
@@ -45,12 +53,13 @@ export namespace GraphType {
             case GraphType.Email:
             case GraphType.Object:
             case GraphType.ANY:
+            case GraphType.Void:
                 return true;
             default:
                 return false;
         }
     }
-    export function isStruc(type: GraphType) {
+    export function isStruc(type: GraphType | string) {
         switch (type) {
             case GraphType.Metadata:
             case GraphType.Input:
@@ -63,19 +72,22 @@ export namespace GraphType {
                 return false;
         }
     }
-    export function isMetadata(type: GraphType) {
+    export function isMetadata(type: GraphType | string) {
         return type === GraphType.Metadata;
     }
-    export function isEntity(type: GraphType) {
+    export function isEntity(type: GraphType | string) {
         return type === GraphType.Entity;
     }
-    export function isRef(type: GraphType) {
+    export function isRef(type: GraphType | string) {
         return type === GraphType.Ref;
     }
-    export function isArray(type: GraphType) {
+    export function isArray(type: GraphType | string) {
         return type === GraphType.List;
     }
-    export function isItem(type: GraphType) {
+    export function isVoid(type: GraphType | string) {
+        return type === GraphType.Void;
+    }
+    export function isItem(type: GraphType | string) {
         switch (type) {
             case GraphType.InputItem:
             case GraphType.ResultItem:
@@ -84,7 +96,7 @@ export namespace GraphType {
                 return false;
         }
     }
-    export function isInput(type: GraphType) {
+    export function isInput(type: GraphType | string) {
         switch (type) {
             case GraphType.Input:
             case GraphType.InputItem:
@@ -93,7 +105,7 @@ export namespace GraphType {
                 return false;
         }
     }
-    export function isResult(type: GraphType) {
+    export function isResult(type: GraphType | string) {
         switch (type) {
             case GraphType.Result:
             case GraphType.ResultItem:

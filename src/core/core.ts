@@ -2,7 +2,7 @@ import { createServer, Server } from "http";
 import { LambdaAdapter, LambdaHandler } from "../aws/adapter";
 import { ExpressAdapter } from "../express/adapter";
 import { Express } from "../import";
-import { Connection, ConnectionOptions, createConnection, getConnection } from "../import/typeorm";
+import { Connection, ConnectionOptions, createConnection } from "../import/typeorm";
 import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
 import { Class, ContainerState } from "../types/core";
@@ -10,6 +10,7 @@ import { EventRequest, EventResult } from "../types/event";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
 import { CoreInstance } from "./instance";
+import { GraphRequest } from "../types/graphql";
 
 export abstract class Core {
     public static log = Logger.get("TYX", Core.name);
@@ -75,6 +76,24 @@ export abstract class Core {
         return instance;
     }
 
+    public static async httpRequest(req: HttpRequest): Promise<HttpResponse> {
+        try {
+            let instance = await this.activate();
+            return await instance.httpRequest(req);
+        } finally {
+            await this.release();
+        }
+    }
+
+    public static async graphRequest(req: GraphRequest): Promise<HttpResponse> {
+        try {
+            let instance = await this.activate();
+            return await instance.graphRequest(req);
+        } finally {
+            await this.release();
+        }
+    }
+
     public static async remoteRequest(req: RemoteRequest): Promise<any> {
         try {
             let instance = await this.activate();
@@ -88,15 +107,6 @@ export abstract class Core {
         try {
             let instance = await this.activate();
             return await instance.eventRequest(req);
-        } finally {
-            await this.release();
-        }
-    }
-
-    public static async httpRequest(req: HttpRequest): Promise<HttpResponse> {
-        try {
-            let instance = await this.activate();
-            return await instance.httpRequest(req);
         } finally {
             await this.release();
         }
@@ -129,7 +139,7 @@ export abstract class Core {
 
     public static stop() {
         if (this.server) this.server.close();
-        getConnection().close();
+        if (this.connection) this.connection.close();
     }
 }
 

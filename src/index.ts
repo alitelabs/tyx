@@ -10,6 +10,7 @@ export * from "./types/config";
 export * from "./types/security";
 export * from "./types/event";
 export * from "./types/proxy";
+export * from "./types/graphql";
 
 // ---- metadata/index.ts ---
 

@@ -9,6 +9,7 @@ import { ServiceMetadata } from "../metadata/service";
 import { Configuration } from "../types/config";
 import { ContainerState, Context, CoreContainer, ObjectType } from "../types/core";
 import { EventRequest, EventResult } from "../types/event";
+import { GraphRequest } from "../types/graphql";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
 import { Security } from "../types/security";
@@ -88,16 +89,119 @@ export class CoreInstance implements CoreContainer {
 
     // --------------------------------------------------
 
-    public async invoke(method: MethodInfo, obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo): Promise<any> {
-        return Core.remoteRequest({
+    public async invoke(method: MethodInfo, obj: any, input: ResolverQuery & ResolverArgs, ctx?: ResolverContext, info?: ResolverInfo): Promise<any> {
+        return Core.graphRequest({
             type: "graphql",
             requestId: ctx.requestId,
+            sourceIp: ctx.sourceIp,
             application: this.application,
             service: method.api,
             method: method.method,
-            args: [args],
+            input: input,
             token: ctx.auth.token
         });
+    }
+
+    public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
+        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
+        try {
+            req.type = "http";
+            this.log.debug("HTTP Event: %j", req);
+
+            HttpUtils.request(req);
+
+            let route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
+            let target = Registry.HttpRouteMetadata[route];
+            if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
+            let service = this.container.get(target.alias);
+            if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
+            let methodId = MethodMetadata.id(target.alias, target.handler);
+            let method = Registry.MethodMetadata[methodId] as MethodMetadata;
+
+            req.application = this.application;
+            req.service = target.alias;
+            req.method = target.handler;
+
+            this.istate = ContainerState.Busy;
+            let ctx = await this.security.httpAuth(this, req, method);
+
+            let log = Logger.get(service);
+            let startTime = log.time();
+            try {
+                await this.activate(ctx);
+
+                this.log.debug("HTTP Context: %j", ctx);
+                this.log.debug("HTTP Request: %j", req);
+
+                let handler: Function = service[method.name];
+                let http = method.http[route];
+                let result: any;
+                if (http.adapter) {
+                    result = await http.adapter(
+                        handler.bind(service),
+                        ctx,
+                        req,
+                        req.pathParameters || {},
+                        req.queryStringParameters || {});
+                } else {
+                    let args: any = [];
+                    for (let [index, arg] of method.bindings.entries()) {
+                        args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
+                    }
+                    result = await handler.apply(service, args);
+                }
+
+                let contentType = method.contentType || "application/json";
+                if (contentType !== HttpResponse) result = { statusCode: http.code, body: result, contentType };
+                if (ctx && ctx.auth.renewed && ctx.auth.token) {
+                    result.headers = result.headers || {};
+                    result.headers["Token"] = ctx.auth.token;
+                }
+                this.log.debug("Response: %j", result);
+                return result;
+            } catch (e) {
+                this.log.error(e);
+                throw InternalServerError.wrap(e);
+            } finally {
+                log.timeEnd(startTime, `${method.name}`);
+                await this.release(ctx);
+            }
+        } finally {
+            this.istate = ContainerState.Ready;
+        }
+    }
+
+    public async graphRequest(req: GraphRequest): Promise<any> {
+        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
+        try {
+            this.log.debug("GraphQL Request: %j", req);
+
+            if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
+            let service = this.container.get(req.service);
+            if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
+            let methodId = MethodMetadata.id(req.service, req.method);
+            let metadata = Registry.MethodMetadata[methodId];
+            if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
+
+            this.istate = ContainerState.Busy;
+            let ctx = await this.security.graphAuth(this, req, metadata);
+
+            let log = Logger.get(service);
+            let startTime = log.time();
+            try {
+                await this.activate(ctx);
+                let handler: Function = service[metadata.name];
+                let result = await handler.call(service, req.input);
+                return result;
+            } catch (e) {
+                throw this.log.error(e);
+            } finally {
+                log.timeEnd(startTime, `${metadata.name}`);
+                await this.release(ctx);
+            }
+        } finally {
+            this.istate = ContainerState.Ready;
+        }
     }
 
     public async remoteRequest(req: RemoteRequest): Promise<any> {
@@ -210,75 +314,6 @@ export class CoreInstance implements CoreContainer {
             }
             result.status = result.status || "NOP";
             return result;
-        } finally {
-            this.istate = ContainerState.Ready;
-        }
-    }
-
-    public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
-        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
-        try {
-            req.type = "http";
-            this.log.debug("HTTP Event: %j", req);
-
-            HttpUtils.request(req);
-
-            let route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
-            let target = Registry.HttpRouteMetadata[route];
-            if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
-            let service = this.container.get(target.alias);
-            if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
-            let methodId = MethodMetadata.id(target.alias, target.handler);
-            let method = Registry.MethodMetadata[methodId] as MethodMetadata;
-
-            req.application = this.application;
-            req.service = target.alias;
-            req.method = target.handler;
-
-            this.istate = ContainerState.Busy;
-            let ctx = await this.security.httpAuth(this, req, method);
-
-            let log = Logger.get(service);
-            let startTime = log.time();
-            try {
-                await this.activate(ctx);
-
-                this.log.debug("HTTP Context: %j", ctx);
-                this.log.debug("HTTP Request: %j", req);
-
-                let handler: Function = service[method.name];
-                let http = method.http[route];
-                let result: any;
-                if (http.adapter) {
-                    result = await http.adapter(
-                        handler.bind(service),
-                        ctx,
-                        req,
-                        req.pathParameters || {},
-                        req.queryStringParameters || {});
-                } else {
-                    let args: any = [];
-                    for (let [index, arg] of method.bindings.entries()) {
-                        args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
-                    }
-                    result = await handler.apply(service, args);
-                }
-
-                let contentType = method.contentType || "application/json";
-                if (contentType !== HttpResponse) result = { statusCode: http.code, body: result, contentType };
-                if (ctx && ctx.auth.renewed && ctx.auth.token) {
-                    result.headers = result.headers || {};
-                    result.headers["Token"] = ctx.auth.token;
-                }
-                this.log.debug("Response: %j", result);
-                return result;
-            } catch (e) {
-                this.log.error(e);
-                throw InternalServerError.wrap(e);
-            } finally {
-                log.timeEnd(startTime, `${method.name}`);
-                await this.release(ctx);
-            }
         } finally {
             this.istate = ContainerState.Ready;
         }

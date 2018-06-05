@@ -355,6 +355,14 @@ export class CoreSchema {
         }
         if (GraphType.isRef(target.type)) {
             let type = target.target();
+            if (GraphType.isScalar(type)) return type;
+            if (Array.isArray(type)) {
+                const itemType = sub => type[0];
+                return this.genType({
+                    type: GraphType.List,
+                    item: { type: GraphType.Ref, target: itemType }
+                }, scope, reg);
+            }
             let entity = EntityMetadata.get(type);
             if (entity) {
                 // TODO: Makesure entity exists
@@ -439,14 +447,17 @@ export class CoreSchema {
             let input = this.genType(method.input, GraphType.Input, this.inputs);
             let result = this.genType(method.result, GraphType.Result, this.results);
             let name = `${target.target.name}_${method.name}`;
+            // TODO: Get it from typedef
+            const arg = method.design[0].name || "input";
+            let call = GraphType.isVoid(input) ? `: ${result}` : `(${arg}: ${input}): ${result}`;
+            let dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
             let meta: MethodSchema = {
                 target: method,
                 api: target.alias,
                 method: method.name,
                 name,
-                signature: `(args: ${input}): ${result} `
-                    + `@${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`,
-                resolver: (obj, args, ctx, info) => ctx.container.invoke(meta, obj, args.args, ctx, info)
+                signature: call + dir,
+                resolver: (obj, args, ctx, info) => ctx.container.invoke(meta, obj, args[arg], ctx, info)
             };
             if (method.mutation) {
                 schema.commands = schema.commands || {};

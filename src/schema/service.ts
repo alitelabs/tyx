@@ -1,7 +1,7 @@
 import * as Lo from "lodash";
 import { Int, List, Metadata, Ref, Str } from "../decorators/type";
-import { ResolverArgs, SchemaResolvers } from "../graphql/types";
-import { HandlerMetadata, InjectMetadata, IServiceMetadata } from "../metadata/service";
+import { SchemaResolvers } from "../graphql/types";
+import { InjectMetadata, IServiceMetadata, ResolverMetadata } from "../metadata/service";
 import { Class } from "../types/core";
 
 @Metadata()
@@ -10,20 +10,20 @@ export class InjectMetadataSchema implements InjectMetadata {
     @Str() target?: Class;
     @Int() index?: number;
 
-    public static target(obj: InjectMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
+    public static RESOLVERS: SchemaResolvers<InjectMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+    };
 }
 
 @Metadata()
-export class HandlerMetadataSchema implements HandlerMetadata {
+export class ResolverMetadataSchema implements ResolverMetadata {
     @Str() service?: string;
     @Str() method: string;
     @Str() target: Class;
 
-    public static target(obj: HandlerMetadata, args: ResolverArgs): string {
-        return obj.target && `[class: ${obj.target.name}]`;
-    }
+    public static RESOLVERS: SchemaResolvers<ResolverMetadata> = {
+        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+    };
 }
 
 @Metadata()
@@ -32,16 +32,16 @@ export class ServiceMetadataSchema implements IServiceMetadata {
     @Str() alias: string;
 
     @List(item => InjectMetadataSchema) dependencies: Record<string, InjectMetadata>;
-    @List(item => HandlerMetadataSchema) handlers: Record<string, HandlerMetadata>;
+    @List(item => ResolverMetadataSchema) resolvers: Record<string, ResolverMetadata>;
 
-    @Ref(ref => HandlerMetadataSchema) initializer: HandlerMetadata;
-    @Ref(ref => HandlerMetadataSchema) selector: HandlerMetadata;
-    @Ref(ref => HandlerMetadataSchema) activator: HandlerMetadata;
-    @Ref(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
+    @Ref(ref => ResolverMetadataSchema) initializer: ResolverMetadata;
+    @Ref(ref => ResolverMetadataSchema) selector: ResolverMetadata;
+    @Ref(ref => ResolverMetadataSchema) activator: ResolverMetadata;
+    @Ref(ref => ResolverMetadataSchema) releasor: ResolverMetadata;
 
     public static RESOLVERS: SchemaResolvers<IServiceMetadata> = {
         target: (obj) => obj.target && `[class: ${obj.target.name}]`,
         dependencies: (obj, args) => Lo.filter(Object.values(obj.dependencies), args),
-        handlers: (obj, args) => Lo.filter(Object.values(obj.handlers), args)
+        resolvers: (obj, args) => Lo.filter(Object.values(obj.resolvers), args)
     };
 }
