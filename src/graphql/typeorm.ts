@@ -1,6 +1,6 @@
 import { EntityMetadata } from "../metadata/entity";
 import { RelationMetadata } from "../metadata/relation";
-import { EntityManager, SelectQueryBuilder } from "../orm";
+import { EntityManager, SelectQueryBuilder } from "../import/typeorm";
 import { QueryToolkit } from "./query";
 import { EntityResolver, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from "./types";
 

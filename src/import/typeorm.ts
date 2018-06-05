@@ -10,7 +10,7 @@ export {
     OneToMany,
     ManyToOne,
     ManyToMany
-} from "../orm";
+} from "typeorm";
 
 export {
     Connection,
@@ -20,4 +20,4 @@ export {
     getConnection,
     Repository,
     useContainer
-} from "../orm";
+} from "typeorm";

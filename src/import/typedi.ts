@@ -9,4 +9,4 @@ export {
     ServiceMetadata,
     ServiceIdentifier,
     Token
-} from "../ioc";
+} from "typedi";

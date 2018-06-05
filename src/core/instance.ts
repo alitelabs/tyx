@@ -6,9 +6,8 @@ import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from "../metada
 import { ProxyMetadata } from "../metadata/proxy";
 import { Registry } from "../metadata/registry";
 import { ServiceMetadata } from "../metadata/service";
-import { ObjectType } from "../orm/common/ObjectType";
 import { Configuration } from "../types/config";
-import { ContainerState, Context, CoreContainer } from "../types/core";
+import { ContainerState, Context, CoreContainer, ObjectType } from "../types/core";
 import { EventRequest, EventResult } from "../types/event";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";

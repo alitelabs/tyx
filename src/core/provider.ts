@@ -5,7 +5,7 @@ import { Orm } from "../import";
 import { Logger } from "../logger";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
-import { getConnection } from "../orm";
+import { getConnection } from "../import/typeorm";
 import { Configuration } from "../types/config";
 import { Class } from "../types/core";
 
