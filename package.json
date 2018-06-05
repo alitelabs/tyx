@@ -63,6 +63,7 @@
     "mkdirp": "^0.5.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
+    "super-graphiql-express": "0.0.2",
     "uuid": "^3.2.1",
     "xml2js": "^0.4.17",
     "yargonaut": "^1.1.2",

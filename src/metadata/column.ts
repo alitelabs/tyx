@@ -240,6 +240,10 @@ export interface IColumnMetadata {
     /**
      * Class's property name on which this column is applied.
      */
+    name: string;
+    /**
+     * Class's property name on which this column is applied.
+     */
     propertyName: string;
     /**
      * The database type of the column.
@@ -301,6 +305,7 @@ export interface IColumnMetadata {
 export class ColumnMetadata implements IColumnMetadata {
     public target: Class;
     public entityMetadata: IEntityMetadata;
+    public name: string;
     public propertyName: string;
     public type: ColumnType;
     public precision?: number | null;
@@ -320,6 +325,8 @@ export class ColumnMetadata implements IColumnMetadata {
         let state: IColumnMetadata = {
             target,
             entityMetadata: undefined,
+            // TODO: Database name
+            name: propertyKey,
             propertyName: propertyKey,
             type: options.type,
             comment: options.comment,

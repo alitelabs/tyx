@@ -13,6 +13,7 @@ export class ColumnTypeSchema {
 export class ColumnMetadataSchema implements IColumnMetadata {
     @Str() target: Class;
     @Ref(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;
+    @Str() name: string;
     @Str() propertyName: string;
     @Str() type: ColumnType;
     @Int() precision?: number;

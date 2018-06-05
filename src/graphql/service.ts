@@ -1,3 +1,4 @@
+import * as SuperGraphiQL from "super-graphiql-express";
 import { BaseService } from "../core/service";
 import { Database } from "../decorators/database";
 import { ContentType, Get, Post } from "../decorators/http";
@@ -50,7 +51,11 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
             // editorTheme: "idea"
         };
         try {
-            return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
+            let html: string = SuperGraphiQL.renderGraphiQL(options);
+            if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
+                html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
+            return html;
+            // return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
         } catch (error) {
             throw new InternalServerError(error.message, error);
         }
