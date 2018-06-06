@@ -114,6 +114,8 @@ export interface IMethodMetadata {
     bindings: HttpBindingMetadata[];
     http: Record<string, HttpRouteMetadata>;
     events: Record<string, EventRouteMetadata>;
+
+    source?: string;
 }
 
 export class MethodMetadata implements IMethodMetadata {
@@ -168,7 +170,7 @@ export class MethodMetadata implements IMethodMetadata {
         let returns = Reflect.getMetadata(Registry.DESIGN_RETURN, target, propertyKey);
         meta.design = meta.design || [];
         params.forEach((param, i) => meta.design[i] = { name: names[i], type: param.name, target: param });
-        meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns.name, target: returns };
+        meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns && returns.name || "void", target: returns };
         ApiMetadata.define(target).addMethod(meta);
         return meta;
     }

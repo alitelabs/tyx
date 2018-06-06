@@ -10,6 +10,7 @@ import { Class } from "../types/core";
 import { ColumnMetadataSchema } from "./column";
 import { EntityMetadataSchema } from "./entity";
 import { RelationMetadataSchema } from "./relation";
+import { Utils } from "../utils";
 
 @Metadata()
 export class DatabaseMetadataSchema implements IDatabaseMetadata {
@@ -22,7 +23,7 @@ export class DatabaseMetadataSchema implements IDatabaseMetadata {
     @List(item => RelationMetadataSchema) relations: IRelationMetadata<any>[];
 
     public static RESOLVERS: SchemaResolvers<IDatabaseMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        target: (obj) => Utils.value(obj.target),
         targets: (obj) => obj.targets && obj.targets.map(t => `[class: ${t.name}]`),
         entities: (obj, args) => Lo.filter(obj.entities, args),
         columns: (obj, args) => Lo.filter(obj.columns, args),

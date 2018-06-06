@@ -18,6 +18,7 @@ import { CoreConfiguration } from "./config";
 import { Core } from "./core";
 import { HttpUtils } from "./http";
 import { CoreSecurity } from "./security";
+import { GraphQLApi, CoreGraphQLService } from "../graphql";
 
 export class CoreInstance implements CoreContainer {
 
@@ -63,6 +64,10 @@ export class CoreInstance implements CoreContainer {
             // OK
         } else if (!ServiceMetadata.has(this.security)) {
             throw new TypeError(`Security must be a service`);
+        }
+
+        if (!Container.has(GraphQLApi)) {
+            this.container.set({ id: GraphQLApi, type: CoreGraphQLService });
         }
 
         this.istate = ContainerState.Ready;

@@ -1,18 +1,22 @@
 import { Class, Prototype } from "../types/core";
-import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata, IMethodMetadata } from "./method";
+import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata } from "./method";
 import { Registry } from "./registry";
 
 export interface IApiMetadata {
     target: Class;
+    name: String;
     alias: string;
 
     methods: Record<string, IMethodMetadata>;
     routes: Record<string, HttpRouteMetadata>;
     events: Record<string, EventRouteMetadata[]>;
+
+    source?: string;
 }
 
 export class ApiMetadata implements IApiMetadata {
     public target: Class;
+    public name: string;
     public alias: string;
 
     public methods: Record<string, MethodMetadata> = {};
@@ -21,6 +25,8 @@ export class ApiMetadata implements IApiMetadata {
 
     constructor(target: Class) {
         this.target = target;
+        this.name = target.name;
+        this.alias = target.name.replace(/Api$/i, "");
     }
 
     public static has(target: Class | Prototype): boolean {

@@ -36,6 +36,20 @@ export function isClass(cls: any): boolean {
     return false;
 }
 
+export function value(val: any) {
+    if (val instanceof Function) {
+        if (isClass(val)) {
+            return `[class: ${val.name || "inline"}]`;
+        } else if (val.name) {
+            return `[function: ${val.name}]`;
+        } else {
+            // TODO: is arrow function
+            return `[ref: ${val.toString()}]`;
+        }
+    }
+    return val;
+}
+
 const notBase64 = /[^A-Z0-9+\/=\n\r]/i;
 
 // const base64 = new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$");

@@ -8,8 +8,8 @@ import { Utils } from "../utils";
 export function Service(alias?: string): ClassDecorator {
     return (target) => {
         Registry.trace(Service, { alias }, target);
-        ServiceMetadata.define(target).commit(alias);
-        return Di.Service(alias)(target);
+        let meta = ServiceMetadata.define(target).commit(alias);
+        return Di.Service(meta.alias)(target);
     };
 }
 

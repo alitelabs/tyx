@@ -4,6 +4,7 @@ import { SchemaResolvers } from "../graphql";
 import { DesignMetadata } from "../metadata/method";
 import { FieldMetadata, GraphMetadata, GraphType, ITypeMetadata } from "../metadata/type";
 import { Class } from "../types/core";
+import { Utils } from "../utils";
 
 @Metadata()
 export class GraphMetadataSchema implements GraphMetadata {
@@ -12,7 +13,7 @@ export class GraphMetadataSchema implements GraphMetadata {
     @Ref(type => GraphMetadataSchema) item?: GraphMetadata;
 
     public static RESOLVERS: SchemaResolvers<GraphMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`
+        target: (obj) => Utils.value(obj.target)
     };
 }
 
@@ -26,7 +27,7 @@ export class FieldMetadataSchema implements FieldMetadata {
     @Obj() design: DesignMetadata;
 
     public static RESOLVERS: SchemaResolvers<FieldMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`
+        target: (obj) => Utils.value(obj.target)
     };
 }
 
@@ -38,7 +39,7 @@ export class TypeMetadataSchema implements ITypeMetadata {
     @List(item => FieldMetadataSchema) fields?: Record<string, FieldMetadata>;
 
     public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        target: (obj) => Utils.value(obj.target),
         fields: (obj, args) => Lo.filter(Object.values(obj.fields), args)
     };
 }

@@ -10,6 +10,7 @@ import { HttpCode } from "../types/http";
 import { Roles } from "../types/security";
 import { ApiMetadataSchema } from "./api";
 import { GraphMetadataSchema } from "./type";
+import { Utils } from "../utils";
 
 @Metadata()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
@@ -96,9 +97,12 @@ export class MethodMetadataSchema implements IMethodMetadata {
     @List(type => HttpRouteMetadataSchema) http: Record<string, HttpRouteMetadata>;
     @List(type => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata>;
 
+    @Str() source: string;
+
     public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        target: (obj) => Utils.value(obj.target),
         http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),
-        events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args)
+        events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args),
+        source: (obj) => obj.target.prototype[obj.name].toString()
     };
 }

@@ -39,6 +39,7 @@ export interface ResolverQuery extends ResolverExpression {
     exists?: boolean;
     skip?: number;
     take?: number;
+    query?: ResolverQuery;
 }
 
 export type ResolverArgs = any;

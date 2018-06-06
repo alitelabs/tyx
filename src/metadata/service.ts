@@ -12,10 +12,13 @@ export interface ResolverMetadata {
     service?: string;
     method: string;
     target: Class;
+
+    source?: string;
 }
 
 export interface IServiceMetadata {
     target: Class;
+    name: string;
     alias: string;
 
     dependencies: Record<string, InjectMetadata>;
@@ -25,10 +28,13 @@ export interface IServiceMetadata {
     selector: ResolverMetadata;
     activator: ResolverMetadata;
     releasor: ResolverMetadata;
+
+    source?: string;
 }
 
 export class ServiceMetadata implements IServiceMetadata {
     public target: Class;
+    public name: string;
     public alias: string;
     public dependencies: Record<string, InjectMetadata> = {};
     public resolvers: Record<string, ResolverMetadata> = {};
@@ -40,7 +46,8 @@ export class ServiceMetadata implements IServiceMetadata {
 
     constructor(target: Class) {
         this.target = target;
-        this.alias = target.name;
+        this.name = target.name;
+        this.alias = target.name.replace(/Service$/i, "");
     }
 
     public static has(target: Class | Prototype): boolean {

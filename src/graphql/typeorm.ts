@@ -1,6 +1,6 @@
+import { EntityManager, SelectQueryBuilder } from "../import/typeorm";
 import { EntityMetadata } from "../metadata/entity";
 import { RelationMetadata } from "../metadata/relation";
-import { EntityManager, SelectQueryBuilder } from "../import/typeorm";
 import { QueryToolkit } from "./query";
 import { EntityResolver, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from "./types";
 
@@ -16,6 +16,18 @@ export class TypeOrmProvider implements EntityResolver {
     protected manager: EntityManager;
 
     constructor(manager?: EntityManager) { this.manager = manager; }
+
+    public get(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
+        return this.prepareQuery(entity.name, args, null, context).getOne();
+    }
+
+    public search(entity: EntityMetadata, obj: ResolverArgs, args: ResolverQuery, context: ResolverContext, info?: ResolverInfo): Promise<any[]> {
+        if (args.query) {
+            args = { ...args.query, ...args };
+            delete args.query;
+        }
+        return this.prepareQuery(entity.name, null, args, context).getMany();
+    }
 
     public create(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
         let record = this.manager.create<any>(entity.name, args);
@@ -33,14 +45,6 @@ export class TypeOrmProvider implements EntityResolver {
         let record = this.manager.create(entity.name, args);
         // TODO: Generate PK
         return this.manager.remove(record);
-    }
-
-    public get(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
-        return this.prepareQuery(entity.name, args, null, context).getOne();
-    }
-
-    public search(entity: EntityMetadata, obj: ResolverArgs, args: ResolverQuery, context: ResolverContext, info?: ResolverInfo): Promise<any[]> {
-        return this.prepareQuery(entity.name, null, args, context).getMany();
     }
 
     public oneToMany(entity: EntityMetadata, relation: RelationMetadata, root: ResolverArgs, query: ResolverQuery, context?: ResolverContext, info?: ResolverInfo): Promise<object[]> {

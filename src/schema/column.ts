@@ -4,6 +4,7 @@ import { ColumnType, IColumnMetadata } from "../metadata/column";
 import { IEntityMetadata } from "../metadata/entity";
 import { Class } from "../types/core";
 import { EntityMetadataSchema } from "./entity";
+import { Utils } from "../utils";
 
 // @Enum(ColumnType)
 export class ColumnTypeSchema {
@@ -30,6 +31,6 @@ export class ColumnMetadataSchema implements IColumnMetadata {
     @Bool() isVirtual: boolean;
 
     public static RESOLVERS: SchemaResolvers<IColumnMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`
+        target: (obj) => Utils.value(obj.target)
     };
 }

@@ -81,7 +81,7 @@ export namespace GraphType {
     export function isRef(type: GraphType | string) {
         return type === GraphType.Ref;
     }
-    export function isArray(type: GraphType | string) {
+    export function isList(type: GraphType | string) {
         return type === GraphType.List;
     }
     export function isVoid(type: GraphType | string) {
@@ -120,6 +120,7 @@ export interface GraphMetadata {
     type: GraphType;
     item?: GraphMetadata;
     target?: Class;
+    def?: string;
 }
 
 export interface FieldMetadata extends GraphMetadata {
@@ -139,6 +140,7 @@ export class TypeMetadata implements ITypeMetadata {
     public target: Class = undefined;
     public name: string = undefined;
     public type: GraphType = undefined;
+    public def?: string;
     public fields?: Record<string, FieldMetadata> = undefined;
 
     constructor(target: Class) {

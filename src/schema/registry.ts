@@ -12,6 +12,7 @@ import { IRelationMetadata } from "../metadata/relation";
 import { IServiceMetadata } from "../metadata/service";
 import { GraphType, ITypeMetadata } from "../metadata/type";
 import { Class } from "../types/core";
+import { Utils } from "../utils";
 import { ApiMetadataSchema } from "./api";
 import { ColumnMetadataSchema } from "./column";
 import { DatabaseMetadataSchema } from "./database";
@@ -30,7 +31,7 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
     @List(GraphType.String) targets: Record<string, Class>;
 
     public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
-        targets: (obj) => Object.values(obj.targets).map(t => `[class: ${t.name}]`)
+        targets: (obj) => Object.values(obj.targets).map(t => Utils.value(t))
     };
 }
 
@@ -44,10 +45,7 @@ export class DecorationMetadataSchema implements DecorationMetadata {
     @Obj() args: Record<string, any>;
 
     public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {
-        target: (obj) => {
-            if (typeof obj.target === "string") return obj.target;
-            return obj.target && `[class: ${obj.target.name}]`;
-        }
+        target: (obj) => Utils.value(obj.target)
     };
 }
 

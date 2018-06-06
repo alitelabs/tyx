@@ -7,10 +7,10 @@ import { Logger } from "../logger";
 import { Registry } from "../metadata/registry";
 import { Class, ContainerState } from "../types/core";
 import { EventRequest, EventResult } from "../types/event";
+import { GraphRequest } from "../types/graphql";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { RemoteRequest } from "../types/proxy";
 import { CoreInstance } from "./instance";
-import { GraphRequest } from "../types/graphql";
 
 export abstract class Core {
     public static log = Logger.get("TYX", Core.name);
@@ -37,9 +37,12 @@ export abstract class Core {
         if (this.instance) return;
 
         this.application = this.application || application || "Core";
-        this.pool = [];
+        this.instance = new CoreInstance(this.application, Core.name);
+        this.pool = [this.instance];
 
         let cfg: string = process.env.DATABASE;
+        if (!cfg) return;
+
         // this.label = options.substring(options.indexOf("@") + 1);
         let tokens = cfg.split(/:|@|\/|;/);
         let logQueries = tokens.findIndex(x => x === "logall") > 5;
@@ -56,14 +59,14 @@ export abstract class Core {
             logging: logQueries ? "all" : ["error"],
             entities: Object.values(Registry.EntityMetadata).map(meta => meta.target)
         };
-        this.instance = new CoreInstance(application, Core.name);
-        this.pool.push(this.instance);
     }
 
     private static async activate(): Promise<CoreInstance> {
         this.init();
-        if (!this.connection) this.connection = await createConnection(this.options);
-        if (!this.connection.isConnected) await this.connection.connect();
+        if (this.options) {
+            if (!this.connection) this.connection = await createConnection(this.options);
+            if (!this.connection.isConnected) await this.connection.connect();
+        }
         let instance = this.pool.find(x => x.state === ContainerState.Ready);
         if (!instance) {
             instance = new CoreInstance(this.application, Core.name, this.counter++);
@@ -125,6 +128,8 @@ export abstract class Core {
     }
 
     public static start(port: number, basePath?: string) {
+        this.init();
+
         port = port || 5000;
         let adapter = new ExpressAdapter(basePath || "");
 
@@ -133,7 +138,7 @@ export abstract class Core {
         this.server.listen(port);
 
         this.log.info("👌  Server initialized.");
-        adapter.paths.forEach(p => this.log.info(`${p[0]} http://localhost:${port}/${p[1]}`));
+        adapter.paths.forEach(p => this.log.info(`${p[0]} http://localhost:${port}${p[1]}`));
         this.log.info("🚀  Server started at %s ...", port);
     }
 

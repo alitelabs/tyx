@@ -7,6 +7,7 @@ import { IRelationMetadata, RelationType } from "../metadata/relation";
 import { Class } from "../types/core";
 import { ColumnMetadataSchema } from "./column";
 import { EntityMetadataSchema } from "./entity";
+import { Utils } from "../utils";
 
 @Metadata()
 export class RelationMetadataSchema implements IRelationMetadata<any> {
@@ -19,7 +20,7 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
     @List(item => ColumnMetadataSchema) joinColumns: IColumnMetadata[];
 
     public static RESOLVERS: SchemaResolvers<IRelationMetadata> = {
-        target: (obj) => obj.target && `[class: ${obj.target.name}]`,
+        target: (obj) => Utils.value(obj.target),
         joinColumns: (obj, args) => Lo.filter(obj.joinColumns, args)
     };
 }

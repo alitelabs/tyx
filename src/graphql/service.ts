@@ -1,49 +1,45 @@
-import { BaseService } from "../core/service";
-import { Database } from "../decorators/database";
-import { ContentType, Get, Post } from "../decorators/http";
-import { Activator, Inject } from "../decorators/service";
+import { Debug } from "../decorators/auth";
+import { ContentType, ContextObject, Get, Post, RequestObject } from "../decorators/http";
+import { Activator, Service } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
+import { Logger } from "../logger";
 import { Context } from "../types/core";
 import { HttpRequest, HttpResponse } from "../types/http";
 import { CoreSchema } from "./schema";
-import { EntityResolver, ResolverContext } from "./types";
+import { ResolverContext } from "./types";
+import SuperGraphiQL = require("super-graphiql-express");
 
 const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
 
 export interface GraphQLApi {
-    graphql(ctx: ResolverContext, req: HttpRequest, provider: EntityResolver): Promise<HttpResponse>;
+    graphql(ctx: ResolverContext, req: HttpRequest): Promise<HttpResponse>;
     graphiql(ctx: Context, req: HttpRequest): Promise<string>;
     playground(ctx: Context, req: HttpRequest): Promise<string>;
 }
 
-export abstract class BaseGraphQLService extends BaseService implements GraphQLApi {
+@Service(GraphQLApi)
+export class CoreGraphQLService implements GraphQLApi {
 
-    @Inject(Database)
-    protected database: Database;
+    private log = Logger.get(this);
+
+    // @Inject(Database)
+    // protected database: Database;
 
     protected schema: CoreSchema;
     private executable: GraphQL.GraphQLSchema;
 
-    constructor(prefix: string) {
-        super();
-    }
-
     @Activator()
     protected async activate(ctx: Context, req: HttpRequest) {
         if (this.schema) return;
-        this.schema = await this.initialize();
+        this.schema = new CoreSchema();
     }
 
-    protected async initialize(): Promise<CoreSchema> {
-        let schema = new CoreSchema();
-        return schema;
-    }
-
+    @Debug()
     @Get("/graphiql")
     @ContentType("text/html")
-    public async graphiql(ctx: Context, req: HttpRequest, prefix?: string): Promise<string> {
+    public async graphiql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
         let options: GraphQL.GraphiQLData = {
             endpointURL: `${prefix || ""}/graphql`,
             passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
@@ -60,9 +56,30 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         }
     }
 
-    @Get("/playgound")
+    @Debug()
+    @Get("/supergraphiql")
     @ContentType("text/html")
-    public async playground(ctx: Context, req: HttpRequest, prefix?: string): Promise<string> {
+    public async supergraphiql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
+        let options: GraphQL.GraphiQLData = {
+            endpointURL: `${prefix || ""}/graphql`,
+            passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
+            // editorTheme: "idea"
+        };
+        try {
+            let html: string = SuperGraphiQL.renderGraphiQL(options);
+            if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
+                html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
+            return html;
+            // return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
+        } catch (error) {
+            throw new InternalServerError(error.message, error);
+        }
+    }
+
+    @Debug()
+    @Get("/playground")
+    @ContentType("text/html")
+    public async playground(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
         let sufix = ctx.auth.token ? ("/" + ctx.auth.token) : "";
         const options: GraphQL.RenderPageOptions = {
             endpoint: `${prefix || ""}/graphql${sufix}`,
@@ -72,12 +89,13 @@ export abstract class BaseGraphQLService extends BaseService implements GraphQLA
         return await GraphQL.renderPlaygroundPage(options);
     }
 
+    @Debug()
     @Get("/graphql")
     @Post("/graphql", false)
     @Get("/graphql/{authorization}")
     @Post("/graphql/{authorization}", false)
     @ContentType(HttpResponse)
-    public async graphql(ctx: ResolverContext, req: HttpRequest): Promise<HttpResponse> {
+    public async graphql(@ContextObject() ctx: ResolverContext, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
         this.executable = this.executable || this.schema.executable({ log: (msg) => this.log.info(msg) });
         let options = {
             schema: this.executable,

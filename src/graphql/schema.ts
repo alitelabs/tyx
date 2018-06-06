@@ -123,7 +123,7 @@ export class CoreSchema {
               Metadata: MetadataRegistry
             }
             type Mutation {
-              reloadMetadata(role: String): JSON
+              ping(input: ANY): ANY
             }
         \n`) + Object.values(this.databases).map(db => {
                 return `\n#### Database: ${db.target.target.name} ####\n`
@@ -159,9 +159,12 @@ export class CoreSchema {
     }
 
     public resolvers() {
-        let resolvers = { Query: { Metadata: undefined }, Mutation: {}, MetadataRegistry: {} };
+        let resolvers = { Query: { Metadata: undefined }, Mutation: { ping: undefined }, MetadataRegistry: {} };
         resolvers.Query.Metadata = () => {
             return Registry.get();
+        };
+        resolvers.Mutation.ping = (obj, args) => {
+            return { args, stamp: new Date().toISOString(), version: process.versions };
         };
         for (let schema of Object.values(this.databases)) {
             resolvers.Query = { ...resolvers.Query, [schema.alias]: schema.root };
@@ -272,7 +275,10 @@ export class CoreSchema {
             + `\n    exists: Boolean`;
         let where = `Where @expression {\n  `
             + opers.join(",\n  ");
-        let inputs = [input, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
+        let find = "Query @expression {" + search;
+        search += `,\n    query: ${name}Query`;
+
+        let inputs = [input, find, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
 
         let query = `type ${db.name} {\n`;
         query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
@@ -349,13 +355,14 @@ export class CoreSchema {
         return schema;
     }
 
-    private genType(target: GraphMetadata, scope: GraphType, reg: Record<string, TypeSchema>): string {
+    private genType(target: GraphMetadata, scope: GraphType, reg: Record<string, TypeSchema>): GraphMetadata {
         if (GraphType.isScalar(target.type)) {
-            return target.type;
+            target.def = target.def || target.type;
+            return target;
         }
         if (GraphType.isRef(target.type)) {
             let type = target.target();
-            if (GraphType.isScalar(type)) return type;
+            if (GraphType.isScalar(type)) return { type, def: type };
             if (Array.isArray(type)) {
                 const itemType = sub => type[0];
                 return this.genType({
@@ -366,32 +373,32 @@ export class CoreSchema {
             let entity = EntityMetadata.get(type);
             if (entity) {
                 // TODO: Makesure entity exists
-                return entity.name;
+                return { type: GraphType.Entity, def: entity.name };
             }
             let meta = TypeMetadata.get(type);
             if (meta) {
                 return this.genType(meta, scope, reg);
             } else {
-                return GraphType.Object;
+                return { type: GraphType.Object, def: GraphType.Object };
             }
         }
-        if (GraphType.isArray(target.type)) {
+        if (GraphType.isList(target.type)) {
             let type = this.genType(target.item, scope, reg);
             if (type) {
-                return `[${type}]`;
+                return { type: GraphType.List, def: `[${type.def}]` };
             } else {
-                return `[${GraphType.Object}]`;
+                return { type: GraphType.List, def: `[${GraphType.Object}]` };
             }
         }
         if (GraphType.isStruc(target.type)) {
             let struc = target as TypeMetadata;
             let link = struc.target && struc.name || target.target.name;
-            if (link && reg[link]) return link;
+            if (link && reg[link]) return reg[link].target;
         }
-        if (GraphType.isEntity(target.type) && scope === GraphType.Result) {
-            // TODO: Register imports
-            return target.target.name;
-        }
+        // if (GraphType.isEntity(target.type) && scope === GraphType.Result) {
+        //     // TODO: Register imports
+        //     return target.target.name;
+        // }
 
         if (scope === GraphType.Metadata && !GraphType.isMetadata(target.type))
             throw new TypeError(`Metadata type can not reference [${target.type}]`);
@@ -407,6 +414,7 @@ export class CoreSchema {
             throw new TypeError(`Empty type difinition ${struc.target}`);
 
         // Generate schema
+        struc.def = struc.name;
         let schema: TypeSchema = { target: struc, model: undefined, params: undefined, resolvers: {} };
         reg[struc.name] = schema;
         schema.params = "";
@@ -419,20 +427,20 @@ export class CoreSchema {
             : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
         for (let field of Object.values(struc.fields)) {
             let type = this.genType(field, scope, reg);
-            if (GraphType.isMetadata(struc.type) && GraphType.isArray(field.type)) {
+            if (GraphType.isMetadata(struc.type) && GraphType.isList(field.type)) {
                 let ref = this.genType(field.item, scope, reg);
-                let sch = !GraphType.isScalar(ref as GraphType) && reg[ref];
-                let args = (sch && sch.params) ? `(\n${reg[ref].params}\n  )` : "";
-                schema.model += `  ${field.name}${args}: ${type}\n`;
+                let sch = !GraphType.isScalar(ref.type) && reg[ref.def];
+                let args = (sch && sch.params) ? `(\n${reg[ref.def].params}\n  )` : "";
+                schema.model += `  ${field.name}${args}: ${type.def}\n`;
             } else {
-                schema.model += `  ${field.name}: ${type}\n`;
+                schema.model += `  ${field.name}: ${type.def}\n`;
             }
             let resolvers = (struc.target as any).RESOLVERS;
             if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
         }
         schema.model += "}";
 
-        return struc.name;
+        return struc;
     }
 
     private genApi(target: ApiMetadata): ApiSchema {
@@ -449,7 +457,7 @@ export class CoreSchema {
             let name = `${target.target.name}_${method.name}`;
             // TODO: Get it from typedef
             const arg = method.design[0].name || "input";
-            let call = GraphType.isVoid(input) ? `: ${result}` : `(${arg}: ${input}): ${result}`;
+            let call = GraphType.isVoid(input.type) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
             let dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
             let meta: MethodSchema = {
                 target: method,
