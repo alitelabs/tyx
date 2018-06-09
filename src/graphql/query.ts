@@ -17,13 +17,13 @@ export namespace QueryToolkit {
             pki++;
         });
         let order: { column: string, asc: boolean }[] = [];
-        if (query.order) {
+        if (query && query.order) {
             order = Object.entries(query.order)
                 .sort((a, b) => Math.abs(a[1]) - Math.abs(a[1]))
                 .map(e => ({ column: `${ALIAS}.${ES}${e[0]}${ES}`, asc: e[1] >= 0 }));
         }
         where = pql + (pql && where ? ` ${orex ? "OR" : "AND"} ${where}` : where);
-        return { where, params, order, skip: query.skip, take: query.take };
+        return { where, params, order, skip: query && query.skip, take: query && query.take };
     }
 
     export function prepareWhere(node: ResolverExpression, and: boolean, params: ResolverArgs, index: { count: number }): {
@@ -91,7 +91,7 @@ export namespace QueryToolkit {
         sql += "";
         return { where: count ? sql : "", orex };
 
-        function operator(inp: InputNode | LikeNode | ArrayNode, oper: string) {
+        function operator(inp: InputNode | LikeNode | ArrayNode, oper: string): void {
             if (!inp) return null;
             let part = "(";
             let i = 0;

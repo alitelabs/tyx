@@ -5,7 +5,7 @@ import { Roles } from "../types/security";
 import * as Utils from "../utils/misc";
 import { ApiMetadata, IApiMetadata } from "./api";
 import { Registry } from "./registry";
-import { GraphMetadata, GraphType, InputType, ResultType } from "./type";
+import { InputType, ReturnType, VarMetadata } from "./type";
 
 export enum HttpBindingType {
     PathParam = "PathParam",
@@ -107,8 +107,8 @@ export interface IMethodMetadata {
 
     query: boolean;
     mutation: boolean;
-    input: GraphMetadata;
-    result: GraphMetadata;
+    input: VarMetadata;
+    result: VarMetadata;
 
     contentType: string;
     bindings: HttpBindingMetadata[];
@@ -132,8 +132,8 @@ export class MethodMetadata implements IMethodMetadata {
 
     public query: boolean = undefined;
     public mutation: boolean = undefined;
-    public input: GraphMetadata = undefined;
-    public result: GraphMetadata = undefined;
+    public input: VarMetadata = undefined;
+    public result: VarMetadata = undefined;
 
     public contentType: string = undefined;
     public bindings: HttpBindingMetadata[] = undefined;
@@ -184,33 +184,18 @@ export class MethodMetadata implements IMethodMetadata {
         return this;
     }
 
-    public setQuery(input?: InputType, result?: ResultType, listInput?: boolean, listResult?: boolean): this {
+    public setQuery(input?: InputType, result?: ReturnType): this {
         this.query = true;
-        this.input = this.getType(input, listInput);
-        this.result = this.getType(result, listResult);
+        this.input = VarMetadata.of(input);
+        this.result = VarMetadata.of(result);
         return this;
     }
 
-    public setMutation(input?: InputType, result?: ResultType, listInput?: boolean, listResult?: boolean): this {
+    public setMutation(input?: InputType, result?: ReturnType): this {
         this.mutation = true;
-        this.input = this.getType(input, listInput);
-        this.result = this.getType(result, listResult);
+        this.input = VarMetadata.of(input);
+        this.result = VarMetadata.of(result);
         return this;
-    }
-
-    private getType(type?: InputType | ResultType, list?: boolean): GraphMetadata {
-        if (Array.isArray(type)) {
-            type = type[0];
-            list = !!type;
-            type = type || GraphType.Void;
-        }
-        if (!type) {
-            return { type: GraphType.ANY };
-        } else if (typeof type === "string") {
-            return list ? { type: GraphType.List, item: { type } } : { type };
-        } else {
-            return list ? { type: GraphType.List, item: { type: GraphType.Ref, target: type } } : { type: GraphType.Ref, target: type };
-        }
     }
 
     public setContentType(type: string): this {

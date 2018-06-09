@@ -1,22 +1,22 @@
-import * as Lo from "lodash";
-import { Bool, Int, List, Metadata, Obj, Ref, Str } from "../decorators/type";
+import Lo from "lodash";
+import { Field, Metadata } from "../decorators/type";
 import { ResolverArgs, SchemaResolvers } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
-import { GraphMetadata, GraphType } from "../metadata/type";
+import { Int, VarMetadata } from "../metadata/type";
 import { Class } from "../types/core";
 import { EventAdapter } from "../types/event";
 import { HttpCode } from "../types/http";
 import { Roles } from "../types/security";
-import { ApiMetadataSchema } from "./api";
-import { GraphMetadataSchema } from "./type";
 import { Utils } from "../utils";
+import { ApiMetadataSchema } from "./api";
+import { VarMetadataSchema } from "./type";
 
 @Metadata()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
-    @Str() type: HttpBindingType;
-    @Str() path: string;
-    @Str() binder: HttpBinder;
+    @Field(String) type: HttpBindingType;
+    @Field(String) path: string;
+    @Field(String) binder: HttpBinder;
 
     public static binder(obj: HttpBindingMetadata): string {
         return obj.binder && `[function: ${obj.binder.toString()}]`;
@@ -25,19 +25,19 @@ export class HttpBindingMetadataSchema implements HttpBindingMetadata {
 
 @Metadata()
 export class HttpRouteMetadataSchema implements HttpRouteMetadata {
-    @Str() target: Class;
-    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
-    @Ref(ref => MethodMetadataSchema) method: IMethodMetadata;
+    @Field(String) target: Class;
+    @Field(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
-    @Str() route: string;
-    @Str() alias: string;
-    @Str() handler: string;
-    @Str() verb: string;
-    @Str() resource: string;
-    @Str() model: string;
-    @List(GraphType.String) params: string[];
-    @Int() code: HttpCode;
-    @Str() adapter: HttpAdapter;
+    @Field(String) route: string;
+    @Field(String) alias: string;
+    @Field(String) handler: string;
+    @Field(String) verb: string;
+    @Field(String) resource: string;
+    @Field(String) model: string;
+    @Field([String]) params: string[];
+    @Field(Int) code: HttpCode;
+    @Field(String) adapter: HttpAdapter;
     // Relations
     // api: ApiMetadata;
     // method: MethodMetadata;
@@ -53,18 +53,18 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
 
 @Metadata()
 export class EventRouteMetadataSchema implements EventRouteMetadata {
-    @Str() target: Class;
-    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
-    @Ref(ref => MethodMetadataSchema) method: IMethodMetadata;
+    @Field(String) target: Class;
+    @Field(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
-    @Str() route: string;
-    @Str() alias: string;
-    @Str() handler: string;
-    @Str() source: string;
-    @Str() resource: string;
-    @Str() objectFilter: string;
-    @Str() actionFilter: string;
-    @Str() adapter: EventAdapter;
+    @Field(String) route: string;
+    @Field(String) alias: string;
+    @Field(String) handler: string;
+    @Field(String) source: string;
+    @Field(String) resource: string;
+    @Field(String) objectFilter: string;
+    @Field(String) actionFilter: string;
+    @Field(String) adapter: EventAdapter;
 
     public static target(obj: EventRouteMetadata, args: ResolverArgs): string {
         return obj.target && `[class: ${obj.target.name}]`;
@@ -77,27 +77,27 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
 
 @Metadata()
 export class MethodMetadataSchema implements IMethodMetadata {
-    @Str() target: Class;
-    @Ref(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Field(String) target: Class;
+    @Field(ref => ApiMetadataSchema) api: IApiMetadata;
 
-    @Str() alias: string;
-    @Str() name: string;
-    @Obj() design: DesignMetadata[];
+    @Field(String) alias: string;
+    @Field(String) name: string;
+    @Field(Object) design: DesignMetadata[];
 
-    @Str() auth: string;
-    @Obj() roles: Roles;
+    @Field(String) auth: string;
+    @Field(Object) roles: Roles;
 
-    @Bool() query: boolean;
-    @Bool() mutation: boolean;
-    @Ref(type => GraphMetadataSchema) input: GraphMetadata;
-    @Ref(type => GraphMetadataSchema) result: GraphMetadata;
+    @Field(Boolean) query: boolean;
+    @Field(Boolean) mutation: boolean;
+    @Field(ref => VarMetadataSchema) input: VarMetadata;
+    @Field(ref => VarMetadataSchema) result: VarMetadata;
 
-    @Str() contentType: string;
-    @List(type => HttpBindingMetadataSchema) bindings: HttpBindingMetadata[];
-    @List(type => HttpRouteMetadataSchema) http: Record<string, HttpRouteMetadata>;
-    @List(type => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata>;
+    @Field(String) contentType: string;
+    @Field(list => [HttpBindingMetadataSchema]) bindings: HttpBindingMetadata[];
+    @Field(list => [HttpRouteMetadataSchema]) http: Record<string, HttpRouteMetadata>;
+    @Field(list => [EventRouteMetadataSchema]) events: Record<string, EventRouteMetadata>;
 
-    @Str() source: string;
+    @Field(String) source: string;
 
     public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
         target: (obj) => Utils.value(obj.target),

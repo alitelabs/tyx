@@ -144,7 +144,7 @@ export namespace HttpUtils {
     }
 
     export function canonicalHeaders(headers: Record<string, string>): Record<string, string> {
-        let canon = {};
+        let canon: Record<string, string> = {};
         Object.keys(headers).forEach(h => canon[h.toLowerCase()] = headers[h]);
         return canon;
     }

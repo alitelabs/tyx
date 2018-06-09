@@ -29,22 +29,28 @@ export class TypeOrmProvider implements EntityResolver {
         return this.prepareQuery(entity.name, null, args, context).getMany();
     }
 
-    public create(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
+    public async create(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
         let record = this.manager.create<any>(entity.name, args);
+        // let pks: Record<string, any> = {};
+        // entity.primaryColumns.forEach(pk => pks[pk.name] = args[pk.name]);
         // TODO: Generate PK
-        return this.manager.save(record);
+        let result = await this.manager.insert(entity.name, record);
+        return this.manager.findOne(entity.name, result.identifiers[0]);
     }
 
-    public update(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
+    public async update(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
         let record = this.manager.create(entity.name, args);
+        let pks: Record<string, any> = {};
+        entity.primaryColumns.forEach(pk => pks[pk.name] = args[pk.name]);
         // TODO: Generate PK
-        return this.manager.save(record);
+        await this.manager.update(entity.name, pks, record);
+        return await this.manager.findOne(entity.name, pks);
     }
 
-    public remove(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
-        let record = this.manager.create(entity.name, args);
-        // TODO: Generate PK
-        return this.manager.remove(record);
+    public async remove(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
+        let record = await this.manager.findOneOrFail(entity.name, args);
+        await this.manager.remove(entity.name, args);
+        return record;
     }
 
     public oneToMany(entity: EntityMetadata, relation: RelationMetadata, root: ResolverArgs, query: ResolverQuery, context?: ResolverContext, info?: ResolverInfo): Promise<object[]> {

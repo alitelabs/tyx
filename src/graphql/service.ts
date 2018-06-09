@@ -1,6 +1,6 @@
 import { Debug } from "../decorators/auth";
 import { ContentType, ContextObject, Get, Post, RequestObject } from "../decorators/http";
-import { Activator, Service } from "../decorators/service";
+import { Activate, Service } from "../decorators/service";
 import { InternalServerError } from "../errors";
 import { GraphQL } from "../import";
 import { Logger } from "../logger";
@@ -30,7 +30,7 @@ export class CoreGraphQLService implements GraphQLApi {
     protected schema: CoreSchema;
     private executable: GraphQL.GraphQLSchema;
 
-    @Activator()
+    @Activate()
     protected async activate(ctx: Context, req: HttpRequest) {
         if (this.schema) return;
         this.schema = new CoreSchema();
@@ -99,7 +99,7 @@ export class CoreGraphQLService implements GraphQLApi {
         this.executable = this.executable || this.schema.executable({ log: (msg) => this.log.info(msg) });
         let options = {
             schema: this.executable,
-            formatError: (err) => ({
+            formatError: (err: any) => ({
                 message: err.message,
                 code: err.originalError && err.originalError.code,
                 locations: err.locations,

@@ -1,12 +1,3 @@
-class A {
-    m() {
-        const handler = function (this: any, msg: string) {
-            console.log(msg);
-        };
-        return handler;
-    }
-}
+console.log("Fdfsd");
 
-let a = new A();
-let h = a.m();
-h("Hello");
+process.stdout.write("DSSd");

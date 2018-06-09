@@ -1,25 +1,25 @@
 import { MethodMetadata } from "../metadata/method";
 import { Registry } from "../metadata/registry";
-import { InputType, ResultType } from "../metadata/type";
+import { InputType, ReturnType } from "../metadata/type";
 import { Roles } from "../types/security";
 
-export function Query<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Query<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
     return ResolverDecorator(Query, false, roles, input, result);
 }
 
-export function Mutation<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Mutation<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
     return ResolverDecorator(Mutation, true, roles, input, result);
 }
 
-export function Advice<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Advice<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
     return ResolverDecorator(Advice, false, roles, input, result);
 }
 
-export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
     return ResolverDecorator(Command, true, roles, input, result);
 }
 
-function ResolverDecorator(decorator: Function, mutation: boolean, roles: Roles, input: InputType, result: ResultType): MethodDecorator {
+function ResolverDecorator(decorator: Function, mutation: boolean, roles: Roles, input: InputType, result: ReturnType): MethodDecorator {
     return (target, propertyKey, descriptor) => {
         Registry.trace(decorator, { roles, input, result }, target, propertyKey);
         let oper = decorator.name.toLowerCase();

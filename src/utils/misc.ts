@@ -54,7 +54,7 @@ const notBase64 = /[^A-Z0-9+\/=\n\r]/i;
 
 // const base64 = new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$");
 
-export function isBase64(str) {
+export function isBase64(str: string): boolean {
     let len = str.length;
     let firstPaddingIndex = str.indexOf("=");
     let firstPaddingChar = firstPaddingIndex;
@@ -77,7 +77,7 @@ export function isBase64(str) {
 
 const gzipPrefix = Buffer.from("1F8B", "hex");
 
-export function isGzip(buf) {
+export function isGzip(buf: Buffer | string): boolean {
     // 1f 8b;
     if (typeof buf === "string") {
         return buf.startsWith(gzipPrefix.toString());
@@ -94,7 +94,7 @@ export function wildcardMatch(rule: string, value: string) {
 
 export function parseMap(map: string, prefix?: string) {
     prefix = prefix || "";
-    let res = {};
+    let res: Record<string, any> = {};
     let parts = map.split(";").map(x => x.trim()).filter(x => x);
     for (const part of parts) {
         let key: string;

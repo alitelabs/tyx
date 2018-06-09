@@ -48,7 +48,7 @@ export class CoreConfiguration implements Configuration {
 
     get resources(): Record<string, string> {
         let aliases = this.aliases;
-        let res = {};
+        let res: Record<string, string> = {};
         for (let rsrc in aliases) res[aliases[rsrc]] = rsrc;
         return res;
     }

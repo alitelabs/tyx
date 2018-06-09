@@ -1,23 +1,23 @@
-import * as Lo from "lodash";
-import { List, Metadata, Str } from "../decorators/type";
+import Lo from "lodash";
+import { Field, Metadata } from "../decorators/type";
 import { SchemaResolvers } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata } from "../metadata/method";
 import { Class } from "../types/core";
-import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema } from "./method";
 import { Utils } from "../utils";
+import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema } from "./method";
 
 @Metadata()
 export class ApiMetadataSchema implements IApiMetadata {
-    @Str() target: Class;
-    @Str() name: string;
-    @Str() alias: string;
+    @Field(String) target: Class;
+    @Field(String) name: string;
+    @Field(String) alias: string;
 
-    @List(item => MethodMetadataSchema) methods: Record<string, IMethodMetadata>;
-    @List(item => HttpRouteMetadataSchema) routes: Record<string, HttpRouteMetadata>;
-    @List(item => EventRouteMetadataSchema) events: Record<string, EventRouteMetadata[]>;
+    @Field(list => [MethodMetadataSchema]) methods: Record<string, IMethodMetadata>;
+    @Field(list => [HttpRouteMetadataSchema]) routes: Record<string, HttpRouteMetadata>;
+    @Field(list => [EventRouteMetadataSchema]) events: Record<string, EventRouteMetadata[]>;
 
-    @Str() source: string;
+    @Field(String) source: string;
 
     public static RESOLVERS: SchemaResolvers<IApiMetadata> = {
         target: (obj) => Utils.value(obj.target),

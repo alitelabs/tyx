@@ -1,5 +1,5 @@
-import * as Lo from "lodash";
-import { Int, List, Metadata, Obj, Str } from "../decorators/type";
+import Lo from "lodash";
+import { Field, Metadata } from "../decorators/type";
 import { SchemaResolvers } from "../graphql/types";
 import { IApiMetadata } from "../metadata/api";
 import { IColumnMetadata } from "../metadata/column";
@@ -10,7 +10,7 @@ import { IProxyMetadata } from "../metadata/proxy";
 import { DecorationMetadata, DecoratorMetadata, MetadataRegistry } from "../metadata/registry";
 import { IRelationMetadata } from "../metadata/relation";
 import { IServiceMetadata } from "../metadata/service";
-import { GraphType, ITypeMetadata } from "../metadata/type";
+import { Int, ITypeMetadata } from "../metadata/type";
 import { Class } from "../types/core";
 import { Utils } from "../utils";
 import { ApiMetadataSchema } from "./api";
@@ -26,9 +26,9 @@ import { TypeMetadataSchema } from "./type";
 
 @Metadata()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
-    @Str() decorator: string;
-    @Int() count: number;
-    @List(GraphType.String) targets: Record<string, Class>;
+    @Field(String) decorator: string;
+    @Field(Int) count: number;
+    @Field([String]) targets: Record<string, Class>;
 
     public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
         targets: (obj) => Object.values(obj.targets).map(t => Utils.value(t))
@@ -37,12 +37,12 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
 
 @Metadata()
 export class DecorationMetadataSchema implements DecorationMetadata {
-    @Str() decorator: string;
-    @Int() ordinal: number;
-    @Str() target?: Class;
-    @Str() propertyKey?: string;
-    @Int() index?: number;
-    @Obj() args: Record<string, any>;
+    @Field(String) decorator: string;
+    @Field(Int) ordinal: number;
+    @Field(String) target?: Class;
+    @Field(String) propertyKey?: string;
+    @Field(Int) index?: number;
+    @Field(Object) args: Record<string, any>;
 
     public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {
         target: (obj) => Utils.value(obj.target)
@@ -50,28 +50,28 @@ export class DecorationMetadataSchema implements DecorationMetadata {
 }
 
 @Metadata()
-export class MetadataRegistrySchema implements Partial<MetadataRegistry> {
+export class MetadataRegistrySchema implements MetadataRegistry {
 
-    @List(item => TypeMetadataSchema) RegistryMetadata: Record<string, ITypeMetadata>;
-    @List(item => DecoratorMetadataSchema) DecoratorMetadata: Record<string, DecoratorMetadata>;
-    @List(item => DecorationMetadataSchema) DecorationMetadata: DecorationMetadata[];
+    @Field(list => [TypeMetadataSchema]) RegistryMetadata: Record<string, ITypeMetadata>;
+    @Field(list => [DecoratorMetadataSchema]) DecoratorMetadata: Record<string, DecoratorMetadata>;
+    @Field(list => [DecorationMetadataSchema]) DecorationMetadata: DecorationMetadata[];
 
-    @List(item => ApiMetadataSchema) ApiMetadata: Record<string, IApiMetadata>;
-    @List(item => ServiceMetadataSchema) ServiceMetadata: Record<string, IServiceMetadata>;
-    @List(item => ProxyMetadataSchema) ProxyMetadata: Record<string, IProxyMetadata>;
+    @Field(list => [ApiMetadataSchema]) ApiMetadata: Record<string, IApiMetadata>;
+    @Field(list => [ServiceMetadataSchema]) ServiceMetadata: Record<string, IServiceMetadata>;
+    @Field(list => [ProxyMetadataSchema]) ProxyMetadata: Record<string, IProxyMetadata>;
 
-    @List(item => DatabaseMetadataSchema) DatabaseMetadata: Record<string, IDatabaseMetadata>;
-    @List(item => EntityMetadataSchema) EntityMetadata: Record<string, IEntityMetadata>;
-    @List(item => ColumnMetadataSchema) ColumnMetadata: Record<string, IColumnMetadata>;
-    @List(item => RelationMetadataSchema) RelationMetadata: Record<string, IRelationMetadata>;
+    @Field(list => [DatabaseMetadataSchema]) DatabaseMetadata: Record<string, IDatabaseMetadata>;
+    @Field(list => [EntityMetadataSchema]) EntityMetadata: Record<string, IEntityMetadata>;
+    @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, IColumnMetadata>;
+    @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, IRelationMetadata>;
 
-    @List(item => TypeMetadataSchema) InputMetadata: Record<string, ITypeMetadata>;
-    @List(item => TypeMetadataSchema) ResultMetadata: Record<string, ITypeMetadata>;
+    @Field(list => [TypeMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
+    @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, ITypeMetadata>;
 
-    @List(item => MethodMetadataSchema) MethodMetadata: Record<string, IMethodMetadata>;
-    @List(item => MethodMetadataSchema) ResolverMetadata: Record<string, IMethodMetadata>;
-    @List(item => HttpRouteMetadataSchema) HttpRouteMetadata: Record<string, HttpRouteMetadata>;
-    @List(item => EventRouteMetadataSchema) EventRouteMetadata: Record<string, EventRouteMetadata[]>;
+    @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, IMethodMetadata>;
+    @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, IMethodMetadata>;
+    @Field(list => [HttpRouteMetadataSchema]) HttpRouteMetadata: Record<string, HttpRouteMetadata>;
+    @Field(list => [EventRouteMetadataSchema]) EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 
     public static RESOLVERS: SchemaResolvers<MetadataRegistry> = {
         RegistryMetadata: (obj, args) => Lo.filter(Object.values(obj.RegistryMetadata), args),
@@ -89,7 +89,7 @@ export class MetadataRegistrySchema implements Partial<MetadataRegistry> {
         ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
         RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
         InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
-        ResultMetadata: (obj, args) => Lo.filter(Object.values(obj.ResultMetadata), args),
+        TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
         MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
         ResolverMetadata: (obj, args) => Lo.filter(Object.values(obj.ResolverMetadata), args),
         HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),

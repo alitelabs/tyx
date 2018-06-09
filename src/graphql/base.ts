@@ -33,7 +33,7 @@ directive @relation(type: RelationType) on FIELD_DEFINITION
 `.trim();
 
 export class QueryVisitor extends SchemaDirectiveVisitor {
-    constructor(config) { super(config); }
+    constructor(config: any) { super(config); }
     public visitFieldDefinition(field: GraphQLField<any, any>, details: {
         objectType: GraphQLObjectType | GraphQLInterfaceType;
     }): GraphQLField<any, any> | void {

@@ -1,11 +1,11 @@
 import { Database } from "../decorators/database";
-import { Activator, Inject } from "../decorators/service";
+import { Activate, Inject } from "../decorators/service";
 import { TypeOrmProvider } from "../graphql";
 import { Orm } from "../import";
+import { getConnection } from "../import/typeorm";
 import { Logger } from "../logger";
 import { DatabaseMetadata } from "../metadata/database";
 import { EntityMetadata } from "../metadata/entity";
-import { getConnection } from "../import/typeorm";
 import { Configuration } from "../types/config";
 import { Class } from "../types/core";
 
@@ -31,7 +31,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         return this.connection.getMetadata(entity) as any;
     }
 
-    @Activator()
+    @Activate()
     protected async activate() {
         if (!this.connection) {
             // TODO: Multiple connections, name from metadata

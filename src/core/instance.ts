@@ -1,4 +1,5 @@
 import { InternalServerError, NotFound } from "../errors/http";
+import { CoreGraphQLService, GraphQLApi } from "../graphql";
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from "../graphql/types";
 import { Container, ContainerInstance } from "../import/typedi";
 import { Logger } from "../logger";
@@ -15,10 +16,8 @@ import { RemoteRequest } from "../types/proxy";
 import { Security } from "../types/security";
 import { Utils } from "../utils";
 import { CoreConfiguration } from "./config";
-import { Core } from "./core";
 import { HttpUtils } from "./http";
 import { CoreSecurity } from "./security";
-import { GraphQLApi, CoreGraphQLService } from "../graphql";
 
 export class CoreInstance implements CoreContainer {
 
@@ -30,6 +29,8 @@ export class CoreInstance implements CoreContainer {
     private config: Configuration;
     private security: Security;
     private istate: ContainerState;
+
+    private services: object[] = [];
 
     constructor(application: string, name: string, index?: number) {
         this.application = application;
@@ -95,7 +96,7 @@ export class CoreInstance implements CoreContainer {
     // --------------------------------------------------
 
     public async invoke(method: MethodInfo, obj: any, input: ResolverQuery & ResolverArgs, ctx?: ResolverContext, info?: ResolverInfo): Promise<any> {
-        return Core.graphRequest({
+        return this.graphRequest({
             type: "graphql",
             requestId: ctx.requestId,
             sourceIp: ctx.sourceIp,
@@ -104,7 +105,7 @@ export class CoreInstance implements CoreContainer {
             method: method.method,
             input: input,
             token: ctx.auth.token
-        });
+        }, true);
     }
 
     public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
@@ -118,7 +119,7 @@ export class CoreInstance implements CoreContainer {
             let route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
             let target = Registry.HttpRouteMetadata[route];
             if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
-            let service = this.container.get(target.alias);
+            let service = this.container.get<any>(target.alias);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
             let methodId = MethodMetadata.id(target.alias, target.handler);
             let method = Registry.MethodMetadata[methodId] as MethodMetadata;
@@ -176,13 +177,13 @@ export class CoreInstance implements CoreContainer {
         }
     }
 
-    public async graphRequest(req: GraphRequest): Promise<any> {
-        if (this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
+    public async graphRequest(req: GraphRequest, reenter?: boolean): Promise<any> {
+        if (!reenter && this.istate !== ContainerState.Reserved) throw new InternalServerError("Invalid container state");
         try {
             this.log.debug("GraphQL Request: %j", req);
 
             if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
-            let service = this.container.get(req.service);
+            let service = this.container.get<any>(req.service);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
             let methodId = MethodMetadata.id(req.service, req.method);
             let metadata = Registry.MethodMetadata[methodId];
@@ -202,10 +203,10 @@ export class CoreInstance implements CoreContainer {
                 throw this.log.error(e);
             } finally {
                 log.timeEnd(startTime, `${metadata.name}`);
-                await this.release(ctx);
+                if (!reenter) await this.release(ctx);
             }
         } finally {
-            this.istate = ContainerState.Ready;
+            if (!reenter) this.istate = ContainerState.Ready;
         }
     }
 
@@ -215,7 +216,7 @@ export class CoreInstance implements CoreContainer {
             this.log.debug("Remote Request: %j", req);
 
             if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
-            let service = this.container.get(req.service);
+            let service = this.container.get<any>(req.service);
             if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
             let methodId = MethodMetadata.id(req.service, req.method);
             let metadata = Registry.MethodMetadata[methodId];
@@ -268,7 +269,7 @@ export class CoreInstance implements CoreContainer {
 
             this.istate = ContainerState.Busy;
             for (let target of metadatas) {
-                let service = this.container.get(target.alias);
+                let service = this.container.get<any>(target.alias);
                 if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
                 let methodId = MethodMetadata.id(target.alias, target.handler);
                 let method = Registry.MethodMetadata[methodId];
@@ -329,9 +330,11 @@ export class CoreInstance implements CoreContainer {
             if (!meta.activator) continue;
             if (!this.container.has(sid)) continue;
             try {
-                let service = this.container.get(sid);
+                let service = this.container.get<any>(sid);
+                if (this.services.includes(service)) continue;
                 let handler = service[meta.activator.method] as Function;
                 await handler.call(service, ctx);
+                this.services.push(service);
             } catch (e) {
                 this.log.error("Failed to activate service: [%s]", sid);
                 this.log.error(e);
@@ -347,7 +350,7 @@ export class CoreInstance implements CoreContainer {
             if (!meta.releasor) continue;
             if (!this.container.has(sid)) continue;
             try {
-                let service = this.container.get(sid);
+                let service = this.container.get<any>(sid);
                 let handler = service[meta.releasor.method] as Function;
                 await handler.call(service, ctx);
             } catch (e) {
@@ -356,6 +359,7 @@ export class CoreInstance implements CoreContainer {
                 // TODO: Error state for container
             }
         }
+        this.services = [];
     }
 }
 

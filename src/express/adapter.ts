@@ -34,8 +34,8 @@ export class ExpressAdapter {
             next();
         });
 
-        let used = {};
-        let paths = [];
+        let used: Record<string, boolean> = {};
+        let paths: [string, string][] = [];
 
         let httpMetadata = Registry.HttpRouteMetadata;
         for (let meta of Object.values(httpMetadata)) {

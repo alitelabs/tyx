@@ -52,7 +52,7 @@ export interface MetadataRegistry {
     RelationMetadata: Record<string, IRelationMetadata>;
 
     InputMetadata: Record<string, ITypeMetadata>;
-    ResultMetadata: Record<string, ITypeMetadata>;
+    TypeMetadata: Record<string, ITypeMetadata>;
 
     MethodMetadata: Record<string, IMethodMetadata>;
     ResolverMetadata: Record<string, IMethodMetadata>;
@@ -90,10 +90,10 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly ColumnMetadata: Record<string, ColumnMetadata> = {};
     public static readonly RelationMetadata: Record<string, RelationMetadata> = {};
     public static readonly InputMetadata: Record<string, TypeMetadata> = {};
-    public static readonly ResultMetadata: Record<string, TypeMetadata> = {};
+    public static readonly TypeMetadata: Record<string, TypeMetadata> = {};
 
     public static readonly MethodMetadata: Record<string, MethodMetadata> = {};
-    public static readonly ResolverMetadata: Record<string, MethodMetadata> = {};
+    public static readonly _ResolverMetadata: Record<string, MethodMetadata> = {};
     public static readonly HttpRouteMetadata: Record<string, HttpRouteMetadata> = {};
     public static readonly EventRouteMetadata: Record<string, EventRouteMetadata[]> = {};
 
@@ -112,7 +112,7 @@ export abstract class Registry implements MetadataRegistry {
     public abstract ColumnMetadata: Record<string, ColumnMetadata>;
     public abstract RelationMetadata: Record<string, RelationMetadata>;
     public abstract InputMetadata: Record<string, TypeMetadata>;
-    public abstract ResultMetadata: Record<string, TypeMetadata>;
+    public abstract TypeMetadata: Record<string, TypeMetadata>;
 
     public abstract MethodMetadata: Record<string, MethodMetadata>;
     public abstract ResolverMetadata: Record<string, MethodMetadata>;
@@ -139,10 +139,10 @@ export abstract class Registry implements MetadataRegistry {
             ColumnMetadata: this.ColumnMetadata,
             RelationMetadata: this.RelationMetadata,
             InputMetadata: this.InputMetadata,
-            ResultMetadata: this.ResultMetadata,
+            TypeMetadata: this.TypeMetadata,
 
             MethodMetadata: this.MethodMetadata,
-            ResolverMetadata: this.ResolverMetadata,
+            ResolverMetadata: this._ResolverMetadata,
             HttpRouteMetadata: this.HttpRouteMetadata,
             EventRouteMetadata: this.EventRouteMetadata,
         };

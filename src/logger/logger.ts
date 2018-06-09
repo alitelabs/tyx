@@ -19,7 +19,7 @@ export interface Logger {
 export namespace Logger {
     export const sys: Logger = new ConsoleLogger("tyx", "log");
     // TODO: Simplify
-    export function get(emitter: object);
+    export function get(emitter: object): Logger;
     export function get(logName: string, emitter?: any): Logger;
     export function get(logNameOrEmitter: string | object, emitter?: any): Logger {
         let logName: string;

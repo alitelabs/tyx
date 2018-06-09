@@ -14,12 +14,11 @@ export function Service(alias?: string): ClassDecorator {
 }
 
 export function Inject(resource?: string): PropertyDecorator & ParameterDecorator {
-    return (target, propertyKey, index?) => {
-        if (typeof propertyKey !== "string"
-            && !propertyKey === undefined) throw new TypeError("propertyKey must be string");
+    return (target: Object, propertyKey: string | symbol, index?: number) => {
+        if (typeof propertyKey === "symbol") throw new TypeError("propertyKey must be string");
         // propertyKey = propertyKey || "<constructor>";
         Registry.trace(Inject, { resource }, target, propertyKey, index);
-        let constructor = Utils.isClass(target) ? target : target.constructor;
+        let constructor = Utils.isClass(target) ? target as Function : target.constructor;
         ServiceMetadata.define(constructor).inject(propertyKey, index, resource);
         return Di.Inject(resource)(target, propertyKey, index);
     };
@@ -28,9 +27,9 @@ export function Inject(resource?: string): PropertyDecorator & ParameterDecorato
 /**
  * Decorate method providing service initialization.
  */
-export function Initializer(): MethodDecorator {
+export function Initialize(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Resolver, {}, target);
+        Registry.trace(Handler, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ServiceMetadata.define(target.constructor).setInitializer(propertyKey, descriptor);
     };
@@ -39,9 +38,9 @@ export function Initializer(): MethodDecorator {
 /**
  * Decorate method providing per request activation.
  */
-export function Selector(): MethodDecorator {
+export function Select(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Selector, {}, target);
+        Registry.trace(Select, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ServiceMetadata.define(target.constructor).setSelector(propertyKey, descriptor);
     };
@@ -50,9 +49,9 @@ export function Selector(): MethodDecorator {
 /**
  * Decorate method providing per request activation.
  */
-export function Activator(): MethodDecorator {
+export function Activate(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Activator, {}, target);
+        Registry.trace(Activate, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ServiceMetadata.define(target.constructor).setActivator(propertyKey, descriptor);
     };
@@ -61,9 +60,9 @@ export function Activator(): MethodDecorator {
 /**
  * Decorate method providing per request release.
  */
-export function Releasor(): MethodDecorator {
+export function Release(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Releasor, {}, target);
+        Registry.trace(Release, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
         ServiceMetadata.define(target.constructor).setReleasor(propertyKey, descriptor);
     };
@@ -73,11 +72,11 @@ export function Releasor(): MethodDecorator {
 /**
  * Decorate methods providing Api implementation.
  */
-export function Resolver(): MethodDecorator {
+export function Handler(): MethodDecorator {
     return (target, propertyKey, descriptor) => {
-        Registry.trace(Resolver, {}, target);
+        Registry.trace(Handler, {}, target);
         if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        ServiceMetadata.define(target.constructor).addResolver(propertyKey, descriptor);
+        ServiceMetadata.define(target.constructor).addHandler(propertyKey, descriptor);
     };
 }
 

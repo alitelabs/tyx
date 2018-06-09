@@ -2,7 +2,7 @@ import { Class, Prototype } from "../types/core";
 import { DatabaseMetadata } from "./database";
 import { EntityMetadata, IEntityMetadata } from "./entity";
 import { Registry } from "./registry";
-import { GraphType } from "./type";
+import { GraphKind } from "./type";
 
 export enum ColumnType {
     Int = "int",
@@ -61,18 +61,18 @@ export namespace ColumnType {
             case ColumnType.SmallInt:
             case ColumnType.MediumInt:
             case ColumnType.BigInt:
-                return GraphType.Int;
+                return GraphKind.Int;
             case ColumnType.Float:
             case ColumnType.Double:
             case ColumnType.Decimal:
             case ColumnType.Numeric:
-                return GraphType.Float;
+                return GraphKind.Float;
             case ColumnType.Date:
             case ColumnType.DateTime:
             case ColumnType.Timestamp:
             case ColumnType.Time:
             case ColumnType.Year:
-                return GraphType.Date;
+                return GraphKind.Date;
             case ColumnType.Char:
             case ColumnType.Varchar:
             case ColumnType.Nvarchar:
@@ -80,7 +80,7 @@ export namespace ColumnType {
             case ColumnType.TinyText:
             case ColumnType.MediumText:
             case ColumnType.LongText:
-                return GraphType.String;
+                return GraphKind.String;
             // case ColumnType.Enum:
             //     return GraphType.Enum;
             // case ColumnType.Json:

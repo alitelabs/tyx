@@ -39,7 +39,7 @@ export class ApiError extends Error {
     }
 
     public static serialize(err: ApiError) {
-        let alt = {
+        let alt: Record<string, any> = {
             code: undefined,
             message: undefined,
             proxy: undefined,
@@ -81,6 +81,7 @@ export class ApiError extends Error {
         if (!json.__class__) return json;
 
         let instance;
+        let namespace: any = global;
 
         // Check if is custom exception
         if (json.__class__ === ApiError.name) {
@@ -88,9 +89,9 @@ export class ApiError extends Error {
         } else if (Exception.ctors[json.__class__] && Exception.ctors[json.__class__] instanceof Function) {
             let ctor = Exception.ctors[json.__class__];
             instance = new ctor();
-        } else if (global[json.__class__] && global[json.__class__] instanceof Function) {
+        } else if (namespace[json.__class__] && namespace[json.__class__] instanceof Function) {
             // Use global object which holds the exceptions
-            let ctor = global[json.__class__];
+            let ctor = namespace[json.__class__];
             instance = new ctor();
         } else if (json.__class__ && (json.message || json.stack)) {
             instance = new ApiError(500);
@@ -131,7 +132,7 @@ export class ApiError extends Error {
      * @returns {string}
      */
     public static fullStack(err: Error): string {
-        let cause = err["cause"];
+        let cause = (err as any)["cause"];
         if (cause) {
             return (err.stack + "\ncaused by: " + ApiError.fullStack(cause));
         }

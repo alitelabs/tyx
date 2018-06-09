@@ -1,0 +1,16 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "outDir": "../build/samples",
+        "paths": {
+            "tyx": [
+                "../src/",
+                "../node_modules/"
+            ]
+        }
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

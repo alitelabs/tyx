@@ -2,8 +2,8 @@
 import { Server } from "http";
 import { BaseService } from "../core/service";
 import { Aws, Express } from "../import";
-import { HttpRequest, HttpResponse } from "../types/http";
 import { Context } from "../types/core";
+import { HttpRequest, HttpResponse } from "../types/http";
 
 export abstract class ExpressService extends BaseService {
 
@@ -24,12 +24,12 @@ export abstract class ExpressService extends BaseService {
         return new Promise<HttpResponse>((resolve, reject) => {
             this.server = Aws.ServerlessExpress.createServer(app);
             Aws.ServerlessExpress.proxy(this.server, req, {
-                succeed: (input) => resolve({
+                succeed: (input: any) => resolve({
                     statusCode: input.statusCode,
                     headers: input.headers,
                     body: input.body
                 }),
-                fail: (err) => reject(err)
+                fail: (err: any) => reject(err)
             } as any);
         });
     }

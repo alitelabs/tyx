@@ -16,6 +16,21 @@
             "outFiles": [
                 "${workspaceRoot}/lib/**/*.js"
             ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "TYX TS Program",
+            "program": "${workspaceFolder}/node_modules/.bin/ts-node",
+            "args": [
+                "${file}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "sourceMaps": true,
+            "showAsyncStacks": true,
+            "outFiles": [
+                "${workspaceRoot}/lib/**/*.js"
+            ]
         }
     ]
 }

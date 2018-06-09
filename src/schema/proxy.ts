@@ -1,34 +1,34 @@
-import * as Lo from "lodash";
-import { List, Metadata, Ref, Str } from "../decorators/type";
+import Lo from "lodash";
+import { Field, Metadata } from "../decorators/type";
 import { SchemaResolvers } from "../graphql/types";
 import { IProxyMetadata } from "../metadata/proxy";
-import { ResolverMetadata, InjectMetadata } from "../metadata/service";
+import { HandlerMetadata, InjectMetadata } from "../metadata/service";
 import { Class } from "../types/core";
-import { ResolverMetadataSchema, InjectMetadataSchema } from "./service";
 import { Utils } from "../utils";
+import { HandlerMetadataSchema, InjectMetadataSchema } from "./service";
 
 @Metadata()
 export class ProxyMetadataSchema implements IProxyMetadata {
-    @Str() target: Class;
-    @Str() name: string;
-    @Str() alias: string;
-    @Str() application: string = undefined;
-    @Str() functionName: string = undefined;
+    @Field(String) target: Class;
+    @Field(String) name: string;
+    @Field(String) alias: string;
+    @Field(String) application: string = undefined;
+    @Field(String) functionName: string = undefined;
 
-    @List(item => InjectMetadataSchema) dependencies: Record<string, InjectMetadata>;
-    @List(item => ResolverMetadataSchema) resolvers: Record<string, ResolverMetadata>;
+    @Field(list => [InjectMetadataSchema]) dependencies: Record<string, InjectMetadata>;
+    @Field(item => [HandlerMetadataSchema]) handlers: Record<string, HandlerMetadata>;
 
-    @Ref(ref => ResolverMetadataSchema) initializer: ResolverMetadata;
-    @Ref(ref => ResolverMetadataSchema) selector: ResolverMetadata;
-    @Ref(ref => ResolverMetadataSchema) activator: ResolverMetadata;
-    @Ref(ref => ResolverMetadataSchema) releasor: ResolverMetadata;
+    @Field(ref => HandlerMetadataSchema) initializer: HandlerMetadata;
+    @Field(ref => HandlerMetadataSchema) selector: HandlerMetadata;
+    @Field(ref => HandlerMetadataSchema) activator: HandlerMetadata;
+    @Field(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
-    @Str() source: string;
+    @Field(String) source: string;
 
     public static RESOLVERS: SchemaResolvers<IProxyMetadata> = {
         target: (obj) => Utils.value(obj.target),
         dependencies: (obj, args) => Lo.filter(Object.values(obj.dependencies), args),
-        resolvers: (obj, args) => Lo.filter(Object.values(obj.resolvers), args),
+        handlers: (obj, args) => Lo.filter(Object.values(obj.handlers), args),
 
         source: (obj) => obj.target.toString()
     };

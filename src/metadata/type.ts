@@ -1,14 +1,28 @@
-import { Class, ObjectType, Prototype, TypeRef } from "../types/core";
+import { Class, ObjectType, Prototype } from "../types/core";
 import { DesignMetadata } from "./method";
 import { Registry } from "./registry";
 
-export type GraphRef = (type?: any) => GraphType;
-export type ClassRef<T> = (type?: any) => ObjectType<T> | [ObjectType<T>];
-export type TypeDef<T> = GraphType | ClassRef<T> | GraphRef;
-export type InputType<T = any> = TypeDef<T> | [TypeDef<T>] | [undefined];
-export type ResultType<T = any> = TypeDef<T> | [TypeDef<T>];
+export class ID extends String { }
+export class Int extends Number { }
+export class Float extends Number { }
+export class Any extends Object { }
 
-export enum GraphType {
+export type Scalar =
+    (new () => String)
+    | (new () => ID)
+    | (new () => Boolean)
+    | (new () => Int)
+    | (new () => Float)
+    | (new () => Object)
+    | (new () => Any)
+    | (new () => Date);
+
+export type ClassRef<T> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
+export type VarType<T = any> = Scalar | [Scalar] | ClassRef<T> | EnumType;
+export type InputType<T = any> = VarType<T> | [undefined];
+export type ReturnType<T = any> = VarType<T>;
+
+export enum GraphKind {
     ID = "ID",
     Int = "Int",
     Float = "Float",
@@ -22,15 +36,12 @@ export enum GraphType {
     Object = "JSON",
     ANY = "ANY",
     // Complex
-    List = "List",
+    Array = "Array",
     Enum = "Enum",
-    // Items
-    InputItem = "InputItem",
-    ResultItem = "ResultItem",
     // Roots
     Metadata = "Metadata",
     Input = "Input",
-    Result = "Result",
+    Type = "Type",
     Entity = "Entity",
     // Ref
     Ref = "#REF",
@@ -38,98 +49,117 @@ export enum GraphType {
     Void = "#VOID"
 }
 
-export namespace GraphType {
-    export function isScalar(type: GraphType | string) {
+export namespace GraphKind {
+    export function isScalar(type: GraphKind | string) {
         switch (type) {
-            case GraphType.ID:
-            case GraphType.Int:
-            case GraphType.Float:
-            case GraphType.String:
-            case GraphType.Option:
-            case GraphType.Boolean:
-            case GraphType.Date:
-            case GraphType.DateTime:
-            case GraphType.Timestamp:
-            case GraphType.Email:
-            case GraphType.Object:
-            case GraphType.ANY:
-            case GraphType.Void:
+            case GraphKind.ID:
+            case GraphKind.Int:
+            case GraphKind.Float:
+            case GraphKind.String:
+            case GraphKind.Option:
+            case GraphKind.Boolean:
+            case GraphKind.Date:
+            case GraphKind.DateTime:
+            case GraphKind.Timestamp:
+            case GraphKind.Email:
+            case GraphKind.Object:
+            case GraphKind.ANY:
+            case GraphKind.Void:
                 return true;
             default:
                 return false;
         }
     }
-    export function isStruc(type: GraphType | string) {
+    export function isStruc(type: GraphKind | string) {
         switch (type) {
-            case GraphType.Metadata:
-            case GraphType.Input:
-            case GraphType.InputItem:
-            case GraphType.Result:
-            case GraphType.ResultItem:
-            case GraphType.Entity:
+            case GraphKind.Metadata:
+            case GraphKind.Input:
+            case GraphKind.Type:
+            case GraphKind.Entity:
                 return true;
             default:
                 return false;
         }
     }
-    export function isMetadata(type: GraphType | string) {
-        return type === GraphType.Metadata;
+    export function isMetadata(type: GraphKind | string) {
+        return type === GraphKind.Metadata;
     }
-    export function isEntity(type: GraphType | string) {
-        return type === GraphType.Entity;
+    export function isEntity(type: GraphKind | string) {
+        return type === GraphKind.Entity;
     }
-    export function isRef(type: GraphType | string) {
-        return type === GraphType.Ref;
+    export function isRef(type: GraphKind | string) {
+        return type === GraphKind.Ref;
     }
-    export function isList(type: GraphType | string) {
-        return type === GraphType.List;
+    export function isArray(type: GraphKind | string) {
+        return type === GraphKind.Array;
     }
-    export function isVoid(type: GraphType | string) {
-        return type === GraphType.Void;
+    export function isVoid(type: GraphKind | string) {
+        return type === GraphKind.Void;
     }
-    export function isItem(type: GraphType | string) {
+    export function isInput(type: GraphKind | string) {
+        return type === GraphKind.Input;
+    }
+    export function isType(type: GraphKind | string) {
+        return type === GraphKind.Type;
+    }
+
+    export function of(type: any) {
         switch (type) {
-            case GraphType.InputItem:
-            case GraphType.ResultItem:
-                return true;
-            default:
-                return false;
-        }
-    }
-    export function isInput(type: GraphType | string) {
-        switch (type) {
-            case GraphType.Input:
-            case GraphType.InputItem:
-                return true;
-            default:
-                return false;
-        }
-    }
-    export function isResult(type: GraphType | string) {
-        switch (type) {
-            case GraphType.Result:
-            case GraphType.ResultItem:
-                return true;
-            default:
-                return false;
+            case null:
+            case undefined: return GraphKind.ANY;
+            case String: return GraphKind.String;
+            case ID: return GraphKind.ID;
+            case Boolean: return GraphKind.Boolean;
+            case Int: return GraphKind.Int;
+            case Number: return GraphKind.Float;
+            case Float: return GraphKind.Float;
+            case Object: return GraphKind.Object;
+            case Date: return GraphKind.Date;
+            case Any: return GraphKind.ANY;
+            default: return GraphKind.Ref;
         }
     }
 }
 
-export interface GraphMetadata {
-    type: GraphType;
-    item?: GraphMetadata;
+export class EnumType {
+    constructor(public target: Object) { }
+}
+
+export interface VarMetadata {
+    kind: GraphKind;
+    item?: VarMetadata;
     target?: Class;
     def?: string;
 }
 
-export interface FieldMetadata extends GraphMetadata {
-    name: string;
-    required: boolean;
-    design: DesignMetadata;
+export namespace VarMetadata {
+    export function of(type: VarType | InputType | ReturnType): VarMetadata {
+        let list = false;
+        if (Array.isArray(type)) {
+            type = type[0];
+            if (type === undefined) return { kind: GraphKind.Void };
+            list = true;
+        }
+        let gt = GraphKind.of(type);
+        let ref = GraphKind.isRef(gt);
+
+        let meta: VarMetadata;
+        if (type instanceof EnumType) meta = { kind: GraphKind.String, target: Object };
+        else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
+        else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, target: type } };
+        else if (ref) meta = { kind: GraphKind.Ref, target: type };
+        else meta = { kind: gt };
+        return meta;
+    }
 }
 
-export interface ITypeMetadata extends GraphMetadata {
+export interface FieldMetadata extends VarMetadata {
+    name: string;
+    required: boolean;
+    design?: DesignMetadata;
+}
+
+export interface ITypeMetadata extends VarMetadata {
     target: Class;
     name: string;
     item?: never;
@@ -139,7 +169,7 @@ export interface ITypeMetadata extends GraphMetadata {
 export class TypeMetadata implements ITypeMetadata {
     public target: Class = undefined;
     public name: string = undefined;
-    public type: GraphType = undefined;
+    public kind: GraphKind = undefined;
     public def?: string;
     public fields?: Record<string, FieldMetadata> = undefined;
 
@@ -166,41 +196,31 @@ export class TypeMetadata implements ITypeMetadata {
         return meta;
     }
 
-    public addField(propertyKey: string, type: GraphType, required: boolean, item?: GraphType | TypeRef<any>): this {
+    public addField(propertyKey: string, type: VarType, required: boolean): this {
         // TODO: Validata
         this.fields = this.fields || {};
         // TODO: use design type when not specified
         let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
-        let itemInfo: GraphMetadata = undefined;
-        if (type === GraphType.List)
-            itemInfo = typeof item === "function"
-                ? { type: GraphType.Ref, target: item }
-                : { type: item as GraphType };
-        this.fields[propertyKey] = {
-            type,
-            name: propertyKey,
-            item: item && itemInfo,
-            target: (type === GraphType.Ref) ? item as any : undefined,
-            required,
-            design: design && { type: design.name, target: design }
-        };
+        let meta = VarMetadata.of(type) as FieldMetadata;
+        meta.name = propertyKey;
+        meta.required = required;
+        meta.design = design && { type: design.name, target: design };
+        this.fields[propertyKey] = meta;
         return this;
     }
 
-    public commit(type: GraphType, name?: string): this {
-        this.type = type;
+    public commit(type: GraphKind, name?: string): this {
+        this.kind = type;
         this.name = name || this.target.name;
-        if (this.type && !GraphType.isStruc(this.type)) throw new TypeError(`Not a struct type: ${this.type}`);
+        if (this.kind && !GraphKind.isStruc(this.kind)) throw new TypeError(`Not a struct type: ${this.kind}`);
         // this.name = name;
         switch (type) {
-            case GraphType.Metadata:
+            case GraphKind.Metadata:
                 Registry.RegistryMetadata[this.target.name] = this; break;
-            case GraphType.Result:
-            case GraphType.ResultItem:
-                Registry.ResultMetadata[this.target.name] = this; break;
-            case GraphType.Input:
-            case GraphType.InputItem:
+            case GraphKind.Input:
                 Registry.InputMetadata[this.target.name] = this; break;
+            case GraphKind.Type:
+                Registry.TypeMetadata[this.target.name] = this; break;
             default:
                 throw new TypeError(`Not Implemented: ${type}`);
         }
