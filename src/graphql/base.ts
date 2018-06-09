@@ -23,7 +23,7 @@ enum RelationType {
 }
 directive @metadata on OBJECT
 directive @input on OBJECT
-directive @result on OBJECT
+directive @type on OBJECT
 directive @entity on OBJECT
 directive @expression on OBJECT
 directive @crud(auth: JSON) on FIELD_DEFINITION

@@ -10,7 +10,7 @@ import { IProxyMetadata } from "../metadata/proxy";
 import { DecorationMetadata, DecoratorMetadata, MetadataRegistry } from "../metadata/registry";
 import { IRelationMetadata } from "../metadata/relation";
 import { IServiceMetadata } from "../metadata/service";
-import { Int, ITypeMetadata } from "../metadata/type";
+import { IEnumMetadata, Int, ITypeMetadata } from "../metadata/type";
 import { Class } from "../types/core";
 import { Utils } from "../utils";
 import { ApiMetadataSchema } from "./api";
@@ -21,7 +21,7 @@ import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema
 import { ProxyMetadataSchema } from "./proxy";
 import { RelationMetadataSchema } from "./relation";
 import { ServiceMetadataSchema } from "./service";
-import { TypeMetadataSchema } from "./type";
+import { EnumMetadataSchema, TypeMetadataSchema } from "./type";
 
 
 @Metadata()
@@ -65,6 +65,7 @@ export class MetadataRegistrySchema implements MetadataRegistry {
     @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, IColumnMetadata>;
     @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, IRelationMetadata>;
 
+    @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, IEnumMetadata>;
     @Field(list => [TypeMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
     @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, ITypeMetadata>;
 
@@ -88,6 +89,7 @@ export class MetadataRegistrySchema implements MetadataRegistry {
         EntityMetadata: (obj, args) => Lo.filter(Object.values(obj.EntityMetadata), args),
         ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
         RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
+        EnumMetadata: (obj, args) => Lo.filter(Object.values(obj.EnumMetadata), args),
         InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
         TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
         MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),

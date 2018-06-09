@@ -1,42 +1,27 @@
 import { Registry } from "../metadata/registry";
-import { EnumType, GraphKind, TypeMetadata, VarType } from "../metadata/type";
+import { EnumMetadata, GraphKind, TypeMetadata, VarType } from "../metadata/type";
 
 /// Root Types
 
 export function Metadata(name?: string): ClassDecorator {
     return TypeClass(Metadata.name, GraphKind.Metadata, name);
 }
-export namespace Metadata {
-    export const Type = GraphKind.Metadata;
-}
-
 export function Input(name?: string): ClassDecorator {
     return TypeClass(Input.name, GraphKind.Input, name);
 }
-export namespace Input {
-    export const Type = GraphKind.Input;
-}
-
 export function Type(name?: string): ClassDecorator {
     return TypeClass(Type.name, GraphKind.Type, name);
 }
-export namespace Type {
-    export const Type = GraphKind.Type;
-}
-
-export function Enum(target: Object): EnumType {
-    return new EnumType(target);
-}
-export namespace Enum {
-    export const Type = GraphKind.Enum;
-}
-
 function TypeClass(decorator: string, type: GraphKind, name?: string): ClassDecorator {
     return (target) => {
         Registry.trace(decorator, { type, name }, target);
         if (type === GraphKind.Metadata) name = name || target.name.replace(/Schema$/, "");
         return void TypeMetadata.define(target).commit(type, name);
     };
+}
+
+export function Enum(target: Object, name?: string): EnumMetadata {
+    return EnumMetadata.define(target, name);
 }
 
 /// Fields

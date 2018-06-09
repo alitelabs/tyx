@@ -18,8 +18,8 @@ export type Scalar =
     | (new () => Date);
 
 export type ClassRef<T> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
-export type VarType<T = any> = Scalar | [Scalar] | ClassRef<T> | EnumType;
-export type InputType<T = any> = VarType<T> | [undefined];
+export type VarType<T = any> = Scalar | [Scalar] | ClassRef<T> | EnumMetadata;
+export type InputType<T = any> = VarType<T> | [undefined] | ((ref?: any) => IEnumMetadata);
 export type ReturnType<T = any> = VarType<T>;
 
 export enum GraphKind {
@@ -81,6 +81,9 @@ export namespace GraphKind {
                 return false;
         }
     }
+    export function isEnum(type: GraphKind | string) {
+        return type === GraphKind.Enum;
+    }
     export function isMetadata(type: GraphKind | string) {
         return type === GraphKind.Metadata;
     }
@@ -121,15 +124,49 @@ export namespace GraphKind {
     }
 }
 
-export class EnumType {
-    constructor(public target: Object) { }
-}
-
 export interface VarMetadata {
     kind: GraphKind;
     item?: VarMetadata;
-    target?: Class;
+    ref?: Class;
     def?: string;
+}
+
+export interface IEnumMetadata extends VarMetadata {
+    name: string;
+    item?: never;
+    ref: Function;
+}
+
+export class EnumMetadata implements IEnumMetadata {
+    public kind = GraphKind.Enum;
+    public name: string;
+    public ref: Function;
+    constructor(target: Object, name: string) {
+        if (!name) throw new TypeError("Unnamed enum");
+        this.name = name;
+        this.ref = () => target;
+    }
+
+    public static has(target: Object): boolean {
+        return Reflect.hasMetadata(Registry.TYX_ENUM, target);
+    }
+
+    public static get(target: Object): EnumMetadata {
+        return Reflect.getMetadata(Registry.TYX_ENUM, target);
+    }
+
+    public static define(target: Object, name?: string): EnumMetadata {
+        let meta = this.get(target);
+        if (!meta) {
+            meta = new EnumMetadata(target, name);
+            Reflect.defineMetadata(Registry.TYX_ENUM, meta, target);
+            if (Registry.EntityMetadata[name]) throw new TypeError(`Duplicate enum name: ${name}`);
+            Registry.EnumMetadata[name] = meta;
+        } else if (name && name !== meta.name) {
+            throw new TypeError(`Can not rename enum from: ${meta.name} to: ${name}`);
+        }
+        return meta;
+    }
 }
 
 export namespace VarMetadata {
@@ -144,10 +181,10 @@ export namespace VarMetadata {
         let ref = GraphKind.isRef(gt);
 
         let meta: VarMetadata;
-        if (type instanceof EnumType) meta = { kind: GraphKind.String, target: Object };
+        if (type instanceof EnumMetadata) meta = { kind: GraphKind.Ref, ref: () => type };
         else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
-        else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, target: type } };
-        else if (ref) meta = { kind: GraphKind.Ref, target: type };
+        else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, ref: type } };
+        else if (ref) meta = { kind: GraphKind.Ref, ref: type };
         else meta = { kind: gt };
         return meta;
     }
@@ -160,21 +197,21 @@ export interface FieldMetadata extends VarMetadata {
 }
 
 export interface ITypeMetadata extends VarMetadata {
-    target: Class;
+    ref: Class;
     name: string;
     item?: never;
     fields?: Record<string, FieldMetadata>;
 }
 
 export class TypeMetadata implements ITypeMetadata {
-    public target: Class = undefined;
+    public ref: Class = undefined;
     public name: string = undefined;
     public kind: GraphKind = undefined;
     public def?: string;
     public fields?: Record<string, FieldMetadata> = undefined;
 
     constructor(target: Class) {
-        this.target = target;
+        this.ref = target;
     }
 
     public static has(target: Class | Prototype): boolean {
@@ -200,7 +237,7 @@ export class TypeMetadata implements ITypeMetadata {
         // TODO: Validata
         this.fields = this.fields || {};
         // TODO: use design type when not specified
-        let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
+        let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.ref.prototype, propertyKey);
         let meta = VarMetadata.of(type) as FieldMetadata;
         meta.name = propertyKey;
         meta.required = required;
@@ -211,16 +248,16 @@ export class TypeMetadata implements ITypeMetadata {
 
     public commit(type: GraphKind, name?: string): this {
         this.kind = type;
-        this.name = name || this.target.name;
+        this.name = name || this.ref.name;
         if (this.kind && !GraphKind.isStruc(this.kind)) throw new TypeError(`Not a struct type: ${this.kind}`);
         // this.name = name;
         switch (type) {
             case GraphKind.Metadata:
-                Registry.RegistryMetadata[this.target.name] = this; break;
+                Registry.RegistryMetadata[this.ref.name] = this; break;
             case GraphKind.Input:
-                Registry.InputMetadata[this.target.name] = this; break;
+                Registry.InputMetadata[this.ref.name] = this; break;
             case GraphKind.Type:
-                Registry.TypeMetadata[this.target.name] = this; break;
+                Registry.TypeMetadata[this.ref.name] = this; break;
             default:
                 throw new TypeError(`Not Implemented: ${type}`);
         }

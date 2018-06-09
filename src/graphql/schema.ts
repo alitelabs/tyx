@@ -7,7 +7,7 @@ import { EntityMetadata } from "../metadata/entity";
 import { MethodMetadata } from "../metadata/method";
 import { Registry } from "../metadata/registry";
 import { RelationType } from "../metadata/relation";
-import { GraphKind, TypeMetadata, VarMetadata } from "../metadata/type";
+import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from "../metadata/type";
 import "../schema/registry";
 import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from "./base";
 import { SchemaResolver } from "./types";
@@ -74,15 +74,23 @@ export interface MethodSchema {
     resolver: SchemaResolver;
 }
 
+export interface EnumSchema {
+    target: EnumMetadata;
+    model: string;
+}
+
 export class CoreSchema {
+    public enums: Record<string, EnumSchema> = {};
     public metadata: Record<string, TypeSchema> = {};
     public databases: Record<string, DatabaseSchema> = {};
-    public _entities: Record<string, EntitySchema> = {};
     public inputs: Record<string, TypeSchema> = {};
     public results: Record<string, TypeSchema> = {};
     public apis: Record<string, ApiSchema> = {};
 
     constructor() {
+        // Enums
+        for (let type of Object.values(Registry.EnumMetadata))
+            this.enums[type.name] = this.genEnum(type);
         // Metadata
         for (let type of Object.values(Registry.RegistryMetadata))
             this.genType(type, GraphKind.Metadata, this.metadata);
@@ -125,7 +133,10 @@ export class CoreSchema {
             type Mutation {
               ping(input: ANY): ANY
             }
-        \n`) + Object.values(this.databases).map(db => {
+
+            #### Enums ####
+            ${Object.values(this.enums).map(m => m.model).join("\n")}\n
+        `) + Object.values(this.databases).map(db => {
                 return `\n#### Database: ${db.target.target.name} ####\n`
                     + `extend ${db.query}\n`
                     + db.meta + "\n"
@@ -140,7 +151,7 @@ export class CoreSchema {
             + "\n"
             + Object.values(this.inputs).map(i => `#### Input: ${i.target.name} ####\n${i.model}`).join("\n")
             + "\n"
-            + Object.values(this.results).map(r => `#### Result: ${r.target.name} ####\n${r.model}`).join("\n")
+            + Object.values(this.results).map(r => `#### Type: ${r.target.name} ####\n${r.model}`).join("\n")
             + "\n"
             + Object.values(this.apis).map(api => {
                 let res = `\#### API: ${api.target.alias} #####\n`;
@@ -355,26 +366,48 @@ export class CoreSchema {
         return schema;
     }
 
+    private genEnum(target: EnumMetadata): EnumSchema {
+        let schema = this.enums[target.name];
+        if (schema) return schema;
+        let model = `enum ${target.name} {`;
+        let obj = target.ref();
+        let i = 0;
+        for (let key in obj) {
+            model += `${i++ ? "," : ""}\n  ${key}`;
+        }
+        model += "\n}";
+        schema = { target, model };
+        return schema;
+    }
+
     private genType(target: VarMetadata, scope: GraphKind, reg: Record<string, TypeSchema>): VarMetadata {
         if (GraphKind.isScalar(target.kind)) {
             target.def = target.def || target.kind;
             return target;
         }
+        if (GraphKind.isEnum(target.kind)) {
+            let meta = this.genEnum(target as EnumMetadata);
+            return { kind: GraphKind.Enum, ref: meta.target.ref, def: meta.target.name };
+        }
         if (GraphKind.isRef(target.kind)) {
-            let kind = VarMetadata.of(target.target());
+            let ref = target.ref();
+            if (GraphKind.isEnum(ref.kind)) {
+                return this.genType(ref, scope, reg);
+            }
+            let kind = VarMetadata.of(ref);
             if (GraphKind.isScalar(kind.kind)) return { kind: kind.kind, def: kind.kind };
             if (GraphKind.isArray(kind.kind)) {
-                const z = kind.item.target;
-                kind.item.target = () => z;
+                const z = kind.item.ref;
+                kind.item.ref = () => z;
                 return this.genType(kind, scope, reg);
             }
             if (GraphKind.isRef(kind.kind)) {
-                let entity = EntityMetadata.get(kind.target);
+                let entity = EntityMetadata.get(kind.ref);
                 if (entity) {
                     // TODO: Makesure entity exists
                     return { kind: GraphKind.Entity, def: entity.name };
                 }
-                let meta = TypeMetadata.get(kind.target);
+                let meta = TypeMetadata.get(kind.ref);
                 if (meta) {
                     return this.genType(meta, scope, reg);
                 } else {
@@ -391,7 +424,7 @@ export class CoreSchema {
         }
         if (GraphKind.isStruc(target.kind)) {
             let struc = target as TypeMetadata;
-            let link = struc.target && struc.name || target.target.name;
+            let link = struc.ref && struc.name || target.ref.name;
             if (link && reg[link]) return reg[link].target;
         }
         // if (GraphType.isEntity(target.type) && scope === GraphType.Result) {
@@ -410,7 +443,7 @@ export class CoreSchema {
 
         let struc = target as TypeMetadata;
         if (!GraphKind.isStruc(struc.kind) || !struc.fields)
-            throw new TypeError(`Empty type difinition ${struc.target}`);
+            throw new TypeError(`Empty type difinition ${struc.ref}`);
 
         // Generate schema
         struc.def = struc.name;
@@ -433,7 +466,7 @@ export class CoreSchema {
             } else {
                 schema.model += `  ${field.name}: ${type.def}\n`;
             }
-            let resolvers = (struc.target as any).RESOLVERS;
+            let resolvers = (struc.ref as any).RESOLVERS;
             if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
         }
         schema.model += "}";

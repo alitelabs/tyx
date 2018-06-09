@@ -1,5 +1,6 @@
+import FS = require("fs");
 // tslint:disable-next-line:import-blacklist
-import { Core, CoreSchema, Field, Input, Mutation, Query, Service, Type } from "..";
+import { Core, CoreSchema, Enum, Field, Input, Mutation, Query, Service, Type } from "..";
 
 @Input()
 export class TestInput {
@@ -12,11 +13,18 @@ export class TypeA {
     @Field(String) name: string;
 }
 
+export enum OnOff {
+    On = "On",
+    Off = "Off"
+}
+Enum(OnOff, "OnOff");
+
 @Type()
 export class TestResult {
     @Field(String) res: string;
     @Field([String]) versions: string[];
     @Field(Boolean) bool?: boolean;
+    @Field(Enum(OnOff)) state?: OnOff;
     @Field(ref => TypeA) sub?: TypeA;
     @Field(list => [TypeA]) subs?: TypeA[];
     @Field(ref => String) str?: string;
@@ -46,8 +54,15 @@ export class HelloWorld {
     public testVoid(): string[] {
         return [undefined];
     }
+
+    @Query({ Public: true }, state => Enum(OnOff), res => String)
+    public testEnum(state: OnOff): string {
+        return state;
+    }
 }
 
-new CoreSchema().executable();
+let schema = new CoreSchema();
+FS.writeFileSync("schema.gql", schema.typeDefs());
+schema.executable();
 
 Core.start(5055);

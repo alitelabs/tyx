@@ -8,7 +8,7 @@ import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata 
 import { IProxyMetadata, ProxyMetadata } from "./proxy";
 import { IRelationMetadata, RelationMetadata } from "./relation";
 import { IServiceMetadata, ServiceMetadata } from "./service";
-import { ITypeMetadata, TypeMetadata } from "./type";
+import { EnumMetadata, ITypeMetadata, TypeMetadata } from "./type";
 
 // export interface TypeDecorationMetadata {
 //     target: Function;
@@ -51,6 +51,7 @@ export interface MetadataRegistry {
     ColumnMetadata: Record<string, IColumnMetadata>;
     RelationMetadata: Record<string, IRelationMetadata>;
 
+    EnumMetadata: Record<string, EnumMetadata>;
     InputMetadata: Record<string, ITypeMetadata>;
     TypeMetadata: Record<string, ITypeMetadata>;
 
@@ -71,6 +72,7 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly TYX_PROXY = "tyx:proxy";
     public static readonly TYX_DATABASE = "tyx:database";
     public static readonly TYX_TYPE = "tyx:type";
+    public static readonly TYX_ENUM = "tyx:enum";
     public static readonly TYX_METHOD = "tyx:method";
 
     public static readonly TYX_ENTITY = "tyx:entity";
@@ -89,6 +91,8 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly EntityMetadata: Record<string, EntityMetadata> = {};
     public static readonly ColumnMetadata: Record<string, ColumnMetadata> = {};
     public static readonly RelationMetadata: Record<string, RelationMetadata> = {};
+
+    public static readonly EnumMetadata: Record<string, EnumMetadata> = {};
     public static readonly InputMetadata: Record<string, TypeMetadata> = {};
     public static readonly TypeMetadata: Record<string, TypeMetadata> = {};
 
@@ -111,6 +115,8 @@ export abstract class Registry implements MetadataRegistry {
     public abstract EntityMetadata: Record<string, EntityMetadata>;
     public abstract ColumnMetadata: Record<string, ColumnMetadata>;
     public abstract RelationMetadata: Record<string, RelationMetadata>;
+
+    public abstract EnumMetadata: Record<string, EnumMetadata>;
     public abstract InputMetadata: Record<string, TypeMetadata>;
     public abstract TypeMetadata: Record<string, TypeMetadata>;
 
@@ -138,6 +144,8 @@ export abstract class Registry implements MetadataRegistry {
             EntityMetadata: this.EntityMetadata,
             ColumnMetadata: this.ColumnMetadata,
             RelationMetadata: this.RelationMetadata,
+
+            EnumMetadata: this.EnumMetadata,
             InputMetadata: this.InputMetadata,
             TypeMetadata: this.TypeMetadata,
 
