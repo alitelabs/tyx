@@ -1,3 +1,4 @@
+import renderVoyagerPage, { MiddlewareOptions } from "graphql-voyager/middleware/render-voyager-page";
 import { Debug } from "../decorators/auth";
 import { ContentType, ContextObject, Get, Post, RequestObject } from "../decorators/http";
 import { Activate, Service } from "../decorators/service";
@@ -9,6 +10,7 @@ import { HttpRequest, HttpResponse } from "../types/http";
 import { CoreSchema } from "./schema";
 import { ResolverContext } from "./types";
 import SuperGraphiQL = require("super-graphiql-express");
+
 
 const playgroundVersion = "latest";
 export const GraphQLApi = "graphql";
@@ -69,6 +71,26 @@ export class CoreGraphQLService implements GraphQLApi {
             let html: string = SuperGraphiQL.renderGraphiQL(options);
             if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
                 html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
+            return html;
+            // return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
+        } catch (error) {
+            throw new InternalServerError(error.message, error);
+        }
+    }
+
+    @Debug()
+    @Get("/voyager")
+    @ContentType("text/html")
+    public async voyager(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string, display?: Object): Promise<string> {
+        let xxx: MiddlewareOptions = {
+            endpointUrl: `${prefix || ""}/graphql`,
+            displayOptions: display,
+            headersJS: ctx.auth.token ? JSON.stringify({ "Authorization": ctx.auth.token }) : undefined
+        };
+        try {
+            let html: string = renderVoyagerPage(xxx);
+            // if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
+            //     html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
             return html;
             // return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
         } catch (error) {
