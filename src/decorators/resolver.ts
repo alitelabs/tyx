@@ -20,8 +20,8 @@ export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?
     return ResolverDecorator(Command, roles, input, result);
 }
 
-export function Resolver<TI = any, TO = any>(type: Class, input?: InputType<TI>, result?: ReturnType<TO>) {
-    return ResolverDecorator(Resolver, { Internal: true }, input, result, type);
+export function Extension<TI = any, TO = any>(type: Class, input?: InputType<TI>, result?: ReturnType<TO>) {
+    return ResolverDecorator(Extension, { Internal: true }, input, result, type);
 }
 
 function ResolverDecorator(decorator: Function, roles: Roles, input: InputType, result: ReturnType, type?: Class): MethodDecorator {
@@ -32,7 +32,7 @@ function ResolverDecorator(decorator: Function, roles: Roles, input: InputType, 
         let meta = MethodMetadata.define(target, propertyKey, descriptor).addAuth(oper, roles);
         if (decorator === Mutation || decorator === Command) meta.setMutation(input, result);
         else if (decorator === Query || decorator === Advice) meta.setQuery(input, result);
-        else if (decorator === Resolver) meta.setResolver(type, input, result);
+        else if (decorator === Extension) meta.setResolver(type, input, result);
         else throw TypeError(`Unknown decorator: ${decorator.name}`);
     };
 }
