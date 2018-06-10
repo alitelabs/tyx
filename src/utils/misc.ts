@@ -52,6 +52,11 @@ export function value(val: any) {
 
 const notBase64 = /[^A-Z0-9+\/=\n\r]/i;
 
+export function isUUID(str: string): boolean {
+    if (!str) return false;
+    return !!str.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+}
+
 // const base64 = new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})([=]{1,2})?$");
 
 export function isBase64(str: string): boolean {
