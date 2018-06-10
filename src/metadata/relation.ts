@@ -136,11 +136,11 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
     }
 
     public static has(target: Prototype, propertyKey: string): boolean {
-        return Reflect.hasMetadata(Registry.TYX_COLUMN, target, propertyKey);
+        return Reflect.hasMetadata(Registry.TYX_RELATION, target, propertyKey);
     }
 
     public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
-        return Reflect.getMetadata(Registry.TYX_COLUMN, target, propertyKey);
+        return Reflect.getMetadata(Registry.TYX_RELATION, target, propertyKey);
     }
 
     public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
@@ -159,7 +159,6 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
     }
 
     public addJoinColumn(options: JoinColumnOptions) {
-        this.joinOptions = this.joinOptions;
         this.joinOptions.push(options);
     }
 
