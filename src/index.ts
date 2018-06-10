@@ -60,5 +60,5 @@ export * from "./express";
 export * from "./graphql";
 
 
-export { Orm, Di } from "./import";
+export { Orm, Di, GraphQL } from "./import";
 

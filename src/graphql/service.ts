@@ -79,13 +79,15 @@ export class CoreGraphQLService implements GraphQLApi {
     @Debug()
     @Get("/playground")
     @ContentType("text/html")
-    public async playground(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
+    public async playground(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string, options?: GraphQL.RenderPageOptions): Promise<string> {
         let sufix = ctx.auth.token ? ("/" + ctx.auth.token) : "";
-        const options: GraphQL.RenderPageOptions = {
+        const fix: GraphQL.RenderPageOptions = {
             endpoint: `${prefix || ""}/graphql${sufix}`,
             // passHeader: `'Authorization': '${call.queryStringParameters.token}'`,
             version: playgroundVersion
         };
+        options = { ...options, ...fix };
+        if (options.tabs) options.tabs.forEach(tab => tab.endpoint = options.endpoint);
         return await GraphQL.renderPlaygroundPage(options);
     }
 
