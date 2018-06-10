@@ -103,7 +103,9 @@ export class CoreInstance implements CoreContainer {
             application: this.application,
             service: method.api,
             method: method.method,
-            input: input,
+            obj: obj,
+            args: input,
+            info,
             token: ctx.auth.token
         }, true);
     }
@@ -197,7 +199,12 @@ export class CoreInstance implements CoreContainer {
             try {
                 await this.activate(ctx);
                 let handler: Function = service[metadata.name];
-                let result = await handler.call(service, req.input);
+                let result: any;
+                if (metadata.resolver) {
+                    result = await handler.call(service, req.obj, req.args, ctx, req.info);
+                } else {
+                    result = await handler.call(service, req.args, ctx);
+                }
                 return result;
             } catch (e) {
                 throw this.log.error(e);

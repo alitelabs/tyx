@@ -56,7 +56,6 @@ export interface MetadataRegistry {
     TypeMetadata: Record<string, ITypeMetadata>;
 
     MethodMetadata: Record<string, IMethodMetadata>;
-    ResolverMetadata: Record<string, IMethodMetadata>;
     HttpRouteMetadata: Record<string, HttpRouteMetadata>;
     EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 }
@@ -97,7 +96,6 @@ export abstract class Registry implements MetadataRegistry {
     public static readonly TypeMetadata: Record<string, TypeMetadata> = {};
 
     public static readonly MethodMetadata: Record<string, MethodMetadata> = {};
-    public static readonly _ResolverMetadata: Record<string, MethodMetadata> = {};
     public static readonly HttpRouteMetadata: Record<string, HttpRouteMetadata> = {};
     public static readonly EventRouteMetadata: Record<string, EventRouteMetadata[]> = {};
 
@@ -150,7 +148,6 @@ export abstract class Registry implements MetadataRegistry {
             TypeMetadata: this.TypeMetadata,
 
             MethodMetadata: this.MethodMetadata,
-            ResolverMetadata: this._ResolverMetadata,
             HttpRouteMetadata: this.HttpRouteMetadata,
             EventRouteMetadata: this.EventRouteMetadata,
         };

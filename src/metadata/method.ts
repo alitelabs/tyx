@@ -97,6 +97,8 @@ export namespace EventRouteMetadata {
 export interface IMethodMetadata {
     target: Class;
     api: IApiMetadata;
+    // Temporary, type extension point
+    host: Class;
 
     name: string;
     alias: string;
@@ -107,6 +109,7 @@ export interface IMethodMetadata {
 
     query: boolean;
     mutation: boolean;
+    resolver: boolean;
     input: VarMetadata;
     result: VarMetadata;
 
@@ -122,6 +125,7 @@ export class MethodMetadata implements IMethodMetadata {
 
     public target: Class;
     public api: IApiMetadata;
+    public host: Class;
 
     public alias: string = undefined;
     public name: string;
@@ -132,6 +136,7 @@ export class MethodMetadata implements IMethodMetadata {
 
     public query: boolean = undefined;
     public mutation: boolean = undefined;
+    public resolver: boolean = undefined;
     public input: VarMetadata = undefined;
     public result: VarMetadata = undefined;
 
@@ -169,7 +174,7 @@ export class MethodMetadata implements IMethodMetadata {
         let params: any[] = Reflect.getMetadata(Registry.DESIGN_PARAMS, target, propertyKey);
         let returns = Reflect.getMetadata(Registry.DESIGN_RETURN, target, propertyKey);
         meta.design = meta.design || [];
-        params.forEach((param, i) => meta.design[i] = { name: names[i], type: param.name, target: param });
+        params.forEach((param, i) => meta.design[i] = { name: names[i], type: param && param.name || "void", target: param });
         meta.design[params.length] = { name: descriptor ? "#return" : undefined, type: returns && returns.name || "void", target: returns };
         ApiMetadata.define(target).addMethod(meta);
         return meta;
@@ -193,6 +198,14 @@ export class MethodMetadata implements IMethodMetadata {
 
     public setMutation(input?: InputType, result?: ReturnType): this {
         this.mutation = true;
+        this.input = VarMetadata.of(input);
+        this.result = VarMetadata.of(result);
+        return this;
+    }
+
+    public setResolver(type: Class, input?: InputType, result?: ReturnType): this {
+        this.resolver = true;
+        this.host = type;
         this.input = VarMetadata.of(input);
         this.result = VarMetadata.of(result);
         return this;

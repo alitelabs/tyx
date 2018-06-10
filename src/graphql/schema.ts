@@ -62,15 +62,18 @@ export interface ApiSchema {
     target: ApiMetadata;
     api: string;
     queries: Record<string, MethodSchema>;
-    commands: Record<string, MethodSchema>;
+    mutations: Record<string, MethodSchema>;
+    resolvers: Record<string, MethodSchema>;
 }
 
 export interface MethodSchema {
     target: MethodMetadata;
     api: string;
+    host: string;
     method: string;
     name: string;
     signature: string;
+    extension: string;
     resolver: SchemaResolver;
 }
 
@@ -160,10 +163,13 @@ export class CoreSchema {
                     res += Object.values(api.queries).map(q => q.name + q.signature).join("\n  ");
                     res += "\n}\n";
                 }
-                if (api.commands) {
+                if (api.mutations) {
                     res += "extend type Mutation {\n  ";
-                    res += Object.values(api.commands).map(c => c.name + c.signature).join("\n  ");
+                    res += Object.values(api.mutations).map(c => c.name + c.signature).join("\n  ");
                     res += "\n}\n";
+                }
+                if (api.resolvers) {
+                    res += Object.values(api.resolvers).map(r => r.extension).join("\n") + "\n";
                 }
                 return res;
             }).join("\n");
@@ -189,10 +195,14 @@ export class CoreSchema {
         }
         for (let api of Object.values(this.apis)) {
             if (api.queries) for (let method of Object.values(api.queries)) {
-                if (method.target.query && method.resolver) resolvers.Query[method.name] = method.resolver;
+                resolvers.Query[method.name] = method.resolver;
             }
-            if (api.commands) for (let method of Object.values(api.commands)) {
-                if (method.target.mutation && method.resolver) resolvers.Mutation[method.name] = method.resolver;
+            if (api.mutations) for (let method of Object.values(api.mutations)) {
+                resolvers.Mutation[method.name] = method.resolver;
+            }
+            if (api.resolvers) for (let method of Object.values(api.resolvers)) {
+                resolvers[method.host] = resolvers[method.host] || {};
+                resolvers[method.host][method.name] = method.resolver;
             }
         }
         return resolvers;
@@ -475,39 +485,46 @@ export class CoreSchema {
     }
 
     private genApi(target: ApiMetadata): ApiSchema {
-        let schema: ApiSchema = {
+        let api: ApiSchema = {
             target,
             api: target.alias,
             queries: undefined,
-            commands: undefined
+            mutations: undefined,
+            resolvers: undefined
         };
         for (let method of Object.values(target.methods)) {
-            if (!method.query && !method.mutation) continue;
+            if (!method.query && !method.mutation && !method.resolver) continue;
             let input = this.genType(method.input, GraphKind.Input, this.inputs);
             let result = this.genType(method.result, GraphKind.Type, this.results);
-            let name = `${target.target.name}_${method.name}`;
+            let name = method.resolver ? method.name : `${target.target.name}_${method.name}`;
             // TODO: Get it from typedef
-            const arg = method.design[0].name || "input";
+            const arg = (method.resolver ? method.design[1].name : method.design[0].name) || "input";
             let call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
             let dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
-            let meta: MethodSchema = {
+            let meth: MethodSchema = {
                 target: method,
                 api: target.alias,
+                host: method.host && method.host.name,
                 method: method.name,
                 name,
                 signature: call + dir,
-                resolver: (obj, args, ctx, info) => ctx.container.invoke(meta, obj, args[arg], ctx, info)
+                extension: undefined,
+                resolver: (obj, args, ctx, info) => ctx.container.invoke(meth, obj, args[arg], ctx, info)
             };
             if (method.mutation) {
-                schema.commands = schema.commands || {};
-                schema.commands[method.name] = meta;
-            } else {
-                schema.queries = schema.queries || {};
-                schema.queries[method.name] = meta;
+                api.mutations = api.mutations || {};
+                api.mutations[method.name] = meth;
+            } else if (method.query) {
+                api.queries = api.queries || {};
+                api.queries[method.name] = meth;
+            } else if (method.resolver) {
+                meth.extension = `extend type ${method.host.name} {\n  ${method.name}${call}${dir}\n}`;
+                api.resolvers = api.resolvers || {};
+                api.resolvers[method.name] = meth;
             }
         }
-        this.apis[schema.api] = schema;
-        return schema;
+        this.apis[api.api] = api;
+        return api;
     }
 }
 

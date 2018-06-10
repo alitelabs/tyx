@@ -93,7 +93,6 @@ export class MetadataRegistrySchema implements MetadataRegistry {
         InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
         TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
         MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
-        ResolverMetadata: (obj, args) => Lo.filter(Object.values(obj.ResolverMetadata), args),
         HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),
         EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args)
     };

@@ -79,6 +79,7 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
 export class MethodMetadataSchema implements IMethodMetadata {
     @Field(String) target: Class;
     @Field(ref => ApiMetadataSchema) api: IApiMetadata;
+    @Field(String) host: Class;
 
     @Field(String) alias: string;
     @Field(String) name: string;
@@ -89,6 +90,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
 
     @Field(Boolean) query: boolean;
     @Field(Boolean) mutation: boolean;
+    @Field(Boolean) resolver: boolean;
     @Field(ref => VarMetadataSchema) input: VarMetadata;
     @Field(ref => VarMetadataSchema) result: VarMetadata;
 
@@ -101,6 +103,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
 
     public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
         target: (obj) => Utils.value(obj.target),
+        host: (obj) => Utils.value(obj.host),
         http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),
         events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args),
         source: (obj) => obj.target.prototype[obj.name].toString()
