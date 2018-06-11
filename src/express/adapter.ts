@@ -16,6 +16,7 @@ export class ExpressAdapter {
     public paths: [string, string][];
 
     constructor(basePath: string) {
+        this.basePath = basePath;
         this.log = Logger.get("TYX", this);
         this.express();
     }
