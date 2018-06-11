@@ -16,6 +16,10 @@ export const SCALARS: Record<string, GraphQLScalarType> = {
 export const DEF_SCALARS = Object.keys(SCALARS).map(s => `scalar ${s}`).join("\n");
 
 export const DEF_DIRECTIVES = `
+schema {
+    query: Query
+    mutation: Mutation
+}
 enum RelationType {
     OneToOne,
     OneToMany,
