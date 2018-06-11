@@ -81,7 +81,7 @@ export class CoreGraphQLService implements GraphQLApi {
     @Debug()
     @Get("/voyager")
     @ContentType("text/html")
-    public async voyager(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string, display?: Object): Promise<string> {
+    public async voyager(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context, prefix?: string, display?: Object): Promise<string> {
         let xxx: MiddlewareOptions = {
             endpointUrl: `${prefix || ""}/graphql`,
             displayOptions: display,

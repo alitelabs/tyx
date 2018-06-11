@@ -123,13 +123,13 @@ export class CoreSchema {
 
     public typeDefs(): string {
         return back(`
-            #### Scalars ####
+            # -- Scalars --
             ${DEF_SCALARS}\n
-            #### Directives ####
+            # -- Directives --
             ${DEF_DIRECTIVES}\n
-            #### Metadata Types ####
+            # -- Metadata Types --
             ${Object.values(this.metadata).map(m => m.model).join("\n")}\n
-            #### Metadata Resolvers ####
+            # -- Metadata Resolvers --
             type Query {
               Metadata: MetadataRegistry
             }
@@ -137,27 +137,27 @@ export class CoreSchema {
               ping(input: ANY): ANY
             }
 
-            #### Enums ####
+            # -- Enums --
             ${Object.values(this.enums).map(m => m.model).join("\n")}\n
         `) + Object.values(this.databases).map(db => {
-                return `\n#### Database: ${db.target.target.name} ####\n`
+                return `\n# -- Database: ${db.target.target.name} --\n`
                     + `extend ${db.query}\n`
                     + db.meta + "\n"
                     + db.model + "\n"
                     + Object.values(db.entities).map((e) => {
-                        return `\n#### Entity: ${e.target.name} ####\n`
+                        return `\n# -- Entity: ${e.target.name} --\n`
                             + `extend ${e.query}\n`
                             + `extend ${e.mutation}\n`
                             + `${e.model}\n${e.inputs.join("\n")}`;
                     });
             }).join("\n")
             + "\n"
-            + Object.values(this.inputs).map(i => `#### Input: ${i.target.name} ####\n${i.model}`).join("\n")
+            + Object.values(this.inputs).map(i => `# -- Input: ${i.target.name} --\n${i.model}`).join("\n")
             + "\n"
-            + Object.values(this.results).map(r => `#### Type: ${r.target.name} ####\n${r.model}`).join("\n")
+            + Object.values(this.results).map(r => `# -- Type: ${r.target.name} --\n${r.model}`).join("\n")
             + "\n"
             + Object.values(this.apis).map(api => {
-                let res = `\#### API: ${api.target.alias} #####\n`;
+                let res = `\# -- API: ${api.target.alias} --#\n`;
                 if (api.queries) {
                     res += "extend type Query {\n  ";
                     res += Object.values(api.queries).map(q => q.name + q.signature).join("\n  ");
@@ -414,6 +414,7 @@ export class CoreSchema {
             if (GraphKind.isRef(kind.kind)) {
                 let entity = EntityMetadata.get(kind.ref);
                 if (entity) {
+                    if (GraphKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
                     // TODO: Makesure entity exists
                     return { kind: GraphKind.Entity, def: entity.name };
                 }
@@ -449,7 +450,7 @@ export class CoreSchema {
             throw new TypeError(`Input type can not reference [${target.kind}]`);
 
         if (scope === GraphKind.Type && !GraphKind.isType(target.kind) && !GraphKind.isEntity(target.kind))
-            throw new TypeError(`Result type can not reference [${target.kind}]`);
+            throw new TypeError(`Type type can not reference [${target.kind}]`);
 
         let struc = target as TypeMetadata;
         if (!GraphKind.isStruc(struc.kind) || !struc.fields)
