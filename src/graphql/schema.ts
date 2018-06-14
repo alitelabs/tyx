@@ -514,7 +514,7 @@ export class CoreSchema {
             } else {
                 schema.model += `  ${field.name}: ${type.def}\n`;
             }
-            schema.script += `\n    ${field.name}: ${type.js};`;
+            schema.script += `\n    ${field.name}?: ${type.js};`;
             let resolvers = (struc.ref as any).RESOLVERS;
             if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
         }
@@ -533,7 +533,7 @@ export class CoreSchema {
             resolvers: undefined,
             script: undefined
         };
-        let script = `export class ${target.name} {\n`;
+        let script = `\n@Injectable()\nexport class ${target.name} {\n`;
         script += `    constructor(private apollo: Apollo) { }\n`;
         for (let method of Object.values(target.methods)) {
             if (!method.query && !method.mutation && !method.resolver) continue;
@@ -545,11 +545,14 @@ export class CoreSchema {
             let call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
             let art = (GraphKind.isVoid(input.kind) ? "()" : `(${arg}: ${input.js})`);
             let art2 = (GraphKind.isVoid(input.kind) ? "" : `($${arg}: ${input.def})`);
-            let art3 = (GraphKind.isVoid(input.kind) ? "" : `($${arg}: $${arg})`);
-            let action = method.mutation ? "mutation" : "query";
-            script += `    public ${method.name}${art}: ${result.js} {\n`;
+            let art3 = (GraphKind.isVoid(input.kind) ? "" : `(${arg}: $${arg})`);
+            let action = method.mutation ? "mutate" : "query";
+            script += `    public ${method.name}${art}: Observable<${result.js}> {\n`;
             script += `        return this.apollo.${action}<any>({\n`;
-            script += `            ${action}: gql\`query request${art2}`;
+            if (method.mutation)
+                script += `            mutation: gql\`mutation request${art2}`;
+            else
+                script += `            query: gql\`query request${art2}`;
             if (GraphKind.isStruc(result.kind)) {
                 script += ` {\n`;
                 let struc = result as TypeMetadata;
@@ -557,8 +560,11 @@ export class CoreSchema {
                 let ent = this.entities[struc.name];
                 let select = res && res.select.join(",\n                    ")
                     || ent && ent.select.join(",\n                    ");
-                script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
-                script += `                    ${select}`;
+                if (method.query)
+                    script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
+                else
+                    script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
+                script += `                    ${select || "# NONE"}`;
                 if (res && Object.keys(res.link).length) {
                     for (let link of Object.entries(res.link)) {
                         script += `,\n                    ${link[0]}`;
