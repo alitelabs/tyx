@@ -561,9 +561,9 @@ export class CoreSchema {
                 let select = res && res.select.join(",\n                    ")
                     || ent && ent.select.join(",\n                    ");
                 if (method.query)
-                    script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
+                    script += `                result: ${method.api.name}_${method.name}${art3} {\n`;
                 else
-                    script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
+                    script += `                result: ${method.api.name}_${method.name}${art3} {\n`;
                 script += `                    ${select || "# NONE"}`;
                 if (res && Object.keys(res.link).length) {
                     for (let link of Object.entries(res.link)) {
