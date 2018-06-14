@@ -44,6 +44,8 @@ export interface EntitySchema {
     inputs: string[];
     search: string;
     simple: string;
+    script: string;
+    select: string[];
     relations: Record<string, { target: string, type: string }>;
 
     resolvers: Record<string, SchemaResolver>;
@@ -52,6 +54,9 @@ export interface EntitySchema {
 export interface TypeSchema {
     target: TypeMetadata;
     model: string;
+    script: string;
+    select: string[];
+    link: Record<string, string[]>;
     // query: string;
     params: string;
     // registry: SchemaResolver;
@@ -64,6 +69,7 @@ export interface ApiSchema {
     queries: Record<string, MethodSchema>;
     mutations: Record<string, MethodSchema>;
     resolvers: Record<string, MethodSchema>;
+    script: string;
 }
 
 export interface MethodSchema {
@@ -88,6 +94,7 @@ export class CoreSchema {
     public databases: Record<string, DatabaseSchema> = {};
     public inputs: Record<string, TypeSchema> = {};
     public results: Record<string, TypeSchema> = {};
+    public entities: Record<string, EntitySchema> = {};
     public apis: Record<string, ApiSchema> = {};
 
     constructor() {
@@ -239,21 +246,27 @@ export class CoreSchema {
         if (db.entities[name]) return db.entities[name];
 
         let model = `type ${name}${ENTITY} @entity {`;
+        let script = `export interface ${name} {`;
         let input = `Input @expression {`;
         let nil = `Null @expression {`;
         let multi = `Multi @expression {`;
         let like = `Like @expression {`;
         let order = `Order @expression {`;
         let keys = "";
+        let select: string[] = [];
         let create = `Create @record {`;
         let update = `Update @record {`;
         let cm = true;
         for (let col of target.columns) {
             let pn = col.propertyName;
             let dt = ColumnType.graphType(col.type);
+            let jt = GraphKind.toJS(dt);
             let nl = !col.isNullable ? "!" : "";
+            let op = !col.isNullable ? "?" : "";
             if (pn.endsWith("Id")) dt = GraphKind.ID;
             model += `${cm ? "" : ","}\n  ${pn}: ${dt}${nl}`;
+            select.push(pn);
+            script += `\n    ${pn}${op}: ${jt};`;
             if (col.isPrimary)
                 keys += `${cm ? "" : ", "}${pn}: ${dt}${nl}`;
             input += `${cm ? "" : ","}\n  ${pn}: ${dt}`;
@@ -320,6 +333,8 @@ export class CoreSchema {
             inputs,
             search,
             simple: model,
+            script,
+            select,
             relations: {},
             resolvers: {}
         };
@@ -335,6 +350,7 @@ export class CoreSchema {
             [`${db.name}_${REMOVE}${name}`]: (obj, args, ctx, info) => ctx.provider.remove(target, obj, args, ctx, info)
         };
         db.entities[name] = schema;
+        this.entities[name] = schema;
 
         let simple = model;
         let navigation: Record<string, SchemaResolver> = {};
@@ -348,27 +364,32 @@ export class CoreSchema {
                 rm.type = "manyToOne";
                 let args = "";
                 model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: ManyToOne)`;
+                script += `\n    ${property}?: ${inverse};`;
                 simple += `,\n  ${property}: ${inverse}${ENTITY}`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToOne) {
                 rm.type = "oneToOne";
                 let args = "";
                 model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: OneToOne)`;
+                script += `\n    ${property}?: ${inverse};`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(target, relation, obj, args, ctx, info);
             } else if (relation.relationType === RelationType.OneToMany) {
                 rm.type = "oneToMany";
                 let temp = this.genEntity(db, relation.inverseEntityMetadata);
                 let args = ` (${temp.search}\n  )`;
                 model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
+                script += `\n    ${property}?: ${inverse}[];`;
                 navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(target, relation, obj, args, ctx, info);
             } else {
                 continue; // TODO: Implement
             }
         }
         model += "\n}";
+        script += "\n}";
         simple += "\n}";
 
         schema.model = model;
+        schema.script = script;
         schema.simple = simple;
         schema.resolvers = navigation;
         // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
@@ -393,6 +414,7 @@ export class CoreSchema {
     private genType(target: VarMetadata, scope: GraphKind, reg: Record<string, TypeSchema>): VarMetadata {
         if (GraphKind.isScalar(target.kind)) {
             target.def = target.def || target.kind;
+            target.js = GraphKind.toJS(target.kind);
             return target;
         }
         if (GraphKind.isEnum(target.kind)) {
@@ -405,7 +427,7 @@ export class CoreSchema {
                 return this.genType(ref, scope, reg);
             }
             let kind = VarMetadata.of(ref);
-            if (GraphKind.isScalar(kind.kind)) return { kind: kind.kind, def: kind.kind };
+            if (GraphKind.isScalar(kind.kind)) return { kind: kind.kind, def: kind.kind, js: GraphKind.toJS(kind.kind) };
             if (GraphKind.isArray(kind.kind)) {
                 const z = kind.item.ref;
                 kind.item.ref = () => z;
@@ -416,21 +438,21 @@ export class CoreSchema {
                 if (entity) {
                     if (GraphKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
                     // TODO: Makesure entity exists
-                    return { kind: GraphKind.Entity, def: entity.name };
+                    return { kind: GraphKind.Entity, def: entity.name, name: entity.name, js: entity.name } as TypeMetadata;
                 }
                 let meta = TypeMetadata.get(kind.ref);
                 if (meta) {
                     return this.genType(meta, scope, reg);
                 } else {
-                    return { kind: GraphKind.Object, def: GraphKind.Object };
+                    return { kind: GraphKind.Object, def: GraphKind.Object, js: "any", name: "any" } as any;
                 }
             }
         } else if (GraphKind.isArray(target.kind)) {
-            let type = this.genType(target.item, scope, reg);
+            let type = this.genType(target.item, scope, reg) as any;
             if (type) {
-                return { kind: GraphKind.Array, def: `[${type.def}]`, item: type };
+                return { kind: GraphKind.Array, def: `[${type.def}]`, item: type, js: `${type.js}[]`, name: type.def, select: type.select } as any;
             } else {
-                return { kind: GraphKind.Array, def: `[${GraphKind.Object}]` };
+                return { kind: GraphKind.Array, def: `[${GraphKind.Object}]`, js: "any[]", name: "any", select: null } as any;
             }
         }
         if (GraphKind.isStruc(target.kind)) {
@@ -458,18 +480,33 @@ export class CoreSchema {
 
         // Generate schema
         struc.def = struc.name;
-        let schema: TypeSchema = { target: struc, model: undefined, params: undefined, resolvers: {} };
+        struc.js = struc.name;
+        let schema: TypeSchema = { target: struc, model: undefined, script: undefined, select: [], link: {}, params: undefined, resolvers: {} };
         reg[struc.name] = schema;
         schema.params = "";
         for (let field of Object.values(struc.fields)) {
             if (!GraphKind.isScalar(field.kind as GraphKind)) continue;
             schema.params += (schema.params ? ",\n    " : "    ") + `${field.name}: ${field.kind}`;
+            schema.select.push(field.name);
         }
         schema.model = (scope === GraphKind.Input)
             ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
             : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
+        schema.script = `export interface ${struc.name} {`;
         for (let field of Object.values(struc.fields)) {
             let type = this.genType(field, scope, reg);
+            if (GraphKind.isStruc(type.kind)) {
+                let sch = type as TypeMetadata;
+                schema.link[field.name] =
+                    reg[sch.name] && reg[sch.name].select
+                    || this.entities[sch.name] && this.entities[sch.name].select;
+            }
+            if (GraphKind.isArray(type.kind)) {
+                let sch = type as TypeMetadata;
+                schema.link[field.name] =
+                    reg[sch.name] && reg[sch.name].select
+                    || this.entities[sch.name] && this.entities[sch.name].select;
+            }
             if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
                 let sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.def];
                 let args = (sch && sch.params) ? `(\n${reg[type.item.def].params}\n  )` : "";
@@ -477,10 +514,12 @@ export class CoreSchema {
             } else {
                 schema.model += `  ${field.name}: ${type.def}\n`;
             }
+            schema.script += `\n    ${field.name}: ${type.js};`;
             let resolvers = (struc.ref as any).RESOLVERS;
             if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
         }
         schema.model += "}";
+        schema.script += "\n}";
 
         return struc;
     }
@@ -491,8 +530,11 @@ export class CoreSchema {
             api: target.alias,
             queries: undefined,
             mutations: undefined,
-            resolvers: undefined
+            resolvers: undefined,
+            script: undefined
         };
+        let script = `export class ${target.name} {\n`;
+        script += `    constructor(private apollo: Apollo) { }\n`;
         for (let method of Object.values(target.methods)) {
             if (!method.query && !method.mutation && !method.resolver) continue;
             let input = this.genType(method.input, GraphKind.Input, this.inputs);
@@ -501,6 +543,44 @@ export class CoreSchema {
             // TODO: Get it from typedef
             const arg = (method.resolver ? method.design[1].name : method.design[0].name) || "input";
             let call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
+            let art = (GraphKind.isVoid(input.kind) ? "()" : `(${arg}: ${input.js})`);
+            let art2 = (GraphKind.isVoid(input.kind) ? "" : `($${arg}: ${input.def})`);
+            let art3 = (GraphKind.isVoid(input.kind) ? "" : `($${arg}: $${arg})`);
+            let action = method.mutation ? "mutation" : "query";
+            script += `    public ${method.name}${art}: ${result.js} {\n`;
+            script += `        return this.apollo.${action}<any>({\n`;
+            script += `            ${action}: gql\`query request${art2}`;
+            if (GraphKind.isStruc(result.kind)) {
+                script += ` {\n`;
+                let struc = result as TypeMetadata;
+                let res = this.results[struc.name];
+                let ent = this.entities[struc.name];
+                let select = res && res.select.join(",\n                    ")
+                    || ent && ent.select.join(",\n                    ");
+                script += `                result: ${method.api.alias}_${method.name}${art3} {\n`;
+                script += `                    ${select}`;
+                if (res && Object.keys(res.link).length) {
+                    for (let link of Object.entries(res.link)) {
+                        script += `,\n                    ${link[0]}`;
+                        if (link[1]) {
+                            script += ` {\n`;
+                            script += `                        ${link[1] && link[1].join(", ")}\n`;
+                            script += `                    }`;
+                        } else {
+                            script += ` # [ANY]\n`;
+                        }
+                    }
+                }
+                script += "\n";
+                script += `                }\n`;
+                script += `            }\`,\n`;
+            } else {
+                script += `\`, // : ANY\n`;
+            }
+            if (art3) script += `            variables: { ${arg} }\n`;
+            script += `        }).pipe(map(res => res.data.result));\n`;
+            script += `    }\n`;
+
             let dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
             let meth: MethodSchema = {
                 target: method,
@@ -524,6 +604,8 @@ export class CoreSchema {
                 api.resolvers[method.name] = meth;
             }
         }
+        script += "}";
+        api.script = script;
         this.apis[api.api] = api;
         return api;
     }

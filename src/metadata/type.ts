@@ -50,6 +50,31 @@ export enum GraphKind {
 }
 
 export namespace GraphKind {
+    export function toJS(type: GraphKind | string): string {
+        switch (type) {
+            case GraphKind.ID:
+            case GraphKind.String:
+            case GraphKind.Email:
+            case GraphKind.Option:
+                return "string";
+            case GraphKind.Int:
+            case GraphKind.Float:
+                return "number";
+            case GraphKind.Boolean:
+                return "boolean";
+            case GraphKind.Date:
+            case GraphKind.DateTime:
+            case GraphKind.Timestamp:
+                return "Date";
+            case GraphKind.Object:
+            case GraphKind.ANY:
+                return "any";
+            case GraphKind.Void:
+                return "void";
+            default:
+                return null;
+        }
+    }
     export function isScalar(type: GraphKind | string) {
         switch (type) {
             case GraphKind.ID:
@@ -129,6 +154,7 @@ export interface VarMetadata {
     item?: VarMetadata;
     ref?: Class;
     def?: string;
+    js?: string;
 }
 
 export interface IEnumMetadata extends VarMetadata {
@@ -208,6 +234,7 @@ export class TypeMetadata implements ITypeMetadata {
     public name: string = undefined;
     public kind: GraphKind = undefined;
     public def?: string;
+    public js?: string;
     public fields?: Record<string, FieldMetadata> = undefined;
 
     constructor(target: Class) {
