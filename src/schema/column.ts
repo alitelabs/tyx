@@ -2,10 +2,12 @@ import { Field, Metadata } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
-import { Int } from '../metadata/type';
+import { DesignMetadata } from '../metadata/method';
+import { GraphKind, Int, VarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
+import { VarMetadataSchema } from './type';
 
 // @Enum(ColumnType)
 export class ColumnTypeSchema {
@@ -13,9 +15,14 @@ export class ColumnTypeSchema {
 
 @Metadata()
 export class ColumnMetadataSchema implements IColumnMetadata {
+  @Field(String) kind: GraphKind;
+  @Field(String) name: string;
+  @Field(Boolean) required: boolean;
+  @Field(Object) design: DesignMetadata;
+  @Field(ref => VarMetadataSchema) build: VarMetadata;
+
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;
-  @Field(String) name: string;
   @Field(String) propertyName: string;
   @Field(String) type: ColumnType;
   @Field(Int) precision?: number;

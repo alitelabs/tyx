@@ -19,6 +19,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   public target: Class;
   public alias: string;
   public targets: Class[] = [];
+
   public entities: EntityMetadata[] = [];
   public columns: ColumnMetadata[] = [];
   public relations: RelationMetadata[] = [];

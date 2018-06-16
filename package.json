@@ -48,7 +48,7 @@
     "graphql-tools": "^3.0.2",
     "graphql-type-json": "^0.2.1",
     "graphql-voyager": "1.0.0-rc.15",
-    "jsonwebtoken": "^8.2.2",
+    "jsonwebtoken": "^8.3.0",
     "lodash": "^4.17.10",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
@@ -67,16 +67,16 @@
     "@types/jsonwebtoken": "^7.2.7",
     "@types/lodash": "^4.14.109",
     "@types/ms": "^0.7.30",
-    "@types/node": "^9.6.20",
+    "@types/node": "^9.6.22",
     "@types/uuid": "^3.4.3",
-    "aws-sdk": "^2.251.1",
+    "aws-sdk": "^2.259.1",
     "serverless-s3-deploy": "^0.5.0",
     "sha256": "^0.2.0",
     "shortid": "^2.2.8",
     "ts-node": "^3.3.0",
     "tslint": "^5.10.0",
     "tslint-config-airbnb": "^5.9.2",
-    "typescript": "^2.9.1"
+    "typescript": "^2.9.2"
   },
   "globalDependencies": {
     "@types/del": "^3.0.1",

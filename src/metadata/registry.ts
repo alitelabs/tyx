@@ -62,6 +62,7 @@ export abstract class Registry implements MetadataRegistry {
   public static readonly TYX_TYPE = 'tyx:type';
   public static readonly TYX_ENUM = 'tyx:enum';
   public static readonly TYX_METHOD = 'tyx:method';
+  public static readonly TYX_MEMBER = 'tyx:member';
 
   public static readonly TYX_ENTITY = 'tyx:entity';
   public static readonly TYX_COLUMN = 'tyx:column';
@@ -146,11 +147,16 @@ export abstract class Registry implements MetadataRegistry {
 
   public static validate() {
     const metadata: Record<string, TypeMetadata> = {};
+    const entities: Record<string, TypeMetadata> = {};
     const inputs: Record<string, TypeMetadata> = {};
     const types: Record<string, TypeMetadata> = {};
-    // Metdata
+    // Metadata
     for (const type of Object.values(this.RegistryMetadata)) {
       this.resolve(type, GraphKind.Metadata, metadata);
+    }
+    // Entities
+    for (const type of Object.values(this.EntityMetadata)) {
+      this.resolve(type, GraphKind.Entity, entities);
     }
     // API
     for (const api of Object.values(this.ApiMetadata)) {
@@ -204,7 +210,7 @@ export abstract class Registry implements MetadataRegistry {
         const meta = TypeMetadata.get(ref.ref);
         if (entity) {
           if (GraphKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
-          type = { kind: GraphKind.Entity, ref: (entity: any) => entity, def: entity.name, js: entity.name };
+          type = this.resolve(entity, scope, reg);
         } else if (meta) {
           type = this.resolve(meta, scope, reg);
         } else {
@@ -225,10 +231,10 @@ export abstract class Registry implements MetadataRegistry {
     if (!GraphKind.isStruc(struc.kind)) {
       throw new TypeError('Internal metadata error');
     }
-    const link = struc.ref && struc.name;
+    const link = struc.target && struc.name;
     if (link && reg[link]) return reg[link];
-    if (!struc.fields || !Object.values(struc.fields).length) {
-      throw new TypeError(`Empty type difinition ${struc.ref}`);
+    if (!struc.members || !Object.values(struc.members).length) {
+      throw new TypeError(`Empty type difinition ${struc.target}`);
     }
 
     if (scope === GraphKind.Metadata && !GraphKind.isMetadata(metadata.kind)) {
@@ -245,8 +251,8 @@ export abstract class Registry implements MetadataRegistry {
     struc.def = struc.name;
     struc.js = struc.name;
     reg[struc.name] = struc;
-    for (const field of Object.values(struc.fields)) {
-      field.type = this.resolve(field, scope, reg);
+    for (const member of Object.values(struc.members)) {
+      member.build = this.resolve(member, scope, reg);
     }
     return struc;
   }

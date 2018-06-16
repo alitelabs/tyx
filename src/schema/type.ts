@@ -36,7 +36,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   @Field(String) name: string;
   @Field(Boolean) required: boolean;
   @Field(Object) design: DesignMetadata;
-  @Field(ref => VarMetadataSchema) type: VarMetadata;
+  @Field(ref => VarMetadataSchema) build: VarMetadata;
   @Field(String) ref?: Class;
   @Field(ref => VarMetadataSchema) item?: VarMetadata;
 
@@ -47,13 +47,13 @@ export class FieldMetadataSchema implements IFieldMetadata {
 
 @Metadata()
 export class TypeMetadataSchema implements ITypeMetadata {
-  @Field(String) ref: Class;
-  @Field(String) name: string;
   @Field(String) kind: GraphKind;
-  @Field(list => [FieldMetadataSchema]) fields?: Record<string, IFieldMetadata>;
+  @Field(String) name: string;
+  @Field(String) target: Class;
+  @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
 
   public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
-    ref: obj => Utils.value(obj.ref),
-    fields: (obj, args) => Lo.filter(Object.values(obj.fields), args),
+    target: obj => Utils.value(obj.target),
+    members: (obj, args) => Lo.filter(Object.values(obj.members), args),
   };
 }

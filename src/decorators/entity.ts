@@ -6,7 +6,7 @@ import { Registry } from '../metadata/registry';
 export function Entity(options?: EntityOptions): ClassDecorator {
   return (target) => {
     Registry.trace(Entity, { options }, target);
-    EntityMetadata.define(target).commit(options);
+    EntityMetadata.define(target).submit(options);
     return Orm.Entity(options)(target);
   };
 }

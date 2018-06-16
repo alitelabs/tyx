@@ -3,6 +3,7 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { Registry } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
+import { GraphKind, ITypeMetadata, TypeMetadata } from './type';
 
 export interface EntityOptions {
   /**
@@ -33,7 +34,7 @@ export interface EntityOptions {
   synchronize?: boolean;
 }
 
-export interface IEntityMetadata {
+export interface IEntityMetadata extends ITypeMetadata {
   target: Class;
   /**
    * Entity's name.
@@ -55,17 +56,13 @@ export interface IEntityMetadata {
   relations: IRelationMetadata<any>[];
 }
 
-export class EntityMetadata implements IEntityMetadata {
-  public target: Class;
-  public name: string;
+export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
   public columns: ColumnMetadata[] = [];
   public primaryColumns: ColumnMetadata[] = [];
   public relations: RelationMetadata<any>[] = [];
-  public members: Record<string, (ColumnMetadata | RelationMetadata<any>)> = {};
 
   constructor(target: Class) {
-    this.target = target;
-    this.name = target.name;
+    super(target);
   }
 
   public static has(target: Class | Prototype): boolean {
@@ -82,12 +79,14 @@ export class EntityMetadata implements IEntityMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new EntityMetadata(target);
+      Reflect.defineMetadata(Registry.TYX_TYPE, meta, target);
       Reflect.defineMetadata(Registry.TYX_ENTITY, meta, target);
     }
     return meta;
   }
 
   public addColumn(column: ColumnMetadata): this {
+    this.members = this.members || {};
     if (!(this.members[column.propertyName])) this.columns.push(column);
     if (column.isPrimary) this.primaryColumns.push(column);
     this.members[column.propertyName] = column;
@@ -95,14 +94,16 @@ export class EntityMetadata implements IEntityMetadata {
   }
 
   public addRelation(relation: RelationMetadata<any>): this {
+    this.members = this.members || {};
     if (!this.members[relation.propertyName]) this.relations.push(relation);
     this.members[relation.propertyName] = relation;
     return this;
   }
 
-  public commit(options?: EntityOptions): void {
+  public submit(options?: EntityOptions): this {
     if (options && options.name) this.name = options.name;
-    Registry.EntityMetadata[this.name] = this;
+    super.commit(GraphKind.Entity, this.name);
+    return this;
   }
 
   public resolve(database: DatabaseMetadata): void {

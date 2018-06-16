@@ -3,6 +3,7 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { Registry } from './registry';
+import { FieldMetadata, GraphKind, IFieldMetadata } from './type';
 
 /**
  * All types that relation can be.
@@ -80,7 +81,7 @@ export interface JoinColumnOptions {
   referencedColumnName?: string;
 }
 
-export interface IRelationMetadata<T = any> {
+export interface IRelationMetadata<T = any> extends IFieldMetadata {
   target: Class;
   /**
    * Entity metadata of the entity where this relation is placed.
@@ -116,7 +117,7 @@ export interface IRelationMetadata<T = any> {
   joinColumns: IColumnMetadata[];
 }
 
-export class RelationMetadata<T = any> implements IRelationMetadata<T> {
+export class RelationMetadata<T = any> extends FieldMetadata implements IRelationMetadata<T> {
 
   public target: Class = undefined;
   public propertyName: string = undefined;
@@ -131,8 +132,10 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
   private inverseSide: (object: T) => any;
 
   private constructor(target: Class, propertyKey: string) {
+    super();
     this.target = target;
     this.propertyName = propertyKey;
+    this.name = propertyKey;
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
@@ -145,8 +148,11 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
 
   public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
     let meta = this.get(target, propertyKey);
-    if (!meta) meta = new RelationMetadata(target.constructor, propertyKey);
-    Reflect.defineMetadata(Registry.TYX_RELATION, meta, target, propertyKey);
+    if (!meta) {
+      meta = new RelationMetadata(target.constructor, propertyKey);
+      Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
+      Reflect.defineMetadata(Registry.TYX_RELATION, meta, target, propertyKey);
+    }
     return meta;
   }
 
@@ -156,6 +162,24 @@ export class RelationMetadata<T = any> implements IRelationMetadata<T> {
     inverseSide: (object: T) => any,
     options: RelationOptions,
   ): this {
+    switch (type) {
+      case RelationType.ManyToOne:
+      case RelationType.OneToOne:
+        this.kind = GraphKind.Ref;
+        this.ref = typeFunction;
+        break;
+      case RelationType.OneToMany:
+        this.kind = GraphKind.Array;
+        this.item = { kind: GraphKind.Ref, ref: typeFunction };
+        break;
+      default:
+        throw new TypeError('Internal metadata error');
+    }
+
+    this.required = !!(options && !options.nullable);
+    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, this.propertyName);
+    this.design = design && { type: design.name, target: design };
+
     this.relationType = type;
     this.typeFunction = typeFunction;
     this.inverseSide = inverseSide;

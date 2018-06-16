@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { Registry } from './registry';
-import { GraphKind } from './type';
+import { FieldMetadata, GraphKind } from './type';
 
 export enum ColumnType {
   Int = 'int',
@@ -227,7 +227,7 @@ export interface ColumnOptions {
   // transformer?: ValueTransformer;
 }
 
-export interface IColumnMetadata {
+export interface IColumnMetadata extends FieldMetadata {
   /**
    * Target class where column decorator is used.
    * This may not be always equal to entity metadata (for example embeds or inheritance cases).
@@ -305,7 +305,7 @@ export interface IColumnMetadata {
   isVirtual: boolean;
 }
 
-export class ColumnMetadata implements IColumnMetadata {
+export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public target: Class;
   public entityMetadata: IEntityMetadata;
   public name: string;
@@ -327,12 +327,19 @@ export class ColumnMetadata implements IColumnMetadata {
   protected constructor(
     target: Class,
     propertyKey: string,
-    mode: ColumnMode, options: ColumnOptions) {
+    mode: ColumnMode, options: ColumnOptions,
+  ) {
+    super();
     const state: IColumnMetadata = {
+      kind: ColumnType.graphType(options.type),
       target,
+      name: propertyKey,
+      required: options.primary || !options.nullable,
+      design: undefined,
+      build: undefined,
+
       entityMetadata: undefined,
       // TODO: Database name
-      name: propertyKey,
       propertyName: propertyKey,
       type: options.type,
       comment: options.comment,
@@ -363,15 +370,21 @@ export class ColumnMetadata implements IColumnMetadata {
     target: Prototype,
     propertyKey: string,
     mode: ColumnMode,
-    options: ColumnOptions): ColumnMetadata {
+    options: ColumnOptions,
+  ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
-    if (!meta) meta = new ColumnMetadata(target.constructor, propertyKey, mode, options);
-    Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
+    if (!meta) {
+      meta = new ColumnMetadata(target.constructor, propertyKey, mode, options);
+      Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
+      Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
+    }
     EntityMetadata.define(target.constructor).addColumn(meta);
     return meta;
   }
 
   public commit(): void {
+    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, this.propertyName);
+    this.design = design && { type: design.name, target: design };
   }
 
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {

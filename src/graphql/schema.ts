@@ -433,8 +433,8 @@ export class CoreSchema {
     if (reg[struc.name]) return reg[struc.name];
     if (this.entities[struc.def]) return this.entities[struc.def];
 
-    if (!GraphKind.isStruc(struc.kind) || !struc.fields) {
-      throw new TypeError(`Empty type difinition ${struc.ref}`);
+    if (!GraphKind.isStruc(struc.kind) || !struc.members) {
+      throw new TypeError(`Empty type difinition ${struc.target}`);
     }
 
     // Generate schema
@@ -449,8 +449,8 @@ export class CoreSchema {
     };
     reg[struc.name] = schema;
     schema.params = '';
-    for (const field of Object.values(struc.fields)) {
-      const type = field.type;
+    for (const field of Object.values(struc.members)) {
+      const type = field.build;
       if (GraphKind.isStruc(type.kind) || GraphKind.isArray(type.kind)) continue;
       schema.select.push(field.name);
       if (field.kind === GraphKind.Object) continue;
@@ -461,8 +461,8 @@ export class CoreSchema {
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
       : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
     schema.script = `export interface ${struc.name} {`;
-    for (const field of Object.values(struc.fields)) {
-      const type = field.type;
+    for (const field of Object.values(struc.members)) {
+      const type = field.build;
       if (GraphKind.isStruc(type.kind) || GraphKind.isArray(type.kind)) {
         const sch = this.genType(type, reg);
         schema.link[field.name] = sch && sch.select || null;
@@ -475,7 +475,7 @@ export class CoreSchema {
         schema.model += `  ${field.name}: ${type.def}\n`;
       }
       schema.script += `\n  ${field.name}?: ${type.js};`;
-      const resolvers = (struc.ref as any).RESOLVERS;
+      const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
     }
     schema.model += '}';
