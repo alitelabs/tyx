@@ -5,17 +5,17 @@ import * as Di from "./typedi";
 import * as Orm from "./typeorm";
 
 export const Imports = [
-    Di,
-    Orm,
-    Aws,
-    Express,
-    GraphQL
+  Di,
+  Orm,
+  Aws,
+  Express,
+  GraphQL
 ];
 
 export {
-    Di,
-    Orm,
-    Aws,
-    Express,
-    GraphQL
+  Di,
+  Orm,
+  Aws,
+  Express,
+  GraphQL
 };

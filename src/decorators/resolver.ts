@@ -1,30 +1,30 @@
 import { MethodMetadata } from "../metadata/method";
 import { Registry } from "../metadata/registry";
-import { InputType, ReturnType } from "../metadata/type";
+import { InputType, ResultType } from "../metadata/type";
 import { Class } from "../types/core";
 import { Roles } from "../types/security";
 
-export function Query<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
+export function Query<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
     return ResolverDecorator(Query, roles, input, result);
 }
 
-export function Advice<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
+export function Advice<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
     return ResolverDecorator(Advice, roles, input, result);
 }
 
-export function Mutation<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
+export function Mutation<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
     return ResolverDecorator(Mutation, roles, input, result);
 }
 
-export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ReturnType<TO>) {
+export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
     return ResolverDecorator(Command, roles, input, result);
 }
 
-export function Extension<TI = any, TO = any>(type: Class, input?: InputType<TI>, result?: ReturnType<TO>) {
+export function Extension<TI = any, TO = any>(type: Class, input?: InputType<TI>, result?: ResultType<TO>) {
     return ResolverDecorator(Extension, { Internal: true }, input, result, type);
 }
 
-function ResolverDecorator(decorator: Function, roles: Roles, input: InputType, result: ReturnType, type?: Class): MethodDecorator {
+function ResolverDecorator(decorator: Function, roles: Roles, input: InputType, result: ResultType, type?: Class): MethodDecorator {
     return (target, propertyKey, descriptor) => {
         Registry.trace(decorator, { roles, input, result }, target, propertyKey);
         let oper = decorator.name.toLowerCase();

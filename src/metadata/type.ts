@@ -20,7 +20,7 @@ export type Scalar =
 export type ClassRef<T> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
 export type VarType<T = any> = Scalar | [Scalar] | ClassRef<T> | EnumMetadata;
 export type InputType<T = any> = VarType<T> | [undefined] | ((ref?: any) => IEnumMetadata);
-export type ReturnType<T = any> = VarType<T>;
+export type ResultType<T = any> = VarType<T>;
 
 export enum GraphKind {
     ID = "ID",
@@ -157,20 +157,122 @@ export interface VarMetadata {
     js?: string;
 }
 
+export interface IInputMetadata extends VarMetadata {
+    type?: VarMetadata;
+}
+
+export class InputMetadata implements IInputMetadata {
+    public kind: GraphKind = undefined;
+    public item?: VarMetadata = undefined;
+    public ref?: Class = undefined;
+    public type: VarMetadata = undefined;
+
+    public static of(def: InputType): InputMetadata;
+    public static of(obj: IInputMetadata): InputMetadata;
+    public static of(defOrObj: IInputMetadata | InputType): InputMetadata {
+        let obj = undefined;
+        if (defOrObj === undefined) {
+            obj = VarMetadata.of(undefined);
+        } else if (defOrObj instanceof Function || defOrObj instanceof EnumMetadata || Array.isArray(defOrObj)) {
+            obj = VarMetadata.of(defOrObj);
+        } else if (defOrObj.kind) {
+            obj = defOrObj;
+        } else {
+            throw new TypeError("Internal metadata error");
+        }
+        return obj && Object.setPrototypeOf(obj, InputMetadata.prototype);
+    }
+}
+
+export interface IResultMetadata extends VarMetadata {
+    type?: VarMetadata;
+}
+
+export class ResultMetadata implements IResultMetadata {
+    public kind: GraphKind = GraphKind.Type;
+    item?: VarMetadata = undefined;
+    ref?: Class = undefined;
+    type: VarMetadata = undefined;
+
+    public static of(def: ResultType): ResultMetadata;
+    public static of(obj: IResultMetadata): ResultMetadata;
+    public static of(defOrObj: IResultMetadata | ResultType): ResultMetadata {
+        let obj = undefined;
+        if (defOrObj === undefined) {
+            obj = VarMetadata.of(undefined);
+        } else if (defOrObj instanceof Function || defOrObj instanceof EnumMetadata || Array.isArray(defOrObj)) {
+            obj = VarMetadata.of(defOrObj);
+        } else if (defOrObj.kind) {
+            obj = defOrObj;
+        } else {
+            throw new TypeError("Internal metadata error");
+        }
+        return obj && Object.setPrototypeOf(obj, ResultMetadata.prototype);
+    }
+}
+
+export namespace VarMetadata {
+    export function of(type: VarType | InputType | ResultType): VarMetadata {
+        let list = false;
+        if (Array.isArray(type)) {
+            type = type[0];
+            if (type === undefined) return { kind: GraphKind.Void };
+            list = true;
+        }
+        let gt = GraphKind.of(type);
+        let ref = GraphKind.isRef(gt);
+
+        let meta: VarMetadata;
+        if (type instanceof EnumMetadata) meta = { kind: GraphKind.Ref, ref: () => type };
+        else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
+        else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, ref: type } };
+        else if (ref) meta = { kind: GraphKind.Ref, ref: type };
+        else meta = { kind: gt };
+        return meta;
+    }
+}
+
+export interface IFieldMetadata extends VarMetadata {
+    name: string;
+    required: boolean;
+    design: DesignMetadata;
+    type: VarMetadata;
+}
+
+export class FieldMetadata implements IFieldMetadata {
+    public kind: GraphKind;
+    public name: string;
+    public required: boolean;
+    public design: DesignMetadata;
+    public type: VarMetadata;
+
+    public static of(obj: IFieldMetadata): FieldMetadata {
+        return obj && Object.setPrototypeOf(obj, FieldMetadata.prototype);
+    }
+}
+
 export interface IEnumMetadata extends VarMetadata {
     name: string;
     item?: never;
     ref: Function;
+    options: string[];
 }
 
 export class EnumMetadata implements IEnumMetadata {
     public kind = GraphKind.Enum;
     public name: string;
     public ref: Function;
+    public options: string[];
+
     constructor(target: Object, name: string) {
         if (!name) throw new TypeError("Unnamed enum");
         this.name = name;
         this.ref = () => target;
+        this.options = [];
+        for (let key in target) {
+            if (Number.isInteger(+key)) continue;
+            this.options.push(key);
+        }
     }
 
     public static has(target: Object): boolean {
@@ -195,44 +297,17 @@ export class EnumMetadata implements IEnumMetadata {
     }
 }
 
-export namespace VarMetadata {
-    export function of(type: VarType | InputType | ReturnType): VarMetadata {
-        let list = false;
-        if (Array.isArray(type)) {
-            type = type[0];
-            if (type === undefined) return { kind: GraphKind.Void };
-            list = true;
-        }
-        let gt = GraphKind.of(type);
-        let ref = GraphKind.isRef(gt);
-
-        let meta: VarMetadata;
-        if (type instanceof EnumMetadata) meta = { kind: GraphKind.Ref, ref: () => type };
-        else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
-        else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, ref: type } };
-        else if (ref) meta = { kind: GraphKind.Ref, ref: type };
-        else meta = { kind: gt };
-        return meta;
-    }
-}
-
-export interface FieldMetadata extends VarMetadata {
-    name: string;
-    required: boolean;
-    design?: DesignMetadata;
-}
-
 export interface ITypeMetadata extends VarMetadata {
-    ref: Class;
     name: string;
+    ref: Class;
     item?: never;
-    fields?: Record<string, FieldMetadata>;
+    fields?: Record<string, IFieldMetadata>;
 }
 
 export class TypeMetadata implements ITypeMetadata {
-    public ref: Class = undefined;
-    public name: string = undefined;
     public kind: GraphKind = undefined;
+    public name: string = undefined;
+    public ref: Class = undefined;
     public def?: string;
     public js?: string;
     public fields?: Record<string, FieldMetadata> = undefined;
@@ -265,7 +340,8 @@ export class TypeMetadata implements ITypeMetadata {
         this.fields = this.fields || {};
         // TODO: use design type when not specified
         let design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.ref.prototype, propertyKey);
-        let meta = VarMetadata.of(type) as FieldMetadata;
+        let meta = VarMetadata.of(type) as IFieldMetadata;
+        meta = FieldMetadata.of(meta);
         meta.name = propertyKey;
         meta.required = required;
         meta.design = design && { type: design.name, target: design };

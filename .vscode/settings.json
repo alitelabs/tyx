@@ -9,7 +9,7 @@
         // "**/*.js": { "when": "$(basename).ts"},
         // "**/*.js.map": { "when": "$(basename)"}
     },
-    "editor.tabSize": 4,
+    "editor.tabSize": 2,
     "editor.detectIndentation": true,
     "typescriptHero.resolver.stringQuoteStyle": "\"",
     "cSpell.words": [
@@ -26,6 +26,8 @@
     "gitlens.codeLens.enabled": false,
     "editor.formatOnSave": true,
     "[typescript]": {
+        "editor.tabSize": 2,
+        "editor.detectIndentation": false,
         "editor.codeActionsOnSave": {
             "source.organizeImports": true
         }

@@ -1,11 +1,7 @@
 import ServerlessExpress = require("aws-serverless-express");
 
-export {
-    Lambda
-} from "aws-sdk";
+export { Lambda } from "aws-sdk";
+export { ServerlessExpress };
 
-export {
-    ServerlessExpress
-};
 
 

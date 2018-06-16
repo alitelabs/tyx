@@ -5,7 +5,7 @@ import { Roles } from "../types/security";
 import * as Utils from "../utils/misc";
 import { ApiMetadata, IApiMetadata } from "./api";
 import { Registry } from "./registry";
-import { InputType, ReturnType, VarMetadata } from "./type";
+import { InputMetadata, InputType, ResultMetadata, ResultType, VarMetadata } from "./type";
 
 export enum HttpBindingType {
     PathParam = "PathParam",
@@ -137,8 +137,8 @@ export class MethodMetadata implements IMethodMetadata {
     public query: boolean = undefined;
     public mutation: boolean = undefined;
     public resolver: boolean = undefined;
-    public input: VarMetadata = undefined;
-    public result: VarMetadata = undefined;
+    public input: InputMetadata = undefined;
+    public result: ResultMetadata = undefined;
 
     public contentType: string = undefined;
     public bindings: HttpBindingMetadata[] = undefined;
@@ -189,25 +189,25 @@ export class MethodMetadata implements IMethodMetadata {
         return this;
     }
 
-    public setQuery(input?: InputType, result?: ReturnType): this {
+    public setQuery(input?: InputType, result?: ResultType): this {
         this.query = true;
-        this.input = VarMetadata.of(input);
-        this.result = VarMetadata.of(result);
+        this.input = InputMetadata.of(input);
+        this.result = ResultMetadata.of(result);
         return this;
     }
 
-    public setMutation(input?: InputType, result?: ReturnType): this {
+    public setMutation(input?: InputType, result?: ResultType): this {
         this.mutation = true;
-        this.input = VarMetadata.of(input);
-        this.result = VarMetadata.of(result);
+        this.input = InputMetadata.of(input);
+        this.result = ResultMetadata.of(result);
         return this;
     }
 
-    public setResolver(type: Class, input?: InputType, result?: ReturnType): this {
+    public setResolver(type: Class, input?: InputType, result?: ResultType): this {
         this.resolver = true;
         this.host = type;
-        this.input = VarMetadata.of(input);
-        this.result = VarMetadata.of(result);
+        this.input = InputMetadata.of(input);
+        this.result = ResultMetadata.of(result);
         return this;
     }
 

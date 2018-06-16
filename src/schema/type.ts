@@ -2,7 +2,7 @@ import Lo from "lodash";
 import { Field, Metadata } from "../decorators/type";
 import { SchemaResolvers } from "../graphql";
 import { DesignMetadata } from "../metadata/method";
-import { EnumMetadata, FieldMetadata, GraphKind, IEnumMetadata, ITypeMetadata, VarMetadata } from "../metadata/type";
+import { GraphKind, IEnumMetadata, IFieldMetadata, ITypeMetadata, VarMetadata } from "../metadata/type";
 import { Class } from "../types/core";
 import { Utils } from "../utils";
 
@@ -22,22 +22,24 @@ export class EnumMetadataSchema implements IEnumMetadata {
     @Field(String) kind: GraphKind;
     @Field(String) name: string;
     @Field(String) ref: any;
+    @Field([String]) options: string[];
 
-    public static RESOLVERS: SchemaResolvers<EnumMetadata> = {
+    public static RESOLVERS: SchemaResolvers<IEnumMetadata> = {
         ref: (obj) => Utils.value(obj.ref)
     };
 }
 
 @Metadata()
-export class FieldMetadataSchema implements FieldMetadata {
-    @Field(String) ref?: Class;
+export class FieldMetadataSchema implements IFieldMetadata {
     @Field(String) kind: GraphKind;
     @Field(String) name: string;
     @Field(Boolean) required: boolean;
-    @Field(ref => VarMetadataSchema) item?: VarMetadata;
     @Field(Object) design: DesignMetadata;
+    @Field(ref => VarMetadataSchema) type: VarMetadata;
+    @Field(String) ref?: Class;
+    @Field(ref => VarMetadataSchema) item?: VarMetadata;
 
-    public static RESOLVERS: SchemaResolvers<FieldMetadata> = {
+    public static RESOLVERS: SchemaResolvers<IFieldMetadata> = {
         ref: (obj) => Utils.value(obj.ref)
     };
 }
@@ -47,7 +49,7 @@ export class TypeMetadataSchema implements ITypeMetadata {
     @Field(String) ref: Class;
     @Field(String) name: string;
     @Field(String) kind: GraphKind;
-    @Field(list => [FieldMetadataSchema]) fields?: Record<string, FieldMetadata>;
+    @Field(list => [FieldMetadataSchema]) fields?: Record<string, IFieldMetadata>;
 
     public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
         ref: (obj) => Utils.value(obj.ref),

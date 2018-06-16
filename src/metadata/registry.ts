@@ -8,7 +8,7 @@ import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata 
 import { IProxyMetadata, ProxyMetadata } from "./proxy";
 import { IRelationMetadata, RelationMetadata } from "./relation";
 import { IServiceMetadata, ServiceMetadata } from "./service";
-import { EnumMetadata, ITypeMetadata, TypeMetadata } from "./type";
+import { EnumMetadata, GraphKind, ITypeMetadata, TypeMetadata, VarMetadata } from "./type";
 
 // export interface TypeDecorationMetadata {
 //     target: Function;
@@ -153,6 +153,108 @@ export abstract class Registry implements MetadataRegistry {
         };
         Object.setPrototypeOf(reg, Registry.prototype);
         return reg as any;
+    }
+
+    public static validate() {
+        let metadata: Record<string, TypeMetadata> = {};
+        let inputs: Record<string, TypeMetadata> = {};
+        let types: Record<string, TypeMetadata> = {};
+        // Metdata
+        for (let type of Object.values(this.RegistryMetadata))
+            this.resolve(type, GraphKind.Metadata, metadata);
+        // API
+        for (let api of Object.values(this.ApiMetadata)) {
+            for (let method of Object.values(api.methods)) {
+                if (!method.query && !method.mutation && !method.resolver) continue;
+                method.input.type = this.resolve(method.input, GraphKind.Input, inputs);
+                method.result.type = this.resolve(method.result, GraphKind.Type, types);
+            }
+        }
+        // TODO: Check for unused inputs and results
+        // Inputs
+        for (let type of Object.values(this.InputMetadata))
+            this.resolve(type, GraphKind.Input, inputs);
+        // Results
+        for (let type of Object.values(this.TypeMetadata))
+            this.resolve(type, GraphKind.Type, types);
+    }
+
+    private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {
+        if (GraphKind.isScalar(metadata.kind)) {
+            return { kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) };
+        }
+        if (GraphKind.isEnum(metadata.kind)) {
+            let e = metadata as EnumMetadata;
+            metadata.def = e.name;
+            metadata.js = e.name;
+            return metadata;
+        }
+        if (GraphKind.isArray(metadata.kind)) {
+            let item = this.resolve(metadata.item, scope, reg);
+            if (item) {
+                return { kind: GraphKind.Array, item, def: `[${item.def}]`, js: `${item.js}[]` };
+            } else {
+                return { kind: GraphKind.Array, item, def: `[${GraphKind.Object}]`, js: `any[]` };
+            }
+        }
+        if (GraphKind.isRef(metadata.kind)) {
+            let type: VarMetadata = undefined;
+            let target: any = metadata.ref();
+            let ref = VarMetadata.of(target);
+            if (GraphKind.isEnum(target && target.kind)) {
+                type = this.resolve(target, scope, reg);
+            } else if (GraphKind.isScalar(ref.kind)) {
+                type = this.resolve(ref, scope, reg);
+            } else if (GraphKind.isArray(ref.kind)) {
+                const z = ref.item.ref;
+                ref.item.ref = z && (() => z);
+                type = this.resolve(ref, scope, reg);
+            } else if (GraphKind.isRef(ref.kind)) {
+                // TODO: Make sure entity exists
+                let entity = EntityMetadata.get(ref.ref);
+                let meta = TypeMetadata.get(ref.ref);
+                if (entity) {
+                    if (GraphKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
+                    type = { kind: GraphKind.Entity, ref: (entity: any) => entity, def: entity.name, js: entity.name };
+                } else if (meta) {
+                    type = this.resolve(meta, scope, reg);
+                } else {
+                    type = { kind: GraphKind.Object, def: GraphKind.Object, js: "any" };
+                }
+            } else {
+                throw Error("Internal registry error");
+            }
+            return type;
+        }
+
+        // if (GraphType.isEntity(target.type) && scope === GraphType.Result) {
+        //     // TODO: Register imports
+        //     return target.target.name;
+        // }
+
+        let struc = metadata as TypeMetadata;
+        if (!GraphKind.isStruc(struc.kind))
+            throw new TypeError("Internal metadata error");
+        let link = struc.ref && struc.name;
+        if (link && reg[link]) return reg[link];
+        if (!struc.fields || !Object.values(struc.fields).length)
+            throw new TypeError(`Empty type difinition ${struc.ref}`);
+
+        if (scope === GraphKind.Metadata && !GraphKind.isMetadata(metadata.kind))
+            throw new TypeError(`Metadata type can not reference [${metadata.kind}]`);
+        if (scope === GraphKind.Input && !GraphKind.isInput(metadata.kind))
+            throw new TypeError(`Input type can not reference [${metadata.kind}]`);
+        if (scope === GraphKind.Type && !GraphKind.isType(metadata.kind) && !GraphKind.isEntity(metadata.kind))
+            throw new TypeError(`Type type can not reference [${metadata.kind}]`);
+
+        // Resolve structure
+        struc.def = struc.name;
+        struc.js = struc.name;
+        reg[struc.name] = struc;
+        for (let field of Object.values(struc.fields)) {
+            field.type = this.resolve(field, scope, reg);
+        }
+        return struc;
     }
 
     public static trace(decorator: string | Function, args: Record<string, any>, over: Object | Function, propertyKey?: string | symbol, index?: number) {
