@@ -1,27 +1,29 @@
-import { Registry } from "../metadata/registry";
-import { EnumMetadata, GraphKind, TypeMetadata, VarType } from "../metadata/type";
+import { Registry } from '../metadata/registry';
+import { EnumMetadata, GraphKind, TypeMetadata, VarType } from '../metadata/type';
+
+// tslint:disable:function-name
 
 /// Root Types
-
 export function Metadata(name?: string): ClassDecorator {
-    return TypeClass(Metadata.name, GraphKind.Metadata, name);
+  return TypeClass(Metadata.name, GraphKind.Metadata, name);
 }
 export function Input(name?: string): ClassDecorator {
-    return TypeClass(Input.name, GraphKind.Input, name);
+  return TypeClass(Input.name, GraphKind.Input, name);
 }
 export function Type(name?: string): ClassDecorator {
-    return TypeClass(Type.name, GraphKind.Type, name);
+  return TypeClass(Type.name, GraphKind.Type, name);
 }
 function TypeClass(decorator: string, type: GraphKind, name?: string): ClassDecorator {
-    return (target) => {
-        Registry.trace(decorator, { type, name }, target);
-        if (type === GraphKind.Metadata) name = name || target.name.replace(/Schema$/, "");
-        return void TypeMetadata.define(target).commit(type, name);
-    };
+  return (target) => {
+    Registry.trace(decorator, { type, name }, target);
+    // tslint:disable-next-line:no-parameter-reassignment
+    if (type === GraphKind.Metadata) name = name || target.name.replace(/Schema$/, '');
+    return void TypeMetadata.define(target).commit(type, name);
+  };
 }
 
 export function Enum(target: Object, name?: string): EnumMetadata {
-    return EnumMetadata.define(target, name);
+  return EnumMetadata.define(target, name);
 }
 
 /// Fields
@@ -63,9 +65,9 @@ export function Enum(target: Object, name?: string): EnumMetadata {
 // }
 
 export function Field<T = any>(type: VarType<T>, required?: boolean): PropertyDecorator {
-    return (target, propertyKey) => {
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        Registry.trace(Field, { type, required }, target, propertyKey);
-        TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
-    };
+  return (target, propertyKey) => {
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    Registry.trace(Field, { type, required }, target, propertyKey);
+    TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
+  };
 }

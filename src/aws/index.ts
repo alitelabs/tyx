@@ -1,33 +1,33 @@
-import "reflect-metadata";
+import 'reflect-metadata';
 
 export {
-    LambdaAdapter,
+  LambdaAdapter,
 
-    RemoteEvent,
-    LambdaApiEvent,
-    LambdaS3Event,
-    LambdaDynamoEvent,
-    LambdaEventRecord,
-    LambdaS3Record,
-    LambdaDynamoRecord,
+  RemoteEvent,
+  LambdaApiEvent,
+  LambdaS3Event,
+  LambdaDynamoEvent,
+  LambdaEventRecord,
+  LambdaS3Record,
+  LambdaDynamoRecord,
 
-    LambdaContext,
-    LambdaCallback,
-    LambdaHandler
-} from "./adapter";
-
-export {
-    LambdaError,
-} from "./error";
+  LambdaContext,
+  LambdaCallback,
+  LambdaHandler,
+} from './adapter';
 
 export {
-    LambdaProxy,
-} from "./proxy";
+  LambdaError,
+} from './error';
 
 export {
-    S3ObjectCreated,
-    DynamoDbInsert,
-    DynamoDbModify,
-    DynamoDbRemove,
-    Schedule
-} from "./events";
+  LambdaProxy,
+} from './proxy';
+
+export {
+  S3ObjectCreated,
+  DynamoDbInsert,
+  DynamoDbModify,
+  DynamoDbRemove,
+  Schedule,
+} from './events';

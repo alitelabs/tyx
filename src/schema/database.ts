@@ -1,31 +1,32 @@
-import Lo from "lodash";
-import { Field, Metadata } from "../decorators/type";
-import { SchemaResolvers } from "../graphql/types";
-import { IColumnMetadata } from "../metadata/column";
-import { IDatabaseMetadata } from "../metadata/database";
-import { IEntityMetadata } from "../metadata/entity";
-import { IRelationMetadata } from "../metadata/relation";
-import { Class } from "../types/core";
-import { Utils } from "../utils";
-import { ColumnMetadataSchema } from "./column";
-import { EntityMetadataSchema } from "./entity";
-import { RelationMetadataSchema } from "./relation";
+// tslint:disable-next-line:import-name
+import Lo from 'lodash';
+import { Field, Metadata } from '../decorators/type';
+import { SchemaResolvers } from '../graphql/types';
+import { IColumnMetadata } from '../metadata/column';
+import { IDatabaseMetadata } from '../metadata/database';
+import { IEntityMetadata } from '../metadata/entity';
+import { IRelationMetadata } from '../metadata/relation';
+import { Class } from '../types/core';
+import { Utils } from '../utils';
+import { ColumnMetadataSchema } from './column';
+import { EntityMetadataSchema } from './entity';
+import { RelationMetadataSchema } from './relation';
 
 @Metadata()
 export class DatabaseMetadataSchema implements IDatabaseMetadata {
-    @Field(String) target: Class;
-    @Field(String) alias: string;
+  @Field(String) target: Class;
+  @Field(String) alias: string;
 
-    @Field([String]) targets: Class[];
-    @Field(list => [EntityMetadataSchema]) entities: IEntityMetadata[];
-    @Field(list => [ColumnMetadataSchema]) columns: IColumnMetadata[];
-    @Field(list => [RelationMetadataSchema]) relations: IRelationMetadata<any>[];
+  @Field([String]) targets: Class[];
+  @Field(list => [EntityMetadataSchema]) entities: IEntityMetadata[];
+  @Field(list => [ColumnMetadataSchema]) columns: IColumnMetadata[];
+  @Field(list => [RelationMetadataSchema]) relations: IRelationMetadata<any>[];
 
-    public static RESOLVERS: SchemaResolvers<IDatabaseMetadata> = {
-        target: (obj) => Utils.value(obj.target),
-        targets: (obj) => obj.targets && obj.targets.map(t => `[class: ${t.name}]`),
-        entities: (obj, args) => Lo.filter(obj.entities, args),
-        columns: (obj, args) => Lo.filter(obj.columns, args),
-        relations: (obj, args) => Lo.filter(obj.relations, args)
-    };
+  public static RESOLVERS: SchemaResolvers<IDatabaseMetadata> = {
+    target: obj => Utils.value(obj.target),
+    targets: obj => obj.targets && obj.targets.map(t => `[class: ${t.name}]`),
+    entities: (obj, args) => Lo.filter(obj.entities, args),
+    columns: (obj, args) => Lo.filter(obj.columns, args),
+    relations: (obj, args) => Lo.filter(obj.relations, args),
+  };
 }

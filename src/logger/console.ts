@@ -1,93 +1,93 @@
-import { LogLevel } from "../types/config";
-import { Logger } from "./logger";
+import { LogLevel } from '../types/config';
+import { Logger } from './logger';
 
 export class ConsoleLogger implements Logger {
-    protected _logName: string;
-    protected _logEmitter: string;
+  protected logName: string;
+  protected logEmitter: string;
 
-    constructor(logName: string, emitter?: any) {
-        this._logName = logName;
+  constructor(logName: string, emitter?: any) {
+    this.logName = logName;
 
-        let n: string;
-        if (emitter instanceof Function) {
-            n = emitter.name;
-        } else if (typeof emitter === "string") {
-            n = emitter;
-        } else if (emitter && emitter.constructor instanceof Function) {
-            n = emitter.constructor.name;
-        } else {
-            n = "" + (emitter || "<script>");
-        }
-
-        this._logEmitter = n;
+    let n: string;
+    if (emitter instanceof Function) {
+      n = emitter.name;
+    } else if (typeof emitter === 'string') {
+      n = emitter;
+    } else if (emitter && emitter.constructor instanceof Function) {
+      n = emitter.constructor.name;
+    } else {
+      n = '' + (emitter || '<script>');
     }
 
-    public todo(message: any, ...args: any[]): void {
-        if (LogLevel.bellow(LogLevel.ALL)) return;
-        message = this.format("TODO", message, args);
-        console.log(message, ...args);
-    }
+    this.logEmitter = n;
+  }
 
-    public fatal(message: any, ...args: any[]): any {
-        let err = message;
-        if (LogLevel.bellow(LogLevel.FATAL)) return err;
-        message = this.format("FATAL", message, args);
-        console.error(message, ...args);
-        return err;
-    }
+  public todo(msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.ALL)) return;
+    const message = this.format('TODO', msg, args);
+    console.log(message, ...args);
+  }
 
-    public error(message: any, ...args: any[]): any {
-        let err = message;
-        if (LogLevel.bellow(LogLevel.ERROR)) return err;
-        message = this.format("ERROR", message, args);
-        console.error(message, ...args);
-        return err;
-    }
+  public fatal(msg: any, ...args: any[]): any {
+    const err = msg;
+    if (LogLevel.bellow(LogLevel.FATAL)) return err;
+    const message = this.format('FATAL', msg, args);
+    console.error(message, ...args);
+    return err;
+  }
 
-    public info(message: any, ...args: any[]): void {
-        if (LogLevel.bellow(LogLevel.INFO)) return;
-        message = this.format("INFO", message, args);
-        console.info(message, ...args);
-    }
+  public error(msg: any, ...args: any[]): any {
+    const err = msg;
+    if (LogLevel.bellow(LogLevel.ERROR)) return err;
+    const message = this.format('ERROR', msg, args);
+    console.error(message, ...args);
+    return err;
+  }
 
-    public warn(message: any, ...args: any[]): void {
-        if (LogLevel.bellow(LogLevel.WARN)) return;
-        message = this.format("WARN", message, args);
-        console.warn(message, ...args);
-    }
+  public info(msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.INFO)) return;
+    const message = this.format('INFO', msg, args);
+    console.info(message, ...args);
+  }
 
-    public debug(message: any, ...args: any[]): void {
-        if (LogLevel.bellow(LogLevel.DEBUG)) return;
-        message = this.format("DEBUG", message, args);
-        console.log(message, ...args);
-    }
+  public warn(msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.WARN)) return;
+    const message = this.format('WARN', msg, args);
+    console.warn(message, ...args);
+  }
 
-    public trace(message: any, ...args: any[]): void {
-        if (LogLevel.bellow(LogLevel.TRACE)) return;
-        message = this.format("TRACE", message, args);
-        console.trace(message, ...args);
-    }
+  public debug(msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.DEBUG)) return;
+    const message = this.format('DEBUG', msg, args);
+    console.log(message, ...args);
+  }
 
-    public time(): [number, number] {
-        return process.hrtime();
-    }
+  public trace(msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.TRACE)) return;
+    const message = this.format('TRACE', msg, args);
+    console.trace(message, ...args);
+  }
 
-    public timeEnd(start: [number, number], message: any, ...args: any[]): void {
-        let lapse = process.hrtime(start);
-        let ms = lapse[0] * 1000 + Math.floor(lapse[1] / 1000000);
-        let ns = Math.floor((lapse[1] % 1000000) / 1000);
-        message = this.format("TIME", message, args) + ": " + ms + "." + ns + "ms";
-        console.log(message, ...args);
-    }
+  public time(): [number, number] {
+    return process.hrtime();
+  }
 
-    private format(type: string, message: any, args: any[]) {
-        // https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html
-        // let time = ""; // `[${new Date().toISOString()}] `;
-        if (typeof message === "object") { args.unshift(message); }
-        return `${type} ${this.prefix} : ${message}`;
-    }
+  public timeEnd(start: [number, number], msg: any, ...args: any[]): void {
+    const lapse = process.hrtime(start);
+    const ms = lapse[0] * 1000 + Math.floor(lapse[1] / 1000000);
+    const ns = Math.floor((lapse[1] % 1000000) / 1000);
+    const message = this.format('TIME', msg, args) + ': ' + ms + '.' + ns + 'ms';
+    console.log(message, ...args);
+  }
 
-    private get prefix(): string {
-        return `[${this._logName}:${this._logEmitter}]`;
-    }
+  private format(type: string, message: any, args: any[]) {
+    // https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-logging.html
+    // let time = ""; // `[${new Date().toISOString()}] `;
+    if (typeof message === 'object') { args.unshift(message); }
+    return `${type} ${this.prefix} : ${message}`;
+  }
+
+  private get prefix(): string {
+    return `[${this.logName}:${this.logEmitter}]`;
+  }
 }

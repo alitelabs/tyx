@@ -1,28 +1,30 @@
-import { DEF_DIRECTIVES, DEF_SCALARS } from "./base";
-import { CoreSchema, ENTITY, EntitySchema, GET, SEARCH } from "./schema";
+import { DEF_DIRECTIVES, DEF_SCALARS } from './base';
+import { CoreSchema, ENTITY, EntitySchema, GET, SEARCH } from './schema';
 
-export default function codegen(schema: CoreSchema, folder: string, ext?: string) {
-  ext = ext || "gql";
-  let fs = require("fs");
-  fs.writeFileSync(`${folder}/schema/import.${ext}`,
-    DEF_SCALARS.replace("scalar Date", "#scalar Date") + "\n\n" + DEF_DIRECTIVES + "\n");
-  for (let target in schema.databases[0].entities) {
-    let entry = schema.databases[0].entities[target];
-    fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + "\n\n" + entry.mutation);
+export default function codegen(schema: CoreSchema, folder: string, extension?: string) {
+  const ext = extension || 'gql';
+  const fs = require('fs');
+  fs.writeFileSync(
+    `${folder}/schema/import.${ext}`,
+    DEF_SCALARS.replace('scalar Date', '#scalar Date') + '\n\n' + DEF_DIRECTIVES + '\n',
+  );
+  for (const target in schema.databases[0].entities) {
+    const entry = schema.databases[0].entities[target];
+    fs.writeFileSync(`${folder}/schema/controller/${target}Controller.${ext}`, entry.query + '\n\n' + entry.mutation);
     fs.writeFileSync(`${folder}/schema/model/${target}${ENTITY}.${ext}`, entry.model);
-    fs.writeFileSync(`${folder}/schema/input/${target}Input.${ext}`, entry.inputs.join("\n\n"));
+    fs.writeFileSync(`${folder}/schema/input/${target}Input.${ext}`, entry.inputs.join('\n\n'));
     fs.writeFileSync(`${folder}/controller/${target}Controller.ts`, controller(target));
     if (!Object.keys(entry.resolvers).length) continue;
     fs.writeFileSync(`${folder}/resolver/${target}Resolver.ts`, resolver(target, entry.relations));
   }
-  let { conIndex, resIndex } = indexes(schema.databases[0].entities);
+  const { conIndex, resIndex } = indexes(schema.databases[0].entities);
   fs.writeFileSync(`${folder}/controller/index.ts`, conIndex);
   fs.writeFileSync(`${folder}/resolver/index.ts`, resIndex);
   // fs.writeFileSync(`${folder}/schema/prisma.graphql`, ToolkitSchema.genPrisma(schema));
 }
 
 function controller(target: string) {
-  return back("    ", `
+  return back('    ', `
     import { EntityManager } from "typeorm";
     import { Controller, Mutation, Query } from "vesper";
     import { ${target} } from "../../entity";
@@ -61,7 +63,7 @@ function controller(target: string) {
 }
 
 function resolver(target: string, relations: Record<string, { target: string, type: string }>) {
-  return back("    ", `
+  return back('    ', `
     import { Resolver, ResolverInterface, Resolve } from "vesper";
     import { EntityManager } from "typeorm";
     import { ${target} } from "../../entity";
@@ -69,26 +71,27 @@ function resolver(target: string, relations: Record<string, { target: string, ty
     Object.values(relations)
       .filter(r => r.target !== target)
       .map(r => `import { ${r.target} } from "../../entity/${r.target}";`)
-      .join("\n") + `
+      .join('\n') + `
 
     @Resolver(${target})
     export class ${target}Resolver implements ResolverInterface<${target}> {
         constructor(public _manager: EntityManager) { }
     ` + Object.entries(relations).map(rel => `
         @Resolve()
-        public async ${rel[0]}(root: ${target}, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo): Promise<${rel[1].target}${rel[1].type.endsWith("Many") ? "[]" : ""}> {
+        public async ${rel[0]}(root: ${target}, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo)`
+      + `: Promise<${rel[1].target}${rel[1].type.endsWith('Many') ? '[]' : ''}> {
             return TypeOrm.${rel[1].type}(${target}.name, this.${rel[0]}.name, root, args, context, info);
-        }`).join("\n") + `
+        }`).join('\n') + `
     }`);
 }
 
 function indexes(schema: Record<string, EntitySchema>) {
-  let conImport = "";
-  let conArray = "";
-  let resImport = "";
-  let resArray = "";
-  for (let name of Object.keys(schema).sort()) {
-    let entry = schema[name];
+  let conImport = '';
+  let conArray = '';
+  let resImport = '';
+  let resArray = '';
+  for (const name of Object.keys(schema).sort()) {
+    const entry = schema[name];
     conImport += `import { ${name}Controller } from "./${name}Controller";\n`;
     conArray += `        ${name}Controller,\n`;
     if (!Object.keys(entry.resolvers).length) continue;
@@ -98,7 +101,7 @@ function indexes(schema: Record<string, EntitySchema>) {
   conArray = conArray.trim();
   resArray = resArray.trim();
 
-  let conIndex = back("    ", `
+  const conIndex = back('    ', `
     ${conImport}
     export {
         ${conArray}
@@ -108,7 +111,7 @@ function indexes(schema: Record<string, EntitySchema>) {
     ];
     `);
 
-  let resIndex = back("    ", `
+  const resIndex = back('    ', `
     ${resImport}
     export {
         ${resArray}
@@ -121,5 +124,5 @@ function indexes(schema: Record<string, EntitySchema>) {
 }
 
 function back(prefix: string, text: string) {
-  return text.split("\n").map(line => line.replace(prefix, "")).join("\n").trim();
+  return text.split('\n').map(line => line.replace(prefix, '')).join('\n').trim();
 }

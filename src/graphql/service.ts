@@ -1,19 +1,20 @@
-import renderVoyagerPage, { MiddlewareOptions } from "graphql-voyager/middleware/render-voyager-page";
-import { Debug } from "../decorators/auth";
-import { ContentType, ContextObject, Get, Post, RequestObject } from "../decorators/http";
-import { Activate, Service } from "../decorators/service";
-import { InternalServerError } from "../errors";
-import { GraphQL } from "../import";
-import { Logger } from "../logger";
-import { Context } from "../types/core";
-import { HttpRequest, HttpResponse } from "../types/http";
-import { CoreSchema } from "./schema";
-import { ResolverContext } from "./types";
-import SuperGraphiQL = require("super-graphiql-express");
+import renderVoyagerPage, { MiddlewareOptions } from 'graphql-voyager/middleware/render-voyager-page';
+import { Debug } from '../decorators/auth';
+import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
+import { Activate, Service } from '../decorators/service';
+import { InternalServerError } from '../errors';
+import { GraphQL } from '../import';
+import { Logger } from '../logger';
+import { Context } from '../types/core';
+import { HttpRequest, HttpResponse } from '../types/http';
+import { CoreSchema } from './schema';
+import { ResolverContext } from './types';
+import SuperGraphiQL = require('super-graphiql-express');
 
+const playgroundVersion = 'latest';
 
-const playgroundVersion = "latest";
-export const GraphQLApi = "graphql";
+// tslint:disable-next-line:variable-name
+export const GraphQLApi = 'graphql';
 
 export interface GraphQLApi {
   graphql(ctx: ResolverContext, req: HttpRequest): Promise<HttpResponse>;
@@ -39,11 +40,11 @@ export class CoreGraphQLService implements GraphQLApi {
   }
 
   @Debug()
-  @Get("/graphiql")
-  @ContentType("text/html")
+  @Get('/graphiql')
+  @ContentType('text/html')
   public async graphiql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
-    let options: GraphQL.GraphiQLData = {
-      endpointURL: `${prefix || ""}/graphql`,
+    const options: GraphQL.GraphiQLData = {
+      endpointURL: `${prefix || ''}/graphql`,
       passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
       // editorTheme: "idea"
     };
@@ -59,18 +60,19 @@ export class CoreGraphQLService implements GraphQLApi {
   }
 
   @Debug()
-  @Get("/supergraphiql")
-  @ContentType("text/html")
+  @Get('/supergraphiql')
+  @ContentType('text/html')
   public async supergraphiql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string): Promise<string> {
-    let options: GraphQL.GraphiQLData = {
-      endpointURL: `${prefix || ""}/graphql`,
+    const options: GraphQL.GraphiQLData = {
+      endpointURL: `${prefix || ''}/graphql`,
       passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
       // editorTheme: "idea"
     };
     try {
       let html: string = SuperGraphiQL.renderGraphiQL(options);
-      if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
-        html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
+      if (req.sourceIp !== 'localhost' && req.sourceIp !== '::1') {
+        html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
+      }
       return html;
       // return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
     } catch (error) {
@@ -79,16 +81,21 @@ export class CoreGraphQLService implements GraphQLApi {
   }
 
   @Debug()
-  @Get("/voyager")
-  @ContentType("text/html")
-  public async voyager(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context, prefix?: string, display?: Object): Promise<string> {
-    let xxx: MiddlewareOptions = {
-      endpointUrl: `${prefix || ""}/graphql`,
+  @Get('/voyager')
+  @ContentType('text/html')
+  public async voyager(
+    @RequestObject() req: HttpRequest,
+    @ContextObject() ctx: Context,
+    prefix?: string,
+    display?: Object,
+  ): Promise<string> {
+    const xxx: MiddlewareOptions = {
+      endpointUrl: `${prefix || ''}/graphql`,
       displayOptions: display,
-      headersJS: ctx.auth.token ? JSON.stringify({ "Authorization": ctx.auth.token }) : undefined
+      headersJS: ctx.auth.token ? JSON.stringify({ Authorization: ctx.auth.token }) : undefined,
     };
     try {
-      let html: string = renderVoyagerPage(xxx);
+      const html: string = renderVoyagerPage(xxx);
       // if (req.sourceIp !== "localhost" && req.sourceIp !== "::1")
       //     html = html.replace("<head>", `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
       return html;
@@ -99,46 +106,51 @@ export class CoreGraphQLService implements GraphQLApi {
   }
 
   @Debug()
-  @Get("/playground")
-  @ContentType("text/html")
-  public async playground(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest, prefix?: string, options?: GraphQL.RenderPageOptions): Promise<string> {
-    let sufix = ctx.auth.token ? ("/" + ctx.auth.token) : "";
+  @Get('/playground')
+  @ContentType('text/html')
+  public async playground(
+    @ContextObject() ctx: Context,
+    @RequestObject() req: HttpRequest,
+    prefix?: string,
+    options?: GraphQL.RenderPageOptions,
+  ): Promise<string> {
+    const sufix = ctx.auth.token ? ('/' + ctx.auth.token) : '';
     const fix: GraphQL.RenderPageOptions = {
-      endpoint: `${prefix || ""}/graphql${sufix}`,
+      endpoint: `${prefix || ''}/graphql${sufix}`,
       // passHeader: `'Authorization': '${call.queryStringParameters.token}'`,
-      version: playgroundVersion
+      version: playgroundVersion,
     };
-    options = { ...options, ...fix };
-    if (options.tabs) options.tabs.forEach(tab => tab.endpoint = options.endpoint);
-    return await GraphQL.renderPlaygroundPage(options);
+    const ops = { ...options, ...fix };
+    if (ops.tabs) ops.tabs.forEach(tab => tab.endpoint = ops.endpoint);
+    return await GraphQL.renderPlaygroundPage(ops);
   }
 
   @Debug()
-  @Get("/graphql")
-  @Post("/graphql", false)
-  @Get("/graphql/{authorization}")
-  @Post("/graphql/{authorization}", false)
+  @Get('/graphql')
+  @Post('/graphql', false)
+  @Get('/graphql/{authorization}')
+  @Post('/graphql/{authorization}', false)
   @ContentType(HttpResponse)
   public async graphql(@ContextObject() ctx: ResolverContext, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
-    this.executable = this.executable || this.schema.executable({ log: (msg) => this.log.info(msg) });
-    let options = {
+    this.executable = this.executable || this.schema.executable({ log: msg => this.log.info(msg) });
+    const options = {
       schema: this.executable,
       formatError: (err: any) => ({
         message: err.message,
         code: err.originalError && err.originalError.code,
         locations: err.locations,
-        path: err.path
+        path: err.path,
       }),
-      context: ctx as any
+      context: ctx as any,
     };
-    let query = req.json || req.queryStringParameters;
-    let result: HttpResponse = { statusCode: null, body: null, headers: {} };
+    const query = req.json || req.queryStringParameters;
+    const result: HttpResponse = { statusCode: null, body: null, headers: {} };
     try {
       result.body = await GraphQL.runHttpQuery([req, ctx], { method: req.httpMethod, options, query });
-      result.headers["Content-Type"] = "application/json";
+      result.headers['Content-Type'] = 'application/json';
       result.statusCode = 200;
     } catch (error) {
-      if (error.name === "HttpQueryError") throw error;
+      if (error.name === 'HttpQueryError') throw error;
       result.headers = error.headers;
       result.statusCode = error.statusCode;
       result.body = error.message;

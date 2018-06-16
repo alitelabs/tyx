@@ -1,5 +1,20 @@
 {
-    "jsRules": {
+    "extends": "tslint-config-airbnb",
+    "rules": {
+        "object-shorthand-properties-first": false,
+        "no-increment-decrement": false,
+        "import-name": false,
+        "max-line-length": [
+            true,
+            140
+        ],
+        "import-blacklist": [
+            true,
+            ".",
+            ".."
+        ]
+    },
+    "_jsRules": {
         "class-name": true,
         "comment-format": [
             true,
@@ -43,7 +58,7 @@
             "check-type"
         ]
     },
-    "rules": {
+    "_tsRules": {
         "class-name": true,
         "comment-format": [
             true,

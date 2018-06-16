@@ -1,7 +1,7 @@
-import { ExpressContainer } from "../../src";
-import { NoteService } from "./service";
+import { ExpressContainer } from '../../src';
+import { NoteService } from './service';
 // Creates an Express container and publish the service.
-let express = new ExpressContainer("tyx-sample1")
-    .publish(NoteService);
+const express = new ExpressContainer('tyx-sample1')
+  .publish(NoteService);
 // Start express server
 express.start(5000);

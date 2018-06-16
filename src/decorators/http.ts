@@ -1,117 +1,128 @@
-import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, MethodMetadata, RequestBinder } from "../metadata/method";
-import { Registry } from "../metadata/registry";
-import { HttpCode, HttpMethod, HttpResponse } from "../types/http";
+import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, MethodMetadata, RequestBinder } from '../metadata/method';
+import { Registry } from '../metadata/registry';
+import { HttpCode, HttpMethod, HttpResponse } from '../types/http';
+
+// tslint:disable:function-name
 
 export function Get(route: string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod(Get, route, false, 200, adapter);
+  return HttpMethod(Get, route, false, 200, adapter);
 }
 
 export function Post(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod(Post, route, model, 200, adapter);
+  return HttpMethod(Post, route, model, 200, adapter);
 }
 
 export function Put(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod(Put, route, model, 200, adapter);
+  return HttpMethod(Put, route, model, 200, adapter);
 }
 
 export function Delete(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod(Delete, route, model, 200, adapter);
+  return HttpMethod(Delete, route, model, 200, adapter);
 }
 
 export function Patch(route: string, model?: boolean | string, adapter?: HttpAdapter): MethodDecorator {
-    return HttpMethod(Patch, route, model, 200, adapter);
+  return HttpMethod(Patch, route, model, 200, adapter);
 }
 
 // Decorator
-function HttpMethod(decorator: Function, resource: string, model: boolean | string, code: HttpCode, adapter?: HttpAdapter): MethodDecorator {
-    return (target, propertyKey, descriptor) => {
-        Registry.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        let verb = decorator.name.toUpperCase();
-        if (!model) model = undefined;
-        else if (model === true) model = propertyKey;
-        else model = model.toString();
-        MethodMetadata.define(target, propertyKey).addRoute(verb, resource, model as string, code, adapter);
-    };
+function HttpMethod(
+  decorator: Function,
+  resource: string,
+  model: boolean | string,
+  code: HttpCode,
+  adapter?: HttpAdapter,
+): MethodDecorator {
+  return (target, propertyKey, descriptor) => {
+    Registry.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    const verb = decorator.name.toUpperCase();
+    let mod: string;
+    if (!model) mod = undefined;
+    else if (model === true) mod = propertyKey;
+    else mod = model.toString();
+    MethodMetadata.define(target, propertyKey).addRoute(verb, resource, mod, code, adapter);
+  };
 }
 
 /////////// Parameter Decorators //////////////////////////////////////////////////////////////////
 
 export function PathParam(path: string): ParameterDecorator {
-    return HttpBinding(HttpBindingType.PathParam, path, (ctx, req) => req.pathParameters[path]);
+  return HttpBinding(HttpBindingType.PathParam, path, (ctx, req) => req.pathParameters[path]);
 }
 
 export function PathParams(): ParameterDecorator {
-    return HttpBinding(HttpBindingType.PathParams, "*", (ctx, req) => req.pathParameters);
+  return HttpBinding(HttpBindingType.PathParams, '*', (ctx, req) => req.pathParameters);
 }
 
 export function QueryParam(path: string): ParameterDecorator {
-    return HttpBinding(HttpBindingType.QueryParam, path, (ctx, req) => req.queryStringParameters[path]);
+  return HttpBinding(HttpBindingType.QueryParam, path, (ctx, req) => req.queryStringParameters[path]);
 }
 
 export function QueryParams(): ParameterDecorator {
-    return HttpBinding(HttpBindingType.QueryParams, "*", (ctx, req) => req.queryStringParameters);
+  return HttpBinding(HttpBindingType.QueryParams, '*', (ctx, req) => req.queryStringParameters);
 }
 
 export function BodyParam(path: string): ParameterDecorator {
-    return HttpBinding(HttpBindingType.BodyParam, path, (ctx, req) => resolvePath(req.json, path));
+  return HttpBinding(HttpBindingType.BodyParam, path, (ctx, req) => resolvePath(req.json, path));
 }
 
 export function HeaderParam(path: string): ParameterDecorator {
-    return HttpBinding(HttpBindingType.HeaderParam, path, (ctx, req) => req.headers[("" + path).toLowerCase()]);
+  return HttpBinding(HttpBindingType.HeaderParam, path, (ctx, req) => req.headers[('' + path).toLowerCase()]);
 }
 
 // export function CookieParam(param: string) {}
 
 export function Body(): ParameterDecorator {
-    return HttpBinding(HttpBindingType.Body, undefined, (ctx, req) => req.json);
+  return HttpBinding(HttpBindingType.Body, undefined, (ctx, req) => req.json);
 }
 
 export function ContextObject(): ParameterDecorator {
-    return HttpBinding(HttpBindingType.ContextObject, undefined, (ctx, req) => ctx);
+  return HttpBinding(HttpBindingType.ContextObject, undefined, (ctx, req) => ctx);
 }
 
 export function ContextParam(path: string | ContextBinder): ParameterDecorator {
-    return HttpBinding(HttpBindingType.ContextParam,
-        path instanceof Function ? "[Function]" : path,
-        (ctx, req) => resolvePath(ctx, path));
+  return HttpBinding(
+    HttpBindingType.ContextParam,
+    path instanceof Function ? '[Function]' : path,
+    (ctx, req) => resolvePath(ctx, path),
+  );
 }
 
 export function RequestObject(): ParameterDecorator {
-    return HttpBinding(HttpBindingType.RequestObject, undefined, (ctx, req) => req);
+  return HttpBinding(HttpBindingType.RequestObject, undefined, (ctx, req) => req);
 }
 
 export function RequestParam(path: string | RequestBinder): ParameterDecorator {
-    return HttpBinding(HttpBindingType.RequestParam,
-        path instanceof Function ? "[Function]" : path,
-        (ctx, req) => resolvePath(req, path));
+  return HttpBinding(
+    HttpBindingType.RequestParam,
+    path instanceof Function ? '[Function]' : path,
+    (ctx, req) => resolvePath(req, path),
+  );
 }
 
 function HttpBinding(type: HttpBindingType, path: string, binder: HttpBinder): ParameterDecorator {
-    return function (target, propertyKey, index) {
-        Registry.trace(type, { path, binder }, target, propertyKey, index);
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        MethodMetadata.define(target, propertyKey).addBinding(index, type, path, binder);
-    };
+  return function (target, propertyKey, index) {
+    Registry.trace(type, { path, binder }, target, propertyKey, index);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    MethodMetadata.define(target, propertyKey).addBinding(index, type, path, binder);
+  };
 }
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
-    return function (target, propertyKey, descriptor) {
-        Registry.trace(ContentType, { contentType }, target, propertyKey);
-        if (typeof propertyKey !== "string") throw new TypeError("propertyKey must be string");
-        MethodMetadata.define(target, propertyKey).setContentType(contentType);
-    };
+  return function (target, propertyKey, descriptor) {
+    Registry.trace(ContentType, { contentType }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    MethodMetadata.define(target, propertyKey).setContentType(contentType);
+  };
 }
 
 export function resolvePath(root: any, path: Function | string): any {
-    if (typeof path === "function") return path(root);
-    if (!path) return undefined;
-    path = path.toString();
-    let parts = path.split(".");
-    let val = root;
-    for (let p of parts) {
-        val = val && val[p];
-    }
-    return val;
+  if (typeof path === 'function') return path(root);
+  if (!path) return undefined;
+  const parts = path.toString().split('.');
+  let val = root;
+  for (const p of parts) {
+    val = val && val[p];
+  }
+  return val;
 }
-

@@ -1,3 +1,2 @@
-import "reflect-metadata";
-
-export * from "./logger";
+import 'reflect-metadata';
+export * from './logger';

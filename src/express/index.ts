@@ -1,4 +1,4 @@
-import "reflect-metadata";
+import 'reflect-metadata';
 
-export { ExpressService } from "./service";
-export { ExpressAdapter } from "./adapter";
+export { ExpressAdapter } from './adapter';
+export { ExpressService } from './service';

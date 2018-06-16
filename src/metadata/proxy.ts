@@ -1,45 +1,45 @@
-import { Class, Prototype } from "../types/core";
-import { Registry } from "./registry";
-import { IServiceMetadata, ServiceMetadata } from "./service";
+import { Class, Prototype } from '../types/core';
+import { Registry } from './registry';
+import { IServiceMetadata, ServiceMetadata } from './service';
 
 export interface IProxyMetadata extends IServiceMetadata {
-    application: string;
-    functionName: string;
+  application: string;
+  functionName: string;
 }
 
 export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
-    public functionName: string = undefined;
-    public application: string = undefined;
+  public functionName: string = undefined;
+  public application: string = undefined;
 
-    protected constructor(target: Class) {
-        super(target);
-    }
+  protected constructor(target: Class) {
+    super(target);
+  }
 
-    public static has(target: Class | Prototype): boolean {
-        return Reflect.hasMetadata(Registry.TYX_PROXY, target)
-            || Reflect.hasMetadata(Registry.TYX_PROXY, target.constructor);
-    }
+  public static has(target: Class | Prototype): boolean {
+    return Reflect.hasMetadata(Registry.TYX_PROXY, target)
+      || Reflect.hasMetadata(Registry.TYX_PROXY, target.constructor);
+  }
 
-    public static get(target: Class | Prototype): ProxyMetadata {
-        return Reflect.getMetadata(Registry.TYX_PROXY, target)
-            || Reflect.getMetadata(Registry.TYX_PROXY, target.constructor);
-    }
+  public static get(target: Class | Prototype): ProxyMetadata {
+    return Reflect.getMetadata(Registry.TYX_PROXY, target)
+      || Reflect.getMetadata(Registry.TYX_PROXY, target.constructor);
+  }
 
-    public static define(target: Class): ProxyMetadata {
-        let meta = this.get(target);
-        if (!meta) {
-            meta = ServiceMetadata.define(target) as any;
-            Object.setPrototypeOf(meta, ProxyMetadata.prototype);
-            Reflect.defineMetadata(Registry.TYX_PROXY, meta, target);
-        }
-        return meta;
+  public static define(target: Class): ProxyMetadata {
+    let meta = this.get(target);
+    if (!meta) {
+      meta = ServiceMetadata.define(target) as any;
+      Object.setPrototypeOf(meta, ProxyMetadata.prototype);
+      Reflect.defineMetadata(Registry.TYX_PROXY, meta, target);
     }
+    return meta;
+  }
 
-    public commit(service?: string, application?: string, functionName?: string): this {
-        this.alias = service || this.target.name.replace("Proxy", "");
-        this.functionName = functionName || (this.alias + "-function");
-        this.application = application;
-        super.commit(service);
-        return this;
-    }
+  public commit(service?: string, application?: string, functionName?: string): this {
+    this.alias = service || this.target.name.replace('Proxy', '');
+    this.functionName = functionName || (this.alias + '-function');
+    this.application = application;
+    super.commit(service);
+    return this;
+  }
 }

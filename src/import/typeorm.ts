@@ -9,8 +9,8 @@ export {
   OneToOne,
   OneToMany,
   ManyToOne,
-  ManyToMany
-} from "typeorm";
+  ManyToMany,
+} from 'typeorm';
 
 export {
   Connection,
@@ -19,5 +19,5 @@ export {
   SelectQueryBuilder, createConnection,
   getConnection,
   Repository,
-  useContainer
-} from "typeorm";
+  useContainer,
+} from 'typeorm';

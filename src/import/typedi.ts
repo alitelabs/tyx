@@ -8,5 +8,5 @@ export {
   ServiceOptions,
   ServiceMetadata,
   ServiceIdentifier,
-  Token
-} from "typedi";
+  Token,
+} from 'typedi';
