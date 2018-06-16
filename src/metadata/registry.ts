@@ -162,8 +162,8 @@ export abstract class Registry implements MetadataRegistry {
     for (const api of Object.values(this.ApiMetadata)) {
       for (const method of Object.values(api.methods)) {
         if (!method.query && !method.mutation && !method.resolver) continue;
-        method.input.type = this.resolve(method.input, GraphKind.Input, inputs);
-        method.result.type = this.resolve(method.result, GraphKind.Type, types);
+        method.input.build = this.resolve(method.input, GraphKind.Input, inputs);
+        method.result.build = this.resolve(method.result, GraphKind.Type, types);
       }
     }
     // TODO: Check for unused inputs and results

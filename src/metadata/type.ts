@@ -178,20 +178,21 @@ export interface VarMetadata {
   kind: GraphKind;
   item?: VarMetadata;
   ref?: Class;
+  build?: VarMetadata;
 
   def?: string;
   js?: string;
 }
 
 export interface IInputMetadata extends VarMetadata {
-  type?: VarMetadata;
+  build: VarMetadata;
 }
 
 export class InputMetadata implements IInputMetadata {
   public kind: GraphKind = undefined;
   public item?: VarMetadata = undefined;
   public ref?: Class = undefined;
-  public type: VarMetadata = undefined;
+  public build: VarMetadata = undefined;
 
   public static of(def: InputType): InputMetadata;
   public static of(obj: IInputMetadata): InputMetadata;
@@ -211,14 +212,14 @@ export class InputMetadata implements IInputMetadata {
 }
 
 export interface IResultMetadata extends VarMetadata {
-  type?: VarMetadata;
+  build: VarMetadata;
 }
 
 export class ResultMetadata implements IResultMetadata {
   public kind: GraphKind = GraphKind.Type;
   item?: VarMetadata = undefined;
   ref?: Class = undefined;
-  type: VarMetadata = undefined;
+  build: VarMetadata = undefined;
 
   public static of(def: ResultType): ResultMetadata;
   public static of(obj: IResultMetadata): ResultMetadata;
@@ -284,6 +285,7 @@ export interface IEnumMetadata extends VarMetadata {
   name: string;
   item?: never;
   ref: Function;
+  build?: never;
   options: string[];
 }
 
@@ -332,6 +334,7 @@ export interface ITypeMetadata extends VarMetadata {
   members: Record<string, IFieldMetadata>;
   ref?: never;
   item?: never;
+  build?: never;
 }
 
 export class TypeMetadata implements ITypeMetadata {

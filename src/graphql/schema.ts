@@ -44,7 +44,6 @@ export interface EntitySchema {
   search: string;
   simple: string;
   script: string;
-  select: string[];
   relations: Record<string, { target: string, type: string }>;
 
   resolvers: Record<string, SchemaResolver>;
@@ -54,8 +53,6 @@ export interface TypeSchema {
   metadata: TypeMetadata;
   model: string;
   script: string;
-  select: string[];
-  link: Record<string, string[]>;
   // query: string;
   params: string;
   // registry: SchemaResolver;
@@ -68,7 +65,6 @@ export interface ApiSchema {
   queries: Record<string, MethodSchema>;
   mutations: Record<string, MethodSchema>;
   resolvers: Record<string, MethodSchema>;
-  script: string;
 }
 
 export interface MethodSchema {
@@ -266,7 +262,6 @@ export class CoreSchema {
     let like = `Like @expression {`;
     let order = `Order @expression {`;
     let keys = '';
-    const select: string[] = [];
     let create = `Create @record {`;
     let update = `Update @record {`;
     let cm = true;
@@ -278,7 +273,6 @@ export class CoreSchema {
       const op = !col.isNullable ? '?' : '';
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
-      select.push(pn);
       script += `\n  ${pn}${op}: ${jt};`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
       input += `${cm ? '' : ','}\n  ${pn}: ${dt}`;
@@ -346,7 +340,6 @@ export class CoreSchema {
       search,
       simple: model,
       script,
-      select,
       relations: {},
       resolvers: {},
     };
@@ -442,8 +435,6 @@ export class CoreSchema {
       metadata: struc,
       model: undefined,
       script: undefined,
-      select: [],
-      link: {},
       params: undefined,
       resolvers: {},
     };
@@ -452,7 +443,6 @@ export class CoreSchema {
     for (const field of Object.values(struc.members)) {
       const type = field.build;
       if (GraphKind.isStruc(type.kind) || GraphKind.isArray(type.kind)) continue;
-      schema.select.push(field.name);
       if (field.kind === GraphKind.Object) continue;
       schema.params += (schema.params ? ',\n    ' : '    ') + `${field.name}: ${field.kind}`;
     }
@@ -463,10 +453,6 @@ export class CoreSchema {
     schema.script = `export interface ${struc.name} {`;
     for (const field of Object.values(struc.members)) {
       const type = field.build;
-      if (GraphKind.isStruc(type.kind) || GraphKind.isArray(type.kind)) {
-        const sch = this.genType(type, reg);
-        schema.link[field.name] = sch && sch.select || null;
-      }
       if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
         const sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.def];
         const args = (sch && sch.params) ? `(\n${reg[type.item.def].params}\n  )` : '';
@@ -490,64 +476,15 @@ export class CoreSchema {
       queries: undefined,
       mutations: undefined,
       resolvers: undefined,
-      script: undefined,
     };
-    let script = `\n@Injectable()\nexport class ${metadata.name} {\n`;
-    script += `  constructor(private apollo: Apollo) { }\n`;
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation && !method.resolver) continue;
-      const input = method.input.type;
-      const result = method.result.type;
+      const input = method.input.build;
+      const result = method.result.build;
       const name = method.resolver ? method.name : `${metadata.target.name}_${method.name}`;
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
-      const art = (GraphKind.isVoid(input.kind) ? '()' : `(${arg}: ${input.js})`);
-      const art2 = (GraphKind.isVoid(input.kind) ? '' : `($${arg}: ${input.def})`);
-      const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
-      const action = method.mutation ? 'mutate' : 'query';
-      script += `  public ${method.name}${art}: Observable<${result.js}> {\n`;
-      script += `    return this.apollo.${action}<any>({\n`;
-      if (method.mutation) {
-        script += `      mutation: gql\`mutation request${art2}`;
-      } else {
-        script += `      query: gql\`query request${art2}`;
-      }
-      if (GraphKind.isStruc(result.kind)) {
-        script += ` {\n`;
-        const struc = result as TypeMetadata;
-        const res = this.results[struc.name];
-        const ent = this.entities[struc.def];
-        const select = res && res.select.join(',\n          ')
-          || ent && ent.select.join(',\n          ');
-        if (method.query) {
-          script += `        result: ${method.api.name}_${method.name}${art3} {\n`;
-        } else {
-          script += `        result: ${method.api.name}_${method.name}${art3} {\n`;
-        }
-        script += `          ${select || '# NONE'}`;
-        if (res && Object.keys(res.link).length) {
-          for (const link of Object.entries(res.link)) {
-            script += `,\n          ${link[0]}`;
-            if (link[1]) {
-              script += ` {\n`;
-              script += `            ${link[1] && link[1].join(', ')}\n`;
-              script += `          }`;
-            } else {
-              script += ` # [ANY]\n`;
-            }
-          }
-        }
-        script += '\n';
-        script += `        }\n`;
-        script += `      }\`,\n`;
-      } else {
-        script += `\`, // : ANY\n`;
-      }
-      if (art3) script += `      variables: { ${arg} }\n`;
-      script += `    }).pipe(map(res => res.data.result));\n`;
-      script += `  }\n`;
-
       const dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
       const meth: MethodSchema = {
         metadata: method,
@@ -571,10 +508,68 @@ export class CoreSchema {
         api.resolvers[method.name] = meth;
       }
     }
-    script += '}';
-    api.script = script;
     this.apis[api.api] = api;
     return api;
+  }
+
+  public genAngular(metadata: ApiMetadata, depth?: number): string {
+    let script = `\n@Injectable()\nexport class ${metadata.name} {\n`;
+    script += `  constructor(private apollo: Apollo) { }\n`;
+    for (const method of Object.values(metadata.methods)) {
+      if (!method.query && !method.mutation && !method.resolver) continue;
+      const input = method.input.build;
+      const result = method.result.build;
+      const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
+      const art = (GraphKind.isVoid(input.kind) ? '()' : `(${arg}: ${input.js})`);
+      const art2 = (GraphKind.isVoid(input.kind) ? '' : `($${arg}: ${input.def})`);
+      const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
+      const action = method.mutation ? 'mutate' : 'query';
+      script += `  public ${method.name}${art}: Observable<${result.js}> {\n`;
+      script += `    return this.apollo.${action}<any>({\n`;
+      if (method.mutation) {
+        script += `      mutation: gql\`mutation request${art2} {\n`;
+      } else {
+        script += `      query: gql\`query request${art2} {\n`;
+      }
+      script += `        result: ${method.api.name}_${method.name}${art3}`;
+      if (GraphKind.isStruc(result.kind)) {
+        const x = (GraphKind.isType(result.kind)) ? 1 : 0;
+        const select = this.genSelect(result, 0, (depth || 1) + x);
+        script += ' ' + select;
+      } else {
+        script += ` # : ANY`;
+      }
+      script += `\n      }\`,\n`;
+      if (art3) script += `      variables: { ${arg} }\n`;
+      script += `    }).pipe(map(res => res.data.result));\n`;
+      script += `  }\n`;
+    }
+    script += '}';
+    return script;
+  }
+
+  private genSelect(meta: VarMetadata, level: number, depth: number): string {
+    if (level >= depth) return null;
+    if (GraphKind.isScalar(meta.kind)) return `# ${meta.js}`;
+    if (GraphKind.isRef(meta.kind)) return this.genSelect(meta.build, level, depth);
+    if (GraphKind.isArray(meta.kind)) return this.genSelect(meta.item, level, depth);
+    // script += ` # [ANY]\n`;
+    // #  NONE
+    const type = meta as TypeMetadata;
+    const tab = '  '.repeat(level + 4);
+    let script = `{`;
+    let i = 0;
+    for (const member of Object.values(type.members)) {
+      let sub = `# ${member.build.js}`;
+      if (!GraphKind.isScalar(member.kind)) sub = this.genSelect(member.build, level + 1, depth);
+      if (sub) {
+        script += `${i++ ? ',' : ''}\n${tab}  ${member.name} ${sub}`;
+      } else {
+        script += `${i++ ? ',' : ''}\n${tab}  # ${member.name} ...`;
+      }
+    }
+    script += `\n${tab}}`;
+    return script;
   }
 }
 
