@@ -22,6 +22,15 @@ export type VarType<T = any> = Scalar | [Scalar] | ClassRef<T> | EnumMetadata;
 export type InputType<T = any> = VarType<T> | [undefined] | ((ref?: any) => IEnumMetadata);
 export type ResultType<T = any> = VarType<T>;
 
+export type Select<T> = {
+  // tslint:disable-next-line:prefer-array-literal
+  [P in keyof T]?: T[P] extends Array<infer U>
+  ? Select<U> | 0 | 1 | 2
+  : T[P] extends ReadonlyArray<infer U>
+  ? Select<U> | 0 | 1 | 2
+  : Select<0 | 1 | 2> | 0 | 1 | 2
+};
+
 export enum GraphKind {
   ID = 'ID',
   Int = 'Int',

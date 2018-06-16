@@ -1,28 +1,53 @@
 import { MethodMetadata } from '../metadata/method';
 import { Registry } from '../metadata/registry';
-import { InputType, ResultType } from '../metadata/type';
+import { InputType, ResultType, Select } from '../metadata/type';
 import { Class } from '../types/core';
 import { Roles } from '../types/security';
 
 // tslint:disable:function-name
 
-export function Query<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Query<TR = any, TI = any>(
+  roles?: Roles,
+  input?: InputType<TI>,
+  result?: ResultType<TR>,
+  select?: Select<TR>,
+) {
   return ResolverDecorator(Query, roles, input, result);
 }
 
-export function Advice<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Advice<TR = any, TI = any>(
+  roles?: Roles,
+  input?: InputType<TI>,
+  result?: ResultType<TR>,
+  select?: Select<TR>,
+) {
   return ResolverDecorator(Advice, roles, input, result);
 }
 
-export function Mutation<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Mutation<TR = any, TI = any>(
+  roles?: Roles,
+  input?: InputType<TI>,
+  result?: ResultType<TR>,
+  select?: Select<TR>,
+) {
   return ResolverDecorator(Mutation, roles, input, result);
 }
 
-export function Command<TR extends Roles, TI = any, TO = any>(roles?: TR, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Command<TR = any, TI = any>(
+  roles?: Roles,
+  input?: InputType<TI>,
+  result?: ResultType<TR>,
+  select?: Select<TR>,
+) {
   return ResolverDecorator(Command, roles, input, result);
 }
 
-export function Extension<TI = any, TO = any>(type: Class, input?: InputType<TI>, result?: ResultType<TO>) {
+export function Extension<TR = any, TI = any>(
+  type: Class,
+  input?: InputType<TI>,
+  result?: ResultType<TR>,
+  select?: Select<TR>,
+) {
   return ResolverDecorator(Extension, { Internal: true }, input, result, type);
 }
 

@@ -40,9 +40,9 @@ export function Initialize(): MethodDecorator {
 /**
  * Decorate method providing per request activation.
  */
-export function Select(): MethodDecorator {
+export function Selector(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Select, {}, target);
+    Registry.trace(Selector, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).setSelector(propertyKey, descriptor);
   };
