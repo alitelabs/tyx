@@ -5,7 +5,7 @@ import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 // tslint:disable-next-line:max-line-length
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from '../metadata/method';
-import { Int, VarMetadata } from '../metadata/type';
+import { Int, Select, VarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { EventAdapter } from '../types/event';
 import { HttpCode } from '../types/http';
@@ -95,6 +95,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(Boolean) resolver: boolean;
   @Field(ref => VarMetadataSchema) input: VarMetadata;
   @Field(ref => VarMetadataSchema) result: VarMetadata;
+  @Field(Object) select: Select;
 
   @Field(String) contentType: string;
   @Field(list => [HttpBindingMetadataSchema]) bindings: HttpBindingMetadata[];

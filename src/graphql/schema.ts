@@ -7,7 +7,7 @@ import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
 import { Registry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
-import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
+import { EnumMetadata, GraphKind, Select, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
 import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from './base';
 import { SchemaResolver } from './types';
@@ -512,7 +512,7 @@ export class CoreSchema {
     return api;
   }
 
-  public genAngular(metadata: ApiMetadata, depth?: number): string {
+  public genAngular(metadata: ApiMetadata): string {
     let script = `\n@Injectable()\nexport class ${metadata.name} {\n`;
     script += `  constructor(private apollo: Apollo) { }\n`;
     for (const method of Object.values(metadata.methods)) {
@@ -533,8 +533,8 @@ export class CoreSchema {
       }
       script += `        result: ${method.api.name}_${method.name}${art3}`;
       if (GraphKind.isStruc(result.kind)) {
-        const x = (GraphKind.isType(result.kind)) ? 1 : 0;
-        const select = this.genSelect(result, 0, (depth || 1) + x);
+        const x = (GraphKind.isType(result.kind)) ? 0 : 0;
+        const select = this.genSelect(result, method.select, 0, 1 + x);
         script += ' ' + select;
       } else {
         script += ` # : ANY`;
@@ -548,11 +548,11 @@ export class CoreSchema {
     return script;
   }
 
-  private genSelect(meta: VarMetadata, level: number, depth: number): string {
+  private genSelect(meta: VarMetadata, select: Select | any, level: number, depth: number): string {
     if (level >= depth) return null;
     if (GraphKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (GraphKind.isRef(meta.kind)) return this.genSelect(meta.build, level, depth);
-    if (GraphKind.isArray(meta.kind)) return this.genSelect(meta.item, level, depth);
+    if (GraphKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
+    if (GraphKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
     // script += ` # [ANY]\n`;
     // #  NONE
     const type = meta as TypeMetadata;
@@ -561,7 +561,11 @@ export class CoreSchema {
     let i = 0;
     for (const member of Object.values(type.members)) {
       let sub = `# ${member.build.js}`;
-      if (!GraphKind.isScalar(member.kind)) sub = this.genSelect(member.build, level + 1, depth);
+      if (!GraphKind.isScalar(member.kind) && (select instanceof Object && select[member.name] || level < depth)) {
+        sub = this.genSelect(member.build, select && select[member.name], level + 1, depth);
+      } else if (!GraphKind.isScalar(member.kind)) {
+        sub = null;
+      }
       if (sub) {
         script += `${i++ ? ',' : ''}\n${tab}  ${member.name} ${sub}`;
       } else {

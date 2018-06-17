@@ -5,7 +5,7 @@ import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { Registry } from './registry';
-import { InputMetadata, InputType, ResultMetadata, ResultType, VarMetadata } from './type';
+import { InputMetadata, InputType, ResultMetadata, ResultType, Select, VarMetadata } from './type';
 
 export enum HttpBindingType {
   PathParam = 'PathParam',
@@ -111,6 +111,7 @@ export interface IMethodMetadata {
   resolver: boolean;
   input: VarMetadata;
   result: VarMetadata;
+  select: Select;
 
   contentType: string;
   bindings: HttpBindingMetadata[];
@@ -138,6 +139,7 @@ export class MethodMetadata implements IMethodMetadata {
   public resolver: boolean = undefined;
   public input: InputMetadata = undefined;
   public result: ResultMetadata = undefined;
+  public select: Select = undefined;
 
   public contentType: string = undefined;
   public bindings: HttpBindingMetadata[] = undefined;
@@ -200,25 +202,28 @@ export class MethodMetadata implements IMethodMetadata {
     return this;
   }
 
-  public setQuery(input?: InputType, result?: ResultType): this {
+  public setQuery(input?: InputType, result?: ResultType, select?: Select): this {
     this.query = true;
     this.input = InputMetadata.of(input);
     this.result = ResultMetadata.of(result);
+    this.select = select;
     return this;
   }
 
-  public setMutation(input?: InputType, result?: ResultType): this {
+  public setMutation(input?: InputType, result?: ResultType, select?: Select): this {
     this.mutation = true;
     this.input = InputMetadata.of(input);
     this.result = ResultMetadata.of(result);
+    this.select = select;
     return this;
   }
 
-  public setResolver(type: Class, input?: InputType, result?: ResultType): this {
+  public setResolver(type: Class, input?: InputType, result?: ResultType, select?: Select): this {
     this.resolver = true;
     this.host = type;
     this.input = InputMetadata.of(input);
     this.result = ResultMetadata.of(result);
+    this.select = select;
     return this;
   }
 
