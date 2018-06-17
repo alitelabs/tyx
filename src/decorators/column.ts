@@ -1,6 +1,5 @@
 import { Orm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
-import { EntityMetadata } from '../metadata/entity';
 import { Registry } from '../metadata/registry';
 import { VarType } from '../metadata/type';
 
@@ -65,7 +64,7 @@ export function Transient<T = any>(type: VarType<T>, required?: boolean): Proper
   return (target, propertyKey) => {
     Registry.trace(Transient, undefined, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    EntityMetadata.define(target.constructor).addField(propertyKey, type, required);
+    ColumnMetadata.define(target, propertyKey, ColumnMode.Transient, { nullable: true }, type);
   };
 }
 

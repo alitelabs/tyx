@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { Registry } from './registry';
-import { FieldMetadata, GraphKind } from './type';
+import { FieldMetadata, GraphKind, VarMetadata, VarType } from './type';
 
 export enum ColumnType {
   Int = 'int',
@@ -54,7 +54,7 @@ export enum ColumnType {
 // String: A UTF‐8 character sequence.
 // Boolean: true or false.
 export namespace ColumnType {
-  export function graphType(type: ColumnType) {
+  export function kind(type: ColumnType) {
     switch (type) {
       case ColumnType.Int:
       case ColumnType.TinyInt:
@@ -304,6 +304,7 @@ export interface IColumnMetadata extends FieldMetadata {
    * Indicates if column is virtual. Virtual columns are not mapped to the entity.
    */
   isVirtual: boolean;
+  isTransient?: boolean;
 }
 
 export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
@@ -324,15 +325,20 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public isUpdateDate: boolean;
   public isVersion: boolean;
   public isVirtual: boolean;
+  public isTransient: boolean;
 
   protected constructor(
     target: Class,
     propertyKey: string,
     mode: ColumnMode, options: ColumnOptions,
+    type: VarType,
   ) {
     super();
+    let kind: GraphKind;
+    if (type) kind = VarMetadata.of(type).kind;
+    else kind = ColumnType.kind(options.type);
     const state: IColumnMetadata = {
-      kind: ColumnType.graphType(options.type),
+      kind,
       target,
       name: propertyKey,
       required: options.primary || !options.nullable,
@@ -355,6 +361,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       isUpdateDate: mode === ColumnMode.UpdateDate,
       isVersion: mode === ColumnMode.Version,
       isVirtual: mode === ColumnMode.Virtual,
+      isTransient: mode === ColumnMode.Transient,
     };
     Object.assign(this, state);
   }
@@ -372,10 +379,11 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     propertyKey: string,
     mode: ColumnMode,
     options: ColumnOptions,
+    type?: VarType,
   ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
     if (!meta) {
-      meta = new ColumnMetadata(target.constructor, propertyKey, mode, options);
+      meta = new ColumnMetadata(target.constructor, propertyKey, mode, options, type);
       Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
       Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
     }

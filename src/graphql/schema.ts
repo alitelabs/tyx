@@ -1,7 +1,6 @@
 import { GraphQLSchema } from 'graphql';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
 import { ApiMetadata } from '../metadata/api';
-import { ColumnType } from '../metadata/column';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
@@ -268,9 +267,10 @@ export class CoreSchema {
     let update = `Update @record {`;
     let cm = true;
     for (const col of metadata.columns) {
+      if (col.isTransient) continue;
       const pn = col.propertyName;
-      let dt = ColumnType.graphType(col.type);
-      let nl = !col.isNullable ? '!' : '';
+      let dt = col.kind;
+      let nl = col.required ? '!' : '';
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
@@ -384,6 +384,12 @@ export class CoreSchema {
       } else {
         continue; // TODO: Implement
       }
+    }
+    for (const col of metadata.columns) {
+      if (!col.isTransient) continue;
+      const pn = col.propertyName;
+      const nl = col.required ? '!' : '';
+      model += `${cm ? '' : ','}\n  ${pn}: ${col.kind}${nl} @transient`;
     }
     model += '\n}';
     simple += '\n}';
