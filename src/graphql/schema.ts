@@ -528,10 +528,22 @@ export class CoreSchema {
     let script = back(`
     import { Injectable } from '@angular/core';
     import { Apollo } from 'apollo-angular';
+    import { ApolloQueryResult } from 'apollo-client';
+    import { FetchResult } from 'apollo-link';
     import gql from 'graphql-tag';
     import { Observable } from 'rxjs';
     import { map } from 'rxjs/operators';
-    \n`).trimLeft();
+
+    interface Result<T> { result: T; }
+
+    function resolveQuery<T>(res: ApolloQueryResult<Result<T>>): T {
+      return res.data.result;
+    }
+
+    function resolveMutation<T>(res: FetchResult<Result<T>>): T {
+      return res.data.result;
+    }
+    `).trimLeft();
     script += '///////// API /////////\n';
     for (const api of Object.values(this.apis).sort((a, b) => a.api.localeCompare(b.api))) {
       const code = this.genAngular(api.metadata);
@@ -572,7 +584,7 @@ export class CoreSchema {
       const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
       const action = method.mutation ? 'mutate' : 'query';
       script += `\n  public ${method.name}${art}: Observable<${result.js}> {\n`;
-      script += `    return this.graphql.${action}<${result.js}>({\n`;
+      script += `    return this.graphql.${action}<Result<${result.js}>>({\n`;
       if (method.mutation) {
         script += `      mutation: gql\`mutation request${art2} {\n`;
       } else {
@@ -592,7 +604,11 @@ export class CoreSchema {
       }
       script += `\n      }\`,\n`;
       if (art3) script += `      variables: { ${arg} }\n`;
-      script += `    }).pipe(map(res => res.data.result));\n`;
+      if (method.mutation) {
+        script += `    }).pipe(map(res => resolveMutation(res)));\n`;
+      } else {
+        script += `    }).pipe(map(res => resolveQuery(res)));\n`;
+      }
       script += `  }\n`;
     }
     script += '}';
