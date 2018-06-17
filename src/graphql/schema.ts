@@ -538,6 +538,10 @@ export class CoreSchema {
         const x = (GraphKind.isType(result.kind)) ? 0 : 0;
         const select = this.genSelect(result, method.select, 0, 1 + x);
         script += ' ' + select;
+      } else if (GraphKind.isArray(result.kind)) {
+        const x = (GraphKind.isType(result.item.kind)) ? 0 : 0;
+        const select = this.genSelect(result.item, method.select, 0, 1 + x);
+        script += ' ' + select;
       } else {
         script += ` # : ANY`;
       }
