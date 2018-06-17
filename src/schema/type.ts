@@ -1,9 +1,9 @@
 // tslint:disable-next-line:import-name
-import Lo from 'lodash';
+import Lo = require('lodash');
 import { Field, Metadata } from '../decorators/type';
 import { SchemaResolvers } from '../graphql';
 import { DesignMetadata } from '../metadata/method';
-import { GraphKind, IEnumMetadata, IFieldMetadata, ITypeMetadata, VarMetadata } from '../metadata/type';
+import { GraphKind, IEnumMetadata, IFieldMetadata, IInputMetadata, IResultMetadata, ITypeMetadata, VarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 
@@ -11,6 +11,30 @@ import { Utils } from '../utils';
 export class VarMetadataSchema implements VarMetadata {
   @Field(String) ref?: Class;
   @Field(String) kind: GraphKind;
+  @Field(type => VarMetadataSchema) item?: VarMetadata;
+
+  public static RESOLVERS: SchemaResolvers<VarMetadata> = {
+    ref: obj => Utils.value(obj.ref),
+  };
+}
+
+@Metadata()
+export class InputMetadataSchema implements IInputMetadata {
+  @Field(String) ref?: Class;
+  @Field(String) kind: GraphKind;
+  @Field(type => TypeMetadataSchema) build: VarMetadata;
+  @Field(type => VarMetadataSchema) item?: VarMetadata;
+
+  public static RESOLVERS: SchemaResolvers<VarMetadata> = {
+    ref: obj => Utils.value(obj.ref),
+  };
+}
+
+@Metadata()
+export class ResultMetadataSchema implements IResultMetadata {
+  @Field(String) ref?: Class;
+  @Field(String) kind: GraphKind;
+  @Field(type => TypeMetadataSchema) build: VarMetadata;
   @Field(type => VarMetadataSchema) item?: VarMetadata;
 
   public static RESOLVERS: SchemaResolvers<VarMetadata> = {
@@ -50,6 +74,7 @@ export class TypeMetadataSchema implements ITypeMetadata {
   @Field(String) kind: GraphKind;
   @Field(String) name: string;
   @Field(String) target: Class;
+  @Field(ref => VarMetadataSchema) item: never;
   @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
 
   public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {

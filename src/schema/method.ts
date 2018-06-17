@@ -1,18 +1,18 @@
 // tslint:disable-next-line:import-name
-import Lo from 'lodash';
+import Lo = require('lodash');
 import { Field, Metadata } from '../decorators/type';
 import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 // tslint:disable-next-line:max-line-length
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from '../metadata/method';
-import { Int, Select, VarMetadata } from '../metadata/type';
+import { IInputMetadata, Int, IResultMetadata, Select } from '../metadata/type';
 import { Class } from '../types/core';
 import { EventAdapter } from '../types/event';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
-import { VarMetadataSchema } from './type';
+import { InputMetadataSchema, ResultMetadataSchema } from './type';
 
 @Metadata()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
@@ -93,8 +93,8 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(Boolean) query: boolean;
   @Field(Boolean) mutation: boolean;
   @Field(Boolean) resolver: boolean;
-  @Field(ref => VarMetadataSchema) input: VarMetadata;
-  @Field(ref => VarMetadataSchema) result: VarMetadata;
+  @Field(ref => InputMetadataSchema) input: IInputMetadata;
+  @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: Select;
 
   @Field(String) contentType: string;

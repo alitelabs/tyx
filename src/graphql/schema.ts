@@ -562,17 +562,19 @@ export class CoreSchema {
     let script = `{`;
     let i = 0;
     for (const member of Object.values(type.members)) {
-      let sub = `# ${member.build.js}`;
-      if (!GraphKind.isScalar(member.kind) && (select instanceof Object && select[member.name] || level < depth)) {
-        sub = this.genSelect(member.build, select && select[member.name], level + 1, depth);
-      } else if (!GraphKind.isScalar(member.kind)) {
-        sub = null;
+      let name = member.name;
+      let def = `# ${member.build.js}`;
+      if (!GraphKind.isScalar(member.kind)) {
+        def += ' ... ';
+        if (select instanceof Object && select[member.name]) {
+          const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);
+          def = sub || def;
+          if (!sub) name = '# ' + name;
+        } else {
+          name = '# ' + name;
+        }
       }
-      if (sub) {
-        script += `${i++ ? ',' : ''}\n${tab}  ${member.name} ${sub}`;
-      } else {
-        script += `${i++ ? ',' : ''}\n${tab}  # ${member.name} ...`;
-      }
+      script += `${i++ ? ',' : ''}\n${tab}  ${name} ${def}`;
     }
     script += `\n${tab}}`;
     return script;

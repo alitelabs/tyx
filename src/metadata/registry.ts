@@ -202,7 +202,7 @@ export abstract class Registry implements MetadataRegistry {
         type = this.resolve(ref, scope, reg);
       } else if (GraphKind.isArray(ref.kind)) {
         const z = ref.item.ref;
-        ref.item.ref = z && (() => z);
+        if (z) ref.item.ref = () => z;
         type = this.resolve(ref, scope, reg);
       } else if (GraphKind.isRef(ref.kind)) {
         // TODO: Make sure entity exists
