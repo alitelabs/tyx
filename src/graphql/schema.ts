@@ -36,6 +36,7 @@ export interface DatabaseSchema {
 
 export interface EntitySchema {
   metadata: EntityMetadata;
+  name: string;
 
   query: string;
   mutation: string;
@@ -51,6 +52,8 @@ export interface EntitySchema {
 
 export interface TypeSchema {
   metadata: TypeMetadata;
+  name: string;
+
   model: string;
   script: string;
   // query: string;
@@ -80,7 +83,9 @@ export interface MethodSchema {
 
 export interface EnumSchema {
   metadata: EnumMetadata;
+  name: string;
   model: string;
+  script: string;
 }
 
 export class CoreSchema {
@@ -88,7 +93,7 @@ export class CoreSchema {
   public metadata: Record<string, TypeSchema> = {};
   public databases: Record<string, DatabaseSchema> = {};
   public inputs: Record<string, TypeSchema> = {};
-  public results: Record<string, TypeSchema> = {};
+  public types: Record<string, TypeSchema> = {};
   public entities: Record<string, EntitySchema> = {};
   public apis: Record<string, ApiSchema> = {};
 
@@ -112,7 +117,7 @@ export class CoreSchema {
     }
     // Results
     for (const type of Object.values(Registry.TypeMetadata)) {
-      this.genType(type, this.results);
+      this.genType(type, this.types);
     }
     // Api
     for (const api of Object.values(Registry.ApiMetadata)) {
@@ -163,7 +168,7 @@ export class CoreSchema {
       + '\n'
       + Object.values(this.inputs).map(i => `# -- Input: ${i.metadata.name} --\n${i.model}`).join('\n')
       + '\n'
-      + Object.values(this.results).map(r => `# -- Type: ${r.metadata.name} --\n${r.model}`).join('\n')
+      + Object.values(this.types).map(r => `# -- Type: ${r.metadata.name} --\n${r.model}`).join('\n')
       + '\n'
       + Object.values(this.apis).map((api) => {
         let res = `\# -- API: ${api.metadata.alias} --#\n`;
@@ -332,6 +337,7 @@ export class CoreSchema {
 
     const schema: EntitySchema = {
       metadata,
+      name: metadata.name,
 
       query,
       mutation,
@@ -406,12 +412,16 @@ export class CoreSchema {
     let schema = this.enums[metadata.name];
     if (schema) return schema;
     let model = `enum ${metadata.name} {`;
+    let script = `export enum ${metadata.name} {`;
     let i = 0;
     for (const key of metadata.options) {
-      model += `${i++ ? ',' : ''}\n  ${key}`;
+      model += `${i ? ',' : ''}\n  ${key}`;
+      script += `${i ? ',' : ''}\n  ${key} = '${key}'`;
+      i++;
     }
     model += '\n}';
-    schema = { metadata, model };
+    script += '\n}';
+    schema = { metadata, name: metadata.name, model, script };
     return schema;
   }
 
@@ -433,6 +443,8 @@ export class CoreSchema {
     // Generate schema
     const schema: TypeSchema = {
       metadata: struc,
+      name: struc.name,
+
       model: undefined,
       script: undefined,
       params: undefined,
@@ -512,8 +524,41 @@ export class CoreSchema {
     return api;
   }
 
-  public genAngular(metadata: ApiMetadata): string {
-    let script = `\n@Injectable()\nexport class ${metadata.name} {\n`;
+  public backend(): string {
+    let script = back(`
+    import { Injectable } from '@angular/core';
+    import { Apollo } from 'apollo-angular';
+    import gql from 'graphql-tag';
+    import { Observable } from 'rxjs';
+    import { map } from 'rxjs/operators';
+    \n`).trimLeft();
+    script += '///////// API /////////\n';
+    for (const api of Object.values(this.apis).sort((a, b) => a.api.localeCompare(b.api))) {
+      const code = this.genAngular(api.metadata);
+      if (code) script += code + '\n\n';
+    }
+    script += '///////// ENUM ////////\n';
+    for (const type of Object.values(this.enums).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += type.script + '\n\n';
+    }
+    script += '/////// ENTITIES //////\n';
+    const db = Object.values(this.databases)[0];
+    for (const type of Object.values(db.entities).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += type.script + '\n\n';
+    }
+    script += '//////// INPUTS ///////\n';
+    for (const type of Object.values(this.inputs).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += type.script + '\n\n';
+    }
+    script += '//////// TYPES ////////\n';
+    for (const type of Object.values(this.types).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += type.script + '\n\n';
+    }
+    return script;
+  }
+
+  private genAngular(metadata: ApiMetadata): string {
+    let script = `@Injectable()\nexport class ${metadata.name} {\n`;
     script += `  constructor(private graphql: Apollo) { }\n`;
     let count = 0;
     for (const method of Object.values(metadata.methods)) {
@@ -569,7 +614,7 @@ export class CoreSchema {
       let name = member.name;
       let def = `# ${member.build.js}`;
       if (!GraphKind.isScalar(member.kind)) {
-        def += ' ... ';
+        def += ' ...';
         if (select instanceof Object && select[member.name]) {
           const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);
           def = sub || def;
