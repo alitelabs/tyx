@@ -1,6 +1,7 @@
 import FS = require('fs');
 // tslint:disable-next-line:import-blacklist
 import { Core, CoreSchema, Enum, Field, Input, Mutation, Query, Service, Type } from '..';
+import { Public } from '../decorators/auth';
 
 @Input()
 export class TestInput {
@@ -34,27 +35,32 @@ export class TestResult {
 @Service()
 export class HelloWorld {
 
-  @Query({ Public: true }, req => TestInput, res => TestResult)
+  @Public()
+  @Query(req => TestInput, res => TestResult)
   public test(req: TestInput): TestResult {
     return { res: 'world', versions: Object.entries(process.versions).map(p => p[0] + '=' + p[1]) };
   }
 
-  @Mutation({ Public: true }, req => TestInput, res => TestResult)
+  @Public()
+  @Mutation(req => TestInput, res => TestResult)
   public operation(req: TestInput): TestResult {
     return { res: JSON.stringify(req), versions: ['1', '2', '3'] };
   }
 
-  @Query({ Public: true }, req => String, res => [String])
+  @Public()
+  @Query(req => String, res => [String])
   public testLiteral(req: string): string[] {
     return [req];
   }
 
-  @Query({ Public: true }, [undefined], res => [String])
+  @Public()
+  @Query([undefined], res => [String])
   public testVoid(): string[] {
     return [undefined];
   }
 
-  @Query({ Public: true }, state => Enum(OnOff), res => String)
+  @Public()
+  @Query(state => Enum(OnOff), res => String)
   public testEnum(state: OnOff): string {
     return state;
   }
