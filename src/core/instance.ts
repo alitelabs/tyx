@@ -7,6 +7,7 @@ import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from '../metada
 import { ProxyMetadata } from '../metadata/proxy';
 import { Registry } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
+import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
 import { ContainerState, Context, CoreContainer, ObjectType } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
@@ -212,6 +213,8 @@ export class CoreInstance implements CoreContainer {
         let result: any;
         if (metadata.resolver) {
           result = await handler.call(service, req.obj, req.args, ctx, req.info);
+        } else if (metadata.input.kind === GraphKind.Void) {
+          result = await handler.call(service, ctx);
         } else {
           result = await handler.call(service, req.args, ctx);
         }

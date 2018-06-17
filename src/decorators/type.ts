@@ -69,5 +69,19 @@ export function Field<T = any>(type: VarType<T>, required?: boolean): PropertyDe
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     Registry.trace(Field, { type, required }, target, propertyKey);
     TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
+
+    // const dt = Reflect.getMetadata(Registry.DESIGN_TYPE, target, propertyKey);
+    // let type: ColumnType;
+    // switch (dt) {
+    //   case String: type = ColumnType.Varchar; break;
+    //   case Number: type = ColumnType.Double; break;
+    //   case Boolean: type = ColumnType.Boolean; break;
+    //   case Date: type = ColumnType.DateTime; break;
+    //   case Array: type = ColumnType.Any; break;
+    //   case Object: type = ColumnType.Any; break;
+    //   default:
+    //     type = ColumnType.Any; break;
+    // }
+    // console.log(dt);
   };
 }

@@ -110,6 +110,7 @@ export enum ColumnMode {
   CreateDate = 'createDate',
   UpdateDate = 'updateDate',
   Version = 'version',
+  Transient = 'transient',
   // "treeChildrenCount"
   // "treeLevel"
   // "objectId"

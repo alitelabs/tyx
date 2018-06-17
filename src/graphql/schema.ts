@@ -44,7 +44,6 @@ export interface EntitySchema {
   inputs: string[];
   search: string;
   simple: string;
-  script: string;
   relations: Record<string, { target: string, type: string }>;
 
   resolvers: Record<string, SchemaResolver>;
@@ -55,7 +54,6 @@ export interface TypeSchema {
   name: string;
 
   model: string;
-  script: string;
   // query: string;
   params: string;
   // registry: SchemaResolver;
@@ -260,7 +258,6 @@ export class CoreSchema {
     if (db.entities[name]) return db.entities[name];
 
     let model = `type ${name}${ENTITY} @entity {`;
-    let script = `export interface ${name} {`;
     let input = `Input @expression {`;
     let nil = `Null @expression {`;
     let multi = `Multi @expression {`;
@@ -273,12 +270,9 @@ export class CoreSchema {
     for (const col of metadata.columns) {
       const pn = col.propertyName;
       let dt = ColumnType.graphType(col.type);
-      const jt = GraphKind.toJS(dt);
       let nl = !col.isNullable ? '!' : '';
-      const op = !col.isNullable ? '?' : '';
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
-      script += `\n  ${pn}${op}: ${jt};`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
       input += `${cm ? '' : ','}\n  ${pn}: ${dt}`;
       nil += `${cm ? '' : ','}\n  ${pn}: Boolean`;
@@ -345,7 +339,6 @@ export class CoreSchema {
       inputs,
       search,
       simple: model,
-      script,
       relations: {},
       resolvers: {},
     };
@@ -375,32 +368,27 @@ export class CoreSchema {
         rm.type = 'manyToOne';
         const args = '';
         model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: ManyToOne)`;
-        script += `\n  ${property}?: ${inverse};`;
         simple += `,\n  ${property}: ${inverse}${ENTITY}`;
         navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(metadata, relation, obj, args, ctx, info);
       } else if (relation.relationType === RelationType.OneToOne) {
         rm.type = 'oneToOne';
         const args = '';
         model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: OneToOne)`;
-        script += `\n  ${property}?: ${inverse};`;
         navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(metadata, relation, obj, args, ctx, info);
       } else if (relation.relationType === RelationType.OneToMany) {
         rm.type = 'oneToMany';
         const temp = this.genEntity(db, relation.inverseEntityMetadata);
         const args = ` (${temp.search}\n  )`;
         model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
-        script += `\n  ${property}?: ${inverse}[];`;
         navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(metadata, relation, obj, args, ctx, info);
       } else {
         continue; // TODO: Implement
       }
     }
     model += '\n}';
-    script += '\n}';
     simple += '\n}';
 
     schema.model = model;
-    schema.script = script;
     schema.simple = simple;
     schema.resolvers = navigation;
     // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
@@ -446,7 +434,6 @@ export class CoreSchema {
       name: struc.name,
 
       model: undefined,
-      script: undefined,
       params: undefined,
       resolvers: {},
     };
@@ -462,7 +449,6 @@ export class CoreSchema {
     schema.model = (scope === GraphKind.Input)
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
       : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
-    schema.script = `export interface ${struc.name} {`;
     for (const field of Object.values(struc.members)) {
       const type = field.build;
       if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
@@ -472,12 +458,10 @@ export class CoreSchema {
       } else {
         schema.model += `  ${field.name}: ${type.def}\n`;
       }
-      schema.script += `\n  ${field.name}?: ${type.js};`;
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
     }
     schema.model += '}';
-    schema.script += '\n}';
     return schema;
   }
 
@@ -534,6 +518,11 @@ export class CoreSchema {
     import { Observable } from 'rxjs';
     import { map } from 'rxjs/operators';
 
+    export interface ApiError {
+      message: string;
+      status: number;
+    }
+
     interface Result<T> { result: T; }
 
     function resolveQuery<T>(res: ApolloQueryResult<Result<T>>): T {
@@ -556,16 +545,27 @@ export class CoreSchema {
     script += '/////// ENTITIES //////\n';
     const db = Object.values(this.databases)[0];
     for (const type of Object.values(db.entities).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += type.script + '\n\n';
+      script += this.genInterface(type.metadata) + '\n\n';
     }
     script += '//////// INPUTS ///////\n';
     for (const type of Object.values(this.inputs).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += type.script + '\n\n';
+      script += this.genInterface(type.metadata) + '\n\n';
     }
     script += '//////// TYPES ////////\n';
     for (const type of Object.values(this.types).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += type.script + '\n\n';
+      script += this.genInterface(type.metadata) + '\n\n';
     }
+    return script;
+  }
+
+  private genInterface(struc: TypeMetadata): string {
+    let script = `export interface ${struc.name} {`;
+    for (const field of Object.values(struc.members)) {
+      const type = field.build;
+      const opt = true; // GraphKind.isEntity(struc.kind) ? !field.required : true;
+      script += `\n  ${field.name}${opt ? '?' : ''}: ${type.js};`;
+    }
+    script += '\n}';
     return script;
   }
 

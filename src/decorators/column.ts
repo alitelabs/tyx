@@ -1,6 +1,8 @@
 import { Orm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
+import { EntityMetadata } from '../metadata/entity';
 import { Registry } from '../metadata/registry';
+import { VarType } from '../metadata/type';
 
 // tslint:disable:function-name
 
@@ -59,10 +61,11 @@ export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
   };
 }
 
-export function Transient(): PropertyDecorator {
+export function Transient<T = any>(type: VarType<T>, required?: boolean): PropertyDecorator {
   return (target, propertyKey) => {
     Registry.trace(Transient, undefined, target, propertyKey);
-    // TODO: Register in Schema not in QRM, readOnly
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    EntityMetadata.define(target.constructor).addField(propertyKey, type, required);
   };
 }
 
