@@ -514,9 +514,11 @@ export class CoreSchema {
 
   public genAngular(metadata: ApiMetadata): string {
     let script = `\n@Injectable()\nexport class ${metadata.name} {\n`;
-    script += `  constructor(private apollo: Apollo) { }\n`;
+    script += `  constructor(private graphql: Apollo) { }\n`;
+    let count = 0;
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation && !method.resolver) continue;
+      count++;
       const input = method.input.build;
       const result = method.result.build;
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
@@ -524,8 +526,8 @@ export class CoreSchema {
       const art2 = (GraphKind.isVoid(input.kind) ? '' : `($${arg}: ${input.def})`);
       const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
       const action = method.mutation ? 'mutate' : 'query';
-      script += `  public ${method.name}${art}: Observable<${result.js}> {\n`;
-      script += `    return this.apollo.${action}<any>({\n`;
+      script += `\n  public ${method.name}${art}: Observable<${result.js}> {\n`;
+      script += `    return this.graphql.${action}<${result.js}>({\n`;
       if (method.mutation) {
         script += `      mutation: gql\`mutation request${art2} {\n`;
       } else {
@@ -545,7 +547,7 @@ export class CoreSchema {
       script += `  }\n`;
     }
     script += '}';
-    return script;
+    return count ? script : '';
   }
 
   private genSelect(meta: VarMetadata, select: Select | any, level: number, depth: number): string {

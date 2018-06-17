@@ -1,7 +1,7 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
@@ -31,6 +31,7 @@
     "clean": "rm -rf ./lib",
     "build": "rm -rf ./lib ; npx tsc -p .",
     "watch": "rm -rf ./lib ; npx tsc -p . --watch",
+    "lint": "npx tslint -p .",
     "link": "npm link",
     "global": "npm install -g ts-node typeorm typescript gulp serverless tslint"
   },
