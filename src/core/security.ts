@@ -230,28 +230,28 @@ export class CoreSecurity implements Security {
     return auth;
   }
 
-  protected secret(subject: string, issuer: string, audience: string): string {
+  protected secret(sub: string, iss: string, aud: string): string {
     let secret: string;
-    if (subject.startsWith('user:')) secret = this.config.httpSecret;
-    else if (subject === 'internal' && audience === this.config.appId && issuer === audience) secret = this.config.internalSecret;
-    else if (subject === 'remote' && audience === this.config.appId && issuer === audience) secret = this.config.internalSecret;
-    else if (subject === 'remote' && audience === this.config.appId && issuer !== audience) secret = this.config.remoteSecret(issuer);
-    else if (subject === 'remote' && issuer === this.config.appId && issuer !== audience) secret = this.config.remoteSecret(audience);
+    if (sub && sub.startsWith('user:')) secret = this.config.httpSecret;
+    else if (sub === 'internal' && aud === this.config.appId && iss === aud) secret = this.config.internalSecret;
+    else if (sub === 'remote' && aud === this.config.appId && iss === aud) secret = this.config.internalSecret;
+    else if (sub === 'remote' && aud === this.config.appId && iss !== aud) secret = this.config.remoteSecret(iss);
+    else if (sub === 'remote' && iss === this.config.appId && iss !== aud) secret = this.config.remoteSecret(aud);
     if (!secret) {
-      throw new Unauthorized(`Can not resolve token secret for subject: [${subject}], issuer: [${issuer}], audience: [${audience}]`);
+      throw new Unauthorized(`Can not resolve token secret for subject: [${sub}], issuer: [${iss}], audience: [${aud}]`);
     }
     return secret;
   }
 
-  protected timeout(subject: string, issuer: string, audience: string): string {
+  protected timeout(sub: string, iss: string, aud: string): string {
     let timeout: string;
-    if (subject.startsWith('user:')) timeout = this.config.httpTimeout;
-    else if (subject === 'internal' && audience === this.config.appId) timeout = this.config.internalTimeout;
-    else if (subject === 'remote' && audience === this.config.appId && issuer === audience) timeout = this.config.internalTimeout;
-    else if (subject === 'remote' && audience === this.config.appId && issuer !== audience) timeout = this.config.remoteTimeout;
-    else if (subject === 'remote' && audience !== this.config.appId) timeout = this.config.remoteTimeout;
+    if (sub && sub.startsWith('user:')) timeout = this.config.httpTimeout;
+    else if (sub === 'internal' && aud === this.config.appId) timeout = this.config.internalTimeout;
+    else if (sub === 'remote' && aud === this.config.appId && iss === aud) timeout = this.config.internalTimeout;
+    else if (sub === 'remote' && aud === this.config.appId && iss !== aud) timeout = this.config.remoteTimeout;
+    else if (sub === 'remote' && aud !== this.config.appId) timeout = this.config.remoteTimeout;
     if (!timeout) {
-      throw new Unauthorized(`Can not resolve token timeout for subject: [${subject}], issuer: [${issuer}], audience: [${audience}]`);
+      throw new Unauthorized(`Can not resolve token timeout for subject: [${sub}], issuer: [${iss}], audience: [${aud}]`);
     }
     return timeout;
   }

@@ -67,11 +67,13 @@ export class CoreConfiguration implements Configuration {
   get remoteTimeout(): string { return this.config.REMOTE_TIMEOUT || '5s'; }
 
   public remoteSecret(appId: string): string {
+    if (!appId) return undefined;
     const id = appId && appId.split('-').join('_').toUpperCase();
     return this.config[REMOTE_SECRET_PREFIX + id];
   }
 
   public remoteStage(appId: string): string {
+    if (!appId) return undefined;
     const id = appId && appId.split('-').join('_').toUpperCase();
     return this.config[REMOTE_STAGE_PREFIX + id];
   }
