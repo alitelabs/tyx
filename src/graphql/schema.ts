@@ -1,4 +1,5 @@
-import { GraphQLSchema } from 'graphql';
+import { GraphQLScalarType, GraphQLSchema } from 'graphql';
+import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
@@ -6,19 +7,53 @@ import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
 import { Registry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
-import { EnumMetadata, GraphKind, Select, TypeMetadata, VarMetadata } from '../metadata/type';
+import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
-import { DEF_DIRECTIVES, DEF_SCALARS, DIRECTIVES } from './base';
 import { SchemaResolver } from './types';
+import { back, scalar } from './utils';
+import { QueryVisitor, RelationVisitor } from './visitors';
+import GraphQLJSON = require('graphql-type-json');
 
 export { GraphQLSchema } from 'graphql';
 
-export const ENTITY = '';
-export const GET = '';
-export const SEARCH = '';
-export const CREATE = 'create';
-export const UPDATE = 'update';
-export const REMOVE = 'remove';
+const ENTITY = '';
+const GET = '';
+const SEARCH = '';
+const CREATE = 'create';
+const UPDATE = 'update';
+const REMOVE = 'remove';
+
+const SCALARS: Record<string, GraphQLScalarType> = {
+  Date: GraphQLDate,
+  Time: GraphQLTime,
+  DateTime: GraphQLDateTime,
+  JSON: GraphQLJSON,
+  ANY: new GraphQLScalarType({
+    name: 'ANY',
+    serialize(value) { return value; },
+  }),
+};
+
+const DEF_SCALARS = Object.keys(SCALARS).map(s => `scalar ${s}`).join('\n');
+
+const DEF_DIRECTIVES = `
+directive @metadata on OBJECT
+directive @input on OBJECT
+directive @type on OBJECT
+directive @entity on OBJECT
+directive @expression on OBJECT
+directive @crud(auth: JSON) on FIELD_DEFINITION
+directive @query(auth: JSON) on FIELD_DEFINITION
+directive @mutation(auth: JSON) on FIELD_DEFINITION
+directive @relation(type: RelationType) on FIELD_DEFINITION
+`.trim();
+
+const DIRECTIVES = {
+  // entity: ToolkitVisitor,
+  // column: RelationVisitor,
+  query: QueryVisitor,
+  relation: RelationVisitor,
+};
 
 export interface DatabaseSchema {
   metadata: DatabaseMetadata;
@@ -131,15 +166,35 @@ export class CoreSchema {
     });
   }
 
+  public static prolog(): string {
+    return back(`
+      # -- Scalars --
+      ${DEF_SCALARS}
+
+      # -- Directives --
+      ${DEF_DIRECTIVES}
+
+      # -- Roots --
+      schema {
+        query: Query
+        mutation: Mutation
+      }
+    `).trimLeft();
+  }
+
   public typeDefs(): string {
     return back(`
             # -- Scalars --
-            ${DEF_SCALARS}\n
+            ${DEF_SCALARS}
+
             # -- Directives --
-            ${DEF_DIRECTIVES}\n
-            # -- Metadata Types --
-            ${Object.values(this.metadata).map(m => m.model).join('\n')}\n
-            # -- Metadata Resolvers --
+            ${DEF_DIRECTIVES}
+
+            # -- Roots --
+            schema {
+              query: Query
+              mutation: Mutation
+            }
             type Query {
               Metadata: MetadataRegistry
             }
@@ -148,8 +203,31 @@ export class CoreSchema {
             }
 
             # -- Enums --
-            ${Object.values(this.enums).map(m => m.model).join('\n')}\n
-        `)
+            enum RelationType {
+              OneToOne,
+              OneToMany,
+              ManyToOne
+            }
+            ${Object.values(this.enums).map(m => m.model).join('\n')}
+      `).trimLeft()
+      + Object.values(this.apis).map((api) => {
+        let res = '';
+        if (api.queries) {
+          res += 'extend type Query {\n  ';
+          res += Object.values(api.queries).map(q => q.name + q.signature).join('\n  ');
+          res += '\n}\n';
+        }
+        if (api.mutations) {
+          res += 'extend type Mutation {\n  ';
+          res += Object.values(api.mutations).map(c => c.name + c.signature).join('\n  ');
+          res += '\n}\n';
+        }
+        if (api.resolvers) {
+          res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
+        }
+        if (res) res = `\# -- API: ${api.metadata.alias} --#\n` + res;
+        return res;
+      }).join('\n')
       + Object.values(this.databases).map((db) => {
         return `\n# -- Database: ${db.metadata.target.name} --\n`
           + `extend ${db.query}\n`
@@ -166,24 +244,10 @@ export class CoreSchema {
       + Object.values(this.inputs).map(i => `# -- Input: ${i.metadata.name} --\n${i.model}`).join('\n')
       + '\n'
       + Object.values(this.types).map(r => `# -- Type: ${r.metadata.name} --\n${r.model}`).join('\n')
-      + '\n'
-      + Object.values(this.apis).map((api) => {
-        let res = `\# -- API: ${api.metadata.alias} --#\n`;
-        if (api.queries) {
-          res += 'extend type Query {\n  ';
-          res += Object.values(api.queries).map(q => q.name + q.signature).join('\n  ');
-          res += '\n}\n';
-        }
-        if (api.mutations) {
-          res += 'extend type Mutation {\n  ';
-          res += Object.values(api.mutations).map(c => c.name + c.signature).join('\n  ');
-          res += '\n}\n';
-        }
-        if (api.resolvers) {
-          res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
-        }
-        return res;
-      }).join('\n');
+      + '\n\n'
+      + `# -- Metadata Types --\n`
+      + Object.values(this.metadata).map(m => m.model).join('\n')
+      + `\n`;
   }
 
   public resolvers() {
@@ -455,17 +519,18 @@ export class CoreSchema {
     schema.model = (scope === GraphKind.Input)
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
       : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
-    for (const field of Object.values(struc.members)) {
-      const type = field.build;
+    for (const member of Object.values(struc.members)) {
+      const type = member.build;
+      const doc = GraphKind.isVoid(member.kind) ? '# ' : '';
       if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
         const sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.def];
         const args = (sch && sch.params) ? `(\n${reg[type.item.def].params}\n  )` : '';
-        schema.model += `  ${field.name}${args}: ${type.def}\n`;
+        schema.model += `  ${doc}${member.name}${args}: ${type.def}\n`;
       } else {
-        schema.model += `  ${field.name}: ${type.def}\n`;
+        schema.model += `  ${doc}${member.name}: ${type.def}\n`;
       }
       const resolvers = (struc.target as any).RESOLVERS;
-      if (resolvers && resolvers[field.name]) schema.resolvers[field.name] = resolvers[field.name];
+      if (resolvers && resolvers[member.name]) schema.resolvers[member.name] = resolvers[member.name];
     }
     schema.model += '}';
     return schema;
@@ -513,164 +578,4 @@ export class CoreSchema {
     this.apis[api.api] = api;
     return api;
   }
-
-  public backend(): string {
-    let script = back(`
-    import { Injectable } from '@angular/core';
-    import { Apollo } from 'apollo-angular';
-    import { ApolloQueryResult } from 'apollo-client';
-    import { FetchResult } from 'apollo-link';
-    import gql from 'graphql-tag';
-    import { Observable } from 'rxjs';
-    import { map } from 'rxjs/operators';
-
-    export interface ApiError {
-      message: string;
-      status: number;
-    }
-
-    interface Result<T> { result: T; }
-
-    function resolveQuery<T>(res: ApolloQueryResult<Result<T>>): T {
-      return res.data.result;
-    }
-
-    function resolveMutation<T>(res: FetchResult<Result<T>>): T {
-      return res.data.result;
-    }
-    `).trimLeft();
-    script += '///////// API /////////\n';
-    for (const api of Object.values(this.apis).sort((a, b) => a.api.localeCompare(b.api))) {
-      const code = this.genAngular(api.metadata);
-      if (code) script += code + '\n\n';
-    }
-    script += '///////// ENUM ////////\n';
-    for (const type of Object.values(this.enums).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += type.script + '\n\n';
-    }
-    script += '/////// ENTITIES //////\n';
-    const db = Object.values(this.databases)[0];
-    for (const type of Object.values(db.entities).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
-    }
-    script += '//////// INPUTS ///////\n';
-    for (const type of Object.values(this.inputs).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
-    }
-    script += '//////// TYPES ////////\n';
-    for (const type of Object.values(this.types).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
-    }
-    return script;
-  }
-
-  private genInterface(struc: TypeMetadata): string {
-    let script = `export interface ${struc.name} {`;
-    for (const field of Object.values(struc.members)) {
-      const type = field.build;
-      const opt = true; // GraphKind.isEntity(struc.kind) ? !field.required : true;
-      script += `\n  ${field.name}${opt ? '?' : ''}: ${type.js};`;
-    }
-    script += '\n}';
-    return script;
-  }
-
-  private genAngular(metadata: ApiMetadata): string {
-    let script = `@Injectable()\nexport class ${metadata.name} {\n`;
-    script += `  constructor(private graphql: Apollo) { }\n`;
-    let count = 0;
-    for (const method of Object.values(metadata.methods)) {
-      if (!method.query && !method.mutation && !method.resolver) continue;
-      count++;
-      const input = method.input.build;
-      const result = method.result.build;
-      const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const art = (GraphKind.isVoid(input.kind) ? '()' : `(${arg}: ${input.js})`);
-      const art2 = (GraphKind.isVoid(input.kind) ? '' : `($${arg}: ${input.def})`);
-      const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
-      const action = method.mutation ? 'mutate' : 'query';
-      script += `\n  public ${method.name}${art}: Observable<${result.js}> {\n`;
-      script += `    return this.graphql.${action}<Result<${result.js}>>({\n`;
-      if (method.mutation) {
-        script += `      mutation: gql\`mutation request${art2} {\n`;
-      } else {
-        script += `      query: gql\`query request${art2} {\n`;
-      }
-      script += `        result: ${method.api.name}_${method.name}${art3}`;
-      if (GraphKind.isStruc(result.kind)) {
-        const x = (GraphKind.isType(result.kind)) ? 0 : 0;
-        const select = this.genSelect(result, method.select, 0, 1 + x);
-        script += ' ' + select;
-      } else if (GraphKind.isArray(result.kind)) {
-        const x = (GraphKind.isType(result.item.kind)) ? 0 : 0;
-        const select = this.genSelect(result.item, method.select, 0, 1 + x);
-        script += ' ' + select;
-      } else {
-        script += ` # : ANY`;
-      }
-      script += `\n      }\`,\n`;
-      if (art3) script += `      variables: { ${arg} }\n`;
-      if (method.mutation) {
-        script += `    }).pipe(map(res => resolveMutation(res)));\n`;
-      } else {
-        script += `    }).pipe(map(res => resolveQuery(res)));\n`;
-      }
-      script += `  }\n`;
-    }
-    script += '}';
-    return count ? script : '';
-  }
-
-  private genSelect(meta: VarMetadata, select: Select | any, level: number, depth: number): string {
-    if (level >= depth) return null;
-    if (GraphKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (GraphKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
-    if (GraphKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
-    // script += ` # [ANY]\n`;
-    // #  NONE
-    const type = meta as TypeMetadata;
-    const tab = '  '.repeat(level + 4);
-    let script = `{`;
-    let i = 0;
-    for (const member of Object.values(type.members)) {
-      let name = member.name;
-      let def = `# ${member.build.js}`;
-      if (!GraphKind.isScalar(member.kind)) {
-        def += ' ...';
-        if (select instanceof Object && select[member.name]) {
-          const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);
-          def = sub || def;
-          if (!sub) name = '# ' + name;
-        } else {
-          name = '# ' + name;
-        }
-      }
-      script += `${i++ ? ',' : ''}\n${tab}  ${name} ${def}`;
-    }
-    script += `\n${tab}}`;
-    return script;
-  }
 }
-
-function scalar(obj: any): string {
-  let res = '{';
-  let i = 0;
-  for (const [key, val] of Object.entries(obj)) res += `${(i++) ? ', ' : ' '}${key}: ${JSON.stringify(val)}`;
-  res += ' }';
-  return res;
-}
-
-function back(text: string) {
-  const lines = text.split('\n');
-  let first = lines[0];
-  if (!first.trim().length) first = lines[1];
-  const pad = first.substr(0, first.indexOf(first.trim()));
-  const res = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
-    .map(line => line.trimRight())
-    .join('\n');
-  return res;
-}
-
-// function ww(path) {
-//     return (path.prev ? ww(path.prev) : "") + "/" + path.key;
-// }

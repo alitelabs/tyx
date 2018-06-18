@@ -179,7 +179,7 @@ export abstract class Registry implements MetadataRegistry {
 
   private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {
     if (GraphKind.isScalar(metadata.kind)) {
-      return { kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) };
+      return VarMetadata.on({ kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) });
     }
     if (GraphKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
@@ -189,8 +189,8 @@ export abstract class Registry implements MetadataRegistry {
     }
     if (GraphKind.isArray(metadata.kind)) {
       const item = this.resolve(metadata.item, scope, reg);
-      if (item) return { kind: GraphKind.Array, item, def: `[${item.def}]`, js: `${item.js}[]` };
-      return { kind: GraphKind.Array, item, def: `[${GraphKind.Object}]`, js: `any[]` };
+      if (item) return VarMetadata.on({ kind: GraphKind.Array, item, def: `[${item.def}]`, js: `${item.js}[]` });
+      return VarMetadata.on({ kind: GraphKind.Array, item, def: `[${GraphKind.Object}]`, js: `any[]` });
     }
     if (GraphKind.isRef(metadata.kind)) {
       let type: VarMetadata = undefined;
@@ -214,7 +214,7 @@ export abstract class Registry implements MetadataRegistry {
         } else if (meta) {
           type = this.resolve(meta, scope, reg);
         } else {
-          type = { kind: GraphKind.Object, def: GraphKind.Object, js: 'any' };
+          type = VarMetadata.on({ kind: GraphKind.Object, def: GraphKind.Object, js: 'any' });
         }
       } else {
         throw Error('Internal registry error');

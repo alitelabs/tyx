@@ -26,7 +26,7 @@ import { EnumMetadataSchema, TypeMetadataSchema } from './type';
 
 @Metadata()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
-  @Field(String) decorator: string;
+  @Field() decorator: string;
   @Field(Int) count: number;
   @Field([String]) targets: Record<string, Class>;
 
@@ -37,10 +37,10 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
 
 @Metadata()
 export class DecorationMetadataSchema implements DecorationMetadata {
-  @Field(String) decorator: string;
+  @Field() decorator: string;
   @Field(Int) ordinal: number;
   @Field(String) target?: Class;
-  @Field(String) propertyKey?: string;
+  @Field() propertyKey?: string;
   @Field(Int) index?: number;
   @Field(Object) args: Record<string, any>;
 

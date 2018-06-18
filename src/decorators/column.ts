@@ -60,11 +60,23 @@ export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
   };
 }
 
-export function Transient<T = any>(type: VarType<T>, required?: boolean): PropertyDecorator {
+export function Transient(): PropertyDecorator;
+export function Transient(required?: boolean): PropertyDecorator;
+export function Transient<T = any>(type: VarType<T>): PropertyDecorator;
+export function Transient<T = any>(type?: VarType<T>, required?: boolean): PropertyDecorator;
+export function Transient<T = any>(typeOrRequired?: VarType<T> | boolean, isReq?: boolean): PropertyDecorator {
   return (target, propertyKey) => {
-    Registry.trace(Transient, undefined, target, propertyKey);
+    let type: VarType<T> = undefined;
+    let required = false;
+    if (typeof typeOrRequired === 'boolean') {
+      required = typeOrRequired;
+    } else {
+      type = typeOrRequired;
+      required = isReq;
+    }
+    Registry.trace(Transient, { type, required }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Transient, { nullable: true }, type);
+    ColumnMetadata.define(target, propertyKey, ColumnMode.Transient, { nullable: !required }, type);
   };
 }
 

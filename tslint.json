@@ -4,6 +4,7 @@
         "object-shorthand-properties-first": false,
         "no-increment-decrement": false,
         "import-name": false,
+        "trailing-comma": false,
         "max-line-length": [
             true,
             140

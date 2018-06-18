@@ -1,12 +1,15 @@
-import { DEF_DIRECTIVES, DEF_SCALARS } from './base';
-import { CoreSchema, ENTITY, EntitySchema, GET, SEARCH } from './schema';
+import { CoreSchema, EntitySchema } from './schema';
+
+const ENTITY = '';
+const GET = '';
+const SEARCH = '';
 
 export default function codegen(schema: CoreSchema, folder: string, extension?: string) {
   const ext = extension || 'gql';
   const fs = require('fs');
   fs.writeFileSync(
     `${folder}/schema/import.${ext}`,
-    DEF_SCALARS.replace('scalar Date', '#scalar Date') + '\n\n' + DEF_DIRECTIVES + '\n',
+    CoreSchema.prolog().replace('scalar Date', '#scalar Date')
   );
   for (const target in schema.databases[0].entities) {
     const entry = schema.databases[0].entities[target];

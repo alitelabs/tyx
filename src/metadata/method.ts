@@ -5,7 +5,7 @@ import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { Registry } from './registry';
-import { InputMetadata, InputType, ResultMetadata, ResultType, Select, VarMetadata } from './type';
+import { IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
 
 export enum HttpBindingType {
   PathParam = 'PathParam',
@@ -109,8 +109,8 @@ export interface IMethodMetadata {
   query: boolean;
   mutation: boolean;
   resolver: boolean;
-  input: VarMetadata;
-  result: VarMetadata;
+  input: IInputMetadata;
+  result: IResultMetadata;
   select: Select;
 
   contentType: string;

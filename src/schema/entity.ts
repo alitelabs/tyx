@@ -16,7 +16,7 @@ import { FieldMetadataSchema } from './type';
 export class EntityMetadataSchema implements IEntityMetadata {
   @Field(String) kind: GraphKind;
   @Field(String) target: Class;
-  @Field(String) name: string;
+  @Field() name: string;
   @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
   @Field(list => [ColumnMetadataSchema]) columns: IColumnMetadata[];
   @Field(list => [ColumnMetadataSchema]) primaryColumns: IColumnMetadata[];

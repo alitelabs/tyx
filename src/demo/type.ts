@@ -2,16 +2,35 @@ import FS = require('fs');
 // tslint:disable-next-line:import-blacklist
 import { Core, CoreSchema, Enum, Field, Input, Mutation, Query, Service, Type } from '..';
 import { Public } from '../decorators/auth';
-
-@Input()
-export class TestInput {
-  @Field(String) data: string;
-  @Field(Boolean) urgent: boolean;
-}
+import { Any } from '../metadata/type';
 
 @Type()
 export class TypeA {
-  @Field(String) name: string;
+  @Field() name: string;
+}
+
+@Type()
+export class JavaScript {
+  @Field() aString: string;
+  @Field() aNumber: number;
+  @Field() aBoolean: boolean;
+  @Field() aObject: Boolean;
+  @Field() anEnum: OnOff;
+  @Field(Number) aConst = 23;
+  @Field() aDate: Date;
+  @Field(Any) anAny: any;
+  @Field([void 0]) aVoid: void;
+  @Field(Object) aNull: null;
+  @Field(Object) aNever: never;
+  @Field([String]) aStringArray: string[];
+  @Field([Number]) aNumArray: number[];
+  @Field(ref => TypeA) aType: TypeA;
+}
+
+@Input()
+export class TestInput {
+  @Field() data: string;
+  @Field() urgent: boolean;
 }
 
 export enum OnOff {
@@ -22,9 +41,9 @@ Enum(OnOff, 'OnOff');
 
 @Type()
 export class TestResult {
-  @Field(String) res: string;
+  @Field() res: string;
   @Field([String]) versions: string[];
-  @Field(Boolean) bool?: boolean;
+  @Field() bool?: boolean;
   @Field(Enum(OnOff)) state?: OnOff;
   @Field(ref => TypeA) sub?: TypeA;
   @Field(list => [TypeA]) subs?: TypeA[];

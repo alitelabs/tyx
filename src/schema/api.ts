@@ -11,14 +11,14 @@ import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema
 @Metadata()
 export class ApiMetadataSchema implements IApiMetadata {
   @Field(String) target: Class;
-  @Field(String) name: string;
-  @Field(String) alias: string;
+  @Field() name: string;
+  @Field() alias: string;
 
   @Field(list => [MethodMetadataSchema]) methods: Record<string, IMethodMetadata>;
   @Field(list => [HttpRouteMetadataSchema]) routes: Record<string, HttpRouteMetadata>;
   @Field(list => [EventRouteMetadataSchema]) events: Record<string, EventRouteMetadata[]>;
 
-  @Field(String) source: string;
+  @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IApiMetadata> = {
     target: obj => Utils.value(obj.target),

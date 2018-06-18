@@ -1,40 +1,5 @@
-import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType, GraphQLScalarType } from 'graphql';
-import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
+import { GraphQLField, GraphQLInterfaceType, GraphQLObjectType } from 'graphql';
 import { SchemaDirectiveVisitor } from 'graphql-tools';
-import GraphQLJSON = require('graphql-type-json');
-
-export const SCALARS: Record<string, GraphQLScalarType> = {
-  Date: GraphQLDate,
-  Time: GraphQLTime,
-  DateTime: GraphQLDateTime,
-  JSON: GraphQLJSON,
-  ANY: new GraphQLScalarType({
-    name: 'ANY',
-    serialize(value) { return value; },
-  }),
-};
-export const DEF_SCALARS = Object.keys(SCALARS).map(s => `scalar ${s}`).join('\n');
-
-export const DEF_DIRECTIVES = `
-schema {
-    query: Query
-    mutation: Mutation
-}
-enum RelationType {
-    OneToOne,
-    OneToMany,
-    ManyToOne
-}
-directive @metadata on OBJECT
-directive @input on OBJECT
-directive @type on OBJECT
-directive @entity on OBJECT
-directive @expression on OBJECT
-directive @crud(auth: JSON) on FIELD_DEFINITION
-directive @query(auth: JSON) on FIELD_DEFINITION
-directive @mutation(auth: JSON) on FIELD_DEFINITION
-directive @relation(type: RelationType) on FIELD_DEFINITION
-`.trim();
 
 export class QueryVisitor extends SchemaDirectiveVisitor {
   constructor(config: any) { super(config); }
@@ -68,10 +33,3 @@ export class RelationVisitor extends SchemaDirectiveVisitor {
     // };
   }
 }
-
-export const DIRECTIVES = {
-  // entity: ToolkitVisitor,
-  // column: RelationVisitor,
-  query: QueryVisitor,
-  relation: RelationVisitor,
-};

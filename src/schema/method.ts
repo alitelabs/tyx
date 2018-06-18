@@ -90,9 +90,9 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(String) auth: string;
   @Field(Object) roles: Roles;
 
-  @Field(Boolean) query: boolean;
-  @Field(Boolean) mutation: boolean;
-  @Field(Boolean) resolver: boolean;
+  @Field() query: boolean;
+  @Field() mutation: boolean;
+  @Field() resolver: boolean;
   @Field(ref => InputMetadataSchema) input: IInputMetadata;
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: Select;

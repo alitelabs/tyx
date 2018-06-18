@@ -15,7 +15,7 @@ import { RelationMetadataSchema } from './relation';
 @Metadata()
 export class DatabaseMetadataSchema implements IDatabaseMetadata {
   @Field(String) target: Class;
-  @Field(String) alias: string;
+  @Field() alias: string;
 
   @Field([String]) targets: Class[];
   @Field(list => [EntityMetadataSchema]) entities: IEntityMetadata[];

@@ -6,7 +6,7 @@ import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { DesignMetadata } from '../metadata/method';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
-import { GraphKind, VarMetadata } from '../metadata/type';
+import { GraphKind, IVarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
@@ -16,15 +16,15 @@ import { VarMetadataSchema } from './type';
 @Metadata()
 export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(String) kind: GraphKind;
-  @Field(String) name: string;
-  @Field(Boolean) required: boolean;
-  @Field(item => VarMetadataSchema) item: VarMetadata;
+  @Field() name: string;
+  @Field() required: boolean;
+  @Field(item => VarMetadataSchema) item: IVarMetadata;
   @Field(Object) design: DesignMetadata;
-  @Field(ref => VarMetadataSchema) build: VarMetadata;
+  @Field(ref => VarMetadataSchema) build: IVarMetadata;
 
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;
-  @Field(String) propertyName: string;
+  @Field() propertyName: string;
   @Field(String) relationType: RelationType;
   @Field(ref => EntityMetadataSchema) inverseEntityMetadata: IEntityMetadata;
   @Field(ref => RelationMetadataSchema) inverseRelation?: IRelationMetadata<any>;

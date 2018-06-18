@@ -1,6 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
+import { DesignMetadata } from './method';
 import { Registry } from './registry';
 import { FieldMetadata, GraphKind, VarMetadata, VarType } from './type';
 
@@ -328,21 +329,19 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public isTransient: boolean;
 
   protected constructor(
+    kind: GraphKind,
+    design: DesignMetadata,
     target: Class,
     propertyKey: string,
-    mode: ColumnMode, options: ColumnOptions,
-    type: VarType,
+    mode: ColumnMode, options: ColumnOptions
   ) {
     super();
-    let kind: GraphKind;
-    if (type) kind = VarMetadata.of(type).kind;
-    else kind = ColumnType.kind(options.type);
     const state: IColumnMetadata = {
       kind,
       target,
       name: propertyKey,
       required: options.primary || !options.nullable,
-      design: undefined,
+      design,
       build: undefined,
 
       entityMetadata: undefined,
@@ -382,18 +381,34 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     type?: VarType,
   ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
-    if (!meta) {
-      meta = new ColumnMetadata(target.constructor, propertyKey, mode, options, type);
-      Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
-      Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
+    if (meta) throw new TypeError(`Duplicate column decoration on [${propertyKey}]`);
+    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, target, propertyKey);
+    let kind: GraphKind;
+    if (mode === ColumnMode.Transient) {
+      const vt = VarMetadata.of(type || design, !type);
+      if (!vt) {
+        throw TypeError(`Design type of [${target.constructor.name}.${propertyKey}]: `
+          + `[${design && design.name}] not in [String, Number, Boolean, Date]`);
+      }
+      kind = vt.kind;
+    } else {
+      kind = ColumnType.kind(options.type);
     }
+    meta = new ColumnMetadata(
+      kind,
+      design && { type: design.name, target: design },
+      target.constructor,
+      propertyKey,
+      mode,
+      options
+    );
+    Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
+    Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
     EntityMetadata.define(target.constructor).addColumn(meta);
     return meta;
   }
 
   public commit(): void {
-    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, this.propertyName);
-    this.design = design && { type: design.name, target: design };
   }
 
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {

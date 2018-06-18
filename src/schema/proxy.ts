@@ -11,10 +11,10 @@ import { HandlerMetadataSchema, InjectMetadataSchema } from './service';
 @Metadata()
 export class ProxyMetadataSchema implements IProxyMetadata {
   @Field(String) target: Class;
-  @Field(String) name: string;
-  @Field(String) alias: string;
-  @Field(String) application: string = undefined;
-  @Field(String) functionName: string = undefined;
+  @Field() name: string;
+  @Field() alias: string;
+  @Field() application: string = undefined;
+  @Field() functionName: string = undefined;
 
   @Field(list => [InjectMetadataSchema]) dependencies: Record<string, InjectMetadata>;
   @Field(item => [HandlerMetadataSchema]) handlers: Record<string, HandlerMetadata>;
@@ -24,7 +24,7 @@ export class ProxyMetadataSchema implements IProxyMetadata {
   @Field(ref => HandlerMetadataSchema) activator: HandlerMetadata;
   @Field(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
-  @Field(String) source: string;
+  @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IProxyMetadata> = {
     target: obj => Utils.value(obj.target),

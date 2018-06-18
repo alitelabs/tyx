@@ -5,7 +5,7 @@ import { Express } from '../import';
 import { Connection, ConnectionOptions, createConnection } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Registry } from '../metadata/registry';
-import { Class, ContainerState } from '../types/core';
+import { Class, ContainerState, ObjectType } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -61,7 +61,14 @@ export abstract class Core {
     };
   }
 
-  private static async activate(): Promise<CoreInstance> {
+  public static async get(): Promise<CoreInstance>;
+  public static async get<T>(api: ObjectType<T> | string): Promise<T>;
+  public static async get<T = any>(api?: ObjectType<T> | string): Promise<T | CoreInstance> {
+    const ins = await this.activate();
+    return api ? ins : ins.get(api);
+  }
+
+  public static async activate(): Promise<CoreInstance> {
     this.init();
     if (this.options) {
       if (!this.connection) this.connection = await createConnection(this.options);

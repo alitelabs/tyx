@@ -10,3 +10,5 @@ export * from './schema';
 export * from './service';
 export * from './typeorm';
 export * from './types';
+
+export * from './angular';

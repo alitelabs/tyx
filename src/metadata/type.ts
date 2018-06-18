@@ -184,18 +184,53 @@ export namespace GraphKind {
   }
 }
 
-export interface VarMetadata {
+export interface IVarMetadata {
   kind: GraphKind;
-  item?: VarMetadata;
+  item?: IVarMetadata;
   ref?: Class;
-  build?: VarMetadata;
-
+  build?: IVarMetadata;
   def?: string;
   js?: string;
 }
 
-export interface IInputMetadata extends VarMetadata {
-  build: VarMetadata;
+export abstract class VarMetadata {
+  public kind: GraphKind;
+  public item?: VarMetadata;
+  public ref?: Class;
+  public build?: VarMetadata;
+  public def?: string;
+  public js?: string;
+
+  public static readonly DESIGN_TYPES: any[] = [String, Number, Boolean, Date];
+
+  public static on(meta: IVarMetadata) {
+    return meta && Object.setPrototypeOf(meta, VarMetadata.prototype);
+  }
+
+  public static of(item: VarType | InputType | ResultType, design?: boolean): VarMetadata {
+    let type = item;
+    if (design && !this.DESIGN_TYPES.includes(type)) return undefined;
+    let list = false;
+    if (Array.isArray(type)) {
+      type = type[0];
+      if (type === undefined) return { kind: GraphKind.Void };
+      list = true;
+    }
+    const gt = GraphKind.of(type);
+    const ref = GraphKind.isRef(gt);
+
+    let meta: IVarMetadata;
+    if (type instanceof EnumMetadata) meta = { kind: GraphKind.Ref, ref: () => type };
+    else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
+    else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, ref: type } };
+    else if (ref) meta = { kind: GraphKind.Ref, ref: type };
+    else meta = { kind: gt };
+    return VarMetadata.on(meta);
+  }
+}
+
+export interface IInputMetadata extends IVarMetadata {
+  build: IVarMetadata;
 }
 
 export class InputMetadata implements IInputMetadata {
@@ -221,8 +256,8 @@ export class InputMetadata implements IInputMetadata {
   }
 }
 
-export interface IResultMetadata extends VarMetadata {
-  build: VarMetadata;
+export interface IResultMetadata extends IVarMetadata {
+  build: IVarMetadata;
 }
 
 export class ResultMetadata implements IResultMetadata {
@@ -248,36 +283,14 @@ export class ResultMetadata implements IResultMetadata {
   }
 }
 
-export namespace VarMetadata {
-  export function of(item: VarType | InputType | ResultType): VarMetadata {
-    let type = item;
-    let list = false;
-    if (Array.isArray(type)) {
-      type = type[0];
-      if (type === undefined) return { kind: GraphKind.Void };
-      list = true;
-    }
-    const gt = GraphKind.of(type);
-    const ref = GraphKind.isRef(gt);
-
-    let meta: VarMetadata;
-    if (type instanceof EnumMetadata) meta = { kind: GraphKind.Ref, ref: () => type };
-    else if (list && !ref) meta = { kind: GraphKind.Array, item: { kind: gt } };
-    else if (list && ref) meta = { kind: GraphKind.Array, item: { kind: GraphKind.Ref, ref: type } };
-    else if (ref) meta = { kind: GraphKind.Ref, ref: type };
-    else meta = { kind: gt };
-    return meta;
-  }
-}
-
-export interface IFieldMetadata extends VarMetadata {
+export interface IFieldMetadata extends IVarMetadata {
   name: string;
   required: boolean;
   design: DesignMetadata;
-  build: VarMetadata;
+  build: IVarMetadata;
 }
 
-export class FieldMetadata implements IFieldMetadata {
+export abstract class FieldMetadata extends VarMetadata implements IFieldMetadata {
   public kind: GraphKind = undefined;
   public name: string = undefined;
   public required: boolean = undefined;
@@ -286,26 +299,29 @@ export class FieldMetadata implements IFieldMetadata {
   public design: DesignMetadata = undefined;
   public build: VarMetadata = undefined;
 
-  public static of(obj: IFieldMetadata): FieldMetadata {
+  public static on(obj: IFieldMetadata): FieldMetadata {
     return obj && Object.setPrototypeOf(obj, FieldMetadata.prototype);
   }
 }
 
-export interface IEnumMetadata extends VarMetadata {
+export interface IEnumMetadata extends IVarMetadata {
   name: string;
-  item?: never;
   ref: Function;
-  build?: never;
   options: string[];
+  item?: never;
+  build?: never;
 }
 
-export class EnumMetadata implements IEnumMetadata {
+export class EnumMetadata extends VarMetadata implements IEnumMetadata {
   public kind = GraphKind.Enum;
   public name: string;
   public ref: Function;
   public options: string[];
+  public item?: never;
+  public build?: never;
 
   constructor(target: Object, name: string) {
+    super();
     if (!name) throw new TypeError('Unnamed enum');
     this.name = name;
     this.ref = () => target;
@@ -338,7 +354,7 @@ export class EnumMetadata implements IEnumMetadata {
   }
 }
 
-export interface ITypeMetadata extends VarMetadata {
+export interface ITypeMetadata extends IVarMetadata {
   name: string;
   target: Class;
   members: Record<string, IFieldMetadata>;
@@ -347,16 +363,20 @@ export interface ITypeMetadata extends VarMetadata {
   build?: never;
 }
 
-export class TypeMetadata implements ITypeMetadata {
+export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   public kind: GraphKind = undefined;
   public name: string = undefined;
   public target: Class = undefined;
   public members: Record<string, FieldMetadata> = undefined;
+  public ref?: never;
+  public item?: never;
+  public build?: never;
 
   public def?: string;
   public js?: string;
 
   constructor(target: Class) {
+    super();
     this.target = target;
     this.name = target.name;
   }
@@ -380,15 +400,28 @@ export class TypeMetadata implements ITypeMetadata {
     return meta;
   }
 
-  public addField(propertyKey: string, type: VarType, required: boolean): this {
-    // TODO: Validata
+  public addField(propertyKey: string, type?: VarType, required?: boolean): this {
     this.members = this.members || {};
-    // TODO: use design type when not specified
+    if (this.members[propertyKey]) throw new TypeError(`Duplicate field decoration on [${propertyKey}]`);
     const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
-    let meta = VarMetadata.of(type) as IFieldMetadata;
-    meta = FieldMetadata.of(meta);
+    let meta = VarMetadata.of(type || design, !type) as IFieldMetadata;
+    if (!meta) {
+      throw TypeError(`Design type of [${this.target.name}.${propertyKey}]: `
+        + `[${design && design.name}] not in [String, Number, Boolean, Date]`);
+    }
+    if (type && VarMetadata.DESIGN_TYPES.includes(design)) {
+      const dt = VarMetadata.of(design);
+      if (
+        dt.kind !== meta.kind
+        && !(meta.kind === GraphKind.Int && design === Number)
+        && !(meta.kind === GraphKind.ID && design === String)
+      ) {
+        console.warn(`Field [${this.target.name}.${propertyKey}]: kind [${meta.kind}] <> design [${design && design.name}]`);
+      }
+    }
+    meta = FieldMetadata.on(meta);
     meta.name = propertyKey;
-    meta.required = required;
+    meta.required = !!required;
     meta.design = design && { type: design.name, target: design };
     this.members[propertyKey] = meta;
     Reflect.defineMetadata(Registry.TYX_MEMBER, meta, this.target.prototype, propertyKey);

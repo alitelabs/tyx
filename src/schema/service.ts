@@ -9,7 +9,7 @@ import { Utils } from '../utils';
 
 @Metadata()
 export class InjectMetadataSchema implements InjectMetadata {
-  @Field(String) resource: string;
+  @Field() resource: string;
   @Field(String) target?: Class;
   @Field(Int) index?: number;
 
@@ -20,11 +20,11 @@ export class InjectMetadataSchema implements InjectMetadata {
 
 @Metadata()
 export class HandlerMetadataSchema implements HandlerMetadata {
-  @Field(String) service?: string;
-  @Field(String) method: string;
+  @Field() service?: string;
+  @Field() method: string;
   @Field(String) target: Class;
 
-  @Field(String) source: string;
+  @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<HandlerMetadata> = {
     target: obj => Utils.value(obj.target),
@@ -35,8 +35,8 @@ export class HandlerMetadataSchema implements HandlerMetadata {
 @Metadata()
 export class ServiceMetadataSchema implements IServiceMetadata {
   @Field(String) target: Class;
-  @Field(String) name: string;
-  @Field(String) alias: string;
+  @Field() name: string;
+  @Field() alias: string;
 
   @Field(list => [InjectMetadataSchema]) dependencies: Record<string, InjectMetadata>;
   @Field(list => [HandlerMetadataSchema]) handlers: Record<string, HandlerMetadata>;
@@ -46,7 +46,7 @@ export class ServiceMetadataSchema implements IServiceMetadata {
   @Field(ref => HandlerMetadataSchema) activator: HandlerMetadata;
   @Field(ref => HandlerMetadataSchema) releasor: HandlerMetadata;
 
-  @Field(String) source: string;
+  @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IServiceMetadata> = {
     target: obj => Utils.value(obj.target),
