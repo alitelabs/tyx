@@ -409,7 +409,7 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
       throw TypeError(`Design type of [${this.target.name}.${propertyKey}]: `
         + `[${design && design.name}] not in [String, Number, Boolean, Date]`);
     }
-    if (type && VarMetadata.DESIGN_TYPES.includes(design)) {
+    if (process.env.NODE_ENV === 'development' && type && VarMetadata.DESIGN_TYPES.includes(design)) {
       const dt = VarMetadata.of(design);
       if (
         dt.kind !== meta.kind
