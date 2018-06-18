@@ -1,4 +1,5 @@
 import renderVoyagerPage, { MiddlewareOptions } from 'graphql-voyager/middleware/render-voyager-page';
+import { CoreSchema } from '../core/schema';
 import { Debug } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { Activate, Service } from '../decorators/service';
@@ -7,7 +8,6 @@ import { GraphQL } from '../import';
 import { Logger } from '../logger';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
-import { CoreSchema } from './schema';
 import { ResolverContext } from './types';
 import SuperGraphiQL = require('super-graphiql-express');
 

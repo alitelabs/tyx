@@ -1,7 +1,7 @@
+import { CoreSchema } from '../core/schema';
 import { ApiMetadata } from '../metadata/api';
 import { GraphKind, Select, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
-import { CoreSchema } from './schema';
 import { back } from './utils';
 
 export class AngularCodeGen {

@@ -1,6 +1,9 @@
 import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
+import { SchemaResolver } from '../graphql/types';
+import { back, scalar } from '../graphql/utils';
+import { QueryVisitor, RelationVisitor } from '../graphql/visitors';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -9,9 +12,6 @@ import { Registry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
-import { SchemaResolver } from './types';
-import { back, scalar } from './utils';
-import { QueryVisitor, RelationVisitor } from './visitors';
 import GraphQLJSON = require('graphql-type-json');
 
 export { GraphQLSchema } from 'graphql';

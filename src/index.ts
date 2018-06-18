@@ -49,6 +49,7 @@ export * from './core/security';
 export * from './core/service';
 export * from './core/proxy';
 export * from './core/provider';
+export * from './core/schema';
 
 // --- TODO ---
 

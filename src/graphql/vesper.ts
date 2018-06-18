@@ -1,4 +1,4 @@
-import { CoreSchema, EntitySchema } from './schema';
+import { CoreSchema, EntitySchema } from '../core/schema';
 
 const ENTITY = '';
 const GET = '';

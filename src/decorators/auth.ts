@@ -28,8 +28,8 @@ export function Remote() {
   return AuthDecorator(Remote, { Internal: true, External: false, Remote: true });
 }
 
-export function Authorization<TR extends Roles>(roles: TR) {
-  return AuthDecorator(Authorization, roles);
+export function Auth<TR extends Roles>(roles: TR) {
+  return AuthDecorator(Auth, roles);
 }
 
 function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
