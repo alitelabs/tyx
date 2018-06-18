@@ -3,7 +3,6 @@ import Lo = require('lodash');
 import { Field, Metadata } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { HandlerMetadata, InjectMetadata, IServiceMetadata } from '../metadata/service';
-import { Int } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 
@@ -11,7 +10,7 @@ import { Utils } from '../utils';
 export class InjectMetadataSchema implements InjectMetadata {
   @Field() resource: string;
   @Field(String) target?: Class;
-  @Field(Int) index?: number;
+  @Field(0) index?: number;
 
   public static RESOLVERS: SchemaResolvers<InjectMetadata> = {
     target: obj => Utils.value(obj.target),

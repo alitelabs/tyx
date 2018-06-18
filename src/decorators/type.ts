@@ -1,5 +1,5 @@
 import { Registry } from '../metadata/registry';
-import { EnumMetadata, GraphKind, TypeMetadata, VarType } from '../metadata/type';
+import { EnumMetadata, GraphKind, Int, TypeMetadata, VarType } from '../metadata/type';
 
 // tslint:disable:function-name
 
@@ -65,15 +65,18 @@ export function Enum(target: Object, name?: string): EnumMetadata {
 // }
 
 export function Field<T = any>(): PropertyDecorator;
-export function Field<T = any>(type: VarType<T>): PropertyDecorator;
+export function Field<T = any>(type: VarType<T> | 0): PropertyDecorator;
 export function Field<T = any>(required?: boolean): PropertyDecorator;
-export function Field<T = any>(type?: VarType<T>, required?: boolean): PropertyDecorator;
-export function Field<T = any>(typeOrRequired?: VarType<T> | boolean, isReq?: boolean): PropertyDecorator {
+export function Field<T = any>(type?: VarType<T> | 0, required?: boolean): PropertyDecorator;
+export function Field<T = any>(typeOrRequired?: VarType<T> | 0 | boolean, isReq?: boolean): PropertyDecorator {
   return (target, propertyKey) => {
     let type: VarType<T> = undefined;
     let required = false;
     if (typeof typeOrRequired === 'boolean') {
       required = typeOrRequired;
+    } else if (typeOrRequired === 0) {
+      type = Int;
+      required = isReq;
     } else {
       type = typeOrRequired;
       required = isReq;

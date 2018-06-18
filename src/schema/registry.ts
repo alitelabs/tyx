@@ -11,7 +11,7 @@ import { IProxyMetadata } from '../metadata/proxy';
 import { DecorationMetadata, DecoratorMetadata, MetadataRegistry } from '../metadata/registry';
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
-import { IEnumMetadata, Int, ITypeMetadata } from '../metadata/type';
+import { IEnumMetadata, ITypeMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -27,7 +27,7 @@ import { EnumMetadataSchema, TypeMetadataSchema } from './type';
 @Metadata()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
   @Field() decorator: string;
-  @Field(Int) count: number;
+  @Field(0) count: number;
   @Field([String]) targets: Record<string, Class>;
 
   public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
@@ -38,10 +38,10 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
 @Metadata()
 export class DecorationMetadataSchema implements DecorationMetadata {
   @Field() decorator: string;
-  @Field(Int) ordinal: number;
+  @Field(0) ordinal: number;
   @Field(String) target?: Class;
   @Field() propertyKey?: string;
-  @Field(Int) index?: number;
+  @Field(0) index?: number;
   @Field(Object) args: Record<string, any>;
 
   public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {

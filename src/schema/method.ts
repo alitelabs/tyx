@@ -5,7 +5,7 @@ import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 // tslint:disable-next-line:max-line-length
 import { DesignMetadata, EventRouteMetadata, HttpAdapter, HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IMethodMetadata } from '../metadata/method';
-import { IInputMetadata, Int, IResultMetadata, Select } from '../metadata/type';
+import { IInputMetadata, IResultMetadata, Select } from '../metadata/type';
 import { Class } from '../types/core';
 import { EventAdapter } from '../types/event';
 import { HttpCode } from '../types/http';
@@ -38,7 +38,7 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   @Field(String) resource: string;
   @Field(String) model: string;
   @Field([String]) params: string[];
-  @Field(Int) code: HttpCode;
+  @Field(0) code: HttpCode;
   @Field(String) adapter: HttpAdapter;
   // Relations
   // api: ApiMetadata;

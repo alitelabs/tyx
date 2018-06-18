@@ -1,7 +1,7 @@
 import { Orm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
 import { Registry } from '../metadata/registry';
-import { VarType } from '../metadata/type';
+import { Int, VarType } from '../metadata/type';
 
 // tslint:disable:function-name
 
@@ -62,14 +62,17 @@ export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
 
 export function Transient(): PropertyDecorator;
 export function Transient(required?: boolean): PropertyDecorator;
-export function Transient<T = any>(type: VarType<T>): PropertyDecorator;
-export function Transient<T = any>(type?: VarType<T>, required?: boolean): PropertyDecorator;
-export function Transient<T = any>(typeOrRequired?: VarType<T> | boolean, isReq?: boolean): PropertyDecorator {
+export function Transient<T = any>(type: VarType<T> | 0): PropertyDecorator;
+export function Transient<T = any>(type?: VarType<T> | 0, required?: boolean): PropertyDecorator;
+export function Transient<T = any>(typeOrRequired?: VarType<T> | 0 | boolean, isReq?: boolean): PropertyDecorator {
   return (target, propertyKey) => {
     let type: VarType<T> = undefined;
     let required = false;
     if (typeof typeOrRequired === 'boolean') {
       required = typeOrRequired;
+    } else if (typeOrRequired === 0) {
+      type = Int;
+      required = isReq;
     } else {
       type = typeOrRequired;
       required = isReq;
