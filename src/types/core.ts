@@ -1,4 +1,4 @@
-import { ResolverContainer } from '../graphql';
+import { ResolverContainer } from '../graphql/types';
 import { MethodMetadata } from '../metadata/method';
 import { EventRequest, EventResult } from './event';
 import { HttpRequest, HttpResponse } from './http';

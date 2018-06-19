@@ -41,6 +41,20 @@ export * from './decorators/relation';
 export * from './decorators/database';
 export * from './decorators/exception';
 
+// ---- graphql/index.ts ----
+
+export * from './graphql/types';
+export * from './graphql/query';
+export * from './graphql/typeorm';
+export * from './graphql/schema';
+export * from './graphql/angular';
+
+// ---- general/index.ts ----
+
+export * from './errors';
+export * from './logger';
+export * from './utils';
+
 // ---- core/index.ts ----
 
 export * from './core/core';
@@ -49,16 +63,11 @@ export * from './core/security';
 export * from './core/service';
 export * from './core/proxy';
 export * from './core/provider';
-export * from './core/schema';
 export * from './core/graphql';
 
 // --- TODO ---
 
-export * from './logger';
-export * from './errors';
-export * from './utils';
 export * from './aws';
 export * from './express';
-export * from './graphql';
 
 export { Orm, Di, GraphQL } from './import';

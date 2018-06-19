@@ -1,14 +1,14 @@
 import { Class } from '../types/core';
 import * as Utils from '../utils/misc';
-import { ApiMetadata, IApiMetadata } from './api';
-import { ColumnMetadata, IColumnMetadata } from './column';
-import { DatabaseMetadata, IDatabaseMetadata } from './database';
-import { EntityMetadata, IEntityMetadata } from './entity';
-import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata } from './method';
-import { IProxyMetadata, ProxyMetadata } from './proxy';
-import { IRelationMetadata, RelationMetadata } from './relation';
-import { IServiceMetadata, ServiceMetadata } from './service';
-import { EnumMetadata, GraphKind, IEnumMetadata, ITypeMetadata, TypeMetadata, VarMetadata } from './type';
+import { ApiMetadata } from './api';
+import { ColumnMetadata } from './column';
+import { DatabaseMetadata } from './database';
+import { EntityMetadata } from './entity';
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from './method';
+import { ProxyMetadata } from './proxy';
+import { RelationMetadata } from './relation';
+import { ServiceMetadata } from './service';
+import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from './type';
 
 export interface DecorationMetadata {
   decorator: string;
@@ -26,24 +26,24 @@ export interface DecoratorMetadata {
 }
 
 export interface MetadataRegistry {
-  RegistryMetadata: Record<string, ITypeMetadata>;
+  RegistryMetadata: Record<string, TypeMetadata>;
   DecoratorMetadata: Record<string, DecoratorMetadata>;
   DecorationMetadata: DecorationMetadata[];
 
-  ApiMetadata: Record<string, IApiMetadata>;
-  ServiceMetadata: Record<string, IServiceMetadata>;
-  ProxyMetadata: Record<string, IProxyMetadata>;
+  ApiMetadata: Record<string, ApiMetadata>;
+  ServiceMetadata: Record<string, ServiceMetadata>;
+  ProxyMetadata: Record<string, ProxyMetadata>;
 
-  DatabaseMetadata: Record<string, IDatabaseMetadata>;
-  EntityMetadata: Record<string, IEntityMetadata>;
-  ColumnMetadata: Record<string, IColumnMetadata>;
-  RelationMetadata: Record<string, IRelationMetadata>;
+  DatabaseMetadata: Record<string, DatabaseMetadata>;
+  EntityMetadata: Record<string, EntityMetadata>;
+  ColumnMetadata: Record<string, ColumnMetadata>;
+  RelationMetadata: Record<string, RelationMetadata>;
 
-  EnumMetadata: Record<string, IEnumMetadata>;
-  InputMetadata: Record<string, ITypeMetadata>;
-  TypeMetadata: Record<string, ITypeMetadata>;
+  EnumMetadata: Record<string, EnumMetadata>;
+  InputMetadata: Record<string, TypeMetadata>;
+  TypeMetadata: Record<string, TypeMetadata>;
 
-  MethodMetadata: Record<string, IMethodMetadata>;
+  MethodMetadata: Record<string, MethodMetadata>;
   HttpRouteMetadata: Record<string, HttpRouteMetadata>;
   EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 }
@@ -145,7 +145,7 @@ export abstract class Metadata implements MetadataRegistry {
     return reg as any;
   }
 
-  public static validate() {
+  public static validate(): MetadataRegistry {
     const metadata: Record<string, TypeMetadata> = {};
     const entities: Record<string, TypeMetadata> = {};
     const inputs: Record<string, TypeMetadata> = {};
@@ -175,6 +175,7 @@ export abstract class Metadata implements MetadataRegistry {
     for (const type of Object.values(this.TypeMetadata)) {
       this.resolve(type, GraphKind.Type, types);
     }
+    return Metadata.get();
   }
 
   private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {

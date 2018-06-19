@@ -26,7 +26,7 @@ export class TypeOrmProvider implements EntityResolver {
     obj: ResolverArgs,
     args: ResolverQuery,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<any[]> {
     let query = args;
     if (query.query) {
@@ -41,7 +41,7 @@ export class TypeOrmProvider implements EntityResolver {
     obj: ResolverArgs,
     args: ResolverArgs,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<any> {
     const record = this.manager.create<any>(entity.name, args);
     // let pks: Record<string, any> = {};
@@ -56,7 +56,7 @@ export class TypeOrmProvider implements EntityResolver {
     obj: ResolverArgs,
     args: ResolverArgs,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<any> {
     const record = this.manager.create(entity.name, args);
     const pks: Record<string, any> = {};
@@ -71,7 +71,7 @@ export class TypeOrmProvider implements EntityResolver {
     obj: ResolverArgs,
     args: ResolverArgs,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<any> {
     const record = await this.manager.findOneOrFail(entity.name, args);
     await this.manager.remove(entity.name, args);
@@ -84,7 +84,7 @@ export class TypeOrmProvider implements EntityResolver {
     root: ResolverArgs,
     query: ResolverQuery,
     context?: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<object[]> {
     const target = relation.inverseEntityMetadata.name;
     const pks = entity.primaryColumns.map(col => col.propertyName);
@@ -100,7 +100,7 @@ export class TypeOrmProvider implements EntityResolver {
     root: ResolverArgs,
     query: ResolverQuery,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<object> {
     const target = relation.inverseEntityMetadata.name;
     const pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
@@ -118,7 +118,7 @@ export class TypeOrmProvider implements EntityResolver {
     root: ResolverArgs,
     query: ResolverQuery,
     context: ResolverContext,
-    info?: ResolverInfo,
+    info?: ResolverInfo
   ): Promise<object> {
     const target = relation.inverseEntityMetadata.name;
     const pks = relation.inverseEntityMetadata.primaryColumns.map(p => p.propertyName);
@@ -132,7 +132,7 @@ export class TypeOrmProvider implements EntityResolver {
     target: string,
     keys: ResolverArgs,
     query: ResolverQuery,
-    context: ResolverContext,
+    context: ResolverContext
   ): SelectQueryBuilder<any> {
     const sql = QueryToolkit.prepareSql(keys, query);
     const builder: SelectQueryBuilder<any> = this.manager.createQueryBuilder(target, QueryToolkit.ALIAS)

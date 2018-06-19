@@ -1,17 +1,17 @@
 import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
-import { SchemaResolver } from '../graphql/types';
-import { back, scalar } from '../graphql/utils';
 import { QueryVisitor, RelationVisitor } from '../graphql/visitors';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
-import { Metadata } from '../metadata/registry';
+import { Metadata, MetadataRegistry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
+import { SchemaResolver } from './types';
+import { back, scalar } from './utils';
 import GraphQLJSON = require('graphql-type-json');
 
 export { GraphQLSchema } from 'graphql';
@@ -129,30 +129,29 @@ export class CoreSchema {
   public entities: Record<string, EntitySchema> = {};
   public apis: Record<string, ApiSchema> = {};
 
-  constructor() {
-    Metadata.validate();
+  constructor(registry: MetadataRegistry) {
     // Enums
-    for (const type of Object.values(Metadata.EnumMetadata)) {
+    for (const type of Object.values(registry.EnumMetadata)) {
       this.enums[type.name] = this.genEnum(type);
     }
     // Metadata
-    for (const type of Object.values(Metadata.RegistryMetadata)) {
+    for (const type of Object.values(registry.RegistryMetadata)) {
       this.genType(type, this.metadata);
     }
     // Databases & Entities
-    for (const type of Object.values(Metadata.DatabaseMetadata)) {
+    for (const type of Object.values(registry.DatabaseMetadata)) {
       this.genDatabase(type);
     }
     // Inputs
-    for (const type of Object.values(Metadata.InputMetadata)) {
+    for (const type of Object.values(registry.InputMetadata)) {
       this.genType(type, this.inputs);
     }
     // Results
-    for (const type of Object.values(Metadata.TypeMetadata)) {
+    for (const type of Object.values(registry.TypeMetadata)) {
       this.genType(type, this.types);
     }
     // Api
-    for (const api of Object.values(Metadata.ApiMetadata)) {
+    for (const api of Object.values(registry.ApiMetadata)) {
       this.genApi(api);
     }
   }

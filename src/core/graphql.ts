@@ -1,13 +1,14 @@
-import { CoreSchema } from '../core/schema';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { Activate, Inject, Service } from '../decorators/service';
 import { InternalServerError } from '../errors';
+import { CoreSchema } from '../graphql/schema';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../graphql/voyager';
 import { GraphQL } from '../import';
 import { Logger } from '../logger';
 import { Configuration } from '../types/config';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
+import { Core } from './core';
 import SuperGraphiQL = require('super-graphiql-express');
 
 const playgroundVersion = 'latest';
@@ -32,7 +33,8 @@ export class CoreGraphQL extends GraphQLApi {
   @Activate()
   protected async activate(ctx: Context, req: HttpRequest) {
     if (this.schema) return;
-    this.schema = new CoreSchema();
+    // TODO: Instance schema per user role
+    this.schema = Core.schema;
   }
 
   // @Debug()

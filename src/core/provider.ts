@@ -1,6 +1,6 @@
 import { Database } from '../decorators/database';
 import { Activate, Inject } from '../decorators/service';
-import { TypeOrmProvider } from '../graphql';
+import { TypeOrmProvider } from '../graphql/typeorm';
 import { Orm } from '../import';
 import { getConnection } from '../import/typeorm';
 import { Logger } from '../logger';

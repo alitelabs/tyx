@@ -55,10 +55,11 @@ export enum ColumnType {
 // String: A UTF‐8 character sequence.
 // Boolean: true or false.
 export namespace ColumnType {
-  export function kind(type: ColumnType) {
+  export function kind(type: ColumnType, size: number) {
     switch (type) {
-      case ColumnType.Int:
       case ColumnType.TinyInt:
+        return size === 1 ? GraphKind.Boolean : GraphKind.Int;
+      case ColumnType.Int:
       case ColumnType.SmallInt:
       case ColumnType.MediumInt:
       case ColumnType.BigInt:
@@ -392,7 +393,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       }
       kind = vt.kind;
     } else {
-      kind = ColumnType.kind(options.type);
+      kind = ColumnType.kind(options.type, options.width);
     }
     meta = new ColumnMetadata(
       kind,

@@ -2,7 +2,7 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql';
+import { SchemaResolvers } from '../graphql/types';
 import { DesignMetadata } from '../metadata/method';
 import { GraphKind, IEnumMetadata, IFieldMetadata, IInputMetadata, IResultMetadata, ITypeMetadata, IVarMetadata } from '../metadata/type';
 import { Class } from '../types/core';

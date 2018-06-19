@@ -75,6 +75,7 @@
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
     "pretty": true,
+    "resolveJsonModule": true,
     // Avoid to include dom lib
     "skipLibCheck": true
   },

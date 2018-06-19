@@ -1,17 +1,18 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
-import { IApiMetadata } from '../metadata/api';
-import { IColumnMetadata } from '../metadata/column';
-import { IDatabaseMetadata } from '../metadata/database';
-import { IEntityMetadata } from '../metadata/entity';
-import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata } from '../metadata/method';
-import { IProxyMetadata } from '../metadata/proxy';
+import { ApiMetadata } from '../metadata/api';
+import { ColumnMetadata } from '../metadata/column';
+import { DatabaseMetadata } from '../metadata/database';
+import { EntityMetadata } from '../metadata/entity';
+import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from '../metadata/method';
+import { ProxyMetadata } from '../metadata/proxy';
 import { DecorationMetadata, DecoratorMetadata, MetadataRegistry } from '../metadata/registry';
-import { IRelationMetadata } from '../metadata/relation';
-import { IServiceMetadata } from '../metadata/service';
-import { IEnumMetadata, ITypeMetadata } from '../metadata/type';
+import { RelationMetadata } from '../metadata/relation';
+import { ServiceMetadata } from '../metadata/service';
+import { EnumMetadata, TypeMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -23,7 +24,6 @@ import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
 import { EnumMetadataSchema, TypeMetadataSchema } from './type';
-import { Schema } from '../decorators/schema';
 
 @Schema()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
@@ -54,25 +54,25 @@ export class DecorationMetadataSchema implements DecorationMetadata {
 @Schema()
 export class MetadataRegistrySchema implements MetadataRegistry {
 
-  @Field(list => [TypeMetadataSchema]) RegistryMetadata: Record<string, ITypeMetadata>;
+  @Field(list => [TypeMetadataSchema]) RegistryMetadata: Record<string, TypeMetadata>;
   @Field(list => [DecoratorMetadataSchema]) DecoratorMetadata: Record<string, DecoratorMetadata>;
   @Field(list => [DecorationMetadataSchema]) DecorationMetadata: DecorationMetadata[];
 
-  @Field(list => [ApiMetadataSchema]) ApiMetadata: Record<string, IApiMetadata>;
-  @Field(list => [ServiceMetadataSchema]) ServiceMetadata: Record<string, IServiceMetadata>;
-  @Field(list => [ProxyMetadataSchema]) ProxyMetadata: Record<string, IProxyMetadata>;
+  @Field(list => [ApiMetadataSchema]) ApiMetadata: Record<string, ApiMetadata>;
+  @Field(list => [ServiceMetadataSchema]) ServiceMetadata: Record<string, ServiceMetadata>;
+  @Field(list => [ProxyMetadataSchema]) ProxyMetadata: Record<string, ProxyMetadata>;
 
-  @Field(list => [DatabaseMetadataSchema]) DatabaseMetadata: Record<string, IDatabaseMetadata>;
-  @Field(list => [EntityMetadataSchema]) EntityMetadata: Record<string, IEntityMetadata>;
-  @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, IColumnMetadata>;
-  @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, IRelationMetadata>;
+  @Field(list => [DatabaseMetadataSchema]) DatabaseMetadata: Record<string, DatabaseMetadata>;
+  @Field(list => [EntityMetadataSchema]) EntityMetadata: Record<string, EntityMetadata>;
+  @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, ColumnMetadata>;
+  @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, RelationMetadata>;
 
-  @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, IEnumMetadata>;
-  @Field(list => [TypeMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
-  @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, ITypeMetadata>;
+  @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, EnumMetadata>;
+  @Field(list => [TypeMetadataSchema]) InputMetadata: Record<string, TypeMetadata>;
+  @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, TypeMetadata>;
 
-  @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, IMethodMetadata>;
-  @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, IMethodMetadata>;
+  @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, MethodMetadata>;
+  @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, MethodMetadata>;
   @Field(list => [HttpRouteMetadataSchema]) HttpRouteMetadata: Record<string, HttpRouteMetadata>;
   @Field(list => [EventRouteMetadataSchema]) EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 

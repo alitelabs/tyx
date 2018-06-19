@@ -42,7 +42,6 @@ export enum GraphKind {
   Date = 'Date',
   DateTime = 'DateTime',
   Timestamp = 'Timestamp',
-  Email = 'Email',
   Object = 'JSON',
   ANY = 'ANY',
   // Complex
@@ -64,7 +63,6 @@ export namespace GraphKind {
     switch (type) {
       case GraphKind.ID:
       case GraphKind.String:
-      case GraphKind.Email:
         return 'string';
       case GraphKind.Int:
       case GraphKind.Float:
@@ -89,7 +87,6 @@ export namespace GraphKind {
       case GraphKind.ID:
         return ID;
       case GraphKind.String:
-      case GraphKind.Email:
         return String;
       case GraphKind.Int:
         return Int;
@@ -121,7 +118,6 @@ export namespace GraphKind {
       case GraphKind.Date:
       case GraphKind.DateTime:
       case GraphKind.Timestamp:
-      case GraphKind.Email:
       case GraphKind.Object:
       case GraphKind.ANY:
       case GraphKind.Void:

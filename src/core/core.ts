@@ -1,6 +1,7 @@
 import { createServer, Server } from 'http';
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { ExpressAdapter } from '../express/adapter';
+import { CoreSchema } from '../graphql/schema';
 import { Express } from '../import';
 import { Connection, ConnectionOptions, createConnection } from '../import/typeorm';
 import { Logger } from '../logger';
@@ -14,6 +15,8 @@ import { CoreInstance } from './instance';
 
 export abstract class Core {
   public static log = Logger.get('TYX', Core.name);
+
+  private static graphql: CoreSchema;
 
   private static application: string;
   private static instance: CoreInstance;
@@ -31,10 +34,17 @@ export abstract class Core {
     return Metadata.get();
   }
 
+  public static get schema(): CoreSchema {
+    return this.graphql = this.graphql || new CoreSchema(Metadata.validate());
+  }
+
   public static register(...args: Class[]) { }
 
   public static init(application?: string, args?: Class[]): void {
     if (this.instance) return;
+
+    this.graphql = new CoreSchema(Metadata.validate());
+    this.graphql.executable();
 
     this.application = this.application || application || 'Core';
     this.instance = new CoreInstance(this.application, Core.name);
