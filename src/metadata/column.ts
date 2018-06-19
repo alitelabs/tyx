@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { DesignMetadata } from './method';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 import { FieldMetadata, GraphKind, VarMetadata, VarType } from './type';
 
 export enum ColumnType {
@@ -366,11 +366,11 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Registry.TYX_COLUMN, target, propertyKey);
+    return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): ColumnMetadata {
-    return Reflect.getMetadata(Registry.TYX_COLUMN, target, propertyKey);
+    return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
   }
 
   public static define(
@@ -382,7 +382,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
     if (meta) throw new TypeError(`Duplicate column decoration on [${propertyKey}]`);
-    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, target, propertyKey);
+    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, target, propertyKey);
     let kind: GraphKind;
     if (mode === ColumnMode.Transient) {
       const vt = VarMetadata.of(type || design, !type);
@@ -402,8 +402,8 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       mode,
       options
     );
-    Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
-    Reflect.defineMetadata(Registry.TYX_COLUMN, meta, target, propertyKey);
+    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
+    Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
     EntityMetadata.define(target.constructor).addColumn(meta);
     return meta;
   }
@@ -414,7 +414,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
     this.entityMetadata = entity;
     const key = `${entity.name}.${this.propertyName}`;
-    Registry.ColumnMetadata[key] = this;
+    Metadata.ColumnMetadata[key] = this;
     database.columns.push(this);
   }
 }

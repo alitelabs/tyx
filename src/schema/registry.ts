@@ -23,9 +23,9 @@ import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
 import { EnumMetadataSchema, TypeMetadataSchema } from './type';
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 
-@Metadata()
+@Schema()
 export class DecoratorMetadataSchema implements DecoratorMetadata {
   @Field() decorator: string;
   @Field(0) count: number;
@@ -36,7 +36,7 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class DecorationMetadataSchema implements DecorationMetadata {
   @Field() decorator: string;
   @Field(0) ordinal: number;
@@ -51,7 +51,7 @@ export class DecorationMetadataSchema implements DecorationMetadata {
 }
 
 // tslint:disable:variable-name
-@Metadata()
+@Schema()
 export class MetadataRegistrySchema implements MetadataRegistry {
 
   @Field(list => [TypeMetadataSchema]) RegistryMetadata: Record<string, ITypeMetadata>;

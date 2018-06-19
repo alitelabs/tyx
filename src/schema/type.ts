@@ -1,6 +1,6 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql';
 import { DesignMetadata } from '../metadata/method';
@@ -8,7 +8,7 @@ import { GraphKind, IEnumMetadata, IFieldMetadata, IInputMetadata, IResultMetada
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 
-@Metadata()
+@Schema()
 export class VarMetadataSchema implements IVarMetadata {
   @Field(String) ref?: Class;
   @Field(String) kind: GraphKind;
@@ -19,7 +19,7 @@ export class VarMetadataSchema implements IVarMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class InputMetadataSchema implements IInputMetadata {
   @Field(String) ref?: Class;
   @Field(String) kind: GraphKind;
@@ -31,7 +31,7 @@ export class InputMetadataSchema implements IInputMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class ResultMetadataSchema implements IResultMetadata {
   @Field(String) ref?: Class;
   @Field(String) kind: GraphKind;
@@ -43,7 +43,7 @@ export class ResultMetadataSchema implements IResultMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class EnumMetadataSchema implements IEnumMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;
@@ -55,7 +55,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class FieldMetadataSchema implements IFieldMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;
@@ -70,7 +70,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class TypeMetadataSchema implements ITypeMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;

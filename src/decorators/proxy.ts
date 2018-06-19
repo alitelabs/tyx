@@ -1,10 +1,10 @@
 import { ProxyMetadata } from '../metadata/proxy';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 
 // tslint:disable-next-line:function-name
 export function Proxy(service?: string, application?: string, functionName?: string): ClassDecorator {
   return (target) => {
-    Registry.trace(Proxy, { service, application, functionName }, target);
+    Metadata.trace(Proxy, { service, application, functionName }, target);
     ProxyMetadata.define(target).commit(service, application, functionName);
   };
 }

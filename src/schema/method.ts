@@ -1,6 +1,6 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
@@ -15,7 +15,7 @@ import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { InputMetadataSchema, ResultMetadataSchema } from './type';
 
-@Metadata()
+@Schema()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
   @Field(String) type: HttpBindingType;
   @Field() path: string;
@@ -26,7 +26,7 @@ export class HttpBindingMetadataSchema implements HttpBindingMetadata {
   }
 }
 
-@Metadata()
+@Schema()
 export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   @Field(String) target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
@@ -54,7 +54,7 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   }
 }
 
-@Metadata()
+@Schema()
 export class EventRouteMetadataSchema implements EventRouteMetadata {
   @Field(String) target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
@@ -78,7 +78,7 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
   }
 }
 
-@Metadata()
+@Schema()
 export class MethodMetadataSchema implements IMethodMetadata {
   @Field() target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;

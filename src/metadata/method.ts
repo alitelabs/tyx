@@ -4,7 +4,7 @@ import { HttpCode, HttpRequest } from '../types/http';
 import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 import { IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
 
 export enum HttpBindingType {
@@ -156,11 +156,11 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Registry.TYX_METHOD, target, propertyKey);
+    return Reflect.hasMetadata(Metadata.TYX_METHOD, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): MethodMetadata {
-    return Reflect.getMetadata(Registry.TYX_METHOD, target, propertyKey);
+    return Reflect.getMetadata(Metadata.TYX_METHOD, target, propertyKey);
   }
 
   public static define(
@@ -173,11 +173,11 @@ export class MethodMetadata implements IMethodMetadata {
     if (ret && ret.name === '#return') return meta;
     if (!meta) {
       meta = new MethodMetadata(target, propertyKey);
-      Reflect.defineMetadata(Registry.TYX_METHOD, meta, target, propertyKey);
+      Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
     }
     const names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
-    const params: any[] = Reflect.getMetadata(Registry.DESIGN_PARAMS, target, propertyKey);
-    const returns = Reflect.getMetadata(Registry.DESIGN_RETURN, target, propertyKey);
+    const params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
+    const returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
     meta.design = meta.design || [];
     params.forEach((param, i) => meta.design[i] = {
       name: names[i],
@@ -312,22 +312,22 @@ export class MethodMetadata implements IMethodMetadata {
     this.api = api;
     this.alias = api.alias;
     const id = MethodMetadata.id(this.alias, this.name);
-    Registry.MethodMetadata[id] = this;
+    Metadata.MethodMetadata[id] = this;
     if (this.http) {
       for (const [route, meta] of Object.entries(this.http)) {
         meta.api = api;
         meta.alias = this.alias;
-        if (Registry.HttpRouteMetadata[route] && Registry.HttpRouteMetadata[route] !== meta) {
+        if (Metadata.HttpRouteMetadata[route] && Metadata.HttpRouteMetadata[route] !== meta) {
           throw new TypeError(`Duplicate HTTP route [${route}]`);
         }
-        Registry.HttpRouteMetadata[route] = meta;
+        Metadata.HttpRouteMetadata[route] = meta;
       }
     }
     if (this.events) {
       for (const [route, meta] of Object.entries(this.events)) {
         meta.api = api;
         meta.alias = this.alias;
-        const handlers = Registry.EventRouteMetadata[route] = Registry.EventRouteMetadata[route] || [];
+        const handlers = Metadata.EventRouteMetadata[route] = Metadata.EventRouteMetadata[route] || [];
         if (!handlers.includes(meta)) handlers.push(meta);
       }
     }

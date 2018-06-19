@@ -1,13 +1,13 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { HandlerMetadata, InjectMetadata, IServiceMetadata } from '../metadata/service';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 
-@Metadata()
+@Schema()
 export class InjectMetadataSchema implements InjectMetadata {
   @Field() resource: string;
   @Field(String) target?: Class;
@@ -18,7 +18,7 @@ export class InjectMetadataSchema implements InjectMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class HandlerMetadataSchema implements HandlerMetadata {
   @Field() service?: string;
   @Field() method: string;
@@ -32,7 +32,7 @@ export class HandlerMetadataSchema implements HandlerMetadata {
   };
 }
 
-@Metadata()
+@Schema()
 export class ServiceMetadataSchema implements IServiceMetadata {
   @Field(String) target: Class;
   @Field() name: string;

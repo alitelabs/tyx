@@ -1,6 +1,6 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
@@ -13,7 +13,7 @@ import { ColumnMetadataSchema } from './column';
 import { RelationMetadataSchema } from './relation';
 import { FieldMetadataSchema } from './type';
 
-@Metadata()
+@Schema()
 export class EntityMetadataSchema implements IEntityMetadata {
   @Field(String) kind: GraphKind;
   @Field(String) target: Class;

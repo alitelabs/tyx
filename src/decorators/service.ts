@@ -1,5 +1,5 @@
 import { Di } from '../import';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { Utils } from '../utils';
 
@@ -9,7 +9,7 @@ import { Utils } from '../utils';
 // TODO: Selector
 export function Service(alias?: string): ClassDecorator {
   return (target) => {
-    Registry.trace(Service, { alias }, target);
+    Metadata.trace(Service, { alias }, target);
     const meta = ServiceMetadata.define(target).commit(alias);
     return Di.Service(meta.alias)(target);
   };
@@ -19,7 +19,7 @@ export function Inject(resource?: string): PropertyDecorator & ParameterDecorato
   return (target: Object, propertyKey: string | symbol, index?: number) => {
     if (typeof propertyKey === 'symbol') throw new TypeError('propertyKey must be string');
     // propertyKey = propertyKey || "<constructor>";
-    Registry.trace(Inject, { resource }, target, propertyKey, index);
+    Metadata.trace(Inject, { resource }, target, propertyKey, index);
     const constructor = Utils.isClass(target) ? target as Function : target.constructor;
     ServiceMetadata.define(constructor).inject(propertyKey, index, resource);
     return Di.Inject(resource)(target, propertyKey, index);
@@ -31,7 +31,7 @@ export function Inject(resource?: string): PropertyDecorator & ParameterDecorato
  */
 export function Initialize(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Handler, {}, target);
+    Metadata.trace(Handler, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).setInitializer(propertyKey, descriptor);
   };
@@ -42,7 +42,7 @@ export function Initialize(): MethodDecorator {
  */
 export function Selector(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Selector, {}, target);
+    Metadata.trace(Selector, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).setSelector(propertyKey, descriptor);
   };
@@ -53,7 +53,7 @@ export function Selector(): MethodDecorator {
  */
 export function Activate(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Activate, {}, target);
+    Metadata.trace(Activate, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).setActivator(propertyKey, descriptor);
   };
@@ -64,7 +64,7 @@ export function Activate(): MethodDecorator {
  */
 export function Release(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Release, {}, target);
+    Metadata.trace(Release, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).setReleasor(propertyKey, descriptor);
   };
@@ -76,7 +76,7 @@ export function Release(): MethodDecorator {
  */
 export function Handler(): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Handler, {}, target);
+    Metadata.trace(Handler, {}, target);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     ServiceMetadata.define(target.constructor).addHandler(propertyKey, descriptor);
   };

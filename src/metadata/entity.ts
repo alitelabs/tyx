@@ -1,7 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { GraphKind, ITypeMetadata, TypeMetadata } from './type';
 
@@ -66,21 +66,21 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Registry.TYX_ENTITY, target)
-      || Reflect.hasMetadata(Registry.TYX_ENTITY, target.constructor);
+    return Reflect.hasMetadata(Metadata.TYX_ENTITY, target)
+      || Reflect.hasMetadata(Metadata.TYX_ENTITY, target.constructor);
   }
 
   public static get(target: Class | Prototype): EntityMetadata {
-    return Reflect.getMetadata(Registry.TYX_ENTITY, target)
-      || Reflect.getMetadata(Registry.TYX_ENTITY, target.constructor);
+    return Reflect.getMetadata(Metadata.TYX_ENTITY, target)
+      || Reflect.getMetadata(Metadata.TYX_ENTITY, target.constructor);
   }
 
   public static define(target: Class): EntityMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new EntityMetadata(target);
-      Reflect.defineMetadata(Registry.TYX_TYPE, meta, target);
-      Reflect.defineMetadata(Registry.TYX_ENTITY, meta, target);
+      Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
+      Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
     }
     return meta;
   }

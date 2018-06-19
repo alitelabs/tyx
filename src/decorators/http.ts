@@ -1,5 +1,5 @@
 import { ContextBinder, HttpAdapter, HttpBinder, HttpBindingType, MethodMetadata, RequestBinder } from '../metadata/method';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { HttpCode, HttpMethod, HttpResponse } from '../types/http';
 
 // tslint:disable:function-name
@@ -33,7 +33,7 @@ function HttpMethod(
   adapter?: HttpAdapter,
 ): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
+    Metadata.trace(decorator, { resource, model, code, adapter }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const verb = decorator.name.toUpperCase();
     let mod: string;
@@ -102,7 +102,7 @@ export function RequestParam(path: string | RequestBinder): ParameterDecorator {
 
 function HttpBinding(type: HttpBindingType, path: string, binder: HttpBinder): ParameterDecorator {
   return function (target, propertyKey, index) {
-    Registry.trace(type, { path, binder }, target, propertyKey, index);
+    Metadata.trace(type, { path, binder }, target, propertyKey, index);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     MethodMetadata.define(target, propertyKey).addBinding(index, type, path, binder);
   };
@@ -110,7 +110,7 @@ function HttpBinding(type: HttpBindingType, path: string, binder: HttpBinder): P
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
   return function (target, propertyKey, descriptor) {
-    Registry.trace(ContentType, { contentType }, target, propertyKey);
+    Metadata.trace(ContentType, { contentType }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     MethodMetadata.define(target, propertyKey).setContentType(contentType);
   };

@@ -8,7 +8,7 @@ import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata 
 import { IProxyMetadata, ProxyMetadata } from './proxy';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { IServiceMetadata, ServiceMetadata } from './service';
-import { EnumMetadata, GraphKind, ITypeMetadata, TypeMetadata, VarMetadata } from './type';
+import { EnumMetadata, GraphKind, IEnumMetadata, ITypeMetadata, TypeMetadata, VarMetadata } from './type';
 
 export interface DecorationMetadata {
   decorator: string;
@@ -39,7 +39,7 @@ export interface MetadataRegistry {
   ColumnMetadata: Record<string, IColumnMetadata>;
   RelationMetadata: Record<string, IRelationMetadata>;
 
-  EnumMetadata: Record<string, EnumMetadata>;
+  EnumMetadata: Record<string, IEnumMetadata>;
   InputMetadata: Record<string, ITypeMetadata>;
   TypeMetadata: Record<string, ITypeMetadata>;
 
@@ -49,7 +49,7 @@ export interface MetadataRegistry {
 }
 
 // tslint:disable:variable-name
-export abstract class Registry implements MetadataRegistry {
+export abstract class Metadata implements MetadataRegistry {
   public static readonly DESIGN_TYPE = 'design:type';
   public static readonly DESIGN_PARAMS = 'design:paramtypes';
   public static readonly DESIGN_RETURN = 'design:returntype';
@@ -118,7 +118,7 @@ export abstract class Registry implements MetadataRegistry {
   // private static regisry = new Registry();
   private static ordinal = 0;
 
-  public static get(): Registry {
+  public static get(): Metadata {
     const reg: MetadataRegistry = {
       RegistryMetadata: this.RegistryMetadata,
       DecoratorMetadata: this.DecoratorMetadata,
@@ -141,7 +141,7 @@ export abstract class Registry implements MetadataRegistry {
       HttpRouteMetadata: this.HttpRouteMetadata,
       EventRouteMetadata: this.EventRouteMetadata,
     };
-    Object.setPrototypeOf(reg, Registry.prototype);
+    Object.setPrototypeOf(reg, Metadata.prototype);
     return reg as any;
   }
 

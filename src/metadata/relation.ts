@@ -2,7 +2,7 @@ import { Class, ObjectType, Prototype } from '../types/core';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 import { FieldMetadata, GraphKind, IFieldMetadata } from './type';
 
 /**
@@ -139,19 +139,19 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Registry.TYX_RELATION, target, propertyKey);
+    return Reflect.hasMetadata(Metadata.TYX_RELATION, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
-    return Reflect.getMetadata(Registry.TYX_RELATION, target, propertyKey);
+    return Reflect.getMetadata(Metadata.TYX_RELATION, target, propertyKey);
   }
 
   public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
     let meta = this.get(target, propertyKey);
     if (!meta) {
       meta = new RelationMetadata(target.constructor, propertyKey);
-      Reflect.defineMetadata(Registry.TYX_MEMBER, meta, target, propertyKey);
-      Reflect.defineMetadata(Registry.TYX_RELATION, meta, target, propertyKey);
+      Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
+      Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
     }
     return meta;
   }
@@ -177,7 +177,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     }
 
     this.required = !!(options && !options.nullable);
-    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, this.propertyName);
+    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, this.propertyName);
     this.design = design && { type: design.name, target: design };
 
     this.relationType = type;
@@ -200,7 +200,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     if (!(this.inverseRelation instanceof RelationMetadata)) throw new TypeError(`Invalid inverse relation`);
     // TODO: More validations and optional inverse relation
     const key = `${entity.name}.${this.propertyName}`;
-    Registry.RelationMetadata[key] = this;
+    Metadata.RelationMetadata[key] = this;
     database.relations.push(this);
   }
 }

@@ -4,7 +4,7 @@ import { ExpressAdapter } from '../express/adapter';
 import { Express } from '../import';
 import { Connection, ConnectionOptions, createConnection } from '../import/typeorm';
 import { Logger } from '../logger';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { Class, ContainerState, ObjectType } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphRequest } from '../types/graphql';
@@ -27,8 +27,8 @@ export abstract class Core {
 
   private constructor() { }
 
-  public static get metadata(): Registry {
-    return Registry.get();
+  public static get metadata(): Metadata {
+    return Metadata.get();
   }
 
   public static register(...args: Class[]) { }
@@ -57,7 +57,7 @@ export abstract class Core {
       database: tokens[5],
       // timezone: "Z",
       logging: logQueries ? 'all' : ['error'],
-      entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
+      entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
     };
   }
 

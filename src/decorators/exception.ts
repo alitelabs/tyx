@@ -1,4 +1,4 @@
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 
 // tslint:disable:function-name
 
@@ -6,7 +6,7 @@ import { Registry } from '../metadata/registry';
  * Decorator for annotating exceptions which can be serialized
  */
 export function Exception(target: new () => any) {
-  Registry.trace(Exception, undefined, target);
+  Metadata.trace(Exception, undefined, target);
   Exception.ctors[target.name] = target;
 }
 

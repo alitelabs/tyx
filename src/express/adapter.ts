@@ -3,7 +3,7 @@ import { HttpUtils } from '../core/http';
 import { InternalServerError } from '../errors';
 import { Express } from '../import';
 import { Logger } from '../logger';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { HttpMethod, HttpRequest } from '../types/http';
 import { Utils } from '../utils';
 
@@ -38,7 +38,7 @@ export class ExpressAdapter {
     const used: Record<string, boolean> = {};
     const paths: [string, string][] = [];
 
-    const httpMetadata = Registry.HttpRouteMetadata;
+    const httpMetadata = Metadata.HttpRouteMetadata;
     for (const meta of Object.values(httpMetadata)) {
       const httpMethod = meta.verb;
       const resource = meta.resource;

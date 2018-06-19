@@ -1,6 +1,6 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IProxyMetadata } from '../metadata/proxy';
@@ -9,7 +9,7 @@ import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { HandlerMetadataSchema, InjectMetadataSchema } from './service';
 
-@Metadata()
+@Schema()
 export class ProxyMetadataSchema implements IProxyMetadata {
   @Field(String) target: Class;
   @Field() name: string;

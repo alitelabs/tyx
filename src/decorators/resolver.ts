@@ -1,5 +1,5 @@
 import { MethodMetadata } from '../metadata/method';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { ClassRef, EnumMetadata, InputType, ResultType, Scalar, ScalarRef, Select } from '../metadata/type';
 import { Class } from '../types/core';
 
@@ -42,7 +42,7 @@ export function Extension<TI, TR>(type: Class, input: InputType<TI>, result: Res
 
 function ResolverDecorator(decorator: Function, input: InputType, result: ResultType, select: Select, type?: Class): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(decorator, { input, result, select, type }, target, propertyKey);
+    Metadata.trace(decorator, { input, result, select, type }, target, propertyKey);
     const oper = decorator.name.toLowerCase();
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const meta = MethodMetadata.define(target, propertyKey, descriptor).addAuth(oper, { Internal: true });

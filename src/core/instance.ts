@@ -4,7 +4,7 @@ import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
 import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from '../metadata/method';
 import { ProxyMetadata } from '../metadata/proxy';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
@@ -131,12 +131,12 @@ export class CoreInstance implements CoreContainer {
       HttpUtils.request(req);
 
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
-      const target = Registry.HttpRouteMetadata[route];
+      const target = Metadata.HttpRouteMetadata[route];
       if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
       const service = this.container.get<any>(target.alias);
       if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
       const methodId = MethodMetadata.id(target.alias, target.handler);
-      const method = Registry.MethodMetadata[methodId] as MethodMetadata;
+      const method = Metadata.MethodMetadata[methodId] as MethodMetadata;
 
       req.application = this.application;
       req.service = target.alias;
@@ -200,7 +200,7 @@ export class CoreInstance implements CoreContainer {
       const service = this.container.get<any>(req.service);
       if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
       const methodId = MethodMetadata.id(req.service, req.method);
-      const metadata = Registry.MethodMetadata[methodId];
+      const metadata = Metadata.MethodMetadata[methodId];
       if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
 
       this.istate = ContainerState.Busy;
@@ -240,7 +240,7 @@ export class CoreInstance implements CoreContainer {
       const service = this.container.get<any>(req.service);
       if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
       const methodId = MethodMetadata.id(req.service, req.method);
-      const metadata = Registry.MethodMetadata[methodId];
+      const metadata = Metadata.MethodMetadata[methodId];
       if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
 
       this.istate = ContainerState.Busy;
@@ -272,10 +272,10 @@ export class CoreInstance implements CoreContainer {
 
       let route = EventRouteMetadata.route(req.source, req.resource);
       const alias = this.config.resources && this.config.resources[req.resource];
-      let metadatas = Registry.EventRouteMetadata[route];
+      let metadatas = Metadata.EventRouteMetadata[route];
       if (!metadatas) {
         route = EventRouteMetadata.route(req.source, alias);
-        metadatas = Registry.EventRouteMetadata[route];
+        metadatas = Metadata.EventRouteMetadata[route];
       }
       if (!metadatas) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
 
@@ -293,7 +293,7 @@ export class CoreInstance implements CoreContainer {
         const service = this.container.get<any>(target.alias);
         if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
         const methodId = MethodMetadata.id(target.alias, target.handler);
-        const method = Registry.MethodMetadata[methodId];
+        const method = Metadata.MethodMetadata[methodId];
 
         if (!Utils.wildcardMatch(target.actionFilter, req.action)
           || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
@@ -347,7 +347,7 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async activate(ctx: Context): Promise<Context> {
-    for (const [sid, meta] of Object.entries(Registry.ServiceMetadata)) {
+    for (const [sid, meta] of Object.entries(Metadata.ServiceMetadata)) {
       if (!meta.activator) continue;
       if (!this.container.has(sid)) continue;
       try {
@@ -367,7 +367,7 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async release(ctx: Context): Promise<void> {
-    for (const [sid, meta] of Object.entries(Registry.ServiceMetadata)) {
+    for (const [sid, meta] of Object.entries(Metadata.ServiceMetadata)) {
       if (!meta.releasor) continue;
       if (!this.container.has(sid)) continue;
       try {

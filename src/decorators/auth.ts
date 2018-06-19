@@ -1,5 +1,5 @@
 import { MethodMetadata } from '../metadata/method';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { Roles } from '../types/security';
 
 // tslint:disable:function-name
@@ -35,7 +35,7 @@ export function Auth<TR extends Roles>(roles: TR) {
 function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
   return (target, propertyKey, descriptor) => {
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    Registry.trace(decorator, { roles }, target, propertyKey);
+    Metadata.trace(decorator, { roles }, target, propertyKey);
     const auth = decorator.name.toLowerCase();
     MethodMetadata.define(target, propertyKey, descriptor).addAuth(auth, roles);
   };

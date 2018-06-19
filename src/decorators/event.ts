@@ -1,5 +1,5 @@
 import { MethodMetadata } from '../metadata/method';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { EventAdapter } from '../types/event';
 
 // tslint:disable-next-line:function-name
@@ -11,7 +11,7 @@ export function Event(
   adapter: EventAdapter,
 ): MethodDecorator {
   return (target, propertyKey, descriptor) => {
-    Registry.trace(Event, { source, resource, actionFilter, objectFilter, adapter }, target, propertyKey);
+    Metadata.trace(Event, { source, resource, actionFilter, objectFilter, adapter }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     MethodMetadata.define(target, propertyKey, descriptor).addEvent(source, resource, actionFilter, objectFilter, adapter);
   };

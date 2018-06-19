@@ -1,5 +1,5 @@
 import { Orm } from '../import';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { JoinColumnOptions, RelationMetadata, RelationOptions, RelationType } from '../metadata/relation';
 import { ObjectType } from '../types/core';
 
@@ -10,7 +10,7 @@ export function OneToMany<T>(
   inverseSide: (object: T) => any, options?: RelationOptions,
 ): PropertyDecorator {
   return (target, propertyKey) => {
-    Registry.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey);
+    Metadata.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.OneToMany, typeFunction, inverseSide, options);
@@ -35,7 +35,7 @@ export function ManyToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Registry.trace(ManyToOne, { inverseSide, options }, target, propertyKey);
+    Metadata.trace(ManyToOne, { inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
@@ -60,7 +60,7 @@ export function OneToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Registry.trace(OneToOne, { inverseSide, options }, target, propertyKey);
+    Metadata.trace(OneToOne, { inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
@@ -74,7 +74,7 @@ export function JoinColumn(options: JoinColumnOptions): PropertyDecorator;
 // export function JoinColumn(options: JoinColumnOptions[]): PropertyDecorator;
 export function JoinColumn(options?: JoinColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Registry.trace(JoinColumn, { options }, target, propertyKey);
+    Metadata.trace(JoinColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const col = Orm.JoinColumn(options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).addJoinColumn(options);

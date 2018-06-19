@@ -1,6 +1,6 @@
 import { Class, ObjectType, Prototype } from '../types/core';
 import { DesignMetadata } from './method';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 
 export class ID extends String { }
 export class Int extends Number { }
@@ -333,20 +333,20 @@ export class EnumMetadata extends VarMetadata implements IEnumMetadata {
   }
 
   public static has(target: Object): boolean {
-    return Reflect.hasMetadata(Registry.TYX_ENUM, target);
+    return Reflect.hasMetadata(Metadata.TYX_ENUM, target);
   }
 
   public static get(target: Object): EnumMetadata {
-    return Reflect.getMetadata(Registry.TYX_ENUM, target);
+    return Reflect.getMetadata(Metadata.TYX_ENUM, target);
   }
 
   public static define(target: Object, name?: string): EnumMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new EnumMetadata(target, name);
-      Reflect.defineMetadata(Registry.TYX_ENUM, meta, target);
-      if (Registry.EntityMetadata[name]) throw new TypeError(`Duplicate enum name: ${name}`);
-      Registry.EnumMetadata[name] = meta;
+      Reflect.defineMetadata(Metadata.TYX_ENUM, meta, target);
+      if (Metadata.EntityMetadata[name]) throw new TypeError(`Duplicate enum name: ${name}`);
+      Metadata.EnumMetadata[name] = meta;
     } else if (name && name !== meta.name) {
       throw new TypeError(`Can not rename enum from: ${meta.name} to: ${name}`);
     }
@@ -382,20 +382,20 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Registry.TYX_TYPE, target)
-      || Reflect.hasMetadata(Registry.TYX_TYPE, target.constructor);
+    return Reflect.hasMetadata(Metadata.TYX_TYPE, target)
+      || Reflect.hasMetadata(Metadata.TYX_TYPE, target.constructor);
   }
 
   public static get(target: Class | Prototype): TypeMetadata {
-    return Reflect.getMetadata(Registry.TYX_TYPE, target)
-      || Reflect.getMetadata(Registry.TYX_TYPE, target.constructor);
+    return Reflect.getMetadata(Metadata.TYX_TYPE, target)
+      || Reflect.getMetadata(Metadata.TYX_TYPE, target.constructor);
   }
 
   public static define(target: Class): TypeMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new TypeMetadata(target);
-      Reflect.defineMetadata(Registry.TYX_TYPE, meta, target);
+      Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
     }
     return meta;
   }
@@ -403,7 +403,7 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   public addField(propertyKey: string, type?: VarType, required?: boolean): this {
     this.members = this.members || {};
     if (this.members[propertyKey]) throw new TypeError(`Duplicate field decoration on [${propertyKey}]`);
-    const design = Reflect.getMetadata(Registry.DESIGN_TYPE, this.target.prototype, propertyKey);
+    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
     let meta = VarMetadata.of(type || design, !type) as IFieldMetadata;
     if (!meta) {
       throw TypeError(`Design type of [${this.target.name}.${propertyKey}]: `
@@ -424,7 +424,7 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
     meta.required = !!required;
     meta.design = design && { type: design.name, target: design };
     this.members[propertyKey] = meta;
-    Reflect.defineMetadata(Registry.TYX_MEMBER, meta, this.target.prototype, propertyKey);
+    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, this.target.prototype, propertyKey);
     return this;
   }
 
@@ -435,13 +435,13 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
     // this.name = name;
     switch (type) {
       case GraphKind.Metadata:
-        Registry.RegistryMetadata[this.target.name] = this; break;
+        Metadata.RegistryMetadata[this.target.name] = this; break;
       case GraphKind.Input:
-        Registry.InputMetadata[this.target.name] = this; break;
+        Metadata.InputMetadata[this.target.name] = this; break;
       case GraphKind.Type:
-        Registry.TypeMetadata[this.target.name] = this; break;
+        Metadata.TypeMetadata[this.target.name] = this; break;
       case GraphKind.Entity:
-        Registry.EntityMetadata[this.target.name] = this as any; break;
+        Metadata.EntityMetadata[this.target.name] = this as any; break;
       default:
         throw new TypeError(`Not Implemented: ${type}`);
     }

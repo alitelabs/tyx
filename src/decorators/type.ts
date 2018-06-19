@@ -1,18 +1,18 @@
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { EnumMetadata, GraphKind, Int, TypeMetadata, VarType } from '../metadata/type';
 
 // tslint:disable:function-name
 
 export function Input(name?: string): ClassDecorator {
   return (target) => {
-    Registry.trace(Input, { type: GraphKind.Type, name }, target);
+    Metadata.trace(Input, { type: GraphKind.Type, name }, target);
     return void TypeMetadata.define(target).commit(GraphKind.Input, name);
   };
 }
 
 export function Type(name?: string): ClassDecorator {
   return (target) => {
-    Registry.trace(Type, { type: GraphKind.Type, name }, target);
+    Metadata.trace(Type, { type: GraphKind.Type, name }, target);
     return void TypeMetadata.define(target).commit(GraphKind.Type, name);
   };
 }
@@ -45,7 +45,7 @@ export function Field<T = any>(first?: VarType<T> | 0 | boolean | Object, second
       required = second as any;
     }
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    Registry.trace(Field, { type, required }, target, propertyKey);
+    Metadata.trace(Field, { type, required }, target, propertyKey);
     TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
   }
 }

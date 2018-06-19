@@ -1,7 +1,7 @@
 import { Di, Orm } from '../import';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { Class } from '../types/core';
 
 // tslint:disable-next-line:variable-name
@@ -20,7 +20,7 @@ export function DatabaseService(aliasOrEntities: string | Class[], second?: Clas
   const alias = typeof aliasOrEntities === 'string' ? aliasOrEntities : 'database';
   const entities = Array.isArray(aliasOrEntities) ? aliasOrEntities : second;
   return (target) => {
-    Registry.trace(Database, { alias, entities }, target);
+    Metadata.trace(Database, { alias, entities }, target);
     DatabaseMetadata.define(target).commit(alias, entities);
     return Di.Service(alias)(target);
   };

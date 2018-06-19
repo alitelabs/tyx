@@ -1,6 +1,6 @@
 import { Class, Prototype } from '../types/core';
 import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata } from './method';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 
 export interface IApiMetadata {
   target: Class;
@@ -30,13 +30,13 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Registry.TYX_API, target)
-      || Reflect.hasMetadata(Registry.TYX_API, target.constructor);
+    return Reflect.hasMetadata(Metadata.TYX_API, target)
+      || Reflect.hasMetadata(Metadata.TYX_API, target.constructor);
   }
 
   public static get(target: Class | Prototype): ApiMetadata {
-    return Reflect.getMetadata(Registry.TYX_API, target)
-      || Reflect.getMetadata(Registry.TYX_API, target.constructor);
+    return Reflect.getMetadata(Metadata.TYX_API, target)
+      || Reflect.getMetadata(Metadata.TYX_API, target.constructor);
   }
 
   public static define(target: Class | Prototype): ApiMetadata {
@@ -44,7 +44,7 @@ export class ApiMetadata implements IApiMetadata {
     if (!meta) {
       const trg = (typeof target === 'function') ? target : target.constructor;
       meta = new ApiMetadata(trg as Class);
-      Reflect.defineMetadata(Registry.TYX_API, meta, trg);
+      Reflect.defineMetadata(Metadata.TYX_API, meta, trg);
     }
     return meta;
   }
@@ -65,9 +65,9 @@ export class ApiMetadata implements IApiMetadata {
 
   public commit(alias?: string): this {
     this.alias = alias || this.target.name;
-    const prev = Registry.ApiMetadata[this.alias];
+    const prev = Metadata.ApiMetadata[this.alias];
     if (prev && prev !== this) throw new TypeError(`Duplicate API alias [${this.alias}]`);
-    Registry.ApiMetadata[this.alias] = this;
+    Metadata.ApiMetadata[this.alias] = this;
     Object.values(this.methods).forEach(item => item.commit(this));
     // this.schema();
     return this;

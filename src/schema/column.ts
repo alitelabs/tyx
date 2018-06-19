@@ -1,4 +1,4 @@
-import { Metadata } from '../decorators/schema';
+import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
@@ -14,7 +14,7 @@ import { VarMetadataSchema } from './type';
 export class ColumnTypeSchema {
 }
 
-@Metadata()
+@Schema()
 export class ColumnMetadataSchema implements IColumnMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;

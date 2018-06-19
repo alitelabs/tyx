@@ -8,7 +8,7 @@ import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
-import { Registry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
@@ -130,29 +130,29 @@ export class CoreSchema {
   public apis: Record<string, ApiSchema> = {};
 
   constructor() {
-    Registry.validate();
+    Metadata.validate();
     // Enums
-    for (const type of Object.values(Registry.EnumMetadata)) {
+    for (const type of Object.values(Metadata.EnumMetadata)) {
       this.enums[type.name] = this.genEnum(type);
     }
     // Metadata
-    for (const type of Object.values(Registry.RegistryMetadata)) {
+    for (const type of Object.values(Metadata.RegistryMetadata)) {
       this.genType(type, this.metadata);
     }
     // Databases & Entities
-    for (const type of Object.values(Registry.DatabaseMetadata)) {
+    for (const type of Object.values(Metadata.DatabaseMetadata)) {
       this.genDatabase(type);
     }
     // Inputs
-    for (const type of Object.values(Registry.InputMetadata)) {
+    for (const type of Object.values(Metadata.InputMetadata)) {
       this.genType(type, this.inputs);
     }
     // Results
-    for (const type of Object.values(Registry.TypeMetadata)) {
+    for (const type of Object.values(Metadata.TypeMetadata)) {
       this.genType(type, this.types);
     }
     // Api
-    for (const api of Object.values(Registry.ApiMetadata)) {
+    for (const api of Object.values(Metadata.ApiMetadata)) {
       this.genApi(api);
     }
   }
@@ -253,7 +253,7 @@ export class CoreSchema {
   public resolvers() {
     const resolvers: any = { Query: { Metadata: undefined }, Mutation: { ping: undefined }, MetadataRegistry: {} };
     resolvers.Query.Metadata = () => {
-      return Registry.get();
+      return Metadata.get();
     };
     resolvers.Mutation.ping = (obj: any, args: any) => {
       return { args, stamp: new Date().toISOString(), version: process.versions };

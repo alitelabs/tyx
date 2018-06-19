@@ -1,7 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { Registry } from './registry';
+import { Metadata } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { ServiceMetadata } from './service';
 
@@ -30,20 +30,20 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Registry.TYX_DATABASE, target)
-      || Reflect.hasMetadata(Registry.TYX_DATABASE, target.constructor);
+    return Reflect.hasMetadata(Metadata.TYX_DATABASE, target)
+      || Reflect.hasMetadata(Metadata.TYX_DATABASE, target.constructor);
   }
 
   public static get(target: Class | Prototype): DatabaseMetadata {
-    return Reflect.getMetadata(Registry.TYX_DATABASE, target)
-      || Reflect.getMetadata(Registry.TYX_DATABASE, target.constructor);
+    return Reflect.getMetadata(Metadata.TYX_DATABASE, target)
+      || Reflect.getMetadata(Metadata.TYX_DATABASE, target.constructor);
   }
 
   public static define(target: Class): DatabaseMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new DatabaseMetadata(target);
-      Reflect.defineMetadata(Registry.TYX_DATABASE, meta, target);
+      Reflect.defineMetadata(Metadata.TYX_DATABASE, meta, target);
     }
     return meta;
   }
@@ -58,7 +58,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
     }
     // TODO: Link entity metadata
     ServiceMetadata.define(this.target).commit(alias);
-    Registry.DatabaseMetadata[this.alias] = this;
+    Metadata.DatabaseMetadata[this.alias] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;
   }
