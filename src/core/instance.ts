@@ -1,5 +1,4 @@
 import { InternalServerError, NotFound } from '../errors/http';
-import { CoreGraphQLService, GraphQLApi } from '../graphql';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
@@ -17,9 +16,11 @@ import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
 import { Utils } from '../utils';
 import { CoreConfiguration } from './config';
+import { CoreGraphQL, GraphQLApi } from './graphql';
 import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
 
+// @Service(CoreContainer)
 export class CoreInstance implements CoreContainer {
 
   private application: string;
@@ -69,7 +70,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     if (!Container.has(GraphQLApi)) {
-      this.container.set({ id: GraphQLApi, type: CoreGraphQLService });
+      this.container.set({ id: GraphQLApi, type: CoreGraphQL });
     }
 
     this.istate = ContainerState.Ready;

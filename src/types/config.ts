@@ -31,6 +31,7 @@ export namespace LogLevel {
 export interface Configuration {
   appId: string;
   stage: string;
+  prefix: string;
 
   database: string;
 

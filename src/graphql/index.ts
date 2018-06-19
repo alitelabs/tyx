@@ -6,7 +6,6 @@ export type GqlTag = (literals: any, ...placeholders: any[]) => DocumentNode;
 export const gql: GqlTag = gqlTag;
 
 export * from './query';
-export * from './service';
 export * from './typeorm';
 export * from './types';
 

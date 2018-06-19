@@ -50,6 +50,7 @@ export * from './core/service';
 export * from './core/proxy';
 export * from './core/provider';
 export * from './core/schema';
+export * from './core/graphql';
 
 // --- TODO ---
 

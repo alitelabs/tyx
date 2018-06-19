@@ -131,7 +131,7 @@ export abstract class Core {
   }
 
   public static express(basePath?: string): Express.Express {
-    return new ExpressAdapter(basePath || '').express();
+    return new ExpressAdapter(basePath || '/local').express();
   }
 
   public static start(port: number, basePath?: string) {
@@ -139,7 +139,7 @@ export abstract class Core {
 
     // tslint:disable-next-line:no-parameter-reassignment
     port = port || 5000;
-    const adapter = new ExpressAdapter(basePath || '');
+    const adapter = new ExpressAdapter(basePath || '/local');
 
     const app = adapter.express();
     this.server = createServer(app);

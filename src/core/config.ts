@@ -24,6 +24,8 @@ export class CoreConfiguration implements Configuration {
 
   get stage(): string { return this.config.STAGE || 'local'; }
 
+  get prefix(): string { return this.config.PREFIX || ('/' + this.stage); }
+
   get database(): string { return this.config.DATABASE; }
 
   get logLevel(): LogLevel {

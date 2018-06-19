@@ -35,6 +35,10 @@
     "link": "npm link",
     "global": "npm install -g ts-node typeorm typescript gulp serverless tslint"
   },
+  "voyagerVersion": "latest",
+  "clientDependencies": {
+    "graphql-voyager": "^1.0.0-rc.19"
+  },
   "dependencies": {
     "apollo-server-core": "^1.3.6",
     "apollo-server-module-graphiql": "^1.3.4",
@@ -48,7 +52,6 @@
     "graphql-tag": "^2.9.2",
     "graphql-tools": "^3.0.2",
     "graphql-type-json": "^0.2.1",
-    "graphql-voyager": "1.0.0-rc.15",
     "jsonwebtoken": "^8.3.0",
     "lodash": "^4.17.10",
     "ms": "^2.1.1",
