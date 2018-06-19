@@ -80,7 +80,7 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
 
 @Schema()
 export class MethodMetadataSchema implements IMethodMetadata {
-  @Field() target: Class;
+  @Field(String) target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(String) host: Class;
 

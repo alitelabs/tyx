@@ -22,6 +22,8 @@ export class AngularCodeGen {
     import { Observable } from 'rxjs';
     import { map } from 'rxjs/operators';
 
+    const NO_CACHE = false;
+
     export interface ApiError {
       message: string;
       status: number;
@@ -82,19 +84,23 @@ export class AngularCodeGen {
       count++;
       const input = method.input.build;
       const result = method.result.build;
-      const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const art = (GraphKind.isVoid(input.kind) ? '()' : `(${arg}: ${input.js})`);
-      const art2 = (GraphKind.isVoid(input.kind) ? '' : `($${arg}: ${input.def})`);
-      const art3 = (GraphKind.isVoid(input.kind) ? '' : `(${arg}: $${arg})`);
+      const param = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
+      const jsArg = (GraphKind.isVoid(input.kind) ? '' : `${param}: ${input.js}`);
+      const reqArg = (GraphKind.isVoid(input.kind) ? '' : `($${param}: ${input.def})`);
+      const qlArg = (GraphKind.isVoid(input.kind) ? '' : `(${param}: $${param})`);
       const action = method.mutation ? 'mutate' : 'query';
-      script += `\n  public ${method.name}${art}: Observable<${result.js}> {\n`;
+      if (method.mutation) {
+        script += `\n  public ${method.name}(${jsArg}): Observable<${result.js}> {\n`;
+      } else {
+        script += `\n  public ${method.name}(${jsArg}${jsArg ? ', ' : ''}refresh?: boolean): Observable<${result.js}> {\n`;
+      }
       script += `    return this.graphql.${action}<Result<${result.js}>>({\n`;
       if (method.mutation) {
-        script += `      mutation: gql\`mutation request${art2} {\n`;
+        script += `      mutation: gql\`mutation request${reqArg} {\n`;
       } else {
-        script += `      query: gql\`query request${art2} {\n`;
+        script += `      query: gql\`query request${reqArg} {\n`;
       }
-      script += `        result: ${method.api.name}_${method.name}${art3}`;
+      script += `        result: ${method.api.name}_${method.name}${qlArg}`;
       if (GraphKind.isStruc(result.kind)) {
         const x = (GraphKind.isType(result.kind)) ? 0 : 0;
         const select = this.genSelect(result, method.select, 0, 1 + x);
@@ -106,11 +112,12 @@ export class AngularCodeGen {
       } else {
         script += ` # : ANY`;
       }
-      script += `\n      }\`,\n`;
-      if (art3) script += `      variables: { ${arg} }\n`;
+      script += `\n      }\``;
+      if (qlArg) script += `,\n      variables: { ${param} }`;
       if (method.mutation) {
         script += `    }).pipe(map(res => resolveMutation(res)));\n`;
       } else {
+        script += `,\n      fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'\n`;
         script += `    }).pipe(map(res => resolveQuery(res)));\n`;
       }
       script += `  }\n`;
