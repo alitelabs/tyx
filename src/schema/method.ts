@@ -1,6 +1,7 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Field, Metadata } from '../decorators/type';
+import { Metadata } from '../decorators/schema';
+import { Field } from '../decorators/type';
 import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 // tslint:disable-next-line:max-line-length
@@ -17,7 +18,7 @@ import { InputMetadataSchema, ResultMetadataSchema } from './type';
 @Metadata()
 export class HttpBindingMetadataSchema implements HttpBindingMetadata {
   @Field(String) type: HttpBindingType;
-  @Field(String) path: string;
+  @Field() path: string;
   @Field(String) binder: HttpBinder;
 
   public static binder(obj: HttpBindingMetadata): string {
@@ -31,12 +32,12 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
-  @Field(String) route: string;
-  @Field(String) alias: string;
-  @Field(String) handler: string;
-  @Field(String) verb: string;
-  @Field(String) resource: string;
-  @Field(String) model: string;
+  @Field() route: string;
+  @Field() alias: string;
+  @Field() handler: string;
+  @Field() verb: string;
+  @Field() resource: string;
+  @Field() model: string;
   @Field([String]) params: string[];
   @Field(0) code: HttpCode;
   @Field(String) adapter: HttpAdapter;
@@ -59,13 +60,13 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
-  @Field(String) route: string;
-  @Field(String) alias: string;
-  @Field(String) handler: string;
-  @Field(String) source: string;
-  @Field(String) resource: string;
-  @Field(String) objectFilter: string;
-  @Field(String) actionFilter: string;
+  @Field() route: string;
+  @Field() alias: string;
+  @Field() handler: string;
+  @Field() source: string;
+  @Field() resource: string;
+  @Field() objectFilter: string;
+  @Field() actionFilter: string;
   @Field(String) adapter: EventAdapter;
 
   public static target(obj: EventRouteMetadata, args: ResolverArgs): string {
@@ -79,15 +80,15 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
 
 @Metadata()
 export class MethodMetadataSchema implements IMethodMetadata {
-  @Field(String) target: Class;
+  @Field() target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(String) host: Class;
 
-  @Field(String) alias: string;
-  @Field(String) name: string;
+  @Field() alias: string;
+  @Field() name: string;
   @Field(Object) design: DesignMetadata[];
 
-  @Field(String) auth: string;
+  @Field() auth: string;
   @Field(Object) roles: Roles;
 
   @Field() query: boolean;
@@ -97,12 +98,12 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: Select;
 
-  @Field(String) contentType: string;
+  @Field() contentType: string;
   @Field(list => [HttpBindingMetadataSchema]) bindings: HttpBindingMetadata[];
   @Field(list => [HttpRouteMetadataSchema]) http: Record<string, HttpRouteMetadata>;
   @Field(list => [EventRouteMetadataSchema]) events: Record<string, EventRouteMetadata>;
 
-  @Field(String) source: string;
+  @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
     target: obj => Utils.value(obj.target),

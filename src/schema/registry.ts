@@ -1,6 +1,6 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Field, Metadata } from '../decorators/type';
+import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IColumnMetadata } from '../metadata/column';
@@ -23,6 +23,7 @@ import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
 import { EnumMetadataSchema, TypeMetadataSchema } from './type';
+import { Metadata } from '../decorators/schema';
 
 @Metadata()
 export class DecoratorMetadataSchema implements DecoratorMetadata {

@@ -1,4 +1,5 @@
-import { Field, Metadata } from '../decorators/type';
+import { Metadata } from '../decorators/schema';
+import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';

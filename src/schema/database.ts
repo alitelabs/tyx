@@ -1,6 +1,7 @@
 // tslint:disable-next-line:import-name
 import Lo = require('lodash');
-import { Field, Metadata } from '../decorators/type';
+import { Metadata } from '../decorators/schema';
+import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
 import { IDatabaseMetadata } from '../metadata/database';

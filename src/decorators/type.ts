@@ -3,25 +3,17 @@ import { EnumMetadata, GraphKind, Int, TypeMetadata, VarType } from '../metadata
 
 // tslint:disable:function-name
 
-/// Root Types
-export function Metadata(name?: string): ClassDecorator {
-  return TypeClass(Metadata.name, GraphKind.Metadata, name);
-}
-
 export function Input(name?: string): ClassDecorator {
-  return TypeClass(Input.name, GraphKind.Input, name);
+  return (target) => {
+    Registry.trace(Input, { type: GraphKind.Type, name }, target);
+    return void TypeMetadata.define(target).commit(GraphKind.Input, name);
+  };
 }
 
 export function Type(name?: string): ClassDecorator {
-  return TypeClass(Type.name, GraphKind.Type, name);
-}
-
-function TypeClass(decorator: string, type: GraphKind, name?: string): ClassDecorator {
   return (target) => {
-    Registry.trace(decorator, { type, name }, target);
-    // tslint:disable-next-line:no-parameter-reassignment
-    if (type === GraphKind.Metadata) name = name || target.name.replace(/Schema$/, '');
-    return void TypeMetadata.define(target).commit(type, name);
+    Registry.trace(Type, { type: GraphKind.Type, name }, target);
+    return void TypeMetadata.define(target).commit(GraphKind.Type, name);
   };
 }
 
