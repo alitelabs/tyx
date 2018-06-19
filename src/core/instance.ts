@@ -1,4 +1,4 @@
-import { InternalServerError, NotFound } from '../errors/http';
+import { Forbidden, InternalServerError } from '../errors/http';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
@@ -132,11 +132,13 @@ export class CoreInstance implements CoreContainer {
 
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
       const target = Metadata.HttpRouteMetadata[route];
-      if (!target) throw this.log.error(new NotFound(`Route not found [${route}]`));
+      if (!target) throw this.log.error(new Forbidden(`Route not found [${route}]`));
       const service = this.container.get<any>(target.alias);
-      if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
+      // if (!service) throw this.log.error(new Forbidden(`Service not found [${target.alias}]`));
       const methodId = MethodMetadata.id(target.alias, target.handler);
       const method = Metadata.MethodMetadata[methodId] as MethodMetadata;
+      if (!method) throw this.log.error(new Forbidden(`Method [${methodId}] not found `));
+      if (!method.roles) throw this.log.error(new Forbidden(`Method [${methodId}] not available`));
 
       req.application = this.application;
       req.service = target.alias;
@@ -196,25 +198,27 @@ export class CoreInstance implements CoreContainer {
     try {
       this.log.debug('GraphQL Request: %j', req);
 
-      if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
+      if (req.application !== this.application) throw this.log.error(new Forbidden(`Application not found [${req.application}]`));
+      const api = Metadata.ApiMetadata[req.service];
+      if (!api) throw this.log.error(new Forbidden(`Service not found [${req.service}]`));
       const service = this.container.get<any>(req.service);
-      if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
       const methodId = MethodMetadata.id(req.service, req.method);
-      const metadata = Metadata.MethodMetadata[methodId];
-      if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
+      const method = Metadata.MethodMetadata[methodId];
+      if (!method) throw this.log.error(new Forbidden(`Method [${methodId}] not found `));
+      if (!method.roles) throw this.log.error(new Forbidden(`Method [${methodId}] not available`));
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.graphAuth(this, req, metadata);
+      const ctx = await this.security.graphAuth(this, req, method);
 
       const log = Logger.get(service);
       const startTime = log.time();
       try {
         await this.activate(ctx);
-        const handler: Function = service[metadata.name];
+        const handler: Function = service[method.name];
         let result: any;
-        if (metadata.resolver) {
+        if (method.resolver) {
           result = await handler.call(service, req.obj, req.args, ctx, req.info);
-        } else if (metadata.input.kind === GraphKind.Void) {
+        } else if (method.input.kind === GraphKind.Void) {
           result = await handler.call(service, ctx);
         } else {
           result = await handler.call(service, req.args, ctx);
@@ -223,7 +227,7 @@ export class CoreInstance implements CoreContainer {
       } catch (e) {
         throw this.log.error(e);
       } finally {
-        log.timeEnd(startTime, `${metadata.name}`);
+        log.timeEnd(startTime, `${method.name}`);
         if (!reenter) await this.release(ctx);
       }
     } finally {
@@ -236,27 +240,29 @@ export class CoreInstance implements CoreContainer {
     try {
       this.log.debug('Remote Request: %j', req);
 
-      if (req.application !== this.application) throw this.log.error(new NotFound(`Application not found [${req.application}]`));
+      if (req.application !== this.application) throw this.log.error(new Forbidden(`Application not found [${req.application}]`));
+      const api = Metadata.ApiMetadata[req.service];
+      if (!api) throw this.log.error(new Forbidden(`Service not found [${req.service}]`));
       const service = this.container.get<any>(req.service);
-      if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
       const methodId = MethodMetadata.id(req.service, req.method);
-      const metadata = Metadata.MethodMetadata[methodId];
-      if (!metadata) throw this.log.error(new NotFound(`Method not found [${methodId}]`));
+      const method = Metadata.MethodMetadata[methodId];
+      if (!method) throw this.log.error(new Forbidden(`Method not found [${methodId}]`));
+      if (!method.roles) throw this.log.error(new Forbidden(`Method not available`));
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.remoteAuth(this, req, metadata);
+      const ctx = await this.security.remoteAuth(this, req, method);
 
       const log = Logger.get(service);
       const startTime = log.time();
       try {
         await this.activate(ctx);
-        const handler: Function = service[metadata.name];
+        const handler: Function = service[method.name];
         const result = await handler.apply(service, req.args);
         return result;
       } catch (e) {
         throw this.log.error(e);
       } finally {
-        log.timeEnd(startTime, `${metadata.name}`);
+        log.timeEnd(startTime, `${method.name}`);
         await this.release(ctx);
       }
     } finally {
@@ -272,12 +278,12 @@ export class CoreInstance implements CoreContainer {
 
       let route = EventRouteMetadata.route(req.source, req.resource);
       const alias = this.config.resources && this.config.resources[req.resource];
-      let metadatas = Metadata.EventRouteMetadata[route];
-      if (!metadatas) {
+      let targets = Metadata.EventRouteMetadata[route];
+      if (!targets) {
         route = EventRouteMetadata.route(req.source, alias);
-        metadatas = Metadata.EventRouteMetadata[route];
+        targets = Metadata.EventRouteMetadata[route];
       }
-      if (!metadatas) throw this.log.error(new NotFound(`Event handler not found [${route}] [${req.object}]`));
+      if (!targets) throw this.log.error(new Forbidden(`Event handler not found [${route}] [${req.object}]`));
 
       const result: EventResult = {
         status: null,
@@ -289,9 +295,10 @@ export class CoreInstance implements CoreContainer {
       };
 
       this.istate = ContainerState.Busy;
-      for (const target of metadatas) {
+      for (const target of targets) {
+        const api = Metadata.ApiMetadata[target.alias];
+        if (!api) throw this.log.error(new Forbidden(`Service not found [${target.alias}]`));
         const service = this.container.get<any>(target.alias);
-        if (!service) throw this.log.error(new NotFound(`Service not found [${req.service}]`));
         const methodId = MethodMetadata.id(target.alias, target.handler);
         const method = Metadata.MethodMetadata[methodId];
 

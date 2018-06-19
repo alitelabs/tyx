@@ -20,24 +20,31 @@ export class AngularCodeGen {
     import { FetchResult } from 'apollo-link';
     import gql from 'graphql-tag';
     import { Observable } from 'rxjs';
-    import { map } from 'rxjs/operators';
+    import { catchError, map } from 'rxjs/operators';
 
-    const NO_CACHE = false;
+    const NO_CACHE = true;
 
     export interface ApiError {
+      code: number;
       message: string;
-      status: number;
     }
 
     interface Result<T> { result: T; }
 
-    function resolveQuery<T>(res: ApolloQueryResult<Result<T>>): T {
+    function result<T>(res: ApolloQueryResult<Result<T>>): T {
       return res.data.result;
     }
 
-    function resolveMutation<T>(res: FetchResult<Result<T>>): T {
+    function fetch<T>(res: FetchResult<Result<T>>): T {
       return res.data.result;
     }
+
+    function erorr(err: any): never {
+      err = err.networkError ? (err.networkError.error || err.networkError) : err;
+      err.code = err.code || err.status;
+      throw err;
+    }
+
     `).trimLeft();
     script += '///////// API /////////\n';
     for (const api of Object.values(this.schema.apis).sort((a, b) => a.api.localeCompare(b.api))) {
@@ -115,10 +122,10 @@ export class AngularCodeGen {
       script += `\n      }\``;
       if (qlArg) script += `,\n      variables: { ${param} }`;
       if (method.mutation) {
-        script += `    }).pipe(map(res => resolveMutation(res)));\n`;
+        script += `    }).pipe(map(res => fetch(res)), catchError(err => erorr(err)));\n`;
       } else {
         script += `,\n      fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'\n`;
-        script += `    }).pipe(map(res => resolveQuery(res)));\n`;
+        script += `    }).pipe(map(res => result(res)), catchError(err => erorr(err)));\n`;
       }
       script += `  }\n`;
     }

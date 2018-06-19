@@ -1,5 +1,5 @@
 // tslint:disable-next-line:variable-name
-export const Configuration = 'config';
+export const Configuration = 'Config';
 
 export enum LogLevel {
   ALL = 0,

@@ -81,12 +81,12 @@ export class CoreSecurity implements Security {
       ctx.auth.subject = 'user:debug';
       ctx.auth.role = 'Debug';
       if (token) {
-        try {
-          ctx.auth = await this.verify(requestId, token, method, sourceIp);
-          ctx.auth = this.renew(ctx.auth);
-        } catch (err) {
-          this.log.debug('Ignore invalid token on debug permission', err);
-        }
+        // try {
+        ctx.auth = await this.verify(requestId, token, method, sourceIp);
+        ctx.auth = this.renew(ctx.auth);
+        // } catch (err) {
+        //   this.log.debug('Ignore invalid token on debug permission', err);
+        // }
       }
     }
 

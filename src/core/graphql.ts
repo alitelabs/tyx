@@ -1,5 +1,4 @@
 import { CoreSchema } from '../core/schema';
-import { Debug } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { Activate, Inject, Service } from '../decorators/service';
 import { InternalServerError } from '../errors';
@@ -13,15 +12,14 @@ import SuperGraphiQL = require('super-graphiql-express');
 
 const playgroundVersion = 'latest';
 
-// tslint:disable-next-line:variable-name
-export const GraphQLApi = 'graphql';
-
-export interface GraphQLApi {
-  graphql(req: HttpRequest, ctx: Context): Promise<HttpResponse>;
+export class GraphQLApi {
+  graphql(req: HttpRequest, ctx: Context): Promise<HttpResponse> {
+    throw new Error();
+  }
 }
 
-@Service(GraphQLApi)
-export class CoreGraphQL implements GraphQLApi {
+@Service(GraphQLApi.name)
+export class CoreGraphQL extends GraphQLApi {
 
   private log = Logger.get(this);
 
@@ -37,7 +35,7 @@ export class CoreGraphQL implements GraphQLApi {
     this.schema = new CoreSchema();
   }
 
-  @Debug()
+  // @Debug()
   @Get('/graphql')
   @Get('/graphiql')
   @Post('/graphql')

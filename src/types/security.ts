@@ -102,7 +102,7 @@ export interface WebToken {
 }
 
 // tslint:disable-next-line:variable-name
-export const Security = 'security';
+export const Security = 'Security';
 
 export interface Security {
   httpAuth(container: CoreContainer, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
