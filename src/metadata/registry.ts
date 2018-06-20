@@ -179,14 +179,14 @@ export abstract class Metadata implements MetadataRegistry {
   }
 
   private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {
-    if (GraphKind.isScalar(metadata.kind)) {
-      return VarMetadata.on({ kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) });
-    }
     if (GraphKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
       metadata.def = e.name;
       metadata.js = e.name;
       return metadata;
+    }
+    if (GraphKind.isScalar(metadata.kind)) {
+      return VarMetadata.on({ kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) });
     }
     if (GraphKind.isArray(metadata.kind)) {
       const item = this.resolve(metadata.item, scope, reg);

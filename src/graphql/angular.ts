@@ -149,7 +149,7 @@ export class AngularCodeGen {
       if (GraphKind.isVoid(member.kind)) continue;
       let name = member.name;
       let def = `# ${member.build.js}`;
-      if (!GraphKind.isScalar(member.kind)) {
+      if (!GraphKind.isScalar(member.kind) && !GraphKind.isEnum(member.build.kind)) {
         def += ' ...';
         if (select instanceof Object && select[member.name]) {
           const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);

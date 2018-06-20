@@ -31,6 +31,8 @@ export enum ColumnType {
   MediumText = 'mediumtext',
   LongText = 'longtext',
 
+  Enum = 'enum',
+
   // Enum = "enum",
   // Json = "json",
   // Blob = "blob",
@@ -82,6 +84,7 @@ export namespace ColumnType {
       case ColumnType.TinyText:
       case ColumnType.MediumText:
       case ColumnType.LongText:
+      case ColumnType.Enum:
         return GraphKind.String;
       // case ColumnType.Enum:
       //     return GraphType.Enum;

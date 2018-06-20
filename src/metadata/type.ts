@@ -119,6 +119,7 @@ export namespace GraphKind {
       case GraphKind.DateTime:
       case GraphKind.Timestamp:
       case GraphKind.Object:
+      case GraphKind.Enum:
       case GraphKind.ANY:
       case GraphKind.Void:
         return true;

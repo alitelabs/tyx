@@ -2,6 +2,7 @@ import { Orm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
 import { Metadata } from '../metadata/registry';
 import { Int, VarType } from '../metadata/type';
+import { Enum } from './type';
 
 // tslint:disable:function-name
 
@@ -103,6 +104,16 @@ export function StringColumn(numOrOptions?: number | ColumnOptions): PropertyDec
     options = { length: 255, ...numOrOptions, type: ColumnType.Varchar };
   }
   return Column(options);
+}
+
+export function EnumColumn(type?: Object, options?: ColumnOptions): PropertyDecorator {
+  return (target, propertyKey) => {
+    Metadata.trace(Transient, { type, options }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    // tslint:disable-next-line:no-parameter-reassignment
+    options = { ...options, enum: type, type: ColumnType.Enum };
+    ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options, Enum(type));
+  };
 }
 
 export function TextColumn(options?: ColumnOptions): PropertyDecorator {
