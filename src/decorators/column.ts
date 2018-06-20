@@ -113,6 +113,7 @@ export function EnumColumn(type?: Object, options?: ColumnOptions): PropertyDeco
     // tslint:disable-next-line:no-parameter-reassignment
     options = { ...options, enum: type, type: ColumnType.Enum };
     ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options, Enum(type));
+    return Orm.Column(options)(target, propertyKey);
   };
 }
 

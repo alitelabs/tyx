@@ -207,26 +207,28 @@ export class CoreSchema {
               OneToMany,
               ManyToOne
             }
-            ${Object.values(this.enums).map(m => m.model).join('\n')}
+            ${Object.values(this.enums).sort((a, b) => a.name.localeCompare(b.name)).map(m => m.model).join('\n')}
       `).trimLeft()
-      + Object.values(this.apis).map((api) => {
-        let res = '';
-        if (api.queries) {
-          res += 'extend type Query {\n  ';
-          res += Object.values(api.queries).map(q => q.name + q.signature).join('\n  ');
-          res += '\n}\n';
-        }
-        if (api.mutations) {
-          res += 'extend type Mutation {\n  ';
-          res += Object.values(api.mutations).map(c => c.name + c.signature).join('\n  ');
-          res += '\n}\n';
-        }
-        if (api.resolvers) {
-          res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
-        }
-        if (res) res = `\# -- API: ${api.metadata.alias} --#\n` + res;
-        return res;
-      }).join('\n')
+      + Object.values(this.apis)
+        .sort((a, b) => a.api.localeCompare(b.api))
+        .map((api) => {
+          let res = '';
+          if (api.queries) {
+            res += 'extend type Query {\n  ';
+            res += Object.values(api.queries).map(q => q.name + q.signature).join('\n  ');
+            res += '\n}\n';
+          }
+          if (api.mutations) {
+            res += 'extend type Mutation {\n  ';
+            res += Object.values(api.mutations).map(c => c.name + c.signature).join('\n  ');
+            res += '\n}\n';
+          }
+          if (api.resolvers) {
+            res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
+          }
+          if (res) res = `\# -- API: ${api.metadata.alias} --#\n` + res;
+          return res;
+        }).join('\n')
       + Object.values(this.databases).map((db) => {
         return `\n# -- Database: ${db.metadata.target.name} --\n`
           + `extend ${db.query}\n`
@@ -240,12 +242,18 @@ export class CoreSchema {
           });
       }).join('\n')
       + '\n'
-      + Object.values(this.inputs).map(i => `# -- Input: ${i.metadata.name} --\n${i.model}`).join('\n')
+      + Object.values(this.inputs)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(i => `# -- Input: ${i.metadata.name} --\n${i.model}`).join('\n')
       + '\n'
-      + Object.values(this.types).map(r => `# -- Type: ${r.metadata.name} --\n${r.model}`).join('\n')
+      + Object.values(this.types)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(r => `# -- Type: ${r.metadata.name} --\n${r.model}`).join('\n')
       + '\n\n'
       + `# -- Metadata Types --\n`
-      + Object.values(this.metadata).map(m => m.model).join('\n')
+      + Object.values(this.metadata)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(m => m.model).join('\n')
       + `\n`;
   }
 

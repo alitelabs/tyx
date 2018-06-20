@@ -69,7 +69,7 @@
     "@types/graphql-iso-date": "^3.3.0",
     "@types/graphql-type-json": "^0.1.2",
     "@types/jsonwebtoken": "^7.2.7",
-    "@types/lodash": "^4.14.109",
+    "@types/lodash": "^4.14.110",
     "@types/ms": "^0.7.30",
     "@types/node": "^9.6.22",
     "@types/uuid": "^3.4.3",
