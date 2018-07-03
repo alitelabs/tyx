@@ -19,14 +19,12 @@
     "aws",
     "lambda",
     "typescript",
-    "serverless"
+    "serverless",
+    "graphql"
   ],
   "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "source": "src/index.ts",
-  "typings": "lib/index.d.ts",
-  "typescript": {
-    "definition": "lib/index.d.ts"
-  },
   "scripts": {
     "clean": "rm -rf ./lib",
     "prebuild": "rm -rf ./lib",
