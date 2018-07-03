@@ -1,0 +1,14 @@
+# https://medium.com/@russleyshaw/typescript-package-deployment-with-travisci-df788ffb8563
+language: node_js
+node_js:
+- 8
+script:
+  - npm run build
+deploy:
+  provider: npm
+  skip_cleanup: true
+  email: kbajalc@gmail.com
+  api_key:
+    secure: J9Xe3yyw6tRLSF5dvhf0DEXueGRLRLlmdyiXjQCCz3tdBbeST9t8LFChqjZ87vL11cKF3zjSaKDl16eHGMOv5eyAPN0c0iUJ1u7u7XhwCEIqBesMnhP3W9m1anugNVhswqyCkWoNXVnmqj00x0ECw8CT2zFz38al3WP0X+tNecqbcvKfZdqapbwEKEhHgo2wZp2CbT5KhEPqCUgIV6yMwoPHvH9NfKANGZcak3ui8WhZgU/JRnTdzM58qze6c560Evi9NSfZ1+4gQJ/QOv0n8zytXUcVdzGIq2q7W5SaPKWL9+7I8qPWGJyEJ6dN7HwuRNv8mCk5ezst6VQCYlCLfDfzrEkRhMk0a46yMMUo3G3maZwxIhjxezlG2p3hP9hUpwG/HzlBu4C2rECswnjdAMas2XNqtWwdRwUjrHMzK1Ezd7zou5u81+ioowS4e1BCiox7tlcpKeEzsbXLCv2/34Q6YQbGUYULy6A+6wMX9mVzXfXohVicH+7ZgV6MDLpX5PTJXORh1Y2q+MkaL5uaMDAcMLyq4TObK92lzm/lV1ExnIvrab4fMUGwZZtwWwq8khaLQYyhPdx5NPT6PcumFtGO83DUcmti7Ci/G0wyxouX72aVvH5pyiiezSSFPfzRZkZTAFWXigpKIGeWkYVN7SbO4iR5HZaFvL5ntNwgPJw=
+  on:
+    tags: true

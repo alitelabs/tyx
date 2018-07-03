@@ -29,9 +29,10 @@
   },
   "scripts": {
     "clean": "rm -rf ./lib",
-    "build": "rm -rf ./lib ; npx tsc -p .",
-    "watch": "rm -rf ./lib ; npx tsc -p . --watch",
-    "lint": "npx tslint -p .",
+    "prebuild": "rm -rf ./lib",
+    "build": "tsc -p .",
+    "watch": "rm -rf ./lib ; tsc -p . --watch",
+    "lint": "tslint -p .",
     "link": "npm link",
     "global": "npm install -g ts-node typeorm typescript gulp serverless tslint"
   },
