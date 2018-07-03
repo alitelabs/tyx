@@ -4,6 +4,10 @@ node_js:
 - 8
 script:
   - npm run build
+branches:
+  only:
+  - master
+  - dev
 deploy:
   provider: npm
   skip_cleanup: true
