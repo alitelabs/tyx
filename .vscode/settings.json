@@ -10,7 +10,7 @@
         // "**/*.js.map": { "when": "$(basename)"}
     },
     "editor.tabSize": 2,
-    "editor.detectIndentation": true,
+    "editor.detectIndentation": false,
     "typescriptHero.resolver.stringQuoteStyle": "\"",
     "cSpell.words": [
         "APPID",

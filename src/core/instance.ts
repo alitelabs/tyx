@@ -167,8 +167,10 @@ export class CoreInstance implements CoreContainer {
             req.queryStringParameters || {});
         } else {
           const args: any = [];
-          for (const [index, arg] of method.bindings.entries()) {
-            args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
+          if (method.bindings) {
+            for (const [index, arg] of method.bindings.entries()) {
+              args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
+            }
           }
           result = await handler.apply(service, args);
         }
