@@ -534,7 +534,8 @@ export class CoreSchema {
         const args = (sch && sch.params) ? `(\n${reg[type.item.def].params}\n  )` : '';
         schema.model += `  ${doc}${member.name}${args}: ${type.def}\n`;
       } else {
-        schema.model += `  ${doc}${member.name}: ${type.def}\n`;
+        const nl = member.required ? '!' : '';
+        schema.model += `  ${doc}${member.name}: ${type.def}${nl}\n`;
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) schema.resolvers[member.name] = resolvers[member.name];
