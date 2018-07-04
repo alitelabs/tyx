@@ -1,4 +1,3 @@
-export { runHttpQuery } from 'apollo-server-core';
 export { GraphiQLData } from 'apollo-server-module-graphiql';
 export { GraphQLSchema } from 'graphql';
 export * from 'graphql-playground-html';

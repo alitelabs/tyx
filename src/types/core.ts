@@ -31,6 +31,7 @@ export class Context {
     Object.assign(this, ctx);
     Object.defineProperty(this, 'container', { enumerable: false });
   }
+  // TODO: toJSON
 }
 
 export interface Request {

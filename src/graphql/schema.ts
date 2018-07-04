@@ -569,7 +569,10 @@ export class CoreSchema {
         name,
         signature: call + dir,
         extension: undefined,
-        resolver: (obj, args, ctx, info) => ctx.container.invoke(meth, obj, args[arg], ctx, info),
+        // TODO: Move resolver functions to this.resolvers()
+        resolver: (obj, args, ctx, info) => {
+          return ctx.container.invoke(meth, obj, args[arg], ctx, info);
+        }
       };
       if (method.mutation) {
         api.mutations = api.mutations || {};

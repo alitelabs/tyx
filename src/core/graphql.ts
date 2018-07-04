@@ -1,3 +1,4 @@
+import { GraphQLOptions, HttpQueryRequest, runHttpQuery } from 'apollo-server-core';
 import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { Activate, Inject, Service } from '../decorators/service';
@@ -70,29 +71,42 @@ export class CoreGraphQL extends GraphQLApi {
 
   private async request(req: HttpRequest, ctx: Context): Promise<HttpResponse> {
     this.executable = this.executable || this.schema.executable({ log: msg => this.log.info(msg) });
-    const options = {
+    // https://www.apollographql.com/docs/apollo-server/setup.html
+    const options: GraphQLOptions = {
       schema: this.executable,
-      formatError: (err: any) => ({
-        message: err.message,
-        code: err.originalError && err.originalError.code,
-        locations: err.locations,
-        path: err.path,
-      }),
-      context: ctx as any,
+      context: () => ctx,
+      debug: true,
+      tracing: true,
+      formatError: (err: any) => {
+        err.code = err.originalError && err.originalError.code;
+        return err;
+      }
     };
-    const query = req.json || req.queryStringParameters;
-    const result: HttpResponse = { statusCode: null, body: null, headers: {} };
+    const httpReq: HttpQueryRequest = {
+      method: req.httpMethod,
+      options,
+      query: req.json || req.queryStringParameters,
+      request: {
+        url: req.path,
+        method: req.httpMethod,
+        headers: req.headers as any
+      }
+    };
     try {
-      result.body = await GraphQL.runHttpQuery([req, ctx], { method: req.httpMethod, options, query });
-      result.headers['Content-Type'] = 'application/json';
-      result.statusCode = 200;
+      const { graphqlResponse, responseInit } = await runHttpQuery([req, ctx], httpReq);
+      return {
+        statusCode: 200,
+        headers: responseInit.headers,
+        body: graphqlResponse
+      };
     } catch (error) {
-      if (error.name === 'HttpQueryError') throw error;
-      result.headers = error.headers;
-      result.statusCode = error.statusCode;
-      result.body = error.message;
+      if ('HttpQueryError' !== error.name) throw error;
+      return {
+        statusCode: 200, // error.statusCode;
+        headers: error.headers,
+        body: error.message
+      };
     }
-    return result;
   }
 
   protected async graphiql(req: HttpRequest, ctx: Context): Promise<string> {
