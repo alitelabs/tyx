@@ -26,7 +26,7 @@ export class ApiMetadata implements IApiMetadata {
   constructor(target: Class) {
     this.target = target;
     this.name = target.name;
-    this.alias = target.name.replace(/Api$/i, '');
+    this.alias = target.name; // .replace(/Api$/i, '');
   }
 
   public static has(target: Class | Prototype): boolean {

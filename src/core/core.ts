@@ -11,6 +11,7 @@ import { EventRequest, EventResult } from '../types/event';
 import { GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
+import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 
 export abstract class Core {
@@ -40,8 +41,12 @@ export abstract class Core {
 
   public static register(...args: Class[]) { }
 
-  public static init(application?: string, args?: Class[]): void {
+  public static init(application?: string, isPublic?: boolean): void;
+  public static init(application?: string, register?: Class[]): void;
+  public static init(application?: string, args?: Class[] | boolean): void {
     if (this.instance) return;
+
+    if (args === true) CoreGraphQL.makePublic();
 
     this.graphql = new CoreSchema(Metadata.validate());
     this.graphql.executable();

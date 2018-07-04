@@ -51,6 +51,12 @@ export class ExpressAdapter {
       // this.log.info("Add route: %s >> %s", hd, path);
       const baseRoute = `${httpMethod} ${path}`;
       if (used[baseRoute]) continue;
+
+      if (!meta.method.auth) {
+        this.log.info('Auth missing:', baseRoute);
+        continue;
+      }
+
       used[baseRoute] = true;
       if (this.basePath) path = this.basePath + path;
       paths.push([httpMethod, path]);

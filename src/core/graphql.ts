@@ -1,3 +1,4 @@
+import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { Activate, Inject, Service } from '../decorators/service';
 import { InternalServerError } from '../errors';
@@ -21,6 +22,14 @@ export class GraphQLApi {
 
 @Service(GraphQLApi.name)
 export class CoreGraphQL extends GraphQLApi {
+
+  public static makePublic() {
+    Public()(
+      CoreGraphQL.prototype,
+      'graphql',
+      Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'graphql')
+    );
+  }
 
   private log = Logger.get(this);
 
