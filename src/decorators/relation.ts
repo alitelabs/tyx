@@ -1,6 +1,7 @@
 import { Orm } from '../import';
 import { Metadata } from '../metadata/registry';
-import { JoinColumnOptions, RelationMetadata, RelationOptions, RelationType } from '../metadata/relation';
+// tslint:disable-next-line:max-line-length
+import { JoinColumnOptions, JoinTableMultipleColumnsOptions, JoinTableOptions, RelationMetadata, RelationOptions, RelationType } from '../metadata/relation';
 import { ObjectType } from '../types/core';
 
 // tslint:disable:function-name
@@ -86,7 +87,7 @@ export function ManyToMany<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey);
+    Metadata.trace(ManyToMany, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
@@ -104,6 +105,38 @@ export function JoinColumn(options?: JoinColumnOptions): PropertyDecorator {
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const col = Orm.JoinColumn(options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).addJoinColumn(options);
+    return col;
+  };
+}
+
+/**
+ * JoinTable decorator is used in many-to-many relationship to specify owner side of relationship.
+ * Its also used to set a custom junction table's name, column names and referenced columns.
+ */
+export function JoinTable(): PropertyDecorator;
+
+/**
+ * JoinTable decorator is used in many-to-many relationship to specify owner side of relationship.
+ * Its also used to set a custom junction table's name, column names and referenced columns.
+ */
+export function JoinTable(options: JoinTableOptions): PropertyDecorator;
+
+/**
+ * JoinTable decorator is used in many-to-many relationship to specify owner side of relationship.
+ * Its also used to set a custom junction table's name, column names and referenced columns.
+ */
+export function JoinTable(options: JoinTableMultipleColumnsOptions): PropertyDecorator;
+
+/**
+ * JoinTable decorator is used in many-to-many relationship to specify owner side of relationship.
+ * Its also used to set a custom junction table's name, column names and referenced columns.
+ */
+export function JoinTable(options?: JoinTableOptions | JoinTableMultipleColumnsOptions): PropertyDecorator {
+  return (target, propertyKey) => {
+    Metadata.trace(JoinTable, { options }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    const col = Orm.JoinTable(options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey).addJoinTable(options);
     return col;
   };
 }

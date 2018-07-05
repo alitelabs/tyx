@@ -7,6 +7,7 @@ export {
   UpdateDateColumn,
   VersionColumn,
   JoinColumn,
+  JoinTable,
   OneToOne,
   OneToMany,
   ManyToOne,

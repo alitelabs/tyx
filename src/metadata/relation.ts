@@ -81,6 +81,74 @@ export interface JoinColumnOptions {
   referencedColumnName?: string;
 }
 
+/**
+ * Describes join table options.
+ */
+export interface JoinTableOptions {
+  /**
+   * Name of the table that will be created to store values of the both tables (join table).
+   * By default is auto generated.
+   */
+  name?: string;
+
+  /**
+   * First column of the join table.
+   */
+  joinColumn?: JoinColumnOptions;
+
+  /**
+   * Second (inverse) column of the join table.
+   */
+  inverseJoinColumn?: JoinColumnOptions;
+
+  /**
+   * Database where join table will be created.
+   * Works only in some databases (like mysql and mssql).
+   */
+  // database?: string;
+
+  /**
+   * Schema where join table will be created.
+   * Works only in some databases (like postgres and mssql).
+   */
+  // schema?: string;
+}
+
+/**
+ * Describes all join table with multiple column options.
+ */
+export interface JoinTableMultipleColumnsOptions {
+
+  /**
+   * Name of the table that will be created to store values of the both tables (join table).
+   * By default is auto generated.
+   */
+  name?: string;
+
+  /**
+   * First column of the join table.
+   */
+  joinColumns?: JoinColumnOptions[];
+
+  /**
+   * Second (inverse) column of the join table.
+   */
+  inverseJoinColumns?: JoinColumnOptions[];
+
+  /**
+   * Database where join table will be created.
+   * Works only in some databases (like mysql and mssql).
+   */
+  // database?: string;
+
+  /**
+   * Schema where join table will be created.
+   * Works only in some databases (like postgres and mssql).
+   */
+  // schema?: string;
+
+}
+
 export interface IRelationMetadata<T = any> extends IFieldMetadata {
   target: Class;
   /**
@@ -169,6 +237,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
         this.ref = typeFunction;
         break;
       case RelationType.OneToMany:
+      case RelationType.ManyToMany:
         this.kind = GraphKind.Array;
         this.item = { kind: GraphKind.Ref, ref: typeFunction };
         break;
@@ -189,6 +258,10 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
 
   public addJoinColumn(options: JoinColumnOptions) {
     this.joinOptions.push(options);
+  }
+
+  public addJoinTable(options: JoinTableOptions | JoinTableMultipleColumnsOptions) {
+    // TODO: Implement
   }
 
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
