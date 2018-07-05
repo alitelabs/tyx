@@ -269,8 +269,15 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     this.joinColumns = this.joinOptions.map(opt => entity.members[opt.name] as ColumnMetadata);
     const inverseEntity = this.typeFunction();
     this.inverseEntityMetadata = database.entities.find(e => e.target === inverseEntity);
+    if (!this.inverseSide) {
+      throw new TypeError(`Missing inverse relation on ${this.relationType} `
+        + `[${entity.name}.${this.propertyName}] => [${inverseEntity.name}]`);
+    }
     this.inverseRelation = this.inverseSide(this.inverseEntityMetadata.members as any);
-    if (!(this.inverseRelation instanceof RelationMetadata)) throw new TypeError(`Invalid inverse relation`);
+    if (!(this.inverseRelation instanceof RelationMetadata)) {
+      throw new TypeError(`Invalid inverse relation on ${this.relationType} `
+        + `[${entity.name}.${this.propertyName}] => [${inverseEntity.name}]`);
+    }
     // TODO: More validations and optional inverse relation
     const key = `${entity.name}.${this.propertyName}`;
     Metadata.RelationMetadata[key] = this;
