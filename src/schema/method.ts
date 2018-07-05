@@ -21,9 +21,9 @@ export class HttpBindingMetadataSchema implements HttpBindingMetadata {
   @Field() path: string;
   @Field(String) binder: HttpBinder;
 
-  public static binder(obj: HttpBindingMetadata): string {
-    return obj.binder && `[function: ${obj.binder.toString()}]`;
-  }
+  public static RESOLVERS: SchemaResolvers<HttpBindingMetadata> = {
+    binder: (obj: HttpBindingMetadata) => obj.binder && `[function: ${obj.binder.toString()}]`
+  };
 }
 
 @Schema()
@@ -45,13 +45,10 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   // api: ApiMetadata;
   // method: MethodMetadata;
 
-  public static target(obj: HttpRouteMetadata, args: ResolverArgs): string {
-    return obj.target && `[class: ${obj.target.name}]`;
-  }
-
-  public static adapter(obj: HttpRouteMetadata): string {
-    return obj.adapter && `[function: ${obj.adapter.toString()}]`;
-  }
+  public static RESOLVERS: SchemaResolvers<HttpRouteMetadata> = {
+    target: (obj: HttpRouteMetadata, args: ResolverArgs) => obj.target && `[class: ${obj.target.name}]`,
+    adapter: (obj: HttpRouteMetadata) => obj.adapter && `[function: ${obj.adapter.toString()}]`
+  };
 }
 
 @Schema()
@@ -69,13 +66,10 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
   @Field() actionFilter: string;
   @Field(String) adapter: EventAdapter;
 
-  public static target(obj: EventRouteMetadata, args: ResolverArgs): string {
-    return obj.target && `[class: ${obj.target.name}]`;
-  }
-
-  public static adapter(obj: EventRouteMetadata): string {
-    return obj.adapter && `[function: ${obj.adapter.toString()}]`;
-  }
+  public static RESOLVERS: SchemaResolvers<EventRouteMetadata> = {
+    target: (obj: EventRouteMetadata, args: ResolverArgs) => obj.target && `[class: ${obj.target.name}]`,
+    adapter: (obj: EventRouteMetadata) => obj.adapter && `[function: ${obj.adapter.toString()}]`
+  };
 }
 
 @Schema()
