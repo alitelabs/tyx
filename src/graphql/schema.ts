@@ -1,6 +1,7 @@
-import { GraphQLError, GraphQLScalarType, GraphQLSchema } from 'graphql';
+import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
+import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -21,7 +22,7 @@ export { GraphQLSchema } from 'graphql';
 const ENTITY = '';
 const GET = '';
 const SEARCH = '';
-const ARGS = 'Args';
+const ARGS = '';
 const CREATE = 'create';
 const UPDATE = 'update';
 const REMOVE = 'remove';
@@ -126,7 +127,7 @@ export interface EnumSchema {
 
 export class CoreSchema {
 
-  // private static log: Logger = Logger.get('TYX', CoreSchema.name);
+  private static log: Logger = Logger.get('TYX', CoreSchema.name);
 
   public enums: Record<string, EnumSchema> = {};
   public metadata: Record<string, TypeSchema> = {};
@@ -177,10 +178,11 @@ export class CoreSchema {
         logger,
       });
     } catch (err) {
-      if (err instanceof GraphQLError && err.locations) {
-        const loc = err.locations.map(loc => JSON.stringify(loc)).join(',').replace(/"/g, '').replace(/,/g, ', ');
+      if (err.name === 'GraphQLError' && err.locations) {
+        const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
         err.message = err.message.replace('Error:', `Error: ${loc}`);
       }
+      CoreSchema.log.error(err);
       throw err;
     }
   }
@@ -349,13 +351,13 @@ export class CoreSchema {
     if (db.entities[name]) return db.entities[name];
 
     let model = `type ${name}${ENTITY} @entity {`;
-    let input = `Input @expression {`;
-    let nil = `Null @expression {`;
-    let multi = `Multi @expression {`;
-    let like = `Like @expression {`;
-    let order = `Order @expression {`;
-    let create = `Create @record {`;
-    let update = `Update @record {`;
+    let partial = `PartialExpr @expression {`;
+    let nil = `NullExpr @expression {`;
+    let multi = `MultiExpr @expression {`;
+    let like = `LikeExpr @expression {`;
+    let order = `OrderExpr @expression {`;
+    let create = `CreateRecord @record {`;
+    let update = `UpdateRecord @record {`;
     let keys = '';
     let cm = true;
     for (const col of metadata.columns) {
@@ -366,7 +368,7 @@ export class CoreSchema {
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
-      input += `${cm ? '' : ','}\n  ${pn}: ${dt}`;
+      partial += `${cm ? '' : ','}\n  ${pn}: ${dt}`;
       nil += `${cm ? '' : ','}\n  ${pn}: Boolean`;
       multi += `${cm ? '' : ','}\n  ${pn}: [${dt}!]`;
       like += `${cm ? '' : ','}\n  ${pn}: String`;
@@ -380,45 +382,45 @@ export class CoreSchema {
     // model += `,\n  _exclude: Boolean`;
     // model += `,\n  _debug: _DebugInfo`;
     const opers = [
-      `if: ${ARGS}${name}Input`,
-      `eq: ${ARGS}${name}Input`,
-      `ne: ${ARGS}${name}Input`,
-      `gt: ${ARGS}${name}Input`,
-      `gte: ${ARGS}${name}Input`,
-      `lt: ${ARGS}${name}Input`,
-      `lte: ${ARGS}${name}Input`,
-      `like: ${ARGS}${name}Like`,
-      `nlike: ${ARGS}${name}Like`,
-      `rlike: ${ARGS}${name}Like`,
-      `in: ${ARGS}${name}Multi`,
-      `nin: ${ARGS}${name}Multi`,
-      `not: ${ARGS}${name}Where`,
-      `nor: ${ARGS}${name}Where`,
-      `nil: ${ARGS}${name}Null`, // TODO
-      `and: [${ARGS}${name}Where]`,
-      `or: [${ARGS}${name}Where]`,
+      `if: ${ARGS}${name}PartialExpr`,
+      `eq: ${ARGS}${name}PartialExpr`,
+      `ne: ${ARGS}${name}PartialExpr`,
+      `gt: ${ARGS}${name}PartialExpr`,
+      `gte: ${ARGS}${name}PartialExpr`,
+      `lt: ${ARGS}${name}PartialExpr`,
+      `lte: ${ARGS}${name}PartialExpr`,
+      `like: ${ARGS}${name}LikeExpr`,
+      `nlike: ${ARGS}${name}LikeExpr`,
+      `rlike: ${ARGS}${name}LikeExpr`,
+      `in: ${ARGS}${name}MultiExpr`,
+      `nin: ${ARGS}${name}MultiExpr`,
+      `nil: ${ARGS}${name}NullExpr`, // TODO
+      `not: ${ARGS}${name}WhereExpr`,
+      `nor: ${ARGS}${name}WhereExpr`,
+      `and: [${ARGS}${name}WhereExpr]`,
+      `or: [${ARGS}${name}WhereExpr]`,
     ];
     let search = `\n    `
       + opers.join(',\n    ')
-      + `,\n    order: ${ARGS}${name}Order,`
+      + `,\n    order: ${ARGS}${name}OrderExpr,`
       + `\n    skip: Int,`
       + `\n    take: Int,`
       + `\n    exists: Boolean`;
-    const where = `Where @expression {\n  `
+    const where = `WhereExpr @expression {\n  `
       + opers.join(',\n  ');
-    const find = 'Query @expression {' + search;
-    search += `,\n    query: ${ARGS}${name}Query`;
+    const queryExpr = 'QueryExpr @expression {' + search;
+    search += `,\n    query: ${ARGS}${name}QueryExpr`;
 
-    const inputs = [create, update, input, find, where, nil, multi, like, order].map(x => `input ${ARGS}${name}${x}\n}`);
+    const inputs = [create, update, queryExpr, where, partial, nil, multi, like, order].map(x => `input ${ARGS}${name}${x}\n}`);
 
     let query = `type ${db.name} {\n`;
     query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
     query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${ENTITY}] @crud(auth: {})\n`;
     query += `}`;
     let mutation = 'type Mutation {\n';
-    mutation += `  ${db.name}_${CREATE}${name}(record: ${ARGS}${name}Create): ${name}${ENTITY} @crud(auth: {}),\n`;
-    mutation += `  ${db.name}_${UPDATE}${name}(record: $${ARGS}{name}Update): ${name}${ENTITY} @crud(auth: {}),\n`;
-    mutation += `  ${db.name}_${REMOVE}${name}(${keys}): ${ARGS}${name}${ENTITY} @crud(auth: {})\n`;
+    mutation += `  ${db.name}_${CREATE}${name}(record: ${ARGS}${name}CreateRecord): ${name}${ENTITY} @crud(auth: {}),\n`;
+    mutation += `  ${db.name}_${UPDATE}${name}(record: ${ARGS}${name}UpdateRecord): ${name}${ENTITY} @crud(auth: {}),\n`;
+    mutation += `  ${db.name}_${REMOVE}${name}(${keys}): ${name}${ENTITY} @crud(auth: {})\n`;
     mutation += '}';
 
     const schema: EntitySchema = {
@@ -584,7 +586,7 @@ export class CoreSchema {
       const name = method.resolver ? method.name : `${metadata.target.name}_${method.name}`;
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}): ${result.def}`;
+      const call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}!): ${result.def}`;
       const dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
       const meth: MethodSchema = {
         metadata: method,
