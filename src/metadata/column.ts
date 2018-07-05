@@ -309,7 +309,9 @@ export interface IColumnMetadata extends FieldMetadata {
    * Indicates if column is virtual. Virtual columns are not mapped to the entity.
    */
   isVirtual: boolean;
+
   isTransient?: boolean;
+  generateStrategy?: 'increment' | 'uuid';
 }
 
 export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
@@ -331,6 +333,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public isVersion: boolean;
   public isVirtual: boolean;
   public isTransient: boolean;
+  public generateStrategy: 'increment' | 'uuid';
 
   protected constructor(
     kind: GraphKind,
@@ -410,6 +413,11 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
     EntityMetadata.define(target.constructor).addColumn(meta);
     return meta;
+  }
+
+  public setGenerated(strategy?: 'increment' | 'uuid') {
+    this.isGenerated = true;
+    this.generateStrategy = strategy || 'uuid';
   }
 
   public commit(): void {

@@ -1,3 +1,4 @@
+import { NotImplemented } from '../errors';
 import { EntityManager, SelectQueryBuilder } from '../import/typeorm';
 import { EntityMetadata } from '../metadata/entity';
 import { RelationMetadata } from '../metadata/relation';
@@ -126,6 +127,17 @@ export class TypeOrmProvider implements EntityResolver {
     const keys: any = {};
     pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
     return this.prepareQuery(target, keys, query, context).getOne();
+  }
+
+  public manyToMany(
+    entity: EntityMetadata,
+    relation: RelationMetadata,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    context: ResolverContext,
+    info?: ResolverInfo
+  ): Promise<object> {
+    throw new NotImplemented('manyToMany not implemented');
   }
 
   public prepareQuery(

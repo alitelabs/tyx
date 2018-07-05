@@ -7,7 +7,8 @@ import { ObjectType } from '../types/core';
 
 export function OneToMany<T>(
   typeFunction: (type?: any) => ObjectType<T>,
-  inverseSide: (object: T) => any, options?: RelationOptions,
+  inverseSide: (object: T) => any,
+  options?: RelationOptions,
 ): PropertyDecorator {
   return (target, propertyKey) => {
     Metadata.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey);
@@ -35,7 +36,7 @@ export function ManyToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(ManyToOne, { inverseSide, options }, target, propertyKey);
+    Metadata.trace(ManyToOne, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
@@ -60,10 +61,35 @@ export function OneToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(OneToOne, { inverseSide, options }, target, propertyKey);
+    Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
     const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
     RelationMetadata.define(target, propertyKey).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
+    return rel;
+  };
+}
+
+export function ManyToMany<T>(
+  typeFunction: (type?: any) => ObjectType<T>,
+  options?: RelationOptions
+): PropertyDecorator;
+export function ManyToMany<T>(
+  typeFunction: (type?: any) => ObjectType<T>,
+  inverseSide?: (object: T) => any,
+  options?: RelationOptions
+): PropertyDecorator;
+export function ManyToMany<T>(
+  typeFunction: (type?: any) => ObjectType<T>,
+  inverseSideOrOptions?: ((object: T) => any) | RelationOptions,
+  orOptions?: RelationOptions
+): PropertyDecorator {
+  return (target, propertyKey) => {
+    const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
+    const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
+    Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
     return rel;
   };
 }

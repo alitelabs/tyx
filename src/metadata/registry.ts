@@ -1,3 +1,4 @@
+import { Logger } from '../logger';
 import { Class } from '../types/core';
 import * as Utils from '../utils/misc';
 import { ApiMetadata } from './api';
@@ -50,6 +51,10 @@ export interface MetadataRegistry {
 
 // tslint:disable:variable-name
 export abstract class Metadata implements MetadataRegistry {
+
+  private static log: Logger = Logger.get('TYX', Metadata.name);
+  private static validated: boolean = false;
+
   public static readonly DESIGN_TYPE = 'design:type';
   public static readonly DESIGN_PARAMS = 'design:paramtypes';
   public static readonly DESIGN_RETURN = 'design:returntype';
@@ -145,7 +150,13 @@ export abstract class Metadata implements MetadataRegistry {
     return reg as any;
   }
 
-  public static validate(): MetadataRegistry {
+  public static isValidated(): boolean {
+    return this.validated;
+  }
+
+  public static validate(force?: boolean): MetadataRegistry {
+    if (this.validated && !force) return this.get();
+
     const metadata: Record<string, TypeMetadata> = {};
     const entities: Record<string, TypeMetadata> = {};
     const inputs: Record<string, TypeMetadata> = {};
@@ -154,8 +165,16 @@ export abstract class Metadata implements MetadataRegistry {
     for (const type of Object.values(this.RegistryMetadata)) {
       this.resolve(type, GraphKind.Metadata, metadata);
     }
-    // Entities
+    // Databases & Entities
+    for (const db of Object.values(this.DatabaseMetadata)) {
+      for (const type of Object.values(db.entities)) {
+        this.resolve(type, GraphKind.Entity, entities);
+      }
+    }
+    // Resolve unbound entites
     for (const type of Object.values(this.EntityMetadata)) {
+      if (entities[type.name]) continue;
+      this.log.warn(`Unbound entity type [${type.name}]`);
       this.resolve(type, GraphKind.Entity, entities);
     }
     // API
@@ -175,7 +194,9 @@ export abstract class Metadata implements MetadataRegistry {
     for (const type of Object.values(this.TypeMetadata)) {
       this.resolve(type, GraphKind.Type, types);
     }
-    return Metadata.get();
+
+    this.validated = true;
+    return this.get();
   }
 
   private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {

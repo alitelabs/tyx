@@ -39,6 +39,9 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field() isVersion: boolean;
   @Field() isVirtual: boolean;
 
+  @Field() isTransient: boolean;
+  @Field() generateStrategy: 'increment' | 'uuid';
+
   public static RESOLVERS: SchemaResolvers<IColumnMetadata> = {
     target: obj => Utils.value(obj.target),
   };

@@ -48,8 +48,7 @@ export abstract class Core {
 
     if (args === true) CoreGraphQL.makePublic();
 
-    this.graphql = new CoreSchema(Metadata.validate());
-    this.graphql.executable();
+    this.schema.executable();
 
     this.application = this.application || application || 'Core';
     this.instance = new CoreInstance(this.application, Core.name);

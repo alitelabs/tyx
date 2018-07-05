@@ -22,6 +22,7 @@ export * from './metadata/type';
 export * from './metadata/entity';
 export * from './metadata/column';
 export * from './metadata/relation';
+export * from './metadata/indexes';
 export * from './metadata/database';
 export * from './metadata/registry';
 
@@ -38,6 +39,7 @@ export * from './decorators/type';
 export * from './decorators/entity';
 export * from './decorators/column';
 export * from './decorators/relation';
+export * from './decorators/indexes';
 export * from './decorators/database';
 export * from './decorators/exception';
 

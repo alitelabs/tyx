@@ -1,7 +1,6 @@
-import { GraphQLScalarType, GraphQLSchema } from 'graphql';
+import { GraphQLError, GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
-import { QueryVisitor, RelationVisitor } from '../graphql/visitors';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -12,13 +11,17 @@ import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/
 import '../schema/registry';
 import { SchemaResolver } from './types';
 import { back, scalar } from './utils';
+import { QueryVisitor, RelationVisitor } from './visitors';
+
 import GraphQLJSON = require('graphql-type-json');
+import FS = require('fs');
 
 export { GraphQLSchema } from 'graphql';
 
 const ENTITY = '';
 const GET = '';
 const SEARCH = '';
+const ARGS = 'Args';
 const CREATE = 'create';
 const UPDATE = 'update';
 const REMOVE = 'remove';
@@ -52,7 +55,7 @@ const DIRECTIVES = {
   // entity: ToolkitVisitor,
   // column: RelationVisitor,
   query: QueryVisitor,
-  relation: RelationVisitor,
+  relation: RelationVisitor
 };
 
 export interface DatabaseSchema {
@@ -78,6 +81,7 @@ export interface EntitySchema {
   inputs: string[];
   search: string;
   simple: string;
+  // TODO: Remove
   relations: Record<string, { target: string, type: string }>;
 
   resolvers: Record<string, SchemaResolver>;
@@ -121,6 +125,9 @@ export interface EnumSchema {
 }
 
 export class CoreSchema {
+
+  // private static log: Logger = Logger.get('TYX', CoreSchema.name);
+
   public enums: Record<string, EnumSchema> = {};
   public metadata: Record<string, TypeSchema> = {};
   public databases: Record<string, DatabaseSchema> = {};
@@ -142,6 +149,11 @@ export class CoreSchema {
     for (const type of Object.values(registry.DatabaseMetadata)) {
       this.genDatabase(type);
     }
+    // Unbound entites as types
+    for (const type of Object.values(registry.EntityMetadata)) {
+      if (this.entities[type.name]) continue;
+      this.genType(type, this.types);
+    }
     // Inputs
     for (const type of Object.values(registry.InputMetadata)) {
       this.genType(type, this.inputs);
@@ -157,12 +169,20 @@ export class CoreSchema {
   }
 
   public executable(logger?: ILogger): GraphQLSchema {
-    return makeExecutableSchema({
-      typeDefs: this.typeDefs(),
-      resolvers: this.resolvers(),
-      schemaDirectives: DIRECTIVES,
-      logger,
-    });
+    try {
+      return makeExecutableSchema({
+        typeDefs: this.typeDefs(),
+        resolvers: this.resolvers(),
+        schemaDirectives: DIRECTIVES,
+        logger,
+      });
+    } catch (err) {
+      if (err instanceof GraphQLError && err.locations) {
+        const loc = err.locations.map(loc => JSON.stringify(loc)).join(',').replace(/"/g, '').replace(/,/g, ', ');
+        err.message = err.message.replace('Error:', `Error: ${loc}`);
+      }
+      throw err;
+    }
   }
 
   public static prolog(): string {
@@ -205,7 +225,8 @@ export class CoreSchema {
             enum RelationType {
               OneToOne,
               OneToMany,
-              ManyToOne
+              ManyToOne,
+              ManyToMany
             }
             ${Object.values(this.enums).sort((a, b) => a.name.localeCompare(b.name)).map(m => m.model).join('\n')}
       `).trimLeft()
@@ -333,9 +354,9 @@ export class CoreSchema {
     let multi = `Multi @expression {`;
     let like = `Like @expression {`;
     let order = `Order @expression {`;
-    let keys = '';
     let create = `Create @record {`;
     let update = `Update @record {`;
+    let keys = '';
     let cm = true;
     for (const col of metadata.columns) {
       if (col.isTransient) continue;
@@ -359,45 +380,45 @@ export class CoreSchema {
     // model += `,\n  _exclude: Boolean`;
     // model += `,\n  _debug: _DebugInfo`;
     const opers = [
-      `if: ${name}Input`,
-      `eq: ${name}Input`,
-      `ne: ${name}Input`,
-      `gt: ${name}Input`,
-      `gte: ${name}Input`,
-      `lt: ${name}Input`,
-      `lte: ${name}Input`,
-      `like: ${name}Like`,
-      `nlike: ${name}Like`,
-      `rlike: ${name}Like`,
-      `in: ${name}Multi`,
-      `nin: ${name}Multi`,
-      `not: ${name}Where`,
-      `nor: ${name}Where`,
-      `nil: ${name}Null`, // TODO
-      `and: [${name}Where]`,
-      `or: [${name}Where]`,
+      `if: ${ARGS}${name}Input`,
+      `eq: ${ARGS}${name}Input`,
+      `ne: ${ARGS}${name}Input`,
+      `gt: ${ARGS}${name}Input`,
+      `gte: ${ARGS}${name}Input`,
+      `lt: ${ARGS}${name}Input`,
+      `lte: ${ARGS}${name}Input`,
+      `like: ${ARGS}${name}Like`,
+      `nlike: ${ARGS}${name}Like`,
+      `rlike: ${ARGS}${name}Like`,
+      `in: ${ARGS}${name}Multi`,
+      `nin: ${ARGS}${name}Multi`,
+      `not: ${ARGS}${name}Where`,
+      `nor: ${ARGS}${name}Where`,
+      `nil: ${ARGS}${name}Null`, // TODO
+      `and: [${ARGS}${name}Where]`,
+      `or: [${ARGS}${name}Where]`,
     ];
     let search = `\n    `
       + opers.join(',\n    ')
-      + `,\n    order: ${name}Order,`
+      + `,\n    order: ${ARGS}${name}Order,`
       + `\n    skip: Int,`
       + `\n    take: Int,`
       + `\n    exists: Boolean`;
     const where = `Where @expression {\n  `
       + opers.join(',\n  ');
     const find = 'Query @expression {' + search;
-    search += `,\n    query: ${name}Query`;
+    search += `,\n    query: ${ARGS}${name}Query`;
 
-    const inputs = [create, update, input, find, where, nil, multi, like, order].map(x => `input ${name}${x}\n}`);
+    const inputs = [create, update, input, find, where, nil, multi, like, order].map(x => `input ${ARGS}${name}${x}\n}`);
 
     let query = `type ${db.name} {\n`;
     query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
     query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${ENTITY}] @crud(auth: {})\n`;
     query += `}`;
     let mutation = 'type Mutation {\n';
-    mutation += `  ${db.name}_${CREATE}${name}(record: ${name}Create): ${name}${ENTITY} @crud(auth: {}),\n`;
-    mutation += `  ${db.name}_${UPDATE}${name}(record: ${name}Update): ${name}${ENTITY} @crud(auth: {}),\n`;
-    mutation += `  ${db.name}_${REMOVE}${name}(${keys}): ${name}${ENTITY} @crud(auth: {})\n`;
+    mutation += `  ${db.name}_${CREATE}${name}(record: ${ARGS}${name}Create): ${name}${ENTITY} @crud(auth: {}),\n`;
+    mutation += `  ${db.name}_${UPDATE}${name}(record: $${ARGS}{name}Update): ${name}${ENTITY} @crud(auth: {}),\n`;
+    mutation += `  ${db.name}_${REMOVE}${name}(${keys}): ${ARGS}${name}${ENTITY} @crud(auth: {})\n`;
     mutation += '}';
 
     const schema: EntitySchema = {
@@ -452,8 +473,12 @@ export class CoreSchema {
         const args = ` (${temp.search}\n  )`;
         model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
         navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(metadata, relation, obj, args, ctx, info);
-      } else {
-        continue; // TODO: Implement
+      } else if (relation.relationType === RelationType.ManyToMany) {
+        rm.type = 'manyToMany';
+        const temp = this.genEntity(db, relation.inverseEntityMetadata);
+        const args = ` (${temp.search}\n  )`;
+        model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: ManyToMany)`;
+        navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToMany(metadata, relation, obj, args, ctx, info);
       }
     }
     for (const col of metadata.columns) {
@@ -588,5 +613,9 @@ export class CoreSchema {
     }
     this.apis[api.api] = api;
     return api;
+  }
+
+  public write(file: string) {
+    FS.writeFileSync(file, this.typeDefs());
   }
 }

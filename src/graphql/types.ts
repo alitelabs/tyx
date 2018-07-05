@@ -79,6 +79,7 @@ export interface EntityResolver {
   oneToMany: RelationResolver;
   oneToOne: RelationResolver;
   manyToOne: RelationResolver;
+  manyToMany: RelationResolver;
 }
 
 export interface MutationResolver {

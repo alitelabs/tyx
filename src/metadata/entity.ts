@@ -1,6 +1,6 @@
 import { Class, Prototype } from '../types/core';
 import { ColumnMetadata, IColumnMetadata } from './column';
-import { DatabaseMetadata } from './database';
+import { DatabaseMetadata, IDatabaseMetadata } from './database';
 import { Metadata } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { GraphKind, ITypeMetadata, TypeMetadata } from './type';
@@ -35,6 +35,7 @@ export interface EntityOptions {
 }
 
 export interface IEntityMetadata extends ITypeMetadata {
+  database: IDatabaseMetadata;
   target: Class;
   /**
    * Entity's name.
@@ -57,6 +58,7 @@ export interface IEntityMetadata extends ITypeMetadata {
 }
 
 export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
+  public database: DatabaseMetadata = null;
   public columns: ColumnMetadata[] = [];
   public primaryColumns: ColumnMetadata[] = [];
   public relations: RelationMetadata<any>[] = [];
@@ -107,6 +109,7 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
   }
 
   public resolve(database: DatabaseMetadata): void {
+    this.database = database;
     this.columns.forEach(col => col.resolve(database, this));
     this.relations.forEach(rel => rel.resolve(database, this));
   }

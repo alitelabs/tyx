@@ -5,7 +5,7 @@ import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { Metadata } from './registry';
-import { IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
+import { GraphKind, IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
 
 export enum HttpBindingType {
   PathParam = 'PathParam',
@@ -204,26 +204,27 @@ export class MethodMetadata implements IMethodMetadata {
 
   public setQuery(input?: InputType, result?: ResultType, select?: Select): this {
     this.query = true;
-    this.input = InputMetadata.of(input);
-    this.result = ResultMetadata.of(result);
-    this.select = select;
-    return this;
+    return this.setSignature(input, result, select);
   }
 
   public setMutation(input?: InputType, result?: ResultType, select?: Select): this {
     this.mutation = true;
-    this.input = InputMetadata.of(input);
-    this.result = ResultMetadata.of(result);
-    this.select = select;
-    return this;
+    return this.setSignature(input, result, select);
   }
 
   public setResolver(type: Class, input?: InputType, result?: ResultType, select?: Select): this {
     this.resolver = true;
     this.host = type;
+    return this.setSignature(input, result, select);
+  }
+
+  private setSignature(input?: InputType, result?: ResultType, select?: Select): this {
     this.input = InputMetadata.of(input);
     this.result = ResultMetadata.of(result);
     this.select = select;
+    if (this.design && this.design.length === 1 && !GraphKind.isVoid(this.input.kind)) {
+      throw new TypeError(`Invalid input kind [${this.input.kind}], method [${this.target.name}.${this.name}] has no parameters`);
+    }
     return this;
   }
 

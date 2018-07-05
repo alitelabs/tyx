@@ -1,6 +1,7 @@
 export {
   Entity,
   Column,
+  Generated,
   PrimaryColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -10,6 +11,8 @@ export {
   OneToMany,
   ManyToOne,
   ManyToMany,
+  Index,
+  Unique
 } from 'typeorm';
 
 export {
@@ -19,5 +22,5 @@ export {
   SelectQueryBuilder, createConnection,
   getConnection,
   Repository,
-  useContainer,
+  useContainer
 } from 'typeorm';

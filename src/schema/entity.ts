@@ -4,12 +4,14 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
+import { IDatabaseMetadata } from '../metadata/database';
 import { IEntityMetadata } from '../metadata/entity';
 import { IRelationMetadata } from '../metadata/relation';
 import { GraphKind, IFieldMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
+import { DatabaseMetadataSchema } from './database';
 import { RelationMetadataSchema } from './relation';
 import { FieldMetadataSchema } from './type';
 
@@ -18,6 +20,7 @@ export class EntityMetadataSchema implements IEntityMetadata {
   @Field(String) kind: GraphKind;
   @Field(String) target: Class;
   @Field() name: string;
+  @Field(ref => DatabaseMetadataSchema) database: IDatabaseMetadata;
   @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
   @Field(list => [ColumnMetadataSchema]) columns: IColumnMetadata[];
   @Field(list => [ColumnMetadataSchema]) primaryColumns: IColumnMetadata[];

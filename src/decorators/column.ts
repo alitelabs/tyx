@@ -6,6 +6,18 @@ import { Enum } from './type';
 
 // tslint:disable:function-name
 
+export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
+  return (target, propertyKey) => {
+    Metadata.trace(Column, { strategy }, target, propertyKey);
+    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+    const col = Orm.Generated(strategy || 'uuid')(target, propertyKey);
+    const meta = ColumnMetadata.get(target, propertyKey);
+    if (!meta) throw new TypeError(`Column decorator must be applied first on ${target.constructor.name}.${propertyKey}`);
+    meta.setGenerated(strategy);
+    return col;
+  };
+}
+
 export function Column(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
     Metadata.trace(Column, { options }, target, propertyKey);
