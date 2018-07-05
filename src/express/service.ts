@@ -1,11 +1,11 @@
 
 import { Server } from 'http';
-import { BaseService } from '../core/service';
+import { Release } from '../decorators/service';
 import { Aws, Express } from '../import';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
 
-export abstract class ExpressService extends BaseService {
+export abstract class ExpressService {
 
   private server: Server;
 
@@ -36,9 +36,9 @@ export abstract class ExpressService extends BaseService {
 
   protected abstract setup(app: Express.Express, ctx: Context, req: HttpRequest): void;
 
+  @Release()
   public async release(): Promise<void> {
     if (this.server) this.server.close();
     this.server = undefined;
   }
-
 }
