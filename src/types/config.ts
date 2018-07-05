@@ -36,6 +36,8 @@ export interface Configuration {
   database: string;
 
   logLevel: LogLevel;
+  tracing: boolean;
+
   resources: Record<string, string>;
   aliases: Record<string, string>;
 
