@@ -28,6 +28,8 @@ export class CoreConfiguration implements Configuration {
 
   get database(): string { return this.config.DATABASE; }
 
+  get tracing(): boolean { return this.config.TRACING === 'true'; }
+
   get logLevel(): LogLevel {
     switch (this.config.LOG_LEVEL) {
       case 'ALL': return LogLevel.ALL;

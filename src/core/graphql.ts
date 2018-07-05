@@ -76,7 +76,7 @@ export class CoreGraphQL extends GraphQLApi {
       schema: this.executable,
       context: () => ctx,
       debug: true,
-      tracing: true,
+      tracing: this.config.tracing,
       formatError: (err: any) => {
         err.code = err.originalError && err.originalError.code;
         return err;
