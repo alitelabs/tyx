@@ -85,9 +85,16 @@ export abstract class Core {
   public static async activate(): Promise<CoreInstance> {
     this.init();
     if (this.options) {
-      if (!this.connection) this.connection = await createConnection(this.options);
-      if (!this.connection.isConnected) await this.connection.connect();
+      if (!this.connection) {
+        this.connection = await createConnection(this.options);
+        this.log.info('Connection created');
+      }
+      if (!this.connection.isConnected) {
+        await this.connection.connect();
+        this.log.info('Connected');
+      }
     }
+
     let instance = this.pool.find(x => x.state === ContainerState.Ready);
     if (!instance) {
       instance = new CoreInstance(this.application, Core.name, this.counter++);
@@ -137,7 +144,10 @@ export abstract class Core {
   }
 
   private static async release() {
-    if (!this.server && this.connection) await this.connection.close();
+    if (!this.server && this.connection) {
+      await this.connection.close();
+      this.log.info('Connection closed');
+    }
   }
 
   public static lambda(): LambdaHandler {
