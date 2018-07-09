@@ -79,7 +79,7 @@ export abstract class Core {
   public static async get<T>(api: ObjectType<T> | string): Promise<T>;
   public static async get<T = any>(api?: ObjectType<T> | string): Promise<T | CoreInstance> {
     const ins = await this.activate();
-    return api ? ins : ins.get(api);
+    return api ? ins.get(api) : ins;
   }
 
   public static async activate(): Promise<CoreInstance> {
