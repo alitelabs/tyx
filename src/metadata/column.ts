@@ -337,18 +337,21 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
 
   protected constructor(
     kind: GraphKind,
-    design: DesignMetadata,
     target: Class,
     propertyKey: string,
-    mode: ColumnMode, options: ColumnOptions
+    design: DesignMetadata,
+    ref: Class,
+    mode: ColumnMode,
+    options: ColumnOptions
   ) {
     super();
     const state: IColumnMetadata = {
       kind,
       target,
+      design,
+      ref,
       name: propertyKey,
       required: options.primary || !options.nullable,
-      design,
       build: undefined,
 
       entityMetadata: undefined,
@@ -391,6 +394,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     if (meta) throw new TypeError(`Duplicate column decoration on [${propertyKey}]`);
     const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, target, propertyKey);
     let kind: GraphKind;
+    let ref: Class;
     if (mode === ColumnMode.Transient) {
       const vt = VarMetadata.of(type || design, !type);
       if (!vt) {
@@ -398,14 +402,16 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
           + `[${design && design.name}] not in [String, Number, Boolean, Date]`);
       }
       kind = vt.kind;
+      ref = vt.ref;
     } else {
       kind = ColumnType.kind(options.type, options.width);
     }
     meta = new ColumnMetadata(
       kind,
-      design && { type: design.name, target: design },
       target.constructor,
       propertyKey,
+      design && { type: design.name, target: design },
+      ref,
       mode,
       options
     );

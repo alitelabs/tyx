@@ -363,7 +363,7 @@ export class CoreSchema {
     for (const col of metadata.columns) {
       if (col.isTransient) continue;
       const pn = col.propertyName;
-      let dt = col.kind;
+      let dt = col.build.def;
       let nl = col.required ? '!' : '';
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
@@ -487,7 +487,7 @@ export class CoreSchema {
       if (!col.isTransient) continue;
       const pn = col.propertyName;
       const nl = col.required ? '!' : '';
-      model += `${cm ? '' : ','}\n  ${pn}: ${col.kind}${nl} @transient`;
+      model += `${cm ? '' : ','}\n  ${pn}: ${col.build.def}${nl} @transient`;
     }
     model += '\n}';
     simple += '\n}';
