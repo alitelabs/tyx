@@ -28,11 +28,9 @@
   "scripts": {
     "clean": "rm -rf ./lib",
     "prebuild": "rm -rf ./lib",
-    "build": "tsc -p .",
+    "build": "tsc -p . && tslint -p .",
     "watch": "rm -rf ./lib ; tsc -p . --watch",
-    "lint": "tslint -p .",
-    "link": "npm link",
-    "global": "npm install -g ts-node typeorm typescript gulp serverless tslint"
+    "prepublish": "npm run build && npm version patch && git push --follow-tags" 
   },
   "voyagerVersion": "latest",
   "clientDependencies": {
