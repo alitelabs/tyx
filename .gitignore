@@ -5,6 +5,8 @@ lib/
 **/*.js
 **/*.js.map
 **/.DS_Store
+package/
+*.tgz
 .DS_Store
 !gulpfile.js
 !samples/**/public/**/*

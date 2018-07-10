@@ -30,7 +30,7 @@
     "prebuild": "rm -rf ./lib",
     "build": "tsc -p . && tslint -p .",
     "watch": "rm -rf ./lib ; tsc -p . --watch",
-    "release": "npm run build && npm version patch && git push --follow-tags"
+    "release": "npm run build && npm version patch && git push --follow-tags && npm publish"
   },
   "voyagerVersion": "latest",
   "clientDependencies": {
