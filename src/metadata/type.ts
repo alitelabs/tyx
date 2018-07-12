@@ -82,6 +82,29 @@ export namespace GraphKind {
         return null;
     }
   }
+  export function toIDL(type: GraphKind | string): string {
+    switch (type) {
+      case GraphKind.ID:
+      case GraphKind.String:
+        return 'string';
+      case GraphKind.Int:
+      case GraphKind.Float:
+        return 'number';
+      case GraphKind.Boolean:
+        return 'boolean';
+      case GraphKind.Date:
+      case GraphKind.DateTime:
+      case GraphKind.Timestamp:
+        return 'Date';
+      case GraphKind.Object:
+      case GraphKind.ANY:
+        return 'any';
+      case GraphKind.Void:
+        return 'void';
+      default:
+        return null;
+    }
+  }
   export function toVar(type: GraphKind | string): VarType {
     switch (type) {
       case GraphKind.ID:
@@ -186,17 +209,20 @@ export interface IVarMetadata {
   item?: IVarMetadata;
   ref?: Class;
   build?: IVarMetadata;
-  def?: string;
+  def?: never;
+  gql?: string;
   js?: string;
+  idl?: string;
 }
 
-export abstract class VarMetadata {
+export abstract class VarMetadata implements IVarMetadata {
   public kind: GraphKind;
   public item?: VarMetadata;
   public ref?: Class;
   public build?: VarMetadata;
-  public def?: string;
+  public gql?: string;
   public js?: string;
+  public idl?: string;
 
   public static readonly DESIGN_TYPES: any[] = [String, Number, Boolean, Date];
 
@@ -369,8 +395,9 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   public item?: never;
   public build?: never;
 
-  public def?: string;
+  public gql?: string;
   public js?: string;
+  public idl?: string;
 
   constructor(target: Class) {
     super();

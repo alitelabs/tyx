@@ -363,7 +363,7 @@ export class CoreSchema {
     for (const col of metadata.columns) {
       if (col.isTransient) continue;
       const pn = col.propertyName;
-      let dt = col.build.def;
+      let dt = col.build.gql;
       let nl = col.required ? '!' : '';
       if (pn.endsWith('Id')) dt = GraphKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
@@ -487,7 +487,7 @@ export class CoreSchema {
       if (!col.isTransient) continue;
       const pn = col.propertyName;
       const nl = col.required ? '!' : '';
-      model += `${cm ? '' : ','}\n  ${pn}: ${col.build.def}${nl} @transient`;
+      model += `${cm ? '' : ','}\n  ${pn}: ${col.build.gql}${nl} @transient`;
     }
     model += '\n}';
     simple += '\n}';
@@ -526,7 +526,7 @@ export class CoreSchema {
 
     const struc = metadata as TypeMetadata;
     if (reg[struc.name]) return reg[struc.name];
-    if (this.entities[struc.def]) return this.entities[struc.def];
+    if (this.entities[struc.gql]) return this.entities[struc.gql];
 
     if (!GraphKind.isStruc(struc.kind) || !struc.members) {
       throw new TypeError(`Empty type difinition ${struc.target}`);
@@ -557,12 +557,12 @@ export class CoreSchema {
       const type = member.build;
       const doc = GraphKind.isVoid(member.kind) ? '# ' : '';
       if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
-        const sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.def];
-        const args = (sch && sch.params) ? `(\n${reg[type.item.def].params}\n  )` : '';
-        schema.model += `  ${doc}${member.name}${args}: ${type.def}\n`;
+        const sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.gql];
+        const args = (sch && sch.params) ? `(\n${reg[type.item.gql].params}\n  )` : '';
+        schema.model += `  ${doc}${member.name}${args}: ${type.gql}\n`;
       } else {
         const nl = member.required ? '!' : '';
-        schema.model += `  ${doc}${member.name}: ${type.def}${nl}\n`;
+        schema.model += `  ${doc}${member.name}: ${type.gql}${nl}\n`;
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) schema.resolvers[member.name] = resolvers[member.name];
@@ -586,7 +586,7 @@ export class CoreSchema {
       const name = method.resolver ? method.name : `${metadata.target.name}_${method.name}`;
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const call = GraphKind.isVoid(input.kind) ? `: ${result.def}` : `(${arg}: ${input.def}!): ${result.def}`;
+      const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
       const dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
       const meth: MethodSchema = {
         metadata: method,

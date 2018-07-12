@@ -94,7 +94,7 @@ export class AngularCodeGen {
       const result = method.result.build;
       const param = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const jsArg = (GraphKind.isVoid(input.kind) ? '' : `${param}: ${input.js}`);
-      const reqArg = (GraphKind.isVoid(input.kind) ? '' : `($${param}: ${input.def}!)`);
+      const reqArg = (GraphKind.isVoid(input.kind) ? '' : `($${param}: ${input.gql}!)`);
       const qlArg = (GraphKind.isVoid(input.kind) ? '' : `(${param}: $${param})`);
       const action = method.mutation ? 'mutate' : 'query';
       if (method.mutation) {

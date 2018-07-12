@@ -202,17 +202,38 @@ export abstract class Metadata implements MetadataRegistry {
   private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {
     if (GraphKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
-      metadata.def = e.name;
+      metadata.gql = e.name;
       metadata.js = e.name;
+      metadata.idl = e.name;
       return metadata;
     }
     if (GraphKind.isScalar(metadata.kind)) {
-      return VarMetadata.on({ kind: metadata.kind, def: metadata.kind, js: GraphKind.toJS(metadata.kind) });
+      return VarMetadata.on({
+        kind: metadata.kind,
+        gql: metadata.kind,
+        js: GraphKind.toJS(metadata.kind),
+        idl: GraphKind.toIDL(metadata.kind)
+      });
     }
     if (GraphKind.isArray(metadata.kind)) {
       const item = this.resolve(metadata.item, scope, reg);
-      if (item) return VarMetadata.on({ kind: GraphKind.Array, item, def: `[${item.def}]`, js: `${item.js}[]` });
-      return VarMetadata.on({ kind: GraphKind.Array, item, def: `[${GraphKind.Object}]`, js: `any[]` });
+      if (item) {
+        return VarMetadata.on({
+          kind: GraphKind.Array,
+          item, gql: `[${item.gql}]`,
+          js: `${item.js}[]`,
+          idl: `${item.idl}`
+        });
+        // tslint:disable-next-line:no-else-after-return
+      } else {
+        return VarMetadata.on({
+          kind: GraphKind.Array,
+          item,
+          gql: `[${GraphKind.Object}]`,
+          js: `any[]`,
+          idl: `${item.idl}`
+        });
+      }
     }
     if (GraphKind.isRef(metadata.kind)) {
       let type: VarMetadata = undefined;
@@ -236,7 +257,12 @@ export abstract class Metadata implements MetadataRegistry {
         } else if (meta) {
           type = this.resolve(meta, scope, reg);
         } else {
-          type = VarMetadata.on({ kind: GraphKind.Object, def: GraphKind.Object, js: 'any' });
+          type = VarMetadata.on({
+            kind: GraphKind.Object,
+            gql: GraphKind.Object,
+            js: 'any',
+            idl: '?ANY?'
+          });
         }
       } else {
         throw Error('Internal registry error');
@@ -270,8 +296,9 @@ export abstract class Metadata implements MetadataRegistry {
     }
 
     // Resolve structure
-    struc.def = struc.name;
+    struc.gql = struc.name;
     struc.js = struc.name;
+    struc.idl = struc.name;
     reg[struc.name] = struc;
     for (const member of Object.values(struc.members)) {
       member.build = this.resolve(member, scope, reg);
