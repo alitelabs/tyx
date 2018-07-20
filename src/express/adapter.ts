@@ -25,7 +25,7 @@ export class ExpressAdapter {
     if (this.app) return this.app;
 
     this.app = Express.Create();
-    this.app.use(Express.BodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8' }));
+    this.app.use(Express.BodyParser.text({ limit: '50mb', type: ['*/json', 'text/*'], defaultCharset: 'utf-8' }));
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
