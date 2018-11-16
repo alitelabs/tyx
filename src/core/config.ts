@@ -64,6 +64,8 @@ export class CoreConfiguration implements Configuration {
 
   get httpLifetime(): string { return this.config.HTTP_LIFETIME || '1h'; }
 
+  get httpStrictIpCheck(): string { return this.config.HTTP_STRICT_IP_CHECK || 'false'; }
+
   get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
 
   get internalTimeout(): string { return this.config.INTERNAL_TIMEOUT || '5s'; }
