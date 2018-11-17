@@ -71,10 +71,9 @@ export class CoreGraphQL extends GraphQLApi {
 
   private async request(req: HttpRequest, ctx: Context): Promise<HttpResponse> {
     this.executable = this.executable || this.schema.executable({ log: msg => this.log.info(msg) });
-    // https://www.apollographql.com/docs/apollo-server/setup.html
     const options: GraphQLOptions = {
       schema: this.executable,
-      context: () => ctx,
+      context: ctx,
       debug: true,
       tracing: this.config.tracing,
       formatError: (err: any) => {
