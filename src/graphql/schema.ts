@@ -129,6 +129,8 @@ export class CoreSchema {
 
   private static log: Logger = Logger.get('TYX', CoreSchema.name);
 
+  private crud: boolean;
+
   public enums: Record<string, EnumSchema> = {};
   public metadata: Record<string, TypeSchema> = {};
   public databases: Record<string, DatabaseSchema> = {};
@@ -137,7 +139,9 @@ export class CoreSchema {
   public entities: Record<string, EntitySchema> = {};
   public apis: Record<string, ApiSchema> = {};
 
-  constructor(registry: MetadataRegistry) {
+  constructor(registry: MetadataRegistry, crud: boolean) {
+    this.crud = crud;
+
     // Enums
     for (const type of Object.values(registry.EnumMetadata)) {
       this.enums[type.name] = this.genEnum(type);
@@ -259,8 +263,8 @@ export class CoreSchema {
           + db.model + '\n'
           + Object.values(db.entities).map((e) => {
             return `\n# -- Entity: ${e.metadata.name} --\n`
-              + `extend ${e.query}\n`
-              + `extend ${e.mutation}\n`
+              + (e.query ? `extend ${e.query}\n` : '')
+              + (e.mutation ? `extend ${e.mutation}\n` : '')
               + `${e.model}\n${e.inputs.join('\n')}`;
           });
       }).join('\n')
@@ -411,12 +415,18 @@ export class CoreSchema {
     const queryExpr = 'QueryExpr @expression {' + search;
     search += `,\n    query: ${ARGS}${name}QueryExpr`;
 
-    const inputs = [create, update, queryExpr, where, partial, nil, multi, like, order].map(x => `input ${ARGS}${name}${x}\n}`);
+    const temp = [queryExpr, where, partial, nil, multi, like, order];
+    if (this.crud) {
+      temp.push(create);
+      temp.push(update);
+    }
+    const inputs = temp.map(x => `input ${ARGS}${name}${x}\n}`);
 
     let query = `type ${db.name} {\n`;
     query += `  ${GET}${name}(${keys}): ${name}${ENTITY} @crud(auth: {}),\n`;
     query += `  ${SEARCH}${name}s(${search}\n  ): [${name}${ENTITY}] @crud(auth: {})\n`;
     query += `}`;
+
     let mutation = 'type Mutation {\n';
     mutation += `  ${db.name}_${CREATE}${name}(record: ${ARGS}${name}CreateRecord): ${name}${ENTITY} @crud(auth: {}),\n`;
     mutation += `  ${db.name}_${UPDATE}${name}(record: ${ARGS}${name}UpdateRecord): ${name}${ENTITY} @crud(auth: {}),\n`;
@@ -428,7 +438,7 @@ export class CoreSchema {
       name: metadata.name,
 
       query,
-      mutation,
+      mutation: this.crud ? mutation : undefined,
       model,
       inputs,
       search,
@@ -441,12 +451,12 @@ export class CoreSchema {
       [`${GET}${name}`]: (obj, args, ctx, info) => ctx.provider.get(metadata, obj, args, ctx, info),
       [`${SEARCH}${name}s`]: (obj, args, ctx, info) => ctx.provider.search(metadata, obj, args, ctx, info),
     };
-    db.mutations = {
+    db.mutations = this.crud ? {
       ...db.mutations,
       [`${db.name}_${CREATE}${name}`]: (obj, args, ctx, info) => ctx.provider.create(metadata, obj, args.record, ctx, info),
       [`${db.name}_${UPDATE}${name}`]: (obj, args, ctx, info) => ctx.provider.update(metadata, obj, args.record, ctx, info),
       [`${db.name}_${REMOVE}${name}`]: (obj, args, ctx, info) => ctx.provider.remove(metadata, obj, args, ctx, info),
-    };
+    } : db.mutations;
     db.entities[name] = schema;
     this.entities[name] = schema;
 
