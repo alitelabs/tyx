@@ -20,7 +20,7 @@ export interface LambdaS3Event {
 }
 
 export interface LambdaEventRecord extends EventRecord {
-  eventSource: 'aws:s3' | 'aws:dynamodb';
+  eventSource: 'aws:s3' | 'aws:dynamodb' | 'aws:sqs';
   eventVersion: string;
   eventName: string; // TODO: Enum
   awsRegion: string;
@@ -207,6 +207,14 @@ export class LambdaAdapter {
         this.log.error(err);
         throw InternalServerError.wrap(err);
       }
+    } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:sqs') {
+      this.log.info('SQS event detected');
+      try {
+        return await this.sqs(event, context);
+      } catch (err) {
+        this.log.error(err);
+        throw InternalServerError.wrap(err);
+      }
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:s3') {
       this.log.info('S3 event detected');
       try {
@@ -293,6 +301,14 @@ export class LambdaAdapter {
       this.log.info('S3 Request [%s:%s]: %j', req.resource, req.object, req);
       result = await Core.eventRequest(req);
     }
+    return result;
+  }
+
+  private async sqs(event: any, context: LambdaContext): Promise<EventResult> {
+    this.log.info('SQS event received', event, context);
+
+    // TODO: implementation
+    let result: EventResult;
     return result;
   }
 
