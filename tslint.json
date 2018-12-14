@@ -1,18 +1,24 @@
 {
-    "extends": "tslint-config-airbnb",
-    "rules": {
-        "object-shorthand-properties-first": false,
-        "no-increment-decrement": false,
-        "import-name": false,
-        "trailing-comma": false,
-        "max-line-length": [
-            true,
-            140
-        ],
-        "import-blacklist": [
-            true,
-            ".",
-            ".."
-        ]
-    }
+  "extends": "tslint-config-airbnb",
+  "rules": {
+    "object-shorthand-properties-first": false,
+    "no-increment-decrement": false,
+    "import-name": false,
+    "trailing-comma": false,
+    "prefer-template": [
+      false
+    ],
+    "quotemark": [
+      false
+    ],
+    "max-line-length": [
+      true,
+      140
+    ],
+    "import-blacklist": [
+      true,
+      ".",
+      ".."
+    ]
+  }
 }

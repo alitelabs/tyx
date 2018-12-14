@@ -44,6 +44,7 @@ export interface Configuration {
   httpSecret: string;
   httpTimeout: string;
   httpLifetime: string;
+  httpStrictIpCheck: string;
   internalSecret: string;
   internalTimeout: string;
   remoteTimeout: string;

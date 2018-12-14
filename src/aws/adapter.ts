@@ -107,7 +107,7 @@ export interface LambdaApiEvent {
   stageVariables?: {
     [variable: string]: string;
   };
-  req?: {
+  requestContext?: {
     accountId: string;
     resourceId: string;
     stage: string;
@@ -232,9 +232,9 @@ export class LambdaAdapter {
     const req: HttpRequest = {
       type: 'http',
       requestId: context && context.awsRequestId || Utils.uuid(),
-      sourceIp: (event.req
-        && event.req.identity
-        && event.req.identity.sourceIp) || '255.255.255.255',
+      sourceIp: (event.requestContext
+        && event.requestContext.identity
+        && event.requestContext.identity.sourceIp) || '255.255.255.255',
 
       application: undefined,
       service: undefined,

@@ -20,6 +20,7 @@ export abstract class Core {
   private static graphql: CoreSchema;
 
   private static application: string;
+  private static crudAllowed: boolean;
   private static instance: CoreInstance;
   private static options: ConnectionOptions;
   private static connection: Connection;
@@ -36,18 +37,19 @@ export abstract class Core {
   }
 
   public static get schema(): CoreSchema {
-    return this.graphql = this.graphql || new CoreSchema(Metadata.validate());
+    return this.graphql = this.graphql || new CoreSchema(Metadata.validate(), this.crudAllowed);
   }
 
   public static register(...args: Class[]) { }
 
-  public static init(application?: string, isPublic?: boolean): void;
-  public static init(application?: string, register?: Class[]): void;
-  public static init(application?: string, args?: Class[] | boolean): void {
+  public static init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
+  public static init(application?: string, register?: Class[], isCrud?: boolean): void;
+  public static init(application?: string, args?: Class[] | boolean, isCrud?: boolean): void {
     if (this.instance) return;
 
     if (args === true) CoreGraphQL.makePublic();
 
+    this.crudAllowed = !!isCrud;
     this.schema.executable();
 
     this.application = this.application || application || 'Core';

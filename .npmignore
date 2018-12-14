@@ -3,3 +3,4 @@ package
 samples
 misc
 *.tgz
+local.txt

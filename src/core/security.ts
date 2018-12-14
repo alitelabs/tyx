@@ -180,7 +180,7 @@ export class CoreSecurity implements Security {
       throw new Unauthorized(`Invalid audience: ${jwt.aud}`);
     }
 
-    if (jwt.role !== 'Application' && ipAddress && jwt.ipaddr !== ipAddress) {
+    if (jwt.role !== 'Application' && this.config.httpStrictIpCheck === 'true' && ipAddress && jwt.ipaddr !== ipAddress) {
       throw new Unauthorized(`Invalid request IP address: ${jwt.ipaddr}`);
     }
 
