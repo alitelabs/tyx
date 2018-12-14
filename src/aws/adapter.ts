@@ -304,12 +304,10 @@ export class LambdaAdapter {
     return result;
   }
 
-  private async sqs(event: any, context: LambdaContext): Promise<EventResult> {
+  private async sqs(event: any, context: LambdaContext): Promise<any> {
     this.log.info('SQS event received', event, context);
-
     // TODO: implementation
-    let result: EventResult;
-    return result;
+    return {};
   }
 
   private async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {
