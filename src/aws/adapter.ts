@@ -19,11 +19,22 @@ export interface LambdaS3Event {
   Records: LambdaS3Record[];
 }
 
+export interface LambdaSQSEvent {
+  Records: LambdaSQSRecord[];
+}
+
 export interface LambdaEventRecord extends EventRecord {
   eventSource: 'aws:s3' | 'aws:dynamodb' | 'aws:sqs';
   eventVersion: string;
   eventName: string; // TODO: Enum
   awsRegion: string;
+}
+
+export interface LambdaSQSRecord extends LambdaEventRecord {
+  eventSource: 'aws:sqs';
+  body: string;
+  eventSourceARN: string;
+  messageId: string;
 }
 
 export interface LambdaS3Record extends LambdaEventRecord {
@@ -150,7 +161,7 @@ export interface LambdaCallback {
   (err: LambdaError, response?: HttpResponse | Object): void;
 }
 
-export type LambdaEvent = RemoteEvent & LambdaApiEvent & LambdaS3Event & LambdaDynamoEvent & LambdaScheduleEvent;
+export type LambdaEvent = RemoteEvent & LambdaApiEvent & LambdaS3Event & LambdaSQSEvent & LambdaDynamoEvent & LambdaScheduleEvent;
 
 export interface LambdaHandler {
   (
@@ -304,10 +315,48 @@ export class LambdaAdapter {
     return result;
   }
 
-  private async sqs(event: any, context: LambdaContext): Promise<any> {
-    this.log.info('SQS event received', event, context);
-    // TODO: implementation
-    return {};
+  private async sqs(event: LambdaSQSEvent, context: LambdaContext): Promise<EventResult[]> {
+
+    const requestId = context && context.awsRequestId || Utils.uuid();
+    const time = new Date().toISOString();
+    const reqs = new Map<string, EventRequest>();
+
+    for (const record of event.Records) {
+
+      try {
+        // get Queue Name
+        // TODO: handle differently if arn is set by `Resource`, it will throw an exception
+        const resource = record.eventSourceARN.split(':').pop();
+        const object = JSON.parse(record.body);
+        const action = 'ReceiveMessage:*';
+
+        const group = `${resource}/${action}@${record.messageId}`;
+
+        reqs.set(group, {
+          type: 'event',
+          source: 'aws:sqs',
+          application: undefined,
+          service: undefined,
+          method: undefined,
+          requestId,
+          resource,
+          action,
+          time,
+          object,
+          records: [record],
+        });
+      } catch (ex) {
+        this.log.error('Error parsing SQS event', ex);
+      }
+    }
+
+    const events: Promise<EventResult>[] = [];
+    reqs.forEach((value) => {
+      this.log.info('SQS Request [%s:%s]: %j', value.resource, value.object, value);
+      events.push(Core.eventRequest(value));
+    });
+
+    return Promise.all(events);
   }
 
   private async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {

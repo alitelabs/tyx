@@ -28,7 +28,7 @@
   "scripts": {
     "clean": "rm -rf ./lib",
     "prebuild": "rm -rf ./lib",
-    "build": "tsc -p . && tslint -p .",
+    "build": "tsc -p . && tslint -p . --fix",
     "watch": "rm -rf ./lib ; tsc -p . --watch",
     "release": "npm run build && npm version patch && git push --follow-tags"
   },
