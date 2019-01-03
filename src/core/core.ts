@@ -160,12 +160,12 @@ export abstract class Core {
     return new ExpressAdapter(basePath || '/local').express();
   }
 
-  public static start(port: number, basePath?: string) {
+  public static start(port: number, basePath?: string, extraArgs?: any) {
     this.init();
 
     // tslint:disable-next-line:no-parameter-reassignment
     port = port || 5000;
-    const adapter = new ExpressAdapter(basePath || '/local');
+    const adapter = new ExpressAdapter(basePath || '/local', extraArgs);
 
     const app = adapter.express();
     this.server = createServer(app);

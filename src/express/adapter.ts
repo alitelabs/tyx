@@ -15,17 +15,17 @@ export class ExpressAdapter {
   public app: Express.Express;
   public paths: [string, string][];
 
-  constructor(basePath: string) {
+  constructor(basePath: string, extraArgs?: any) {
     this.basePath = basePath;
     this.log = Logger.get('TYX', this);
-    this.express();
+    this.express(extraArgs);
   }
 
-  public express(): Express.Express {
+  public express(extraArgs = {}): Express.Express {
     if (this.app) return this.app;
 
     this.app = Express.Create();
-    this.app.use(Express.BodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8' }));
+    this.app.use(Express.BodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8', ...extraArgs }));
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');

@@ -26,6 +26,7 @@ export {
 
 export {
   S3ObjectCreated,
+  SQSMessageReceived,
   DynamoDbInsert,
   DynamoDbModify,
   DynamoDbRemove,

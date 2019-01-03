@@ -11,6 +11,10 @@ export function S3ObjectCreated(bucket: string, filter?: string, adapter?: Event
   return Event('aws:s3', bucket, 'ObjectCreated:*', filter, adapter);
 }
 
+export function SQSMessageReceived(queue: string, adapter?: EventAdapter) {
+  return Event('aws:sqs', queue, 'ReceiveMessage:*', null, adapter);
+}
+
 export function DynamoDbInsert(database: string, adapter?: EventAdapter) {
   return Event('aws:dynamodb', database, 'INSERT', null, adapter);
 }
