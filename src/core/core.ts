@@ -30,17 +30,17 @@ export abstract class Core {
 
   private static server: Server;
 
-  private constructor() { }
+  private constructor() {}
 
   public static get metadata(): Metadata {
     return Metadata.get();
   }
 
   public static get schema(): CoreSchema {
-    return this.graphql = this.graphql || new CoreSchema(Metadata.validate(), this.crudAllowed);
+    return (this.graphql = this.graphql || new CoreSchema(Metadata.validate(), this.crudAllowed));
   }
 
-  public static register(...args: Class[]) { }
+  public static register(...args: Class[]) {}
 
   public static init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
   public static init(application?: string, register?: Class[], isCrud?: boolean): void;
@@ -63,18 +63,54 @@ export abstract class Core {
     const tokens = cfg.split(/:|@|\/|;/);
     const logQueries = tokens.findIndex(x => x === 'logall') > 5;
     // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
-    this.options = {
-      name: 'tyx',
-      username: tokens[0],
-      password: tokens[1],
-      type: tokens[2] as any,
-      host: tokens[3],
-      port: +tokens[4],
-      database: tokens[5],
-      // timezone: "Z",
-      logging: logQueries ? 'all' : ['error'],
-      entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
-    };
+
+    // invalid connection
+    if (tokens.length < 5) {
+      return;
+    }
+
+    const slavesConfig: string = process.env.DB_SLAVES;
+
+    if (slavesConfig) {
+      const slaves = slavesConfig.split(';').map(host => ({
+        username: tokens[0],
+        password: tokens[1],
+        host,
+        port: +tokens[4],
+        database: tokens[5],
+      }));
+
+      this.options = {
+        type: tokens[2] as any,
+        name: 'tyx',
+        replication: {
+          master: {
+            username: tokens[0],
+            password: tokens[1],
+            host: tokens[3],
+            port: +tokens[4],
+            database: tokens[5],
+          },
+          slaves,
+        },
+        // timezone: "Z",
+        logging: logQueries ? 'all' : ['error'],
+        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
+      };
+    } else {
+      this.options = {
+        name: 'tyx',
+        username: tokens[0],
+        password: tokens[1],
+        type: tokens[2] as any,
+        host: tokens[3],
+        port: +tokens[4],
+        database: tokens[5],
+        // timezone: "Z",
+        logging: logQueries ? 'all' : ['error'],
+        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
+      };
+    }
   }
 
   public static async get(): Promise<CoreInstance>;
