@@ -98,5 +98,10 @@
     "gulp-sourcemaps": "^2.6.4",
     "gulp-typescript": "^3.2.4",
     "gulpclass": "^0.1.2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 160,
+    "trailingComma": "es5"
   }
 }
