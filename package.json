@@ -1,7 +1,7 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.73",
+  "version": "0.1.74",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
@@ -25,7 +25,10 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "source": "src/index.ts",
-  "files": [ "src", "lib" ],
+  "files": [
+    "src",
+    "lib"
+  ],
   "scripts": {
     "clean": "rm -rf ./lib",
     "prebuild": "rm -rf ./lib",
