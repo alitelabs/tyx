@@ -133,6 +133,7 @@ export class CoreGraphQL extends GraphQLApi {
         'editor.reuseHeaders': true,
         'request.credentials': 'omit',
         'tracing.hideTracingResponse': true,
+        'editor.cursorShape': 'line'
       },
       version: playgroundVersion,
       ...custom
