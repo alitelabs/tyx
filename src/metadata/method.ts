@@ -138,8 +138,9 @@ export class MethodMetadata implements IMethodMetadata {
   public http: Record<string, HttpRouteMetadata> = undefined;
   public events: Record<string, EventRouteMetadata> = undefined;
 
-  private constructor(target: Prototype, method: string) {
-    this.target = target.constructor;
+  private constructor(target: Class, method: string) {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
+    this.target = target;
     this.name = method;
   }
 
@@ -164,7 +165,7 @@ export class MethodMetadata implements IMethodMetadata {
     const ret = meta && meta.design && meta.design[meta.design.length - 1];
     if (ret && ret.name === '#return') return meta;
     if (!meta) {
-      meta = new MethodMetadata(target, propertyKey);
+      meta = new MethodMetadata(target.constructor, propertyKey);
       Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
     }
     const names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
@@ -181,7 +182,7 @@ export class MethodMetadata implements IMethodMetadata {
       type: returns && returns.name || 'void',
       target: returns,
     };
-    ApiMetadata.define(target).addMethod(meta);
+    ApiMetadata.define(target.constructor).addMethod(meta);
     return meta;
   }
 

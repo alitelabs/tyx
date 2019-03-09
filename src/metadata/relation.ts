@@ -1,4 +1,5 @@
 import { Class, ObjectType, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
@@ -201,6 +202,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
 
   private constructor(target: Class, propertyKey: string) {
     super();
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.propertyName = propertyKey;
     this.name = propertyKey;

@@ -1,4 +1,5 @@
 import { Class, ObjectType, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { DesignMetadata } from './method';
 import { Metadata } from './registry';
 
@@ -401,6 +402,7 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
 
   constructor(target: Class) {
     super();
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.name = target.name;
   }

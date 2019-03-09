@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { DesignMetadata } from './method';
@@ -345,6 +346,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     options: ColumnOptions
   ) {
     super();
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     const state: IColumnMetadata = {
       kind,
       target,

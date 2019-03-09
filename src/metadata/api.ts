@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { EventRouteMetadata, HttpRouteMetadata, IMethodMetadata, MethodMetadata } from './method';
 import { Metadata } from './registry';
 
@@ -22,6 +23,7 @@ export class ApiMetadata implements IApiMetadata {
   public events: Record<string, EventRouteMetadata[]> = {};
 
   constructor(target: Class) {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.name = target.name;
   }
@@ -36,12 +38,11 @@ export class ApiMetadata implements IApiMetadata {
       || Reflect.getMetadata(Metadata.TYX_API, target.constructor);
   }
 
-  public static define(target: Class | Prototype): ApiMetadata {
+  public static define(target: Class): ApiMetadata {
     let meta = ApiMetadata.get(target);
     if (!meta) {
-      const trg = (typeof target === 'function') ? target : target.constructor;
-      meta = new ApiMetadata(trg as Class);
-      Reflect.defineMetadata(Metadata.TYX_API, meta, trg);
+      meta = new ApiMetadata(target);
+      Reflect.defineMetadata(Metadata.TYX_API, meta, target);
     }
     return meta;
   }

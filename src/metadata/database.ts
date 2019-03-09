@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { Metadata } from './registry';
@@ -25,6 +26,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   public relations: RelationMetadata[] = [];
 
   protected constructor(target: Class) {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.alias = 'database';
   }

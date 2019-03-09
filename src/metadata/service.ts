@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { ApiMetadata } from './api';
 import { Metadata } from './registry';
 
@@ -45,6 +46,7 @@ export class ServiceMetadata implements IServiceMetadata {
   public releasor: HandlerMetadata = undefined;
 
   constructor(target: Class) {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.name = target.name;
     this.alias = target.name; // .replace(/Service$/i, '');

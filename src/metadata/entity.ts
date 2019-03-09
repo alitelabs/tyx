@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata, IDatabaseMetadata } from './database';
 import { Metadata } from './registry';
@@ -65,6 +66,7 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
 
   constructor(target: Class) {
     super(target);
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
   }
 
   public static has(target: Class | Prototype): boolean {

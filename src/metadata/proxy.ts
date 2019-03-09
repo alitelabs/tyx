@@ -1,4 +1,5 @@
 import { Class, Prototype } from '../types/core';
+import { Utils } from '../utils';
 import { Metadata } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
@@ -13,6 +14,7 @@ export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
 
   protected constructor(target: Class) {
     super(target);
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
   }
 
   public static has(target: Class | Prototype): boolean {
