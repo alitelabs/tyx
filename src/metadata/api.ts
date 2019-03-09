@@ -4,8 +4,7 @@ import { Metadata } from './registry';
 
 export interface IApiMetadata {
   target: Class;
-  name: String;
-  alias: string;
+  name: string;
 
   methods: Record<string, IMethodMetadata>;
   routes: Record<string, HttpRouteMetadata>;
@@ -17,7 +16,6 @@ export interface IApiMetadata {
 export class ApiMetadata implements IApiMetadata {
   public target: Class;
   public name: string;
-  public alias: string;
 
   public methods: Record<string, MethodMetadata> = {};
   public routes: Record<string, HttpRouteMetadata> = {};
@@ -26,7 +24,6 @@ export class ApiMetadata implements IApiMetadata {
   constructor(target: Class) {
     this.target = target;
     this.name = target.name;
-    this.alias = target.name; // .replace(/Api$/i, '');
   }
 
   public static has(target: Class | Prototype): boolean {
@@ -63,13 +60,11 @@ export class ApiMetadata implements IApiMetadata {
     this.events[meta.route].push(meta);
   }
 
-  public commit(alias?: string): this {
-    this.alias = alias || this.target.name;
-    const prev = Metadata.ApiMetadata[this.alias];
-    if (prev && prev !== this) throw new TypeError(`Duplicate API alias [${this.alias}]`);
-    Metadata.ApiMetadata[this.alias] = this;
+  public commit(): this {
+    const prev = Metadata.ApiMetadata[this.name];
+    if (prev && prev !== this) throw new TypeError(`Duplicate API name [${this.name}]`);
+    Metadata.ApiMetadata[this.name] = this;
     Object.values(this.methods).forEach(item => item.commit(this));
-    // this.schema();
     return this;
   }
 }

@@ -1,16 +1,18 @@
 import { Di } from '../import';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
+import { Class } from '../types/core';
 import { Utils } from '../utils';
 
 // tslint:disable:function-name
 
 // TODO (name?: string, ...apis: Function[])
 // TODO: Selector
-export function Service(alias?: string): ClassDecorator {
+export function Service(alias?: string | Class): ClassDecorator {
   return (target) => {
-    Metadata.trace(Service, { alias }, target);
-    const meta = ServiceMetadata.define(target).commit(alias);
+    Metadata.trace(Service, { api: alias }, target);
+    const tmp = Utils.isClass(alias) ? alias.name : alias;
+    const meta = ServiceMetadata.define(target).commit(tmp);
     return Di.Service(meta.alias)(target);
   };
 }

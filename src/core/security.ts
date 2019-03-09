@@ -25,14 +25,14 @@ export class CoreSecurity implements Security {
   @Inject(Configuration)
   protected config: Configuration;
 
-  public async httpAuth(container: CoreContainer, req: HttpRequest, method: MethodMetadata): Promise<Context> {
+  public async httpAuth(container: CoreContainer, method: MethodMetadata, req: HttpRequest): Promise<Context> {
     const token = req.headers && (req.headers['Authorization'] || req.headers['authorization'])
       || req.queryStringParameters && (req.queryStringParameters['authorization'] || req.queryStringParameters['token'])
       || req.pathParameters && req.pathParameters['authorization'];
     return this.userAuth(container, method, token, req.requestId, req.sourceIp);
   }
 
-  public async graphAuth(container: CoreContainer, req: GraphRequest, method: MethodMetadata): Promise<Context> {
+  public async graphAuth(container: CoreContainer, method: MethodMetadata, req: GraphRequest): Promise<Context> {
     return this.userAuth(container, method, req.token, req.requestId, req.sourceIp);
   }
 
@@ -93,7 +93,21 @@ export class CoreSecurity implements Security {
     return ctx;
   }
 
-  public async remoteAuth(container: CoreContainer, req: RemoteRequest, method: MethodMetadata): Promise<Context> {
+  public async apiAuth(container: CoreContainer, method: MethodMetadata, ctx: Context): Promise<Context> {
+    let org: Context = null;
+    if (ctx instanceof Context) {
+      org = ctx;
+    }
+    return new Context({
+      container,
+      requestId: org && org.requestId || Utils.uuid(),
+      sourceIp: org && org.sourceIp || null,
+      method,
+      auth: org && org.auth || null
+    });
+  }
+
+  public async remoteAuth(container: CoreContainer, method: MethodMetadata, req: RemoteRequest): Promise<Context> {
     if (!method.roles.Remote && !method.roles.Internal) {
       throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
     }
@@ -104,7 +118,7 @@ export class CoreSecurity implements Security {
     return new Context({ container, requestId: req.requestId, sourceIp: null, method, auth });
   }
 
-  public async eventAuth(container: CoreContainer, req: EventRequest, method: MethodMetadata): Promise<Context> {
+  public async eventAuth(container: CoreContainer, method: MethodMetadata, req: EventRequest): Promise<Context> {
     if (!method.roles.Internal) {
       throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
     }

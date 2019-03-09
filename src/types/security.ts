@@ -1,4 +1,4 @@
-import { MethodMetadata } from '../metadata/method';
+import { IMethodMetadata } from '../metadata/method';
 import { Context, CoreContainer } from './core';
 import { EventRequest } from './event';
 import { GraphRequest } from './graphql';
@@ -105,9 +105,10 @@ export interface WebToken {
 export const Security = 'Security';
 
 export interface Security {
-  httpAuth(container: CoreContainer, req: HttpRequest, permission: MethodMetadata): Promise<Context>;
-  graphAuth(container: CoreContainer, req: GraphRequest, permission: MethodMetadata): Promise<Context>;
-  remoteAuth(container: CoreContainer, req: RemoteRequest, permission: MethodMetadata): Promise<Context>;
-  eventAuth(container: CoreContainer, req: EventRequest, permission: MethodMetadata): Promise<Context>;
+  apiAuth(container: CoreContainer, method: IMethodMetadata, ctx: Context): Promise<Context>;
+  httpAuth(container: CoreContainer, method: IMethodMetadata, req: HttpRequest): Promise<Context>;
+  graphAuth(container: CoreContainer, method: IMethodMetadata, req: GraphRequest): Promise<Context>;
+  remoteAuth(container: CoreContainer, method: IMethodMetadata, req: RemoteRequest): Promise<Context>;
+  eventAuth(container: CoreContainer, method: IMethodMetadata, req: EventRequest): Promise<Context>;
   issueToken(req: IssueRequest): string;
 }

@@ -32,7 +32,7 @@ export namespace Logger {
         logName = service.alias || service.target.name;
         emitter = logNameOrEmitter;
       } else if (api) {
-        logName = api.alias || api.target.name;
+        logName = api.name || api.target.name;
         emitter = logNameOrEmitter;
       } else {
         logName = undefined;

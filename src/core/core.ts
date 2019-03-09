@@ -6,9 +6,8 @@ import { Express } from '../import';
 import { Connection, ConnectionOptions, createConnection } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
-import { Class, ContainerState, ObjectType } from '../types/core';
+import { Class, ContainerState, ObjectType, Prototype } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
-import { GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { CoreGraphQL } from './graphql';
@@ -30,7 +29,7 @@ export abstract class Core {
 
   private static server: Server;
 
-  private constructor() {}
+  private constructor() { }
 
   public static get metadata(): Metadata {
     return Metadata.get();
@@ -40,8 +39,10 @@ export abstract class Core {
     return (this.graphql = this.graphql || new CoreSchema(Metadata.validate(), this.crudAllowed));
   }
 
-  public static register(...args: Class[]) {}
+  public static register(...args: Class[]) { }
 
+  // TODO: options object
+  // Move database out
   public static init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
   public static init(application?: string, register?: Class[], isCrud?: boolean): void;
   public static init(application?: string, args?: Class[] | boolean, isCrud?: boolean): void {
@@ -145,19 +146,19 @@ export abstract class Core {
     return instance;
   }
 
-  public static async httpRequest(req: HttpRequest): Promise<HttpResponse> {
+  public static async invoke(api: Prototype, method: Function, ...args: any[]): Promise<any> {
     try {
       const instance = await this.activate();
-      return await instance.httpRequest(req);
+      return await instance.apiRequest(api, method, args);
     } finally {
       await this.release();
     }
   }
 
-  public static async graphRequest(req: GraphRequest): Promise<HttpResponse> {
+  public static async httpRequest(req: HttpRequest): Promise<HttpResponse> {
     try {
       const instance = await this.activate();
-      return await instance.graphRequest(req);
+      return await instance.httpRequest(req);
     } finally {
       await this.release();
     }

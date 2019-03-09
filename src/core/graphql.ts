@@ -1,7 +1,8 @@
 import { GraphQLOptions, HttpQueryRequest, runHttpQuery } from 'apollo-server-core';
+import { Api } from '../decorators/api';
 import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
-import { Activate, Inject, Service } from '../decorators/service';
+import { Activate, Handler, Inject, Service } from '../decorators/service';
 import { InternalServerError } from '../errors';
 import { CoreSchema } from '../graphql/schema';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../graphql/voyager';
@@ -15,13 +16,21 @@ import SuperGraphiQL = require('super-graphiql-express');
 
 const playgroundVersion = 'latest';
 
+@Api()
 export class GraphQLApi {
-  graphql(req: HttpRequest, ctx: Context): Promise<HttpResponse> {
+  // @Debug()
+  @Get('/graphql')
+  @Get('/graphiql')
+  @Post('/graphql')
+  @Get('/graphql/{authorization}')
+  @Post('/graphql/{authorization}')
+  @ContentType(HttpResponse)
+  public async graphql(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
     throw new Error();
   }
 }
 
-@Service(GraphQLApi.name)
+@Service()
 export class CoreGraphQL extends GraphQLApi {
 
   public static makePublic() {
@@ -47,13 +56,7 @@ export class CoreGraphQL extends GraphQLApi {
     this.schema = Core.schema;
   }
 
-  // @Debug()
-  @Get('/graphql')
-  @Get('/graphiql')
-  @Post('/graphql')
-  @Get('/graphql/{authorization}')
-  @Post('/graphql/{authorization}')
-  @ContentType(HttpResponse)
+  @Handler()
   public async graphql(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
     let html: string = undefined;
     if (req.resource === '/graphiql' || req.queryStringParameters.graphiql !== undefined) {

@@ -87,42 +87,53 @@ export class ServiceMetadata implements IServiceMetadata {
   }
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.handlers[propertyKey]) throw new TypeError(`Duplicate handler [${this.name}.${propertyKey}]`);
     this.handlers[propertyKey] = { method: propertyKey, target: descriptor.value };
     return this;
   }
 
   public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.initializer) throw new TypeError(`Duplicate initializer [${this.name}.${propertyKey}]`);
     this.initializer = { method: propertyKey, target: descriptor.value };
     return this;
   }
 
   public setSelector(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.selector) throw new TypeError(`Duplicate selector [${this.name}.${propertyKey}]`);
     this.selector = { method: propertyKey, target: descriptor.value };
     return this;
   }
 
   public setActivator(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.activator) throw new TypeError(`Duplicate activator [${this.name}.${propertyKey}]`);
     this.activator = { method: propertyKey, target: descriptor.value };
     return this;
   }
 
   public setReleasor(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.releasor) throw new TypeError(`Duplicate releasor [${this.name}.${propertyKey}]`);
     this.releasor = { method: propertyKey, target: descriptor.value };
     return this;
   }
 
   public commit(alias?: string): this {
-    if (alias) this.alias = this.alias = alias;
-    if (!this.alias) this.alias = this.alias = this.target.name;
-    this.alias = this.alias || this.alias;
-    if (this.initializer) this.initializer.service = this.alias;
-    if (this.selector) this.selector.service = this.alias;
-    if (this.activator) this.activator.service = this.alias;
-    if (this.releasor) this.releasor.service = this.alias;
-    if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.alias);
+    // TODO: Set service as this
+    if (this.initializer) this.initializer.service = this.name;
+    if (this.selector) this.selector.service = this.name;
+    if (this.activator) this.activator.service = this.name;
+    if (this.releasor) this.releasor.service = this.name;
+    if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.name);
     const api = ApiMetadata.get(this.target);
-    if (api) api.commit(alias);
+    if (api) {
+      // Stop service renaming an API until proper metadata inheritance is implemented
+      if (alias && api.target !== this.target) throw TypeError('Service extending Api can not have alias');
+      this.alias = alias || api.name;
+      api.commit();
+    } else {
+      this.alias = alias || this.name;
+    }
     const prev = Metadata.ServiceMetadata[this.alias];
+    // TODO: Store by name, separate unique by alias
     if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.alias}]`);
     Metadata.ServiceMetadata[this.alias] = this;
     return this;

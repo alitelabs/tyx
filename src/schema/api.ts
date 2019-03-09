@@ -13,7 +13,6 @@ import { EventRouteMetadataSchema, HttpRouteMetadataSchema, MethodMetadataSchema
 export class ApiMetadataSchema implements IApiMetadata {
   @Field(String) target: Class;
   @Field() name: string;
-  @Field() alias: string;
 
   @Field(list => [MethodMetadataSchema]) methods: Record<string, IMethodMetadata>;
   @Field(list => [HttpRouteMetadataSchema]) routes: Record<string, HttpRouteMetadata>;

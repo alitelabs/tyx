@@ -50,7 +50,7 @@ export interface MethodInfo {
 }
 
 export interface ResolverContainer {
-  invoke: (method: MethodInfo, obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo) => Promise<any>;
+  resolve: (method: MethodInfo, obj: any, args: ResolverQuery & ResolverArgs, ctx: ResolverContext, info: ResolverInfo) => Promise<any>;
 }
 
 export interface ResolverContext {

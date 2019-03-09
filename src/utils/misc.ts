@@ -26,7 +26,7 @@ export function password() {
 }
 
 // https://github.com/nof1000/isclass/blob/master/index.js
-export function isClass(cls: any): boolean {
+export function isClass(cls: any): cls is Function {
   if (typeof (cls) === 'function' && cls.prototype) {
     try {
       return !(cls.arguments && cls.caller);

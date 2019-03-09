@@ -1,14 +1,15 @@
-import { Forbidden, InternalServerError } from '../errors/http';
+import { Forbidden, InternalServerError, NotImplemented } from '../errors/http';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
+import { ApiMetadata } from '../metadata/api';
 import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from '../metadata/method';
 import { ProxyMetadata } from '../metadata/proxy';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
-import { ContainerState, Context, CoreContainer, ObjectType } from '../types/core';
+import { ContainerState, Context, CoreContainer, ObjectType, Prototype } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -98,11 +99,14 @@ export class CoreInstance implements CoreContainer {
 
   // --------------------------------------------------
 
-  public async invoke(
+  // TODO: Why just wrapper for graph request?
+  public async resolve(
     method: MethodInfo,
     obj: any,
     input: ResolverQuery & ResolverArgs,
+    // TODO: Why new context is generated?
     ctx?: ResolverContext,
+    // TODO: Why not passed to methods
     info?: ResolverInfo,
   ): Promise<any> {
     return this.graphRequest(
@@ -118,8 +122,44 @@ export class CoreInstance implements CoreContainer {
         info,
         token: ctx.auth.token,
       },
-      true,
+      true
     );
+  }
+
+  // TODO: Execute within same container
+  public async apiRequest(apiType: Prototype, apiMethod: Function, ...args: any[]): Promise<any> {
+    // throw new Error(`Not implemented. Called [${meta.api.name}.${meta.name}]`);
+    if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
+    try {
+      // this.log.debug('API Request [] %j', req);
+      const api = ApiMetadata.get(apiType);
+      // TODO: type  name
+      if (!api) throw this.log.error(new Forbidden(`Service not found ${apiType}`));
+      const method = api.methods[apiMethod.name];
+      if (!method) throw this.log.error(new Forbidden(`Method not found [${api.name}.${apiMethod.name}]`));
+
+      this.istate = ContainerState.Busy;
+      const ctx = await this.security.apiAuth(this, method, args[0]);
+
+      let log = this.log;
+      const startTime = log.time();
+      try {
+        const service = this.container.get<any>(api.name);
+        log = Logger.get(service);
+        await this.activate(ctx);
+        const handler: Function = service[method.name];
+        if (handler === apiMethod) throw new NotImplemented(`Method not implemented [${api.name}.${method.name}]`);
+        const result = await handler.apply(service, args);
+        return result;
+      } catch (e) {
+        throw this.log.error(e);
+      } finally {
+        log.timeEnd(startTime, `${method.name}`);
+        await this.release(ctx);
+      }
+    } finally {
+      this.istate = ContainerState.Ready;
+    }
   }
 
   public async httpRequest(req: HttpRequest): Promise<HttpResponse> {
@@ -133,23 +173,19 @@ export class CoreInstance implements CoreContainer {
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
       const target = Metadata.HttpRouteMetadata[route];
       if (!target) throw this.log.error(new Forbidden(`Route not found [${route}]`));
-      // if (!this.container.has(target.alias)) throw this.log.error(new InternalServerError(`Service not found [${target.alias}]`));
-      const methodId = MethodMetadata.id(target.alias, target.handler);
-      const method = Metadata.MethodMetadata[methodId] as MethodMetadata;
-      if (!method) throw this.log.error(new Forbidden(`Method [${methodId}] not found `));
-      if (!method.roles) throw this.log.error(new Forbidden(`Method [${methodId}] not available`));
+      if (!target.method.roles) throw this.log.error(new Forbidden(`Method [${target.method.name}] not available`));
 
       req.application = this.application;
-      req.service = target.alias;
-      req.method = target.handler;
+      req.service = target.api.name;
+      req.method = target.method.name;
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.httpAuth(this, req, method);
+      const ctx = await this.security.httpAuth(this, target.method, req);
 
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(target.alias);
+        const service = this.container.get<any>(target.api.name);
         log = Logger.get(service);
 
         await this.activate(ctx);
@@ -157,11 +193,11 @@ export class CoreInstance implements CoreContainer {
         this.log.debug('HTTP Context: %j', ctx);
         this.log.debug('HTTP Request: %j', req);
 
-        const handler: Function = service[method.name];
-        const http = method.http[route];
+        const handler: Function = service[target.method.name];
+        // const http = target.method.http[route];
         let result: any;
-        if (http.adapter) {
-          result = await http.adapter(
+        if (target.adapter) {
+          result = await target.adapter(
             handler.bind(service),
             ctx,
             req,
@@ -169,16 +205,16 @@ export class CoreInstance implements CoreContainer {
             req.queryStringParameters || {});
         } else {
           const args: any = [];
-          if (method.bindings) {
-            for (const [index, arg] of method.bindings.entries()) {
+          if (target.method.bindings) {
+            for (const [index, arg] of target.method.bindings.entries()) {
               args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
             }
           }
           result = await handler.apply(service, args);
         }
 
-        const contentType = method.contentType || 'application/json';
-        if (contentType !== HttpResponse) result = { statusCode: http.code, body: result, contentType };
+        const contentType = target.method.contentType || 'application/json';
+        if (contentType !== HttpResponse) result = { statusCode: target.code, body: result, contentType };
         if (ctx && ctx.auth.renewed && ctx.auth.token) {
           result.headers = result.headers || {};
           result.headers['Token'] = ctx.auth.token;
@@ -189,7 +225,7 @@ export class CoreInstance implements CoreContainer {
         this.log.error(e);
         throw InternalServerError.wrap(e);
       } finally {
-        log.timeEnd(startTime, `${method.name}`);
+        log.timeEnd(startTime, `${target.method.name}`);
         await this.release(ctx);
       }
     } finally {
@@ -212,7 +248,7 @@ export class CoreInstance implements CoreContainer {
       if (!method.roles) throw this.log.error(new Forbidden(`Method [${methodId}] not available`));
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.graphAuth(this, req, method);
+      const ctx = await this.security.graphAuth(this, method, req);
 
       let log = this.log;
       const startTime = log.time();
@@ -257,7 +293,7 @@ export class CoreInstance implements CoreContainer {
       if (!method.roles) throw this.log.error(new Forbidden(`Method not available`));
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.remoteAuth(this, req, method);
+      const ctx = await this.security.remoteAuth(this, method, req);
 
       let log = this.log;
       const startTime = log.time();
@@ -306,25 +342,19 @@ export class CoreInstance implements CoreContainer {
 
       this.istate = ContainerState.Busy;
       for (const target of targets) {
-        const api = Metadata.ApiMetadata[target.alias];
-        if (!api) throw this.log.error(new Forbidden(`Service not found [${target.alias}]`));
-        // if (!this.container.has(target.alias)) throw this.log.error(new InternalServerError(`Service not found [${target.alias}]`));
-        const methodId = MethodMetadata.id(target.alias, target.handler);
-        const method = Metadata.MethodMetadata[methodId];
-
         if (!Utils.wildcardMatch(target.actionFilter, req.action)
           || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
 
         req.application = this.application;
-        req.service = target.alias;
-        req.method = target.handler;
+        req.service = target.api.name;
+        req.method = target.method.name;
 
-        const ctx = await this.security.eventAuth(this, req, method);
+        const ctx = await this.security.eventAuth(this, target.method, req);
 
         let log = this.log;
         const startTime = log.time();
         try {
-          const service = this.container.get<any>(target.alias);
+          const service = this.container.get<any>(target.api.name);
           log = Logger.get(service);
 
           await this.activate(ctx);
@@ -339,8 +369,8 @@ export class CoreInstance implements CoreContainer {
             }
             result.status = result.status || 'OK';
             result.returns.push({
-              service: target.alias,
-              method: target.handler,
+              service: target.api.name,
+              method: target.method.name,
               error: null,
               data,
             });
@@ -349,8 +379,8 @@ export class CoreInstance implements CoreContainer {
           this.log.error(e);
           result.status = 'FAILED';
           result.returns.push({
-            service: target.alias,
-            method: target.handler,
+            service: target.api.name,
+            method: target.method.name,
             error: InternalServerError.wrap(e),
             data: null,
           });

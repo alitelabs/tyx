@@ -33,7 +33,6 @@ export class HttpRouteMetadataSchema implements HttpRouteMetadata {
   @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
   @Field() route: string;
-  @Field() alias: string;
   @Field() handler: string;
   @Field() verb: string;
   @Field() resource: string;
@@ -58,7 +57,6 @@ export class EventRouteMetadataSchema implements EventRouteMetadata {
   @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
 
   @Field() route: string;
-  @Field() alias: string;
   @Field() handler: string;
   @Field() source: string;
   @Field() resource: string;
@@ -78,7 +76,6 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(String) host: Class;
 
-  @Field() alias: string;
   @Field() name: string;
   @Field(Object) design: DesignMetadata[];
 

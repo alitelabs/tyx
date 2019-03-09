@@ -195,6 +195,8 @@ export abstract class Metadata implements MetadataRegistry {
       this.resolve(type, GraphKind.Type, types);
     }
 
+    // TODO: Validate for no lose handler, methods, routes, events
+
     this.validated = true;
     return this.get();
   }

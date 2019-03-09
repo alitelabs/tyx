@@ -253,7 +253,7 @@ export class CoreSchema {
           if (api.resolvers) {
             res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
           }
-          if (res) res = `\# -- API: ${api.metadata.alias} --#\n` + res;
+          if (res) res = `\n# -- API: ${api.metadata.name} --#\n` + res;
           return res;
         }).join('\n')
       + Object.values(this.databases).map((db) => {
@@ -584,7 +584,7 @@ export class CoreSchema {
   private genApi(metadata: ApiMetadata): ApiSchema {
     const api: ApiSchema = {
       metadata,
-      api: metadata.alias,
+      api: metadata.name,
       queries: undefined,
       mutations: undefined,
       resolvers: undefined,
@@ -597,10 +597,10 @@ export class CoreSchema {
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
-      const dir = ` @${method.auth}(api: "${method.api.alias}", method: "${method.name}", roles: ${scalar(method.roles)})`;
+      const dir = ` @${method.auth}(api: "${method.api.name}", method: "${method.name}", roles: ${scalar(method.roles)})`;
       const meth: MethodSchema = {
         metadata: method,
-        api: metadata.alias,
+        api: metadata.name,
         host: method.host && method.host.name,
         method: method.name,
         name,
@@ -608,7 +608,7 @@ export class CoreSchema {
         extension: undefined,
         // TODO: Move resolver functions to this.resolvers()
         resolver: (obj, args, ctx, info) => {
-          return ctx.container.invoke(meth, obj, args[arg], ctx, info);
+          return ctx.container.resolve(meth, obj, args[arg], ctx, info);
         }
       };
       if (method.mutation) {

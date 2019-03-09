@@ -53,6 +53,7 @@ export const CoreContainer = 'container';
 export interface CoreContainer extends ResolverContainer {
   state: ContainerState;
 
+  apiRequest(api: Prototype, method: Function, ...args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;

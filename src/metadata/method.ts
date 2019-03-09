@@ -52,18 +52,13 @@ export interface HttpRouteMetadata {
   method: IMethodMetadata;
 
   route: string;
-  alias: string;
   handler: string;
-  // route: string;
   verb: string;
   resource: string;
   model: string;
   params: string[];
   code: HttpCode;
   adapter: HttpAdapter;
-  // Relations
-  // api: ApiMetadata;
-  // method: MethodMetadata;
 }
 
 export namespace HttpRouteMetadata {
@@ -78,7 +73,6 @@ export interface EventRouteMetadata {
   method: IMethodMetadata;
 
   route: string;
-  alias: string;
   handler: string;
   source: string;
   resource: string;
@@ -100,7 +94,6 @@ export interface IMethodMetadata {
   host: Class;
 
   name: string;
-  alias: string;
   design: DesignMetadata[];
 
   auth: string;
@@ -127,7 +120,6 @@ export class MethodMetadata implements IMethodMetadata {
   public api: IApiMetadata;
   public host: Class;
 
-  public alias: string = undefined;
   public name: string;
   public design: DesignMetadata[] = undefined;
 
@@ -250,16 +242,13 @@ export class MethodMetadata implements IMethodMetadata {
       method: this,
 
       route,
-      alias: this.alias,
       handler: this.name,
       verb,
       resource,
       model,
       params,
       code,
-      adapter,
-      // api: () => this.service,
-      // method: () => this
+      adapter
     };
     ApiMetadata.define(this.target).addRoute(meta);
     this.http[route] = meta;
@@ -295,13 +284,12 @@ export class MethodMetadata implements IMethodMetadata {
       method: this,
 
       route,
-      alias: this.alias,
       handler: this.name,
       source,
       resource,
       actionFilter,
       objectFilter,
-      adapter,
+      adapter
     };
     this.events[route] = event;
     this.addAuth('internal', { Internal: true, External: false, Remote: false });
@@ -311,13 +299,11 @@ export class MethodMetadata implements IMethodMetadata {
 
   public commit(api: ApiMetadata): this {
     this.api = api;
-    this.alias = api.alias;
-    const id = MethodMetadata.id(this.alias, this.name);
+    const id = MethodMetadata.id(this.api.name, this.name);
     Metadata.MethodMetadata[id] = this;
     if (this.http) {
       for (const [route, meta] of Object.entries(this.http)) {
         meta.api = api;
-        meta.alias = this.alias;
         if (Metadata.HttpRouteMetadata[route] && Metadata.HttpRouteMetadata[route] !== meta) {
           throw new TypeError(`Duplicate HTTP route [${route}]`);
         }
@@ -327,7 +313,6 @@ export class MethodMetadata implements IMethodMetadata {
     if (this.events) {
       for (const [route, meta] of Object.entries(this.events)) {
         meta.api = api;
-        meta.alias = this.alias;
         const handlers = Metadata.EventRouteMetadata[route] = Metadata.EventRouteMetadata[route] || [];
         if (!handlers.includes(meta)) handlers.push(meta);
       }
