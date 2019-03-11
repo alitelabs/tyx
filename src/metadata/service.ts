@@ -166,7 +166,7 @@ export class ServiceMetadata implements IServiceMetadata {
     // - Service is Api only if none is implemented
     // - Can extends non final base service
 
-    this.final = final !== false;
+    this.final = !!final;
 
     const parent = Utils.baseClass(this.target);
     const base = ServiceMetadata.get(parent);
@@ -182,7 +182,7 @@ export class ServiceMetadata implements IServiceMetadata {
     this.alias = api && api.alias
       || alias
       || base && base.alias
-      || final !== false && this.target.name // .replace(/Service$/, '')
+      || !!final && this.target.name // .replace(/Service$/, '')
       || null;
 
     const sap = ApiMetadata.get(this.target);

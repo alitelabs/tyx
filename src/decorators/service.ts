@@ -34,12 +34,12 @@ export function Service(aliasApiFinal?: Class | string | false | true, finalOrNo
       final = true;
     } else if (typeof aliasApiFinal === 'string') {
       alias = aliasApiFinal;
-      final = finalOrNot !== false;
+      final = finalOrNot === undefined || !!finalOrNot;
     } else {
       const apiClass = aliasApiFinal; //  aliasApiFinal(void 0);
       if (!Utils.isClass(apiClass)) throw new TypeError('Class expected');
       api = apiClass;
-      final = finalOrNot !== false;
+      final = finalOrNot === undefined || !!finalOrNot;
     }
 
     Metadata.trace(Service, { alias, api, final }, target);
