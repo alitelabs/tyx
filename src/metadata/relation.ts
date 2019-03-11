@@ -209,20 +209,20 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_RELATION, target, propertyKey);
+    return Reflect.hasOwnMetadata(Metadata.TYX_RELATION, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
-    return Reflect.getMetadata(Metadata.TYX_RELATION, target, propertyKey);
+    return Reflect.getOwnMetadata(Metadata.TYX_RELATION, target, propertyKey);
   }
 
   public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
+    if (!Utils.isClass(target.constructor)) throw new TypeError('Not a class');
     let meta = this.get(target, propertyKey);
-    if (!meta) {
-      meta = new RelationMetadata(target.constructor, propertyKey);
-      Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
-      Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
-    }
+    if (meta) return meta;
+    meta = new RelationMetadata(target.constructor, propertyKey);
+    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
+    Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
     return meta;
   }
 

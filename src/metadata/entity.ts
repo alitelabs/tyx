@@ -66,26 +66,26 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
 
   constructor(target: Class) {
     super(target);
-    if (!Utils.isClass(target)) throw new TypeError('Not a class');
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_ENTITY, target)
-      || Reflect.hasMetadata(Metadata.TYX_ENTITY, target.constructor);
+    return Reflect.hasOwnMetadata(Metadata.TYX_ENTITY, target)
+      || Reflect.hasOwnMetadata(Metadata.TYX_ENTITY, target.constructor);
   }
 
   public static get(target: Class | Prototype): EntityMetadata {
-    return Reflect.getMetadata(Metadata.TYX_ENTITY, target)
-      || Reflect.getMetadata(Metadata.TYX_ENTITY, target.constructor);
+    return Reflect.getOwnMetadata(Metadata.TYX_ENTITY, target)
+      || Reflect.getOwnMetadata(Metadata.TYX_ENTITY, target.constructor);
   }
 
   public static define(target: Class): EntityMetadata {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
+    if (Utils.baseClass(target) !== Object) throw new TypeError('Inheritance not supported');
     let meta = this.get(target);
-    if (!meta) {
-      meta = new EntityMetadata(target);
-      Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
-      Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
-    }
+    if (meta) return meta;
+    meta = new EntityMetadata(target);
+    Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
+    Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
     return meta;
   }
 

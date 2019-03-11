@@ -1,10 +1,11 @@
 
 import { Server } from 'http';
-import { Release } from '../decorators/service';
+import { Release, Service } from '../decorators/service';
 import { Aws, Express } from '../import';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
 
+@Service(false)
 export abstract class ExpressService {
 
   private server: Server;

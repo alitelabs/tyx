@@ -32,7 +32,7 @@ export class DecoratorMetadataSchema implements DecoratorMetadata {
   @Field([String]) targets: Record<string, Class>;
 
   public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
-    targets: obj => Object.values(obj.targets).map(t => Utils.value(t)),
+    targets: obj => Object.values(obj.targets).map(t => Utils.label(t)),
   };
 }
 
@@ -46,7 +46,7 @@ export class DecorationMetadataSchema implements DecorationMetadata {
   @Field(Object) args: Record<string, any>;
 
   public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {
-    target: obj => Utils.value(obj.target),
+    target: obj => Utils.label(obj.target),
   };
 }
 

@@ -1,73 +1,116 @@
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
-import { ApiMetadata } from './api';
+import { ApiMetadata, IApiMetadata } from './api';
 import { Metadata } from './registry';
 
-export interface InjectMetadata {
+export interface IInjectMetadata {
+  service: IServiceMetadata;
+  base?: IServiceMetadata;
   resource: string;
   target?: Class;
   index?: number;
 }
 
-export interface HandlerMetadata {
-  service?: string;
+export interface IHandlerMetadata {
+  service: IServiceMetadata;
+  base?: IServiceMetadata;
   method: string;
   target: Class;
-
   source?: string;
 }
 
 export interface IServiceMetadata {
   target: Class;
   name: string;
+  final: boolean;
   alias: string;
+  inline: boolean;
+  api: IApiMetadata;
+  base: IServiceMetadata;
 
-  dependencies: Record<string, InjectMetadata>;
-  handlers: Record<string, HandlerMetadata>;
+  dependencies: Record<string, IInjectMetadata>;
+  handlers: Record<string, IHandlerMetadata>;
 
-  initializer: HandlerMetadata;
-  selector: HandlerMetadata;
-  activator: HandlerMetadata;
-  releasor: HandlerMetadata;
+  initializer: IHandlerMetadata;
+  selector: IHandlerMetadata;
+  activator: IHandlerMetadata;
+  releasor: IHandlerMetadata;
 
   source?: string;
+}
+
+export class InjectMetadata implements IInjectMetadata {
+  public service: ServiceMetadata;
+  public base: ServiceMetadata;
+  public target?: Class;
+  public resource: string;
+  public index?: number;
+
+  constructor(literal: IInjectMetadata) {
+    Object.assign(this, literal);
+  }
+
+  public inherit(service: ServiceMetadata): InjectMetadata {
+    return new InjectMetadata({ ...this, base: this.service, service });
+  }
+}
+
+export class HandlerMetadata implements IHandlerMetadata {
+  public service: ServiceMetadata;
+  public base: ServiceMetadata;
+  public target: Class;
+  public method: string;
+
+  constructor(val: IHandlerMetadata) {
+    Object.assign(this, val);
+  }
+
+  public inherit(service: ServiceMetadata): HandlerMetadata {
+    return new HandlerMetadata({ ...this, base: this.service, service });
+  }
 }
 
 export class ServiceMetadata implements IServiceMetadata {
   public target: Class;
   public name: string;
+  public final: boolean;
   public alias: string;
+  public inline: boolean;
+  public api: ApiMetadata;
+  public base: ServiceMetadata;
+
   public dependencies: Record<string, InjectMetadata> = {};
   public handlers: Record<string, HandlerMetadata> = {};
-
   public initializer: HandlerMetadata = undefined;
   public selector: HandlerMetadata = undefined;
   public activator: HandlerMetadata = undefined;
   public releasor: HandlerMetadata = undefined;
 
   constructor(target: Class) {
-    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.name = target.name;
-    this.alias = target.name; // .replace(/Service$/i, '');
+    this.alias = null;
+    this.final = null;
+    this.api = null;
+    this.base = null;
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_SERVICE, target)
-      || Reflect.hasMetadata(Metadata.TYX_SERVICE, target.constructor);
+    return Reflect.hasOwnMetadata(Metadata.TYX_SERVICE, target)
+      || Reflect.hasOwnMetadata(Metadata.TYX_SERVICE, target.constructor);
   }
 
   public static get(target: Class | Prototype): ServiceMetadata {
-    return Reflect.getMetadata(Metadata.TYX_SERVICE, target)
-      || Reflect.getMetadata(Metadata.TYX_SERVICE, target.constructor);
+    return Reflect.getOwnMetadata(Metadata.TYX_SERVICE, target)
+      || Reflect.getOwnMetadata(Metadata.TYX_SERVICE, target.constructor);
   }
 
   public static define(target: Class): ServiceMetadata {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     let meta = this.get(target);
-    if (!meta) {
-      meta = new ServiceMetadata(target);
-      Reflect.defineMetadata(Metadata.TYX_SERVICE, meta, target);
-    }
+    if (meta) return meta;
+    meta = new ServiceMetadata(target);
+    Reflect.defineMetadata(Metadata.TYX_SERVICE, meta, target);
     return meta;
   }
 
@@ -85,59 +128,101 @@ export class ServiceMetadata implements IServiceMetadata {
       resource = resource.toString();
     }
     const key = (propertyKey || '[constructor]') + (index !== undefined ? `#${index}` : '');
-    this.dependencies[key] = { resource, target, index };
+    this.dependencies[key] = new InjectMetadata({ service: this, resource, target, index });
   }
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate handler [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = { method: propertyKey, target: descriptor.value };
+    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
     return this;
   }
 
   public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.initializer) throw new TypeError(`Duplicate initializer [${this.name}.${propertyKey}]`);
-    this.initializer = { method: propertyKey, target: descriptor.value };
+    this.initializer = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
     return this;
   }
 
   public setSelector(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.selector) throw new TypeError(`Duplicate selector [${this.name}.${propertyKey}]`);
-    this.selector = { method: propertyKey, target: descriptor.value };
+    this.selector = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
     return this;
   }
 
   public setActivator(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.activator) throw new TypeError(`Duplicate activator [${this.name}.${propertyKey}]`);
-    this.activator = { method: propertyKey, target: descriptor.value };
+    this.activator = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
     return this;
   }
 
   public setReleasor(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.releasor) throw new TypeError(`Duplicate releasor [${this.name}.${propertyKey}]`);
-    this.releasor = { method: propertyKey, target: descriptor.value };
+    this.releasor = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
     return this;
   }
 
-  public commit(alias?: string): this {
-    // TODO: Set service as this
-    if (this.initializer) this.initializer.service = this.name;
-    if (this.selector) this.selector.service = this.name;
-    if (this.activator) this.activator.service = this.name;
-    if (this.releasor) this.releasor.service = this.name;
-    if (this.handlers) Object.values(this.handlers).forEach(item => item.service = this.name);
-    const api = ApiMetadata.get(this.target);
-    if (api) {
-      // Stop service renaming an API until proper metadata inheritance is implemented
-      if (alias && api.target !== this.target) throw TypeError('Service extending Api can not have alias');
-      this.alias = alias || api.name;
-      api.commit();
-    } else {
-      this.alias = alias || this.name;
-    }
-    const prev = Metadata.ServiceMetadata[this.alias];
+  public commit(alias: string, apiClass: Class, final: boolean): this {
+    // TODO: Validations
+    // - Service is Api only if none is implemented
+    // - Can extends non final base service
+
+    this.final = final !== false;
+
+    const parent = Utils.baseClass(this.target);
+    const base = ServiceMetadata.get(parent);
+    if (base && base.final) throw new TypeError('Base service is final');
+    if (!base && ApiMetadata.has(parent)) throw new TypeError('Extends Api class');
+
+    let api = apiClass && ApiMetadata.get(apiClass);
+    if (apiClass && !api) throw new TypeError('Not a Api class');
+    api = api || base && !base.inline && base.api;
+    this.api = api || null;
+    if (api && base && !base.inline && base.api && api !== base.api) throw new TypeError('Base Api override');
+
+    this.alias = api && api.alias
+      || alias
+      || base && base.alias
+      || final !== false && this.target.name // .replace(/Service$/, '')
+      || null;
+
+    const sap = ApiMetadata.get(this.target);
+    if (api && sap) throw new TypeError('Service implements and defines own Api');
+    this.api = api || sap;
+    // if (!this.api) this.api = sap = ApiMetadata.define(this.target);
+    this.inline = !!sap;
+    if (sap) sap.commit();
+    if (api) api.addService(this);
+
+    this.inherit(base);
+
+    const prev = Metadata.ServiceMetadata[this.name];
     // TODO: Store by name, separate unique by alias
-    if (prev && prev !== this) throw new TypeError(`Duplicate service alias [${this.alias}]`);
-    Metadata.ServiceMetadata[this.alias] = this;
+    if (prev && prev !== this) throw new TypeError(`Duplicate service name [${this.name}]`);
+    Metadata.ServiceMetadata[this.name] = this;
+
+    if (this.api) this.api.publish(this);
+
+    return this;
+  }
+
+  private inherit(base: ServiceMetadata): this {
+    if (!base) return this;
+
+    this.base = base || null;
+    this.initializer = this.initializer || base.initializer && base.initializer.inherit(this);
+    this.selector = this.selector || base.selector && base.selector.inherit(this);
+    this.activator = this.activator || base.activator && base.activator.inherit(this);
+    this.releasor = this.releasor || base.releasor && base.releasor.inherit(this);
+
+    for (const dep of Object.entries(base.dependencies)) {
+      if (this.dependencies[dep[0]]) continue;
+      this.dependencies[dep[0]] = dep[1].inherit(this);
+    }
+
+    for (const han of Object.entries(base.handlers)) {
+      if (this.handlers[han[0]]) continue;
+      this.handlers[han[0]] = han[1].inherit(this);
+    }
     return this;
   }
 }

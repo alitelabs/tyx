@@ -5,7 +5,7 @@ import { Utils } from '../utils';
 const REMOTE_STAGE_PREFIX = 'REMOTE_STAGE_';
 const REMOTE_SECRET_PREFIX = 'REMOTE_SECRET_';
 
-@Service(Configuration)
+@Service(Configuration, false)
 export class CoreConfiguration implements Configuration {
 
   // tslint:disable-next-line:variable-name

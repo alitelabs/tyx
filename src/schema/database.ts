@@ -24,7 +24,7 @@ export class DatabaseMetadataSchema implements IDatabaseMetadata {
   @Field(list => [RelationMetadataSchema]) relations: IRelationMetadata<any>[];
 
   public static RESOLVERS: SchemaResolvers<IDatabaseMetadata> = {
-    target: obj => Utils.value(obj.target),
+    target: obj => Utils.label(obj.target),
     targets: obj => obj.targets && obj.targets.map(t => `[class: ${t.name}]`),
     entities: (obj, args) => Lo.filter(obj.entities, args),
     columns: (obj, args) => Lo.filter(obj.columns, args),

@@ -9,15 +9,15 @@ import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
-import { ContainerState, Context, CoreContainer, ObjectType, Prototype } from '../types/core';
+import { ContainerState, Context, CoreContainer, ObjectType, Prototype, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
-import { GraphRequest } from '../types/graphql';
+import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
 import { Utils } from '../utils';
 import { CoreConfiguration } from './config';
-import { CoreGraphQL, GraphQLApi } from './graphql';
+import { CoreGraphQL } from './graphql';
 import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
 
@@ -70,8 +70,9 @@ export class CoreInstance implements CoreContainer {
       throw new TypeError(`Security must be a service`);
     }
 
-    if (!Container.has(GraphQLApi)) {
-      this.container.set({ id: GraphQLApi, type: CoreGraphQL });
+    if (!Container.has(GraphQL)) {
+      // TODO: CoreGraphQL.finalize()
+      this.container.set({ id: GraphQL, type: CoreGraphQL });
     }
 
     this.istate = ContainerState.Ready;
@@ -95,6 +96,17 @@ export class CoreInstance implements CoreContainer {
     const service = ServiceMetadata.get(type);
     if (service) return this.container.get(service.alias);
     return undefined;
+  }
+
+  public info(): ServiceInfo[] {
+    const services = [...(this.container as any).services];
+    const glob: any = Container.of(undefined);
+    glob.services.forEach((g: any) => {
+      const x = services.find(i => i.id === g.id) || g;
+      // x.global = true;
+      if (x === g) services.push(x);
+    });
+    return services;
   }
 
   // --------------------------------------------------
@@ -185,7 +197,7 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(target.api.name);
+        const service = this.container.get<any>(target.api.alias);
         log = Logger.get(service);
 
         await this.activate(ctx);
@@ -397,17 +409,17 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async activate(ctx: Context): Promise<Context> {
-    for (const [sid, meta] of Object.entries(Metadata.ServiceMetadata)) {
+    for (const meta of Object.values(Metadata.ServiceMetadata)) {
       if (!meta.activator) continue;
-      if (!this.container.has(sid)) continue;
+      if (!this.container.has(meta.alias)) continue;
       try {
-        const service = this.container.get<any>(sid);
+        const service = this.container.get<any>(meta.alias);
         if (this.services.includes(service)) continue;
         const handler = service[meta.activator.method] as Function;
         await handler.call(service, ctx);
         this.services.push(service);
       } catch (e) {
-        this.log.error('Failed to activate service: [%s]', sid);
+        this.log.error('Failed to activate service: [%s]', meta.alias);
         this.log.error(e);
         throw e;
         // TODO: Error state for container

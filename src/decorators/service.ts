@@ -8,12 +8,43 @@ import { Utils } from '../utils';
 
 // TODO (name?: string, ...apis: Function[])
 // TODO: Selector
-export function Service(alias?: string | Class): ClassDecorator {
+
+// Simple final service and api
+export function Service(): ClassDecorator;
+// Named simple service
+export function Service(alias: string, final?: false): ClassDecorator;
+// Implements API
+export function Service(api: Class, final?: false): ClassDecorator;
+// export function Service(api: ((api: any) => Class), final?: false): ClassDecorator;
+// Abstract unnamed service, to be extended
+export function Service(final: false): ClassDecorator;
+// Replacement service, must inherit from final:fasle service
+export function Service(final: true): ClassDecorator;
+export function Service(aliasApiFinal?: Class | string | false | true, finalOrNot?: true | false): ClassDecorator {
   return (target) => {
-    Metadata.trace(Service, { api: alias }, target);
-    const tmp = Utils.isClass(alias) ? alias.name : alias;
-    const meta = ServiceMetadata.define(target).commit(tmp);
-    return Di.Service(meta.alias)(target);
+    let alias: string = null;
+    let api: Class = null;
+    let final: boolean;
+    if (aliasApiFinal === undefined && finalOrNot === undefined) {
+      alias = target.name;
+      final = true;
+    } else if (aliasApiFinal === false) {
+      final = false;
+    } else if (aliasApiFinal === true) {
+      final = true;
+    } else if (typeof aliasApiFinal === 'string') {
+      alias = aliasApiFinal;
+      final = finalOrNot !== false;
+    } else {
+      const apiClass = aliasApiFinal; //  aliasApiFinal(void 0);
+      if (!Utils.isClass(apiClass)) throw new TypeError('Class expected');
+      api = apiClass;
+      final = finalOrNot !== false;
+    }
+
+    Metadata.trace(Service, { alias, api, final }, target);
+    const meta = ServiceMetadata.define(target).commit(alias, api, final);
+    return final ? Di.Service(meta.alias)(target) : undefined;
   };
 }
 

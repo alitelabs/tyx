@@ -1,5 +1,6 @@
 // tslint:disable-next-line:import-name
 import uuidr = require('uuid/v4');
+import { Class } from '../types/core';
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
 export function getArgs(func: (...args: any[]) => any): string[] {
@@ -37,12 +38,20 @@ export function isClass(cls: any): cls is Function {
   return false;
 }
 
-export function value(val: any) {
+export function baseClass(cls: Class): Class {
+  const p = cls && Object.getPrototypeOf(cls.prototype);
+  return p && p.constructor;
+}
+
+export function label(val: any) {
   if (val instanceof Function) {
     if (isClass(val)) return `[class: ${val.name || 'inline'}]`;
     if (val.name) return `[function: ${val.name}]`;
     // TODO: is arrow function
     return `[ref: ${val.toString()}]`;
+  }
+  if (typeof val === 'object' && val && val.constructor) {
+    return `[object: ${val.constructor.name}]`;
   }
   return val;
 }

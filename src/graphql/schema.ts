@@ -9,7 +9,9 @@ import { MethodMetadata } from '../metadata/method';
 import { Metadata, MetadataRegistry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
+import { CoreInfoSchema } from '../schema/core';
 import '../schema/registry';
+import { Class } from '../types/core';
 import { SchemaResolver } from './types';
 import { back, scalar } from './utils';
 import { QueryVisitor, RelationVisitor } from './visitors';
@@ -222,6 +224,7 @@ export class CoreSchema {
             }
             type Query {
               Metadata: MetadataRegistry
+              Core: CoreInfo
             }
             type Mutation {
               ping(input: ANY): ANY
@@ -253,7 +256,7 @@ export class CoreSchema {
           if (api.resolvers) {
             res += Object.values(api.resolvers).map(r => r.extension).join('\n') + '\n';
           }
-          if (res) res = `\n# -- API: ${api.metadata.name} --#\n` + res;
+          if (res) res = `# -- API: ${api.metadata.name} -- #\n` + res;
           return res;
         }).join('\n')
       + Object.values(this.databases).map((db) => {
@@ -288,6 +291,9 @@ export class CoreSchema {
     const resolvers: any = { Query: { Metadata: undefined }, Mutation: { ping: undefined }, MetadataRegistry: {} };
     resolvers.Query.Metadata = () => {
       return Metadata.get();
+    };
+    resolvers.Query.Core = (obj: any, args: any, ctx: any) => {
+      return CoreInfoSchema.get(ctx);
     };
     resolvers.Mutation.ping = (obj: any, args: any) => {
       return { args, stamp: new Date().toISOString(), version: process.versions };
@@ -598,10 +604,11 @@ export class CoreSchema {
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
       const dir = ` @${method.auth}(api: "${method.api.name}", method: "${method.name}", roles: ${scalar(method.roles)})`;
+      const host: Class = method.host && method.host();
       const meth: MethodSchema = {
         metadata: method,
         api: metadata.name,
-        host: method.host && method.host.name,
+        host: host && host.name,
         method: method.name,
         name,
         signature: call + dir,
@@ -618,7 +625,7 @@ export class CoreSchema {
         api.queries = api.queries || {};
         api.queries[method.name] = meth;
       } else if (method.resolver) {
-        meth.extension = `extend type ${method.host.name} {\n  ${method.name}${call}${dir}\n}`;
+        meth.extension = `extend type ${host.name} {\n  ${method.name}${call}${dir}\n}`;
         api.resolvers = api.resolvers || {};
         api.resolvers[method.name] = meth;
       }

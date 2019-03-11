@@ -1,3 +1,4 @@
+import { ServiceIdentifier, ServiceMetadata as TypeDiServiceMetadata } from 'typedi';
 import { ResolverContainer } from '../graphql/types';
 import { MethodMetadata } from '../metadata/method';
 import { EventRequest, EventResult } from './event';
@@ -5,21 +6,14 @@ import { HttpRequest, HttpResponse } from './http';
 import { RemoteRequest, RemoteResponse } from './proxy';
 import { AuthInfo } from './security';
 
-// export type _ObjectType<T> = {
-//     new(): T;
-// } | Function;
+export interface Class extends Function { }
+
+export interface Prototype extends Object { }
 
 export type ObjectType<T> = { new(...args: any[]): T };
 
-export type TypeRef<T> = (type?: any) => ObjectType<T>;
-
-export interface Class extends Function { }
-
-// export type Constructor<T = Object> = T & {
-//     new(...args: any[]): T
-// };
-
-export interface Prototype extends Object { }
+export type ClassRef<T = any> = (type?: any) => ObjectType<T>;
+export type TypeRef<T = any> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
 
 export class Context {
   public container: CoreContainer = undefined;
@@ -53,8 +47,57 @@ export const CoreContainer = 'container';
 export interface CoreContainer extends ResolverContainer {
   state: ContainerState;
 
+  info(): ServiceInfo[];
+
   apiRequest(api: Prototype, method: Function, ...args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;
+}
+
+/**
+ * Service metadata is used to initialize service and store its state.
+ */
+export interface ServiceInfo<T = any, K extends keyof T = any> extends TypeDiServiceMetadata<T, K> {
+
+  /**
+   * Class type of the registering service.
+   * Can be omitted only if instance is set.
+   * If id is not set then it serves as service id.
+   */
+  type?: Function;
+
+  /**
+   * Indicates if this service must be global and same instance must be used across all containers.
+   */
+  global?: boolean;
+
+  /**
+   * Indicates if instance of this class must be created on each its request.
+   * Global option is ignored when this option is used.
+   */
+  transient?: boolean;
+
+  /**
+   * Allows to setup multiple instances the different classes under a single service id string or token.
+   */
+  multiple?: boolean;
+
+  /**
+   * Service unique identifier.
+   */
+  id?: ServiceIdentifier;
+
+  /**
+   * Factory function used to initialize this service.
+   * Can be regular function ("createCar" for example),
+   * or other service which produces this instance ([CarFactory, "createCar"] for example).
+   */
+  factory?: [ObjectType<T>, K] | ((...params: any[]) => any);
+
+  /**
+   * Instance of the target class.
+   */
+  value?: any;
+
 }

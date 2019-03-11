@@ -70,6 +70,8 @@ export interface SchemaResolver<O = any> {
 
 export type SchemaResolvers<T> = { [P in keyof T]?: SchemaResolver<T> };
 
+export type InfoSchemaResolvers<T = any, V = any> = { [P in keyof T]?: SchemaResolver<V> };
+
 export interface EntityResolver {
   get: QueryResolver;
   search: QueryResolver;

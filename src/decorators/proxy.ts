@@ -6,7 +6,7 @@ import { Metadata } from '../metadata/registry';
 export function Proxy(service?: string, application?: string, functionName?: string): ClassDecorator {
   return (target) => {
     Metadata.trace(Proxy, { service, application, functionName }, target);
-    const meta = ProxyMetadata.define(target).commit(service, application, functionName);
+    const meta = ProxyMetadata.define(target).submit(service, application, functionName);
     return Di.Service(meta.alias)(target);
   };
 }

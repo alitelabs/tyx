@@ -1,10 +1,11 @@
-import { Class, Context, Prototype } from '../types/core';
+import { Class, ClassRef, Context, Prototype } from '../types/core';
 import { EventAdapter } from '../types/event';
 import { HttpCode, HttpRequest } from '../types/http';
 import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { Metadata } from './registry';
+import { IServiceMetadata, ServiceMetadata } from './service';
 import { GraphKind, IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
 
 export enum HttpBindingType {
@@ -40,16 +41,35 @@ export type HttpAdapter = (
   query?: Record<string, string>,
 ) => Promise<any>;
 
-export interface HttpBindingMetadata {
+export interface IHttpBindingMetadata {
   type: HttpBindingType;
   path: string;
   binder: HttpBinder;
 }
 
-export interface HttpRouteMetadata {
+export class HttpBindingMetadata implements IHttpBindingMetadata {
+  public type: HttpBindingType;
+  public path: string;
+  public binder: HttpBinder;
+
+  constructor(literal: Partial<IHttpBindingMetadata>) {
+    Object.assign(this, literal);
+  }
+
+  public inherit(method: MethodMetadata): this {
+    const copy = { ...this };
+    Object.setPrototypeOf(copy, HttpBindingMetadata.prototype);
+    return copy;
+  }
+}
+
+export interface IHttpRouteMetadata {
   target: Class;
   api: IApiMetadata;
   method: IMethodMetadata;
+  base: IHttpRouteMetadata;
+  over: IHttpRouteMetadata;
+  service: IServiceMetadata;
 
   route: string;
   handler: string;
@@ -61,16 +81,64 @@ export interface HttpRouteMetadata {
   adapter: HttpAdapter;
 }
 
-export namespace HttpRouteMetadata {
-  export function route(verb: string, resource: string, model?: string) {
+export class HttpRouteMetadata implements IHttpRouteMetadata {
+
+  public target: Class;
+  public api: ApiMetadata;
+  public method: MethodMetadata;
+  public base: HttpRouteMetadata;
+  public over: HttpRouteMetadata;
+  public service: ServiceMetadata;
+
+  public route: string;
+  public handler: string;
+  public verb: string;
+  public resource: string;
+  public model: string;
+  public params: string[];
+  public code: HttpCode;
+  public adapter: HttpAdapter;
+
+  public static route(verb: string, resource: string, model?: string) {
     return `${verb}:${resource}` + (model ? `:${model}` : '');
+  }
+
+  constructor(literal: Partial<IHttpRouteMetadata>) {
+    Object.assign(this, literal);
+  }
+
+  public inherit(method: MethodMetadata): this {
+    const copy = { ...this };
+    Object.setPrototypeOf(copy, HttpRouteMetadata.prototype);
+    copy.base = this;
+    copy.api = undefined;
+    copy.method = method;
+    copy.target = method.target;
+    return copy;
+  }
+
+  public override(over: HttpRouteMetadata): this {
+    if (!over) return this;
+    this.over = over;
+    this.route = this.route || over.route;
+    this.handler = this.handler || over.handler;
+    this.verb = this.verb || over.verb;
+    this.resource = this.resource || over.resource;
+    this.model = this.model || over.model;
+    this.params = this.params || over.params;
+    this.code = this.code || over.code;
+    this.adapter = this.adapter || over.adapter;
+    return this;
   }
 }
 
-export interface EventRouteMetadata {
+export interface IEventRouteMetadata {
   target: Class;
   api: IApiMetadata;
   method: IMethodMetadata;
+  base: IEventRouteMetadata;
+  over: IEventRouteMetadata;
+  service: IServiceMetadata;
 
   route: string;
   handler: string;
@@ -81,15 +149,57 @@ export interface EventRouteMetadata {
   adapter: EventAdapter;
 }
 
-export namespace EventRouteMetadata {
-  export function route(source: string, resource: string) {
+export class EventRouteMetadata implements IEventRouteMetadata {
+  public target: Class;
+  public api: ApiMetadata;
+  public method: MethodMetadata;
+  public base: EventRouteMetadata;
+  public over: EventRouteMetadata;
+  public service: ServiceMetadata;
+
+  public route: string;
+  public handler: string;
+  public source: string;
+  public resource: string;
+  public objectFilter: string;
+  public actionFilter: string;
+  public adapter: EventAdapter;
+
+  public static route(source: string, resource: string) {
     return `${source}/${resource}`;
+  }
+
+  constructor(literal: Partial<IEventRouteMetadata>) {
+    Object.assign(this, literal);
+  }
+
+  public inherit(method: MethodMetadata): this {
+    const copy = { ...this };
+    Object.setPrototypeOf(copy, EventRouteMetadata.prototype);
+    copy.base = this;
+    copy.api = undefined;
+    copy.method = method;
+    copy.target = method.target;
+    return copy;
+  }
+
+  public override(over: EventRouteMetadata): this {
+    if (!over) return this;
+    this.over = over;
+    this.route = this.route || over.route;
+    this.handler = this.handler || over.handler;
+    this.source = this.source || over.source;
+    this.objectFilter = this.objectFilter || over.objectFilter;
+    this.actionFilter = this.actionFilter || over.actionFilter;
+    this.adapter = this.adapter || over.adapter;
+    return this;
   }
 }
 
 export interface IMethodMetadata {
   target: Class;
   api: IApiMetadata;
+  base: IApiMetadata;
   // Temporary, type extension point
   host: Class;
 
@@ -107,9 +217,9 @@ export interface IMethodMetadata {
   select: Select;
 
   contentType: string;
-  bindings: HttpBindingMetadata[];
-  http: Record<string, HttpRouteMetadata>;
-  events: Record<string, EventRouteMetadata>;
+  bindings: IHttpBindingMetadata[];
+  http: Record<string, IHttpRouteMetadata>;
+  events: Record<string, IEventRouteMetadata>;
 
   source?: string;
 }
@@ -117,8 +227,10 @@ export interface IMethodMetadata {
 export class MethodMetadata implements IMethodMetadata {
 
   public target: Class;
-  public api: IApiMetadata;
-  public host: Class;
+  public api: ApiMetadata;
+  public base: ApiMetadata;
+  public over: MethodMetadata;
+  public host: ClassRef;
 
   public name: string;
   public design: DesignMetadata[] = undefined;
@@ -138,8 +250,51 @@ export class MethodMetadata implements IMethodMetadata {
   public http: Record<string, HttpRouteMetadata> = undefined;
   public events: Record<string, EventRouteMetadata> = undefined;
 
+  public inherit(api: ApiMetadata): this {
+    const copy = { ...this };
+    Object.setPrototypeOf(copy, MethodMetadata.prototype);
+    copy.base = copy.api;
+    copy.api = api;
+    for (const [key, val] of Object.entries(this.http || {})) {
+      this.http[key] = val.inherit(copy);
+      val.method = this;
+    }
+    for (const [key, val] of Object.entries(this.events || {})) {
+      this.events[key] = val.inherit(copy);
+      val.method = this;
+    }
+    return copy;
+  }
+
+  public override(over: MethodMetadata): this {
+    if (!over) return this;
+
+    // TODO: Implement
+    this.over = over;
+    this.target = over.target;
+    this.design = over.design;
+    this.auth = this.auth || over.auth;
+    this.roles = this.roles || over.roles;
+
+    this.query = this.query || over.query;
+    this.mutation = this.mutation || over.mutation;
+    this.resolver = this.resolver || over.resolver;
+    this.input = this.input || over.input;
+    this.result = this.result || over.result;
+    this.select = this.select || over.select;
+    this.contentType = this.contentType || over.contentType;
+    this.bindings = this.bindings || over.bindings;
+
+    for (const [key, val] of Object.entries(over.http || {})) {
+      this.http[key].override(val);
+    }
+    for (const [key, val] of Object.entries(over.events || {})) {
+      this.events[key].override(val);
+    }
+    return this;
+  }
+
   private constructor(target: Class, method: string) {
-    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
     this.name = method;
   }
@@ -149,25 +304,25 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_METHOD, target, propertyKey);
+    return Reflect.hasOwnMetadata(Metadata.TYX_METHOD, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): MethodMetadata {
-    return Reflect.getMetadata(Metadata.TYX_METHOD, target, propertyKey);
+    return Reflect.getOwnMetadata(Metadata.TYX_METHOD, target, propertyKey);
   }
 
-  public static define(
-    target: Prototype,
-    propertyKey: string,
-    descriptor?: PropertyDescriptor,
-  ): MethodMetadata {
+  public static define(target: Prototype, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
+    if (!Utils.isClass(target.constructor)) throw new TypeError('Not a class');
     let meta = MethodMetadata.get(target, propertyKey);
-    const ret = meta && meta.design && meta.design[meta.design.length - 1];
-    if (ret && ret.name === '#return') return meta;
     if (!meta) {
       meta = new MethodMetadata(target.constructor, propertyKey);
       Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
     }
+
+    // If resolved
+    const ret = meta.design && meta.design[meta.design.length - 1];
+    if (ret && ret.name === '#return') return meta;
+
     const names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
     const params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
     const returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
@@ -205,7 +360,7 @@ export class MethodMetadata implements IMethodMetadata {
     return this.setSignature(input, result, select);
   }
 
-  public setResolver(type: Class, input?: InputType, result?: ResultType, select?: Select): this {
+  public setResolver(type: ClassRef, input?: InputType, result?: ResultType, select?: Select): this {
     this.resolver = true;
     this.host = type;
     return this.setSignature(input, result, select);
@@ -231,13 +386,13 @@ export class MethodMetadata implements IMethodMetadata {
     resource: string,
     model: string,
     code: HttpCode,
-    adapter?: HttpAdapter,
+    adapter?: HttpAdapter
   ): this {
     const route = HttpRouteMetadata.route(verb, resource, model);
     this.http = this.http || {};
     if (this.http[route]) throw new TypeError(`Duplicate HTTP route: [${route}]`);
     const params = (resource.match(/\{([^}]+)\}/gi) || []).map(v => v.replace(/[\{\}]/g, ''));
-    const meta: HttpRouteMetadata = {
+    const meta = new HttpRouteMetadata({
       target: this.target,
       api: undefined,
       method: this,
@@ -250,7 +405,7 @@ export class MethodMetadata implements IMethodMetadata {
       params,
       code,
       adapter
-    };
+    });
     ApiMetadata.define(this.target).addRoute(meta);
     this.http[route] = meta;
     return this;
@@ -258,12 +413,12 @@ export class MethodMetadata implements IMethodMetadata {
 
   public addBinding(index: number, type: HttpBindingType, path: string, binder: HttpBinder): this {
     this.bindings = this.bindings || [];
-    this.bindings[index] = {
+    this.bindings[index] = new HttpBindingMetadata({
       ...this.bindings[index],
       type,
       path,
       binder,
-    };
+    });
     return this;
   }
 
@@ -272,14 +427,15 @@ export class MethodMetadata implements IMethodMetadata {
     resource: string,
     filterAction: string | boolean,
     filterObject: string,
-    adapter: EventAdapter,
+    adapter: EventAdapter
   ): this {
+    // TODO Include action in route to allow multiple events per method
     const route = `${source}/${resource}`;
     const actionFilter = filterAction === true ? this.name : (filterAction || '*');
     const objectFilter = filterObject || '*';
     this.events = this.events || {};
     if (this.events[route]) throw new TypeError(`Duplicate event route: [${route}]`);
-    const event: EventRouteMetadata = {
+    const event = new EventRouteMetadata({
       target: this.target,
       api: undefined,
       method: this,
@@ -291,7 +447,7 @@ export class MethodMetadata implements IMethodMetadata {
       actionFilter,
       objectFilter,
       adapter
-    };
+    });
     this.events[route] = event;
     this.addAuth('internal', { Internal: true, External: false, Remote: false });
     ApiMetadata.define(this.target).addEvent(event);
@@ -302,20 +458,37 @@ export class MethodMetadata implements IMethodMetadata {
     this.api = api;
     const id = MethodMetadata.id(this.api.name, this.name);
     Metadata.MethodMetadata[id] = this;
-    if (this.http) {
-      for (const [route, meta] of Object.entries(this.http)) {
-        meta.api = api;
-        if (Metadata.HttpRouteMetadata[route] && Metadata.HttpRouteMetadata[route] !== meta) {
-          throw new TypeError(`Duplicate HTTP route [${route}]`);
-        }
-        Metadata.HttpRouteMetadata[route] = meta;
+    return this;
+  }
+
+  public publish(service: ServiceMetadata): this {
+    const id = MethodMetadata.id(this.api.name, this.name);
+    // TODO: ---- Move this to service ....
+    for (const [route, meta] of Object.entries(this.http || {})) {
+      meta.api = this.api;
+      meta.service = service;
+      const prev = Metadata.HttpRouteMetadata[route];
+      if (prev && prev !== meta && prev !== meta.base) {
+        throw new TypeError(`Duplicate HTTP route [${route}]`);
       }
+      if (prev && prev !== meta && prev === meta.base) {
+        // TODO: Logger, from method to method
+        console.log(`Takeover route [${route}]: [${MethodMetadata.id(prev.api.name, prev.method.name)}] -> [${id}]`);
+      }
+      Metadata.HttpRouteMetadata[route] = meta;
     }
-    if (this.events) {
-      for (const [route, meta] of Object.entries(this.events)) {
-        meta.api = api;
-        const handlers = Metadata.EventRouteMetadata[route] = Metadata.EventRouteMetadata[route] || [];
-        if (!handlers.includes(meta)) handlers.push(meta);
+    for (const [route, meta] of Object.entries(this.events || {})) {
+      meta.api = this.api;
+      meta.service = service;
+      const handlers = Metadata.EventRouteMetadata[route] = Metadata.EventRouteMetadata[route] || [];
+      // TODO: handlers.includes(meta.over)
+      const prevIndex = handlers.indexOf(meta.base);
+      if (prevIndex !== -1) {
+        const prev = handlers[prevIndex];
+        console.log(`Takeover event [${route}]: [${MethodMetadata.id(prev.method.api.name, prev.method.name)}] -> [${id}]`);
+        handlers[prevIndex] = meta;
+      } else if (!handlers.includes(meta)) {
+        handlers.push(meta);
       }
     }
     return this;

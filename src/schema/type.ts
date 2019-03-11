@@ -15,7 +15,7 @@ export class VarMetadataSchema implements IVarMetadata {
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
-    ref: obj => Utils.value(obj.ref),
+    ref: obj => Utils.label(obj.ref),
   };
 }
 
@@ -27,7 +27,7 @@ export class InputMetadataSchema implements IInputMetadata {
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
-    ref: obj => Utils.value(obj.ref),
+    ref: obj => Utils.label(obj.ref),
   };
 }
 
@@ -39,7 +39,7 @@ export class ResultMetadataSchema implements IResultMetadata {
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
-    ref: obj => Utils.value(obj.ref),
+    ref: obj => Utils.label(obj.ref),
   };
 }
 
@@ -51,7 +51,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
   @Field([String]) options: string[];
 
   public static RESOLVERS: SchemaResolvers<IEnumMetadata> = {
-    ref: obj => Utils.value(obj.ref),
+    ref: obj => Utils.label(obj.ref),
   };
 }
 
@@ -66,7 +66,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   @Field(ref => VarMetadataSchema) item?: IVarMetadata;
 
   public static RESOLVERS: SchemaResolvers<IFieldMetadata> = {
-    ref: obj => Utils.value(obj.ref),
+    ref: obj => Utils.label(obj.ref),
   };
 }
 
@@ -79,7 +79,7 @@ export class TypeMetadataSchema implements ITypeMetadata {
   @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
 
   public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
-    target: obj => Utils.value(obj.target),
+    target: obj => Utils.label(obj.target),
     members: (obj, args) => Lo.filter(Object.values(obj.members), args),
   };
 }

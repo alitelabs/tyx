@@ -1,37 +1,28 @@
-import { GraphQLOptions, HttpQueryRequest, runHttpQuery } from 'apollo-server-core';
-import { Api } from '../decorators/api';
+import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
+// tslint:disable-next-line:max-line-length
+import { createPlaygroundOptions, defaultPlaygroundOptions, GraphQLOptions, HttpQueryRequest, PlaygroundConfig, PlaygroundRenderPageOptions, runHttpQuery } from 'apollo-server-core';
+import { GraphiQLData } from 'apollo-server-module-graphiql';
+import { GraphQLSchema } from 'graphql';
 import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
-import { Activate, Handler, Inject, Service } from '../decorators/service';
+import { Activate, Inject, Service } from '../decorators/service';
 import { InternalServerError } from '../errors';
 import { CoreSchema } from '../graphql/schema';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../graphql/voyager';
-import { GraphQL } from '../import';
 import { Logger } from '../logger';
 import { Configuration } from '../types/config';
 import { Context } from '../types/core';
+import { GraphQL } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { Core } from './core';
-import SuperGraphiQL = require('super-graphiql-express');
 
-const playgroundVersion = 'latest';
+// tslint:disable-next-line:variable-name
+const GraphiQL = require('apollo-server-module-graphiql');
 
-@Api()
-export class GraphQLApi {
-  // @Debug()
-  @Get('/graphql')
-  @Get('/graphiql')
-  @Post('/graphql')
-  @Get('/graphql/{authorization}')
-  @Post('/graphql/{authorization}')
-  @ContentType(HttpResponse)
-  public async graphql(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
-    throw new Error();
-  }
-}
+export { PlaygroundRenderPageOptions, PlaygroundConfig };
 
-@Service()
-export class CoreGraphQL extends GraphQLApi {
+@Service(GraphQL, false)
+export class CoreGraphQL implements GraphQL {
 
   public static makePublic() {
     Public()(
@@ -47,7 +38,7 @@ export class CoreGraphQL extends GraphQLApi {
   protected config: Configuration;
 
   protected schema: CoreSchema;
-  private executable: GraphQL.GraphQLSchema;
+  private executable: GraphQLSchema;
 
   @Activate()
   protected async activate(ctx: Context, req: HttpRequest) {
@@ -56,23 +47,31 @@ export class CoreGraphQL extends GraphQLApi {
     this.schema = Core.schema;
   }
 
-  @Handler()
-  public async graphql(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
+  // TODO: Move this to httpRequest of CoreInstance
+  @Get('/graphql')
+  @Get('/graphiql')
+  @Post('/graphql')
+  @Get('/graphql/{authorization}')
+  @Post('/graphql/{authorization}')
+  @ContentType(HttpResponse)
+  public async graphql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+
+    if (req.httpMethod !== 'GET') {
+      return this.request(ctx, req);
+    }
+
     let html: string = undefined;
     if (req.resource === '/graphiql' || req.queryStringParameters.graphiql !== undefined) {
-      html = await this.graphiql(req, ctx);
-    } else if (req.queryStringParameters.playground !== undefined) {
-      html = await this.playground(req, ctx);
+      html = await this.graphiql(ctx, req);
     } else if (req.queryStringParameters.voyager !== undefined) {
-      html = await this.voyager(req, ctx);
-    } else if (req.queryStringParameters.supergraphiql !== undefined) {
-      html = await this.supergraphiql(req, ctx);
+      html = await this.voyager(ctx, req);
+    } else {
+      html = await this.playground(ctx, req);
     }
-    if (html) return { statusCode: 200, contentType: 'text/html', body: html };
-    return this.request(req, ctx);
+    return { statusCode: 200, contentType: 'text/html', body: html };
   }
 
-  private async request(req: HttpRequest, ctx: Context): Promise<HttpResponse> {
+  private async request(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
     this.executable = this.executable || this.schema.executable({ log: msg => this.log.info(msg) });
     const options: GraphQLOptions = {
       schema: this.executable,
@@ -111,41 +110,35 @@ export class CoreGraphQL extends GraphQLApi {
     }
   }
 
-  protected async graphiql(req: HttpRequest, ctx: Context): Promise<string> {
-    const options: GraphQL.GraphiQLData = {
+  protected async graphiql(ctx: Context, req: HttpRequest): Promise<string> {
+    const options: GraphiQLData = {
       endpointURL: `${this.config.prefix || ''}/graphql`,
       passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
       // editorTheme: "idea"
     };
     try {
-      return await GraphQL.GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
+      return await GraphiQL.resolveGraphiQLString(req.queryStringParameters, options);
     } catch (error) {
       throw new InternalServerError(error.message, error);
     }
   }
 
-  protected async playground(req: HttpRequest, ctx: Context, custom?: Partial<GraphQL.RenderPageOptions>): Promise<string> {
+  protected async playground(ctx: Context, req: HttpRequest, custom?: Partial<PlaygroundRenderPageOptions>): Promise<string> {
     const sufix = ctx.auth.token ? ('/' + ctx.auth.token) : '';
-    const options: GraphQL.RenderPageOptions = {
+    const options = createPlaygroundOptions({
       endpoint: `${this.config.prefix || ''}/graphql${sufix}`,
       settings: {
-        'general.betaUpdates': false,
-        'editor.fontSize': 14,
-        'editor.fontFamily': `'Menlo', 'Source Code Pro', 'Consolas', 'Inconsolata', 'Droid Sans Mono', 'Monaco', monospace'`,
-        'editor.theme': 'light',
-        'editor.reuseHeaders': true,
-        'request.credentials': 'omit',
-        'tracing.hideTracingResponse': true,
-        'editor.cursorShape': 'line'
+        'editor.fontSize': 12,
+        'editor.fontFamily': `'Menlo', ${defaultPlaygroundOptions.settings["editor.fontFamily"]}`,
+        'editor.theme': 'light'
       },
-      version: playgroundVersion,
       ...custom
-    };
+    });
     if (options.tabs) options.tabs.forEach(tab => tab.endpoint = options.endpoint);
-    return GraphQL.renderPlaygroundPage(options);
+    return renderPlaygroundPage(options || options);
   }
 
-  protected async voyager(req: HttpRequest, ctx: Context, display?: Partial<DisplayOptions>): Promise<string> {
+  protected async voyager(ctx: Context, req: HttpRequest, display?: Partial<DisplayOptions>): Promise<string> {
     const root = req.queryStringParameters.root;
     const options: MiddlewareOptions = {
       endpointUrl: `${this.config.prefix || ''}/graphql`,
@@ -158,23 +151,6 @@ export class CoreGraphQL extends GraphQLApi {
     };
     try {
       const html: string = renderVoyagerPage(options);
-      return html;
-    } catch (error) {
-      throw new InternalServerError(error.message, error);
-    }
-  }
-
-  protected async supergraphiql(req: HttpRequest, ctx: Context): Promise<string> {
-    const options: GraphQL.GraphiQLData = {
-      endpointURL: `${this.config.prefix || ''}/graphql`,
-      passHeader: ctx.auth.token ? `'Authorization': '${ctx.auth.token}'` : undefined,
-      // editorTheme: "idea"
-    };
-    try {
-      let html: string = SuperGraphiQL.renderGraphiQL(options);
-      if (req.sourceIp !== 'localhost' && req.sourceIp !== '::1') {
-        html = html.replace('<head>', `<head><meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">`);
-      }
       return html;
     } catch (error) {
       throw new InternalServerError(error.message, error);

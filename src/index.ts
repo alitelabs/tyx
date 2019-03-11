@@ -70,5 +70,3 @@ export * from './core/graphql';
 
 export * from './aws';
 export * from './express';
-
-export { Orm, Di, GraphQL } from './import';

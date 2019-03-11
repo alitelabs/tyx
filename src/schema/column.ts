@@ -43,6 +43,6 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field() generateStrategy: 'increment' | 'uuid';
 
   public static RESOLVERS: SchemaResolvers<IColumnMetadata> = {
-    target: obj => Utils.value(obj.target),
+    target: obj => Utils.label(obj.target),
   };
 }

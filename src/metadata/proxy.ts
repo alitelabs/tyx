@@ -12,36 +12,37 @@ export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
   public functionName: string = undefined;
   public application: string = undefined;
 
-  protected constructor(target: Class) {
+  private constructor(target: Class) {
     super(target);
-    if (!Utils.isClass(target)) throw new TypeError('Not a class');
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_PROXY, target)
-      || Reflect.hasMetadata(Metadata.TYX_PROXY, target.constructor);
+    return Reflect.hasOwnMetadata(Metadata.TYX_PROXY, target)
+      || Reflect.hasOwnMetadata(Metadata.TYX_PROXY, target.constructor);
   }
 
   public static get(target: Class | Prototype): ProxyMetadata {
-    return Reflect.getMetadata(Metadata.TYX_PROXY, target)
-      || Reflect.getMetadata(Metadata.TYX_PROXY, target.constructor);
+    return Reflect.getOwnMetadata(Metadata.TYX_PROXY, target)
+      || Reflect.getOwnMetadata(Metadata.TYX_PROXY, target.constructor);
   }
 
   public static define(target: Class): ProxyMetadata {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     let meta = this.get(target);
-    if (!meta) {
-      meta = ServiceMetadata.define(target) as any;
-      Object.setPrototypeOf(meta, ProxyMetadata.prototype);
-      Reflect.defineMetadata(Metadata.TYX_PROXY, meta, target);
-    }
+    if (meta) return meta;
+    const base = Utils.baseClass(target);
+    if (base && ServiceMetadata.has(base)) throw new TypeError('Inheritance not supported');
+    meta = ServiceMetadata.define(target) as any;
+    Object.setPrototypeOf(meta, ProxyMetadata.prototype);
+    Reflect.defineMetadata(Metadata.TYX_PROXY, meta, target);
     return meta;
   }
 
-  public commit(service?: string, application?: string, functionName?: string): this {
+  public submit(service?: string, application?: string, functionName?: string): this {
     this.alias = service; // || this.target.name.replace('Proxy', '');
     this.functionName = functionName || (this.alias + '-function');
     this.application = application;
-    super.commit(service);
+    super.commit(service, null, true);
     return this;
   }
 }

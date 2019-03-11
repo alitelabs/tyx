@@ -32,7 +32,7 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(list => [ColumnMetadataSchema]) joinColumns: IColumnMetadata[];
 
   public static RESOLVERS: SchemaResolvers<IRelationMetadata> = {
-    target: obj => Utils.value(obj.target),
+    target: obj => Utils.label(obj.target),
     joinColumns: (obj, args) => Lo.filter(obj.joinColumns, args),
   };
 }

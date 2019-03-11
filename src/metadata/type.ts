@@ -1,4 +1,4 @@
-import { Class, ObjectType, Prototype } from '../types/core';
+import { Class, Prototype, TypeRef } from '../types/core';
 import { Utils } from '../utils';
 import { DesignMetadata } from './method';
 import { Metadata } from './registry';
@@ -18,9 +18,8 @@ export type Scalar =
   | (new () => Any)
   | (new () => Date);
 
-export type ClassRef<T> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
 export type ScalarRef<T = Scalar> = (type?: any) => (Scalar | [Scalar]);
-export type VarType<T = any> = Scalar | [Scalar] | ScalarRef<T> | ClassRef<T> | EnumMetadata;
+export type VarType<T = any> = Scalar | [Scalar] | ScalarRef<T> | TypeRef<T> | EnumMetadata;
 export type InputType<T = any> = VarType<T> | [undefined] | ((ref?: any) => IEnumMetadata);
 export type ResultType<T = any> = VarType<T>;
 
@@ -357,11 +356,11 @@ export class EnumMetadata extends VarMetadata implements IEnumMetadata {
   }
 
   public static has(target: Object): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_ENUM, target);
+    return Reflect.hasOwnMetadata(Metadata.TYX_ENUM, target);
   }
 
   public static get(target: Object): EnumMetadata {
-    return Reflect.getMetadata(Metadata.TYX_ENUM, target);
+    return Reflect.getOwnMetadata(Metadata.TYX_ENUM, target);
   }
 
   public static define(target: Object, name?: string): EnumMetadata {
@@ -408,21 +407,22 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_TYPE, target)
-      || Reflect.hasMetadata(Metadata.TYX_TYPE, target.constructor);
+    return Reflect.hasOwnMetadata(Metadata.TYX_TYPE, target)
+      || Reflect.hasOwnMetadata(Metadata.TYX_TYPE, target.constructor);
   }
 
   public static get(target: Class | Prototype): TypeMetadata {
-    return Reflect.getMetadata(Metadata.TYX_TYPE, target)
-      || Reflect.getMetadata(Metadata.TYX_TYPE, target.constructor);
+    return Reflect.getOwnMetadata(Metadata.TYX_TYPE, target)
+      || Reflect.getOwnMetadata(Metadata.TYX_TYPE, target.constructor);
   }
 
   public static define(target: Class): TypeMetadata {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
+    if (Utils.baseClass(target) !== Object) throw new TypeError('Inheritance not supported');
     let meta = this.get(target);
-    if (!meta) {
-      meta = new TypeMetadata(target);
-      Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
-    }
+    if (meta) return meta;
+    meta = new TypeMetadata(target);
+    Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
     return meta;
   }
 
@@ -455,6 +455,8 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   }
 
   public commit(type?: GraphKind, name?: string): this {
+    // TODO: Support Inheritance
+    // Copy members from base types
     this.kind = type;
     this.name = name || this.target.name;
     if (this.kind && !GraphKind.isStruc(this.kind)) throw new TypeError(`Not a struct type: ${this.kind}`);

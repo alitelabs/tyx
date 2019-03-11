@@ -144,7 +144,7 @@ export abstract class Metadata implements MetadataRegistry {
 
       MethodMetadata: this.MethodMetadata,
       HttpRouteMetadata: this.HttpRouteMetadata,
-      EventRouteMetadata: this.EventRouteMetadata,
+      EventRouteMetadata: this.EventRouteMetadata
     };
     Object.setPrototypeOf(reg, Metadata.prototype);
     return reg as any;

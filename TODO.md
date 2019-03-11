@@ -1,6 +1,26 @@
 ### TODO
+
+ - [x] Inline API inheritance
+ - [ ] Service inheritance (handler)
+ - [ ] Inheritance of HTTP bindings
+ - [ ] Publish API if there is a service implementation
+ - [ ] Use Api class in inject (proxy)
+ - [ ] Repository validation, no uncommited Api, Service ....
+ - [ ] Core as array of all instances
+
+ - [ ] TypeOrm always drop keys, anything wrong with tyx decorator wrappers?
+ - [ ] Startup time impact of GraphQL
+ - [ ] Make it work with Serverless local API Gateway !
+
+ - [x] What is wrong with Playground ???
+ - [ ] Why GraphQL does not return syntax error details
+ - [ ] Api Service suffix removal
+ = [ ] Convention (ctx, req) or (req, ctx) !!!
+
+== 2018
+
  - [x] Rename Query nodes, sufix: Expr, Record
- - [ ] Version upgrade of graphiql tools
+ - [x] Version upgrade of graphiql tools
  - [x] Api method required args
  - [ ] On Core.init send roles map for GraphQL (options object)
  - [ ] Database connect timeout, no error?
@@ -12,4 +32,4 @@
  - [ ] Move configuration into encrypted store
 
  - [ ] Integrate wtfnode in error log
- - [!] Subclass metadata, direct extension from ExpressService
+ 

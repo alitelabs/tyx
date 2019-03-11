@@ -32,21 +32,21 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_DATABASE, target)
-      || Reflect.hasMetadata(Metadata.TYX_DATABASE, target.constructor);
+    return Reflect.hasOwnMetadata(Metadata.TYX_DATABASE, target)
+      || Reflect.hasOwnMetadata(Metadata.TYX_DATABASE, target.constructor);
   }
 
   public static get(target: Class | Prototype): DatabaseMetadata {
-    return Reflect.getMetadata(Metadata.TYX_DATABASE, target)
-      || Reflect.getMetadata(Metadata.TYX_DATABASE, target.constructor);
+    return Reflect.getOwnMetadata(Metadata.TYX_DATABASE, target)
+      || Reflect.getOwnMetadata(Metadata.TYX_DATABASE, target.constructor);
   }
 
   public static define(target: Class): DatabaseMetadata {
+    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     let meta = this.get(target);
-    if (!meta) {
-      meta = new DatabaseMetadata(target);
-      Reflect.defineMetadata(Metadata.TYX_DATABASE, meta, target);
-    }
+    if (meta) return meta;
+    meta = new DatabaseMetadata(target);
+    Reflect.defineMetadata(Metadata.TYX_DATABASE, meta, target);
     return meta;
   }
 
@@ -58,7 +58,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
       this.targets.push(target);
       this.entities.push(meta);
     }
-    ServiceMetadata.define(this.target).commit(alias);
+    ServiceMetadata.define(this.target).commit(alias, null, true);
     Metadata.DatabaseMetadata[this.alias] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;

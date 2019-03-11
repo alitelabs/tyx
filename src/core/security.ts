@@ -14,7 +14,7 @@ import { Utils } from '../utils';
 import JWT = require('jsonwebtoken');
 import MS = require('ms');
 
-@Service(Security)
+@Service(Security, false)
 export class CoreSecurity implements Security {
   public readonly log: Logger;
 

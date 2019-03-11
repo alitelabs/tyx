@@ -1,5 +1,4 @@
 import { Class, Prototype } from '../types/core';
-import { Utils } from '../utils';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { DesignMetadata } from './method';
@@ -346,7 +345,6 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     options: ColumnOptions
   ) {
     super();
-    if (!Utils.isClass(target)) throw new TypeError('Not a class');
     const state: IColumnMetadata = {
       kind,
       target,
@@ -378,11 +376,11 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    return Reflect.hasOwnMetadata(Metadata.TYX_COLUMN, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): ColumnMetadata {
-    return Reflect.getMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    return Reflect.getOwnMetadata(Metadata.TYX_COLUMN, target, propertyKey);
   }
 
   public static define(
@@ -417,9 +415,9 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       mode,
       options
     );
+    EntityMetadata.define(target.constructor).addColumn(meta);
     Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
     Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
-    EntityMetadata.define(target.constructor).addColumn(meta);
     return meta;
   }
 
