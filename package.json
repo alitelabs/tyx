@@ -26,7 +26,6 @@
   "types": "lib/index.d.ts",
   "source": "src/index.ts",
   "files": [
-    "src",
     "lib"
   ],
   "scripts": {
