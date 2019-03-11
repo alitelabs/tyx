@@ -20,8 +20,11 @@ export {
   Connection,
   ConnectionOptions,
   EntityManager,
-  SelectQueryBuilder, createConnection,
+  SelectQueryBuilder,
+  createConnection,
   getConnection,
   Repository,
-  useContainer
+  useContainer,
+  getConnectionManager,
+  ConnectionManager
 } from 'typeorm';

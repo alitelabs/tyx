@@ -248,9 +248,13 @@ export class LambdaAdapter {
   }
 
   private async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
+    let resource = event.resource;
+    const prefix = process.env.PREFIX || ('/' + process.env.STAGE);
+    if (event.resource && prefix && resource.startsWith(prefix)) resource = resource.replace(prefix, '');
+    const requestId = Utils.isUUID(context && context.awsRequestId) ? context.awsRequestId : Utils.uuid();
     const req: HttpRequest = {
       type: 'http',
-      requestId: context && context.awsRequestId || Utils.uuid(),
+      requestId,
       sourceIp: (event.requestContext
         && event.requestContext.identity
         && event.requestContext.identity.sourceIp) || '255.255.255.255',
@@ -260,7 +264,7 @@ export class LambdaAdapter {
       method: undefined,
 
       httpMethod: event.httpMethod as HttpMethod,
-      resource: event.resource,
+      resource,
       path: event.path,
       pathParameters: event.pathParameters || {},
       queryStringParameters: event.queryStringParameters || {},

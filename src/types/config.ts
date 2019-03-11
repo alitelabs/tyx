@@ -23,7 +23,7 @@ export namespace LogLevel {
     if (toLevel == null || toLevel === undefined) {
       level = LogLevel.OFF;
     } else {
-      level = toLevel;
+      level = (LogLevel[toLevel as any] || LogLevel.INFO) as any;
     }
   }
 }

@@ -10,12 +10,14 @@
 
  - [ ] TypeOrm always drop keys, anything wrong with tyx decorator wrappers?
  - [ ] Startup time impact of GraphQL
- - [ ] Make it work with Serverless local API Gateway !
+ - [x] Make it work with Serverless offline API Gateway !
 
  - [x] What is wrong with Playground ???
  - [ ] Why GraphQL does not return syntax error details
  - [ ] Api Service suffix removal
  = [ ] Convention (ctx, req) or (req, ctx) !!!
+
+ - [ ] Upgrade to new Lambda request types ...
 
 == 2018
 

@@ -3,7 +3,7 @@ import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { ExpressAdapter } from '../express/adapter';
 import { CoreSchema } from '../graphql/schema';
 import { Express } from '../import';
-import { Connection, ConnectionOptions, createConnection } from '../import/typeorm';
+import { Connection, ConnectionOptions, getConnection, getConnectionManager } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
 import { Class, ContainerState, ObjectType, Prototype } from '../types/core';
@@ -114,6 +114,10 @@ export abstract class Core {
         entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
       };
     }
+    if (!getConnectionManager().has('tyx')) {
+      this.connection = getConnectionManager().create(this.options);
+      this.log.info('Connection created');
+    }
   }
 
   public static async get(): Promise<CoreInstance>;
@@ -127,8 +131,8 @@ export abstract class Core {
     this.init();
     if (this.options) {
       if (!this.connection) {
-        this.connection = await createConnection(this.options);
-        this.log.info('Connection created');
+        this.log.info('Connecting');
+        this.connection = getConnection('tyx');
       }
       if (!this.connection.isConnected) {
         await this.connection.connect();
@@ -185,11 +189,11 @@ export abstract class Core {
   }
 
   private static async release() {
-    if (!this.server && this.connection) {
+    if (this.connection && !process.env.IS_OFFLINE) {
       await this.connection.close();
       this.log.info('Connection closed');
-      Wtf.dump();
     }
+    if (process.env.WTF_NODE) Wtf.dump();
   }
 
   public static lambda(): LambdaHandler {
@@ -201,6 +205,7 @@ export abstract class Core {
   }
 
   public static start(port: number, basePath?: string, extraArgs?: any) {
+    process.env.IS_OFFLINE = 'true';
     this.init();
 
     // tslint:disable-next-line:no-parameter-reassignment
