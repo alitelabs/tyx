@@ -13,6 +13,8 @@ import { RemoteRequest } from '../types/proxy';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 
+import Wtf = require('wtfnode');
+
 export abstract class Core {
   public static log = Logger.get('TYX', Core.name);
 
@@ -186,6 +188,7 @@ export abstract class Core {
     if (!this.server && this.connection) {
       await this.connection.close();
       this.log.info('Connection closed');
+      Wtf.dump();
     }
   }
 
