@@ -14,7 +14,6 @@ import '../schema/registry';
 import { Class } from '../types/core';
 import { SchemaResolver } from './types';
 import { back, scalar } from './utils';
-import { QueryVisitor, RelationVisitor } from './visitors';
 
 import GraphQLJSON = require('graphql-type-json');
 import FS = require('fs');
@@ -44,21 +43,21 @@ const DEF_SCALARS = Object.keys(SCALARS).map(s => `scalar ${s}`).join('\n');
 
 const DEF_DIRECTIVES = `
 directive @metadata on OBJECT
-directive @input on OBJECT
+directive @input on INPUT_OBJECT
 directive @type on OBJECT
 directive @entity on OBJECT
-directive @expression on OBJECT
+directive @expression on INPUT_OBJECT
+directive @auth(api: String, method: String, roles: JSON) on FIELD_DEFINITION
 directive @crud(auth: JSON) on FIELD_DEFINITION
-directive @query(auth: JSON) on FIELD_DEFINITION
-directive @mutation(auth: JSON) on FIELD_DEFINITION
+directive @transient on FIELD_DEFINITION
 directive @relation(type: RelationType) on FIELD_DEFINITION
 `.trim();
 
 const DIRECTIVES = {
   // entity: ToolkitVisitor,
   // column: RelationVisitor,
-  query: QueryVisitor,
-  relation: RelationVisitor
+  // query: QueryVisitor,
+  // relation: RelationVisitor
 };
 
 export interface DatabaseSchema {
@@ -603,7 +602,7 @@ export class CoreSchema {
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
-      const dir = ` @${method.auth}(api: "${method.api.name}", method: "${method.name}", roles: ${scalar(method.roles)})`;
+      const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${scalar(method.roles)})`;
       const host: Class = method.host && method.host();
       const meth: MethodSchema = {
         metadata: method,

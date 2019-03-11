@@ -441,6 +441,7 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
         dt.kind !== meta.kind
         && !(meta.kind === GraphKind.Int && design === Number)
         && !(meta.kind === GraphKind.ID && design === String)
+        && !(meta.kind === GraphKind.Ref)
       ) {
         console.warn(`Field [${this.target.name}.${propertyKey}]: kind [${meta.kind}] <> design [${design && design.name}]`);
       }
