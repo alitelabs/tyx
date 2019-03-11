@@ -429,15 +429,15 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async release(ctx: Context): Promise<void> {
-    for (const [sid, meta] of Object.entries(Metadata.ServiceMetadata)) {
+    for (const meta of Object.values(Metadata.ServiceMetadata)) {
       if (!meta.releasor) continue;
-      if (!this.container.has(sid)) continue;
+      if (!this.container.has(meta.alias)) continue;
       try {
-        const service = this.container.get<any>(sid);
+        const service = this.container.get<any>(meta.alias);
         const handler = service[meta.releasor.method] as Function;
         await handler.call(service, ctx);
       } catch (e) {
-        this.log.error('Failed to release service: [%s]', sid);
+        this.log.error('Failed to release service: [%s:%s]', meta.alias, meta.name);
         this.log.error(e);
         // TODO: Error state for container
       }
