@@ -1,5 +1,6 @@
 // tslint:disable-next-line:import-blacklist
-import { Core, Mutation, Public, Query, Service } from '..';
+import { Mutation, Public, Query, Service } from '..';
+import { CoreServer } from '../core/server';
 import { Any } from '../metadata/type';
 
 @Service()
@@ -16,4 +17,4 @@ export class HelloWorld {
   }
 }
 
-Core.start(5055);
+CoreServer.start(5055);

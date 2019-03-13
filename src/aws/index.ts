@@ -25,6 +25,10 @@ export {
 } from './proxy';
 
 export {
+  LambdaUtils
+} from './utils';
+
+export {
   S3ObjectCreated,
   SQSMessageReceived,
   DynamoDbInsert,

@@ -1,8 +1,5 @@
-import { createServer, Server } from 'http';
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
-import { ExpressAdapter } from '../express/adapter';
 import { CoreSchema } from '../graphql/schema';
-import { Express } from '../import';
 import { Connection, ConnectionOptions, getConnection, getConnectionManager } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
@@ -29,9 +26,7 @@ export abstract class Core {
   private static pool: CoreInstance[];
   private static counter: number = 0;
 
-  private static server: Server;
-
-  private constructor() { }
+  protected constructor() { }
 
   public static get metadata(): Metadata {
     return Metadata.get();
@@ -188,8 +183,8 @@ export abstract class Core {
     }
   }
 
-  private static async release() {
-    if (this.connection && !process.env.IS_OFFLINE) {
+  public static async release(force?: boolean) {
+    if (this.connection && !process.env.IS_OFFLINE && !force) {
       await this.connection.close();
       this.log.info('Connection closed');
     }
@@ -198,31 +193,5 @@ export abstract class Core {
 
   public static lambda(): LambdaHandler {
     return new LambdaAdapter().export();
-  }
-
-  public static express(basePath?: string): Express.Express {
-    return new ExpressAdapter(basePath || '/local').express();
-  }
-
-  public static start(port: number, basePath?: string, extraArgs?: any) {
-    process.env.IS_OFFLINE = 'true';
-    this.init();
-
-    // tslint:disable-next-line:no-parameter-reassignment
-    port = port || 5000;
-    const adapter = new ExpressAdapter(basePath || '/local', extraArgs);
-
-    const app = adapter.express();
-    this.server = createServer(app);
-    this.server.listen(port);
-
-    this.log.info('👌  Server initialized.');
-    adapter.paths.forEach(p => this.log.info(`${p[0]} http://localhost:${port}${p[1]}`));
-    this.log.info('🚀  Server started at %s ...', port);
-  }
-
-  public static stop() {
-    if (this.server) this.server.close();
-    if (this.connection) this.connection.close();
   }
 }

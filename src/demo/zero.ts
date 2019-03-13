@@ -1,4 +1,3 @@
-// tslint:disable-next-line:import-blacklist
-import { Core } from '..';
+import { CoreServer } from "../core/server";
 
-Core.start(5055);
+CoreServer.start(5055);

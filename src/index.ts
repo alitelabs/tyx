@@ -65,8 +65,8 @@ export * from './core/security';
 export * from './core/proxy';
 export * from './core/provider';
 export * from './core/graphql';
+export * from './core/server';
 
 // --- TODO ---
 
 export * from './aws';
-export * from './express';

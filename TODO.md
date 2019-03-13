@@ -12,6 +12,8 @@
  - [ ] Startup time impact of GraphQL
  - [x] Make it work with Serverless offline API Gateway !
 
+ - [ ] Support for multiple input args
+
  - [x] What is wrong with Playground ???
  - [ ] Why GraphQL does not return syntax error details
  - [ ] Api Service suffix removal

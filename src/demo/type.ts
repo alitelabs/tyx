@@ -1,6 +1,7 @@
 import FS = require('fs');
 // tslint:disable-next-line:import-blacklist
 import { Core, Enum, Field, Input, Mutation, Query, Service, Type } from '..';
+import { CoreServer } from '../core/server';
 import { Public } from '../decorators/auth';
 import { Any } from '../metadata/type';
 
@@ -87,4 +88,4 @@ export class HelloWorld {
 
 FS.writeFileSync('schema.gql', Core.schema.typeDefs());
 
-Core.start(5055);
+CoreServer.start(5055);
