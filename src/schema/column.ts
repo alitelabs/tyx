@@ -3,7 +3,7 @@ import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
-import { DesignMetadata } from '../metadata/method';
+import { IDesignMetadata } from '../metadata/method';
 import { GraphKind, IVarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
@@ -19,7 +19,7 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;
   @Field() required: boolean;
-  @Field(Object) design: DesignMetadata;
+  @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;
 
   @Field(String) target: Class;

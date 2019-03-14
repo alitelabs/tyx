@@ -5,21 +5,26 @@ import { EnumMetadata, GraphKind, Int, TypeMetadata, VarType } from '../metadata
 
 export function Input(name?: string): ClassDecorator {
   return (target) => {
-    Metadata.trace(Input, { type: GraphKind.Type, name }, target);
-    return void TypeMetadata.define(target).commit(GraphKind.Input, name);
+    return Metadata.trace(Input, { type: GraphKind.Type, name }, target, void 0, void 0, () => {
+      TypeMetadata.define(target).commit(GraphKind.Input, name);
+    });
   };
 }
+Input.core = true;
 
 export function Type(name?: string): ClassDecorator {
   return (target) => {
-    Metadata.trace(Type, { type: GraphKind.Type, name }, target);
-    return void TypeMetadata.define(target).commit(GraphKind.Type, name);
+    return Metadata.trace(Type, { type: GraphKind.Type, name }, target, void 0, void 0, () => {
+      TypeMetadata.define(target).commit(GraphKind.Type, name);
+    });
   };
 }
+Type.core = true;
 
 export function Enum(target: Object, name?: string): EnumMetadata {
   return EnumMetadata.define(target, name);
 }
+Enum.core = true;
 
 export function Field(target: Object, propertyKey: string): void;
 export function Field<T = any>(): PropertyDecorator;
@@ -45,7 +50,9 @@ export function Field<T = any>(first?: VarType<T> | 0 | boolean | Object, second
       required = second as any;
     }
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    Metadata.trace(Field, { type, required }, target, propertyKey);
-    TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
+    return Metadata.trace(Field, { type, required }, target, propertyKey, void 0, () => {
+      TypeMetadata.define(target.constructor).addField(propertyKey, type, required);
+    });
   }
 }
+Field.core = true;

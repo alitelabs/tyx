@@ -5,7 +5,7 @@ import { GraphiQLData } from 'apollo-server-module-graphiql';
 import { GraphQLSchema } from 'graphql';
 import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
-import { Activate, Inject, Service } from '../decorators/service';
+import { Activate, CoreService, Inject } from '../decorators/service';
 import { InternalServerError } from '../errors';
 import { CoreSchema } from '../graphql/schema';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../graphql/voyager';
@@ -21,7 +21,7 @@ const GraphiQL = require('apollo-server-module-graphiql');
 
 export { PlaygroundRenderPageOptions, PlaygroundConfig };
 
-@Service(GraphQL, false)
+@CoreService(GraphQL)
 export class CoreGraphQL implements GraphQL {
 
   public static makePublic() {

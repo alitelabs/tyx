@@ -12,11 +12,12 @@ export function OneToMany<T>(
   options?: RelationOptions,
 ): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const rel = Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).commit(RelationType.OneToMany, typeFunction, inverseSide, options);
-    return rel;
+    return Metadata.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey, void 0, () => {
+      const rel = Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).commit(RelationType.OneToMany, typeFunction, inverseSide, options);
+      return rel;
+    });
   };
 }
 
@@ -37,11 +38,12 @@ export function ManyToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(ManyToOne, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
-    return rel;
+    return Metadata.trace(ManyToOne, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
+      const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
+      return rel;
+    });
   };
 }
 
@@ -62,11 +64,12 @@ export function OneToOne<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
-    return rel;
+    return Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
+      const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
+      return rel;
+    });
   };
 }
 
@@ -87,11 +90,12 @@ export function ManyToMany<T>(
   return (target, propertyKey) => {
     const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
     const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    Metadata.trace(ManyToMany, { typeFunction, inverseSide, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
-    return rel;
+    return Metadata.trace(ManyToMany, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
+      const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
+      return rel;
+    });
   };
 }
 
@@ -101,11 +105,12 @@ export function JoinColumn(options: JoinColumnOptions): PropertyDecorator;
 // export function JoinColumn(options: JoinColumnOptions[]): PropertyDecorator;
 export function JoinColumn(options?: JoinColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(JoinColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const col = Orm.JoinColumn(options)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).addJoinColumn(options);
-    return col;
+    return Metadata.trace(JoinColumn, { options }, target, propertyKey, void 0, () => {
+      const col = Orm.JoinColumn(options)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).addJoinColumn(options);
+      return col;
+    });
   };
 }
 
@@ -133,10 +138,11 @@ export function JoinTable(options: JoinTableMultipleColumnsOptions): PropertyDec
  */
 export function JoinTable(options?: JoinTableOptions | JoinTableMultipleColumnsOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(JoinTable, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const col = Orm.JoinTable(options)(target, propertyKey);
-    RelationMetadata.define(target, propertyKey).addJoinTable(options);
-    return col;
+    return Metadata.trace(JoinTable, { options }, target, propertyKey, void 0, () => {
+      const col = Orm.JoinTable(options)(target, propertyKey);
+      RelationMetadata.define(target, propertyKey).addJoinTable(options);
+      return col;
+    });
   };
 }

@@ -1,6 +1,8 @@
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
-import { IEventRouteMetadata, IHttpRouteMetadata, IMethodMetadata, MethodMetadata } from './method';
+import { IEventRouteMetadata } from './event';
+import { IHttpRouteMetadata } from './http';
+import { IMethodMetadata, MethodMetadata } from './method';
 import { Metadata } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
@@ -115,6 +117,12 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public publish(service: ServiceMetadata): this {
+    if (this.publisher && this.publisher !== service) {
+      // const parent = Utils.baseClass(service.target);
+      if (this.publisher !== service.base) {
+        throw new TypeError(`Duplicate Api implementation: [${service.name}] > [${this.publisher.name}]`);
+      }
+    }
     this.publisher = service;
     for (const method of Object.values(this.methods)) {
       method.publish(service);

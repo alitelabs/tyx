@@ -100,9 +100,10 @@ export function Index(
   }
   return (clsOrObject: Class | Object, propertyKey?: string) => {
     const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
-    Metadata.trace(Index, { name, fields, options }, target, propertyKey);
-    // TODO: EntityMetadata.define(target).addIndex(options);
-    return Orm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(clsOrObject, propertyKey);
+    return Metadata.trace(Index, { name, fields, options }, target, propertyKey, void 0, () => {
+      // TODO: EntityMetadata.define(target).addIndex(options);
+      return Orm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(clsOrObject, propertyKey);
+    });
   };
 }
 
@@ -152,8 +153,9 @@ export function Unique(
 
   return function (clsOrObject: Class | Object, propertyKey?: string) {
     const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
-    Metadata.trace(Unique, { name, fields }, target, propertyKey);
-    // TODO: EntityMetadata.define(target).addUnique(options);
-    return Orm.Unique(nameOrFields as any, maybeFields as any)(clsOrObject, propertyKey);
+    return Metadata.trace(Unique, { name, fields }, target, propertyKey, void 0, () => {
+      // TODO: EntityMetadata.define(target).addUnique(options);
+      return Orm.Unique(nameOrFields as any, maybeFields as any)(clsOrObject, propertyKey);
+    });
   };
 }

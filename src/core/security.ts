@@ -1,4 +1,4 @@
-import { Inject, Service } from '../decorators/service';
+import { CoreService, Inject } from '../decorators/service';
 import { BadRequest, Forbidden, Unauthorized } from '../errors';
 import { Logger } from '../logger';
 import { MethodMetadata } from '../metadata/method';
@@ -14,7 +14,7 @@ import { Utils } from '../utils';
 import JWT = require('jsonwebtoken');
 import MS = require('ms');
 
-@Service(Security, false)
+@CoreService(Security)
 export class CoreSecurity implements Security {
   public readonly log: Logger;
 

@@ -1,6 +1,6 @@
 import { Class, Prototype, TypeRef } from '../types/core';
 import { Utils } from '../utils';
-import { DesignMetadata } from './method';
+import { IDesignMetadata } from './method';
 import { Metadata } from './registry';
 
 export class ID extends String { }
@@ -309,7 +309,7 @@ export class ResultMetadata implements IResultMetadata {
 export interface IFieldMetadata extends IVarMetadata {
   name: string;
   required: boolean;
-  design: DesignMetadata;
+  design: IDesignMetadata;
   build: IVarMetadata;
 }
 
@@ -319,7 +319,7 @@ export abstract class FieldMetadata extends VarMetadata implements IFieldMetadat
   public required: boolean = undefined;
   public item?: VarMetadata = undefined;
   public ref?: Class = undefined;
-  public design: DesignMetadata = undefined;
+  public design: IDesignMetadata = undefined;
   public build: VarMetadata = undefined;
 
   public static on(obj: IFieldMetadata): FieldMetadata {

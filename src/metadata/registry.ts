@@ -5,7 +5,9 @@ import { ApiMetadata } from './api';
 import { ColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata } from './entity';
-import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from './method';
+import { EventRouteMetadata } from './event';
+import { HttpRouteMetadata } from './http';
+import { MethodMetadata } from './method';
 import { ProxyMetadata } from './proxy';
 import { RelationMetadata } from './relation';
 import { ServiceMetadata } from './service';
@@ -15,6 +17,7 @@ export interface DecorationMetadata {
   decorator: string;
   ordinal: number;
   target?: Class;
+  prototype?: boolean;
   propertyKey?: string;
   index?: number;
   args: Record<string, any>;
@@ -309,21 +312,46 @@ export abstract class Metadata implements MetadataRegistry {
   }
 
   public static trace(
-    decorator: string | Function,
+    decorator: Function,
     args: Record<string, any>,
     over: Object | Function,
-    propertyKey?: string | symbol,
-    index?: number,
-  ) {
+    propertyKey: string | symbol,
+    index: number,
+    executor: () => any | void
+  ): any {
     const name = decorator instanceof Function ? decorator.name : decorator;
     const target = (typeof over === 'object' ? over.constructor : over);
     const key = propertyKey && propertyKey.toString();
-    const traceInfo: DecorationMetadata = { decorator: name, ordinal: this.ordinal++, target, propertyKey: key, index, args };
+    const traceInfo: DecorationMetadata = {
+      decorator: name,
+      ordinal: this.ordinal,
+      target, prototype: target !== over,
+      propertyKey: key,
+      index,
+      args
+    };
     this.DecorationMetadata.push(traceInfo);
 
     const decoratorInfo = this.DecoratorMetadata[name] = this.DecoratorMetadata[name] || { decorator: name, count: 0, targets: {} };
     decoratorInfo.count++;
     decoratorInfo.targets[target.name] = target;
+
+    let res: any;
+    if ((decorator as any).core || target.name.startsWith('Core')) {
+      res = executor();
+    } else {
+      res = undefined && executor();
+    }
+
+    false && console.log(
+      `-- [${this.ordinal}] @${decorator.name} ${target.name}`
+      + (key ? `.${key}` : ''),
+      index !== undefined ? `(${index})` : '',
+      (res ? ` -> ${Utils.label(res)}` : '')
+    );
+
+    this.ordinal++;
+    return res;
   }
 
   public stringify(ident?: number) {

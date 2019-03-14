@@ -1,4 +1,4 @@
-import { Context, Request } from './core';
+import { Request } from './core';
 
 export interface EventRequest extends Request {
   source: string;
@@ -33,12 +33,4 @@ export interface EventReturn {
   method: string;
   error: any;
   data: any;
-}
-
-export interface EventAdapter {
-  (
-    next: (...args: any[]) => Promise<any>,
-    ctx: Context,
-    call: EventRequest,
-  ): Promise<any>;
 }

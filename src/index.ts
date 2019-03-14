@@ -18,6 +18,8 @@ export * from './metadata/api';
 export * from './metadata/service';
 export * from './metadata/proxy';
 export * from './metadata/method';
+export * from './metadata/http';
+export * from './metadata/event';
 export * from './metadata/type';
 export * from './metadata/entity';
 export * from './metadata/column';

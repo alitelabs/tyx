@@ -35,8 +35,9 @@ export function Auth<TR extends Roles>(roles: TR) {
 function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
   return (target, propertyKey, descriptor) => {
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    Metadata.trace(decorator, { roles }, target, propertyKey);
-    const auth = decorator.name.toLowerCase();
-    MethodMetadata.define(target, propertyKey, descriptor).addAuth(auth, roles);
+    return Metadata.trace(decorator, { roles }, target, propertyKey, void 0, () => {
+      const auth = decorator.name.toLowerCase();
+      MethodMetadata.define(target, propertyKey, descriptor).addAuth(auth, roles);
+    });
   };
 }

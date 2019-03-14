@@ -3,7 +3,7 @@ import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
-import { DesignMetadata } from '../metadata/method';
+import { IDesignMetadata } from '../metadata/method';
 import { GraphKind, IEnumMetadata, IFieldMetadata, IInputMetadata, IResultMetadata, ITypeMetadata, IVarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
@@ -60,7 +60,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   @Field(String) kind: GraphKind;
   @Field() name: string;
   @Field() required: boolean;
-  @Field(Object) design: DesignMetadata;
+  @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;
   @Field(String) ref?: Class;
   @Field(ref => VarMetadataSchema) item?: IVarMetadata;

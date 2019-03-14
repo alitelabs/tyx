@@ -5,7 +5,7 @@ import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
-import { DesignMetadata } from '../metadata/method';
+import { IDesignMetadata } from '../metadata/method';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
 import { GraphKind, IVarMetadata } from '../metadata/type';
 import { Class } from '../types/core';
@@ -20,7 +20,7 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field() name: string;
   @Field() required: boolean;
   @Field(item => VarMetadataSchema) item: IVarMetadata;
-  @Field(Object) design: DesignMetadata;
+  @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;
 
   @Field(String) target: Class;

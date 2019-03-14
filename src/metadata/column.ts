@@ -1,7 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { DesignMetadata } from './method';
+import { IDesignMetadata } from './method';
 import { Metadata } from './registry';
 import { FieldMetadata, GraphKind, VarMetadata, VarType } from './type';
 
@@ -339,7 +339,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     kind: GraphKind,
     target: Class,
     propertyKey: string,
-    design: DesignMetadata,
+    design: IDesignMetadata,
     ref: Class,
     mode: ColumnMode,
     options: ColumnOptions

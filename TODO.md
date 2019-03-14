@@ -1,18 +1,22 @@
 ### TODO
 
  - [x] Inline API inheritance
- - [ ] Service inheritance (handler)
- - [ ] Inheritance of HTTP bindings
+ - [x] Service inheritance
+ - [x] Inheritance of HTTP bindings
  - [ ] Publish API if there is a service implementation
  - [ ] Use Api class in inject (proxy)
  - [ ] Repository validation, no uncommited Api, Service ....
  - [ ] Core as array of all instances
+ - [ ] Validate Service has handlers for all Api methods
+ - [x] Remove adapter functions from http and event decorators
+ - [ ] Metdata.trace to return a decorator function
 
  - [ ] TypeOrm always drop keys, anything wrong with tyx decorator wrappers?
  - [ ] Startup time impact of GraphQL
  - [x] Make it work with Serverless offline API Gateway !
 
- - [ ] Support for multiple input args
+ - [ ] Support for multiple input args, GraphQL
+ - [ ] Performance https://www.smashingmagazine.com/2018/06/nodejs-tools-techniques-performance-servers/
 
  - [x] What is wrong with Playground ???
  - [ ] Why GraphQL does not return syntax error details

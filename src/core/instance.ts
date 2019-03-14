@@ -3,7 +3,9 @@ import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery 
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
-import { EventRouteMetadata, HttpRouteMetadata, MethodMetadata } from '../metadata/method';
+import { EventRouteMetadata } from '../metadata/event';
+import { HttpRouteMetadata } from '../metadata/http';
+import { MethodMetadata } from '../metadata/method';
 import { ProxyMetadata } from '../metadata/proxy';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
@@ -21,7 +23,6 @@ import { CoreGraphQL } from './graphql';
 import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
 
-// @Service(CoreContainer)
 export class CoreInstance implements CoreContainer {
 
   private application: string;
@@ -206,27 +207,17 @@ export class CoreInstance implements CoreContainer {
         this.log.debug('HTTP Request: %j', req);
 
         const handler: Function = service[target.method.name];
-        // const http = target.method.http[route];
-        let result: any;
-        if (target.adapter) {
-          result = await target.adapter(
-            handler.bind(service),
-            ctx,
-            req,
-            req.pathParameters || {},
-            req.queryStringParameters || {});
-        } else {
-          const args: any = [];
-          if (target.method.bindings) {
-            for (const [index, arg] of target.method.bindings.entries()) {
-              args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
-            }
-          }
-          result = await handler.apply(service, args);
-        }
 
+        const args: any = [];
+        if (target.method.bindings) {
+          for (const [index, arg] of target.method.bindings.entries()) {
+            args[index] = (arg.binder ? arg.binder(ctx, req) : undefined);
+          }
+        }
+        let result = await handler.apply(service, args);
         const contentType = target.method.contentType || 'application/json';
         if (contentType !== HttpResponse) result = { statusCode: target.code, body: result, contentType };
+
         if (ctx && ctx.auth.renewed && ctx.auth.token) {
           result.headers = result.headers || {};
           result.headers['Token'] = ctx.auth.token;
@@ -373,12 +364,7 @@ export class CoreInstance implements CoreContainer {
           for (const record of req.records) {
             req.record = record;
             const handler = service[target.handler];
-            let data: any;
-            if (target.adapter) {
-              data = await target.adapter(handler.bind(service), ctx, req);
-            } else {
-              data = await handler.call(service, ctx, req);
-            }
+            const data = await handler.call(service, ctx, req);
             result.status = result.status || 'OK';
             result.returns.push({
               service: target.api.name,

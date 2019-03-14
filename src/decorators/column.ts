@@ -8,68 +8,74 @@ import { Enum } from './type';
 
 export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(Column, { strategy }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const col = Orm.Generated(strategy || 'uuid')(target, propertyKey);
-    const meta = ColumnMetadata.get(target, propertyKey);
-    if (!meta) throw new TypeError(`Column decorator must be applied first on ${target.constructor.name}.${propertyKey}`);
-    meta.setGenerated(strategy);
-    return col;
+    return Metadata.trace(Column, { strategy }, target, propertyKey, void 0, () => {
+      const col = Orm.Generated(strategy || 'uuid')(target, propertyKey);
+      const meta = ColumnMetadata.get(target, propertyKey);
+      if (!meta) throw new TypeError(`Column decorator must be applied first on ${target.constructor.name}.${propertyKey}`);
+      meta.setGenerated(strategy);
+      return col;
+    });
   };
 }
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(Column, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const opts = { nullable: false, ...options };
-    const col = Orm.Column(opts)(target, propertyKey);
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, opts);
-    return col;
+    return Metadata.trace(Column, { options }, target, propertyKey, void 0, () => {
+      const opts = { nullable: false, ...options };
+      const col = Orm.Column(opts)(target, propertyKey);
+      ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, opts);
+      return col;
+    });
   };
 }
 
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(PrimaryColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const opts = { ...options, primary: true, nullable: false };
-    const col = Orm.PrimaryColumn(opts)(target, propertyKey);
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, opts);
-    return col;
+    return Metadata.trace(PrimaryColumn, { options }, target, propertyKey, void 0, () => {
+      const opts = { ...options, primary: true, nullable: false };
+      const col = Orm.PrimaryColumn(opts)(target, propertyKey);
+      ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, opts);
+      return col;
+    });
   };
 }
 
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(CreateDateColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const opts = { ...options, type: ColumnType.DateTime };
-    const col = Orm.CreateDateColumn(opts)(target, propertyKey);
-    ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, opts || {});
-    return col;
+    return Metadata.trace(CreateDateColumn, { options }, target, propertyKey, void 0, () => {
+      const opts = { ...options, type: ColumnType.DateTime };
+      const col = Orm.CreateDateColumn(opts)(target, propertyKey);
+      ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, opts || {});
+      return col;
+    });
   };
 }
 
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(UpdateDateColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const opts = { ...options, type: ColumnType.DateTime };
-    const col = Orm.UpdateDateColumn(opts)(target, propertyKey);
-    ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, opts || {});
-    return col;
+    return Metadata.trace(UpdateDateColumn, { options }, target, propertyKey, void 0, () => {
+      const opts = { ...options, type: ColumnType.DateTime };
+      const col = Orm.UpdateDateColumn(opts)(target, propertyKey);
+      ColumnMetadata.define(target, propertyKey, ColumnMode.CreateDate, opts || {});
+      return col;
+    });
   };
 }
 
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(VersionColumn, { options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    const opts = { ...options, type: ColumnType.BigInt };
-    const col = Orm.VersionColumn(opts)(target, propertyKey);
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Version, opts);
-    return col;
+    return Metadata.trace(VersionColumn, { options }, target, propertyKey, void 0, () => {
+      const opts = { ...options, type: ColumnType.BigInt };
+      const col = Orm.VersionColumn(opts)(target, propertyKey);
+      ColumnMetadata.define(target, propertyKey, ColumnMode.Version, opts);
+      return col;
+    });
   };
 }
 
@@ -90,9 +96,10 @@ export function Transient<T = any>(typeOrRequired?: VarType<T> | 0 | boolean, is
       type = typeOrRequired;
       required = isReq;
     }
-    Metadata.trace(Transient, { type, required }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Transient, { nullable: !required }, type);
+    return Metadata.trace(Transient, { type, required }, target, propertyKey, void 0, () => {
+      ColumnMetadata.define(target, propertyKey, ColumnMode.Transient, { nullable: !required }, type);
+    });
   };
 }
 
@@ -120,12 +127,13 @@ export function StringColumn(numOrOptions?: number | ColumnOptions): PropertyDec
 
 export function EnumColumn(type?: Object, options?: ColumnOptions): PropertyDecorator {
   return (target, propertyKey) => {
-    Metadata.trace(Transient, { type, options }, target, propertyKey);
     if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    // tslint:disable-next-line:no-parameter-reassignment
-    options = { ...options, enum: type, type: ColumnType.Enum };
-    ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options, Enum(type));
-    return Orm.Column(options)(target, propertyKey);
+    return Metadata.trace(Transient, { type, options }, target, propertyKey, void 0, () => {
+      // tslint:disable-next-line:no-parameter-reassignment
+      options = { ...options, enum: type, type: ColumnType.Enum };
+      ColumnMetadata.define(target, propertyKey, ColumnMode.Regular, options, Enum(type));
+      return Orm.Column(options)(target, propertyKey);
+    });
   };
 }
 

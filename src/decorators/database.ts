@@ -20,8 +20,9 @@ export function DatabaseService(aliasOrEntities: string | Class[], second?: Clas
   const alias = typeof aliasOrEntities === 'string' ? aliasOrEntities : 'database';
   const entities = Array.isArray(aliasOrEntities) ? aliasOrEntities : second;
   return (target) => {
-    Metadata.trace(Database, { alias, entities }, target);
-    DatabaseMetadata.define(target).commit(alias, entities);
-    return Di.Service(alias)(target);
+    return Metadata.trace(DatabaseService, { alias, entities }, target, void 0, void 0, () => {
+      DatabaseMetadata.define(target).commit(alias, entities);
+      return Di.Service(alias)(target);
+    });
   };
 }

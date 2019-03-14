@@ -1,5 +1,5 @@
 import { Database } from '../decorators/database';
-import { Activate, Inject, Service } from '../decorators/service';
+import { Activate, CoreService, Inject } from '../decorators/service';
 import { TypeOrmProvider } from '../graphql/typeorm';
 import { Orm } from '../import';
 import { getConnection } from '../import/typeorm';
@@ -11,7 +11,7 @@ import { Class } from '../types/core';
 
 export { Connection, ConnectionOptions, EntityManager, Repository } from '../import/typeorm';
 
-@Service(false)
+@CoreService()
 export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   @Inject(Configuration)

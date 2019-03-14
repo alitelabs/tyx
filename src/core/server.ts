@@ -1,6 +1,7 @@
 import { Express, Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { createServer, Server } from 'http';
-import { Context as Kontext } from 'koa';
+import Koa, { Context as Kontext } from 'koa';
+import Router from 'koa-router';
 import { Core } from '../core/core';
 import { HttpUtils } from '../core/http';
 import { InternalServerError } from '../errors/http';
@@ -8,9 +9,6 @@ import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { Utils } from '../utils';
-import Koa = require('koa');
-import Router = require('koa-router');
-import RawBody = require('raw-body');
 
 export abstract class CoreServer extends Core {
   public static log: Logger = Logger.get('TYX', 'Server');
@@ -69,14 +67,17 @@ export abstract class CoreServer extends Core {
   }
 
   public static koa(basePath: string): Koa {
-    const app = new Koa();
-    const routes = new Router();
+    const koaClass = require('koa');
+    const routerClass = require('koa-router');
+    const rawBody = require('raw-body');
+    const app: Koa = new koaClass();
+    const routes: Router = new routerClass();
     app.use(async (ctx, next) => {
       Object.entries(this.HEADERS).forEach(h => ctx.set(h[0], h[1]));
       return next();
     });
     for (const { httpMethod, path, resource } of this.paths(basePath)) {
-      const adapter = this.koaMiddleware.bind(this, resource);
+      const adapter = this.koaMiddleware.bind(this, resource, rawBody);
       switch (httpMethod) {
         case 'GET':
           routes.get(path, adapter); break;
@@ -168,9 +169,9 @@ export abstract class CoreServer extends Core {
     res.status(result.statusCode).send(result.body);
   }
 
-  public static async koaMiddleware(resource: string, ctx: Kontext): Promise<void> {
+  public static async koaMiddleware(resource: string, rawBody: (req: any) => Buffer, ctx: Kontext): Promise<void> {
     this.log.info('%s: %s', ctx.method, ctx.url);
-    const buffer: Buffer = await RawBody(ctx.req);
+    const buffer: Buffer = await rawBody(ctx.req);
     const body = buffer.toString();
 
     const request: HttpRequest = {
@@ -196,7 +197,7 @@ export abstract class CoreServer extends Core {
     try {
       result = await Core.httpRequest(request);
     } catch (err) {
-      result = HttpUtils.error(err);
+      result = HttpUtils.error(InternalServerError.wrap(err));
     }
 
     // Object.entries(this.HEADERS).forEach(h => ctx.set(h[0], h[1]));

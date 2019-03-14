@@ -1,200 +1,19 @@
-import { Class, ClassRef, Context, Prototype } from '../types/core';
-import { EventAdapter } from '../types/event';
-import { HttpCode, HttpRequest } from '../types/http';
+import { Class, ClassRef, Prototype } from '../types/core';
+import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
+import { EventRouteMetadata, IEventRouteMetadata } from './event';
+import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';
 import { Metadata } from './registry';
-import { IServiceMetadata, ServiceMetadata } from './service';
+import { ServiceMetadata } from './service';
 import { GraphKind, IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
 
-export enum HttpBindingType {
-  PathParam = 'PathParam',
-  PathParams = 'PathParams',
-  QueryParam = 'QueryParam',
-  QueryParams = 'QueryParams',
-  HeaderParam = 'HeaderParam',
-  BodyParam = 'BodyParam',
-  ContextParam = 'ContextParam',
-  // Objects
-  Body = 'Body',
-  ContextObject = 'ContextObject',
-  RequestObject = 'RequestObject',
-  RequestParam = 'RequestParam',
-}
-
-export type ContextBinder = (ctx: Context) => any;
-export type RequestBinder = (req: HttpRequest) => any;
-export type HttpBinder = (ctx: Context, req: HttpRequest) => any;
-
-export type DesignMetadata = {
+export type IDesignMetadata = {
   name?: string;
   type: string;
   target: Function;
 };
-
-export type HttpAdapter = (
-  next: (...args: any[]) => Promise<any>,
-  ctx?: Context,
-  req?: HttpRequest,
-  path?: Record<string, string>,
-  query?: Record<string, string>,
-) => Promise<any>;
-
-export interface IHttpBindingMetadata {
-  type: HttpBindingType;
-  path: string;
-  binder: HttpBinder;
-}
-
-export class HttpBindingMetadata implements IHttpBindingMetadata {
-  public type: HttpBindingType;
-  public path: string;
-  public binder: HttpBinder;
-
-  constructor(literal: Partial<IHttpBindingMetadata>) {
-    Object.assign(this, literal);
-  }
-
-  public inherit(method: MethodMetadata): this {
-    const copy = { ...this };
-    Object.setPrototypeOf(copy, HttpBindingMetadata.prototype);
-    return copy;
-  }
-}
-
-export interface IHttpRouteMetadata {
-  target: Class;
-  api: IApiMetadata;
-  method: IMethodMetadata;
-  base: IHttpRouteMetadata;
-  over: IHttpRouteMetadata;
-  service: IServiceMetadata;
-
-  route: string;
-  handler: string;
-  verb: string;
-  resource: string;
-  model: string;
-  params: string[];
-  code: HttpCode;
-  adapter: HttpAdapter;
-}
-
-export class HttpRouteMetadata implements IHttpRouteMetadata {
-
-  public target: Class;
-  public api: ApiMetadata;
-  public method: MethodMetadata;
-  public base: HttpRouteMetadata;
-  public over: HttpRouteMetadata;
-  public service: ServiceMetadata;
-
-  public route: string;
-  public handler: string;
-  public verb: string;
-  public resource: string;
-  public model: string;
-  public params: string[];
-  public code: HttpCode;
-  public adapter: HttpAdapter;
-
-  public static route(verb: string, resource: string, model?: string) {
-    return `${verb}:${resource}` + (model ? `:${model}` : '');
-  }
-
-  constructor(literal: Partial<IHttpRouteMetadata>) {
-    Object.assign(this, literal);
-  }
-
-  public inherit(method: MethodMetadata): this {
-    const copy = { ...this };
-    Object.setPrototypeOf(copy, HttpRouteMetadata.prototype);
-    copy.base = this;
-    copy.api = undefined;
-    copy.method = method;
-    copy.target = method.target;
-    return copy;
-  }
-
-  public override(over: HttpRouteMetadata): this {
-    if (!over) return this;
-    this.over = over;
-    this.route = this.route || over.route;
-    this.handler = this.handler || over.handler;
-    this.verb = this.verb || over.verb;
-    this.resource = this.resource || over.resource;
-    this.model = this.model || over.model;
-    this.params = this.params || over.params;
-    this.code = this.code || over.code;
-    this.adapter = this.adapter || over.adapter;
-    return this;
-  }
-}
-
-export interface IEventRouteMetadata {
-  target: Class;
-  api: IApiMetadata;
-  method: IMethodMetadata;
-  base: IEventRouteMetadata;
-  over: IEventRouteMetadata;
-  service: IServiceMetadata;
-
-  route: string;
-  handler: string;
-  source: string;
-  resource: string;
-  objectFilter: string;
-  actionFilter: string;
-  adapter: EventAdapter;
-}
-
-export class EventRouteMetadata implements IEventRouteMetadata {
-  public target: Class;
-  public api: ApiMetadata;
-  public method: MethodMetadata;
-  public base: EventRouteMetadata;
-  public over: EventRouteMetadata;
-  public service: ServiceMetadata;
-
-  public route: string;
-  public handler: string;
-  public source: string;
-  public resource: string;
-  public objectFilter: string;
-  public actionFilter: string;
-  public adapter: EventAdapter;
-
-  public static route(source: string, resource: string) {
-    return `${source}/${resource}`;
-  }
-
-  constructor(literal: Partial<IEventRouteMetadata>) {
-    Object.assign(this, literal);
-  }
-
-  public inherit(method: MethodMetadata): this {
-    const copy = { ...this };
-    Object.setPrototypeOf(copy, EventRouteMetadata.prototype);
-    copy.base = this;
-    copy.api = undefined;
-    copy.method = method;
-    copy.target = method.target;
-    return copy;
-  }
-
-  public override(over: EventRouteMetadata): this {
-    if (!over) return this;
-    this.over = over;
-    this.route = this.route || over.route;
-    this.handler = this.handler || over.handler;
-    this.source = this.source || over.source;
-    this.objectFilter = this.objectFilter || over.objectFilter;
-    this.actionFilter = this.actionFilter || over.actionFilter;
-    this.adapter = this.adapter || over.adapter;
-    return this;
-  }
-}
 
 export interface IMethodMetadata {
   target: Class;
@@ -204,7 +23,7 @@ export interface IMethodMetadata {
   host: Class;
 
   name: string;
-  design: DesignMetadata[];
+  design: IDesignMetadata[];
 
   auth: string;
   roles: Roles;
@@ -233,7 +52,7 @@ export class MethodMetadata implements IMethodMetadata {
   public host: ClassRef;
 
   public name: string;
-  public design: DesignMetadata[] = undefined;
+  public design: IDesignMetadata[] = undefined;
 
   public auth: string = undefined;
   public roles: Roles = undefined;
@@ -385,8 +204,7 @@ export class MethodMetadata implements IMethodMetadata {
     verb: string,
     resource: string,
     model: string,
-    code: HttpCode,
-    adapter?: HttpAdapter
+    code: HttpCode
   ): this {
     const route = HttpRouteMetadata.route(verb, resource, model);
     this.http = this.http || {};
@@ -403,8 +221,7 @@ export class MethodMetadata implements IMethodMetadata {
       resource,
       model,
       params,
-      code,
-      adapter
+      code
     });
     ApiMetadata.define(this.target).addRoute(meta);
     this.http[route] = meta;
@@ -417,7 +234,7 @@ export class MethodMetadata implements IMethodMetadata {
       ...this.bindings[index],
       type,
       path,
-      binder,
+      binder
     });
     return this;
   }
@@ -426,8 +243,7 @@ export class MethodMetadata implements IMethodMetadata {
     source: string,
     resource: string,
     filterAction: string | boolean,
-    filterObject: string,
-    adapter: EventAdapter
+    filterObject: string
   ): this {
     // TODO Include action in route to allow multiple events per method
     const route = `${source}/${resource}`;
@@ -445,8 +261,7 @@ export class MethodMetadata implements IMethodMetadata {
       source,
       resource,
       actionFilter,
-      objectFilter,
-      adapter
+      objectFilter
     });
     this.events[route] = event;
     this.addAuth('internal', { Internal: true, External: false, Remote: false });

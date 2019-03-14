@@ -1,11 +1,11 @@
-import { Service } from '../decorators/service';
+import { CoreService } from '../decorators/service';
 import { Configuration, LogLevel } from '../types/config';
 import { Utils } from '../utils';
 
 const REMOTE_STAGE_PREFIX = 'REMOTE_STAGE_';
 const REMOTE_SECRET_PREFIX = 'REMOTE_SECRET_';
 
-@Service(Configuration, false)
+@CoreService(Configuration)
 export class CoreConfiguration implements Configuration {
 
   // tslint:disable-next-line:variable-name
