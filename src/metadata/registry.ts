@@ -13,6 +13,12 @@ import { RelationMetadata } from './relation';
 import { ServiceMetadata } from './service';
 import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from './type';
 
+export type CoreDecorator = (
+  over: Object | Function,
+  propertyKey?: string,
+  indexOrDescriptor?: number | PropertyDescriptor
+) => void | Function;
+
 export interface DecorationMetadata {
   decorator: string;
   ordinal: number;
@@ -311,14 +317,78 @@ export abstract class Metadata implements MetadataRegistry {
     return struc;
   }
 
+  // ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
+  // PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;
+  // MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>)
+  // => TypedPropertyDescriptor<T> | void;
+  // ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
+
+  public static onClass(
+    decorator: Function,
+    args: Record<string, any>,
+    executor: ClassDecorator
+  ): ClassDecorator {
+    return (target) => {
+      this.trace(decorator, args, target, undefined, undefined);
+      return executor(target);
+    };
+  }
+
+  public static onProperty(
+    decorator: Function,
+    args: Record<string, any>,
+    executor: PropertyDecorator
+  ): PropertyDecorator {
+    return (target, propertyKey) => {
+      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+      this.trace(decorator, args, target, propertyKey, undefined);
+      return executor(target, propertyKey);
+    };
+  }
+
+  public static onClassOrProperty(
+    decorator: Function,
+    args: Record<string, any>,
+    executor: (target: Object | Class, propertyKey?: string) => ClassDecorator | PropertyDecorator
+  ): ClassDecorator | PropertyDecorator {
+    return (target, propertyKey) => {
+      if (propertyKey && typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+      this.trace(decorator, args, target, propertyKey, undefined);
+      return executor(target, propertyKey as string);
+    };
+  }
+
+  public static onMethod(
+    decorator: Function,
+    args: Record<string, any>,
+    executor: MethodDecorator
+  ): MethodDecorator {
+    return (target, propertyKey, descriptor) => {
+      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+      this.trace(decorator, args, target, propertyKey, undefined);
+      return executor(target, propertyKey, descriptor);
+    };
+  }
+
+  public static onParameter(
+    decorator: Function,
+    args: Record<string, any>,
+    executor: ParameterDecorator
+  ): ParameterDecorator {
+    return (target, propertyKey, index) => {
+      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
+      this.trace(decorator, args, target, propertyKey, index);
+      return executor(target, propertyKey, index);
+    };
+  }
+
   public static trace(
     decorator: Function,
     args: Record<string, any>,
     over: Object | Function,
     propertyKey: string | symbol,
-    index: number,
-    executor: () => any | void
-  ): any {
+    index: number
+  ): void {
     const name = decorator instanceof Function ? decorator.name : decorator;
     const target = (typeof over === 'object' ? over.constructor : over);
     const key = propertyKey && propertyKey.toString();
@@ -336,23 +406,21 @@ export abstract class Metadata implements MetadataRegistry {
     decoratorInfo.count++;
     decoratorInfo.targets[target.name] = target;
 
-    let res: any;
-    if ((decorator as any).core || target.name.startsWith('Core')) {
-      res = executor();
-    } else {
-      // TODO: Lazy decorator execution
-      res = true && executor();
-    }
+    // let res: any;
+    // if ((decorator as any).core || target.name.startsWith('Core')) {
+    //   res = executor();
+    // } else {
+    //   // TODO: Lazy decorator execution
+    //   res = true && executor();
+    // }
 
     false && console.log(
       `-- [${this.ordinal}] @${decorator.name} ${target.name}`
       + (key ? `.${key}` : ''),
-      index !== undefined ? `(${index})` : '',
-      (res ? ` -> ${Utils.label(res)}` : '')
+      index !== undefined ? `(${index})` : ''
     );
 
     this.ordinal++;
-    return res;
   }
 
   public stringify(ident?: number) {

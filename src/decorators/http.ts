@@ -32,17 +32,15 @@ function HttpMethod(
   model: boolean | string,
   code: HttpCode
 ): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(decorator, { resource, model, code }, target, propertyKey, void 0, () => {
-      const verb = decorator.name.toUpperCase();
-      let mod: string;
-      if (!model) mod = undefined;
-      else if (model === true) mod = propertyKey;
-      else mod = model.toString();
-      MethodMetadata.define(target, propertyKey).addRoute(verb, resource, mod, code);
-    });
-  };
+  return Metadata.onMethod(decorator, { resource, model, code }, (target, propertyKey, descriptor) => {
+    const verb = decorator.name.toUpperCase();
+    let mod: string;
+    if (!model) mod = undefined;
+    else if (model === true) mod = propertyKey as string;
+    else mod = model.toString();
+    MethodMetadata.define(target, propertyKey as string, descriptor).addRoute(verb, resource, mod, code);
+  });
+
 }
 
 /////////// Parameter Decorators //////////////////////////////////////////////////////////////////
@@ -104,21 +102,15 @@ export function RequestParam(path: string | RequestBinder): ParameterDecorator {
 }
 
 function HttpBinding(decorator: Function, type: HttpBindingType, path: string, binder: HttpBinder): ParameterDecorator {
-  return function (target, propertyKey, index) {
-    return Metadata.trace(decorator, { path, binder }, target, propertyKey, index, () => {
-      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-      MethodMetadata.define(target, propertyKey).addBinding(index, type, path, binder);
-    });
-  };
+  return Metadata.onParameter(decorator, { path, binder }, (target, propertyKey, index) => {
+    MethodMetadata.define(target, propertyKey as string).addBinding(index, type, path, binder);
+  });
 }
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
-  return function (target, propertyKey, descriptor) {
-    return Metadata.trace(ContentType, { contentType }, target, propertyKey, void 0, () => {
-      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-      MethodMetadata.define(target, propertyKey).setContentType(contentType);
-    });
-  };
+  return Metadata.onMethod(ContentType, { contentType }, (target, propertyKey) => {
+    MethodMetadata.define(target, propertyKey as string).setContentType(contentType);
+  });
 }
 
 export function resolvePath(root: any, path: Function | string): any {

@@ -8,10 +8,7 @@ export function Event(
   actionFilter: string | boolean,
   objectFilter: string
 ): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    return Metadata.trace(Event, { source, resource, actionFilter, objectFilter }, target, propertyKey, void 0, () => {
-      if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-      MethodMetadata.define(target, propertyKey, descriptor).addEvent(source, resource, actionFilter, objectFilter);
-    });
-  };
+  return Metadata.onMethod(Event, { source, resource, actionFilter, objectFilter }, (target, propertyKey, descriptor) => {
+    MethodMetadata.define(target, propertyKey as string, descriptor).addEvent(source, resource, actionFilter, objectFilter);
+  });
 }

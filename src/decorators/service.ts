@@ -31,7 +31,7 @@ export function Service(final: false): ClassDecorator;
 // Replacement service, must inherit from final:fasle service
 export function Service(final: true): ClassDecorator;
 export function Service(aliasApiFinal?: Class | string | false | true, finalOrNot?: true | false): ClassDecorator {
-  return (target) => {
+  return Metadata.onClass(Service, { aliasApiFinal, finalOrNot }, (target) => {
     let alias: string = null;
     let api: Class = null;
     let final: boolean;
@@ -51,72 +51,53 @@ export function Service(aliasApiFinal?: Class | string | false | true, finalOrNo
       api = apiClass;
       final = finalOrNot === undefined || !!finalOrNot;
     }
-
-    return Metadata.trace(Service, { alias, api, final }, target, void 0, void 0, () => {
-      const meta = ServiceMetadata.define(target).commit(alias, api, final);
-      return final ? Di.Service(meta.alias)(target) : undefined;
-    });
-  };
+    const meta = ServiceMetadata.define(target).commit(alias, api, final);
+    return final ? Di.Service(meta.alias)(target) : undefined;
+  });
 }
 
-export function Inject(resource?: string): PropertyDecorator & ParameterDecorator {
-  return (target: Object, propertyKey: string | symbol, index?: number) => {
-    if (typeof propertyKey === 'symbol') throw new TypeError('propertyKey must be string');
-    // propertyKey = propertyKey || "<constructor>";
-    return Metadata.trace(Inject, { resource }, target, propertyKey, index, () => {
-      const constructor = Utils.isClass(target) ? target as Function : target.constructor;
-      ServiceMetadata.define(constructor).inject(propertyKey, index, resource);
-      return Di.Inject(resource)(target, propertyKey, index);
-    });
-  };
+export function Inject(resource?: string): PropertyDecorator | ParameterDecorator | any {
+  return Metadata.onParameter(Inject, { resource }, (target, propertyKey, index) => {
+    const constructor = Utils.isClass(target) ? target as Function : target.constructor;
+    ServiceMetadata.define(constructor).inject(propertyKey as string, index, resource);
+    return Di.Inject(resource)(target, propertyKey, index);
+  });
 }
 
 /**
  * Decorate method providing service initialization.
  */
 export function Initialize(): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(Handler, {}, target, propertyKey, void 0, () => {
-      ServiceMetadata.define(target.constructor).setInitializer(propertyKey, descriptor);
-    });
-  };
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).setInitializer(propertyKey as string, descriptor);
+  });
 }
 
 /**
  * Decorate method providing per request activation.
  */
 export function Selector(): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(Selector, {}, target, propertyKey, void 0, () => {
-      ServiceMetadata.define(target.constructor).setSelector(propertyKey, descriptor);
-    });
-  };
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).setSelector(propertyKey as string, descriptor);
+  });
 }
 
 /**
  * Decorate method providing per request activation.
  */
 export function Activate(): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(Activate, {}, target, propertyKey, void 0, () => {
-      ServiceMetadata.define(target.constructor).setActivator(propertyKey, descriptor);
-    });
-  };
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).setActivator(propertyKey as string, descriptor);
+  });
 }
 
 /**
  * Decorate method providing per request release.
  */
 export function Release(): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(Release, {}, target, propertyKey, void 0, () => {
-      ServiceMetadata.define(target.constructor).setReleasor(propertyKey, descriptor);
-    });
-  };
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).setReleasor(propertyKey as string, descriptor);
+  });
 }
 
 // TODO: (api: Function, method?: string)
@@ -124,10 +105,7 @@ export function Release(): MethodDecorator {
  * Decorate methods providing Api implementation.
  */
 export function Handler(): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(Handler, {}, target, propertyKey, void 0, () => {
-      ServiceMetadata.define(target.constructor).addHandler(propertyKey, descriptor);
-    });
-  };
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).addHandler(propertyKey as string, descriptor);
+  });
 }

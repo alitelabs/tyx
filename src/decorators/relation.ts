@@ -11,14 +11,11 @@ export function OneToMany<T>(
   inverseSide: (object: T) => any,
   options?: RelationOptions,
 ): PropertyDecorator {
-  return (target, propertyKey) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(OneToMany, target, { typeFunction, inverseSide, options }, propertyKey, void 0, () => {
-      const rel = Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).commit(RelationType.OneToMany, typeFunction, inverseSide, options);
-      return rel;
-    });
-  };
+  return Metadata.onProperty(OneToMany, { typeFunction, inverseSide, options }, (target, propertyKey) => {
+    const rel = Orm.OneToMany(typeFunction, inverseSide, options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).commit(RelationType.OneToMany, typeFunction, inverseSide, options);
+    return rel;
+  });
 }
 
 export function ManyToOne<T>(
@@ -35,16 +32,13 @@ export function ManyToOne<T>(
   inverseSideOrOptions?: ((object: T) => any) | RelationOptions,
   orOptions?: RelationOptions,
 ): PropertyDecorator {
-  return (target, propertyKey) => {
-    const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
-    const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(ManyToOne, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
-      const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
-      return rel;
-    });
-  };
+  const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
+  const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
+  return Metadata.onProperty(ManyToOne, { typeFunction, inverseSide, options }, (target, propertyKey) => {
+    const rel = Orm.ManyToOne(typeFunction, inverseSide, options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).commit(RelationType.ManyToOne, typeFunction, inverseSide, options);
+    return rel;
+  });
 }
 
 export function OneToOne<T>(
@@ -61,16 +55,13 @@ export function OneToOne<T>(
   inverseSideOrOptions?: ((object: T) => any) | RelationOptions,
   orOptions?: RelationOptions,
 ): PropertyDecorator {
-  return (target, propertyKey) => {
-    const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
-    const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(OneToOne, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
-      const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
-      return rel;
-    });
-  };
+  const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
+  const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
+  return Metadata.onProperty(OneToOne, { typeFunction, inverseSide, options }, (target, propertyKey) => {
+    const rel = Orm.OneToOne(typeFunction, inverseSide, options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).commit(RelationType.OneToOne, typeFunction, inverseSide, options);
+    return rel;
+  });
 }
 
 export function ManyToMany<T>(
@@ -87,16 +78,13 @@ export function ManyToMany<T>(
   inverseSideOrOptions?: ((object: T) => any) | RelationOptions,
   orOptions?: RelationOptions
 ): PropertyDecorator {
-  return (target, propertyKey) => {
-    const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
-    const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(ManyToMany, { typeFunction, inverseSide, options }, target, propertyKey, void 0, () => {
-      const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
-      return rel;
-    });
-  };
+  const inverseSide = typeof inverseSideOrOptions === 'function' ? inverseSideOrOptions : undefined;
+  const options = typeof inverseSideOrOptions === 'object' ? inverseSideOrOptions : orOptions;
+  return Metadata.onProperty(ManyToMany, { typeFunction, inverseSide, options }, (target, propertyKey) => {
+    const rel = Orm.ManyToMany(typeFunction, inverseSideOrOptions as any, orOptions)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).commit(RelationType.ManyToMany, typeFunction, inverseSide, options);
+    return rel;
+  });
 }
 
 // export function JoinColumn(): PropertyDecorator;
@@ -104,14 +92,11 @@ export function ManyToMany<T>(
 export function JoinColumn(options: JoinColumnOptions): PropertyDecorator;
 // export function JoinColumn(options: JoinColumnOptions[]): PropertyDecorator;
 export function JoinColumn(options?: JoinColumnOptions): PropertyDecorator {
-  return (target, propertyKey) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(JoinColumn, { options }, target, propertyKey, void 0, () => {
-      const col = Orm.JoinColumn(options)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).addJoinColumn(options);
-      return col;
-    });
-  };
+  return Metadata.onProperty(JoinColumn, { options }, (target, propertyKey) => {
+    const col = Orm.JoinColumn(options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).addJoinColumn(options);
+    return col;
+  });
 }
 
 /**
@@ -137,12 +122,9 @@ export function JoinTable(options: JoinTableMultipleColumnsOptions): PropertyDec
  * Its also used to set a custom junction table's name, column names and referenced columns.
  */
 export function JoinTable(options?: JoinTableOptions | JoinTableMultipleColumnsOptions): PropertyDecorator {
-  return (target, propertyKey) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(JoinTable, { options }, target, propertyKey, void 0, () => {
-      const col = Orm.JoinTable(options)(target, propertyKey);
-      RelationMetadata.define(target, propertyKey).addJoinTable(options);
-      return col;
-    });
-  };
+  return Metadata.onProperty(JoinTable, { options }, (target, propertyKey) => {
+    const col = Orm.JoinTable(options)(target, propertyKey);
+    RelationMetadata.define(target, propertyKey as string).addJoinTable(options);
+    return col;
+  });
 }

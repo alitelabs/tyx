@@ -19,10 +19,8 @@ export function DatabaseService(alias: string, entities: Class[]): ClassDecorato
 export function DatabaseService(aliasOrEntities: string | Class[], second?: Class[]): ClassDecorator {
   const alias = typeof aliasOrEntities === 'string' ? aliasOrEntities : 'database';
   const entities = Array.isArray(aliasOrEntities) ? aliasOrEntities : second;
-  return (target) => {
-    return Metadata.trace(DatabaseService, { alias, entities }, target, void 0, void 0, () => {
-      DatabaseMetadata.define(target).commit(alias, entities);
-      return Di.Service(alias)(target);
-    });
-  };
+  return Metadata.onClass(DatabaseService, { alias, entities }, (target) => {
+    DatabaseMetadata.define(target).commit(alias, entities);
+    return Di.Service(alias)(target);
+  });
 }

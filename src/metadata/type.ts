@@ -456,6 +456,8 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
   }
 
   public commit(type?: GraphKind, name?: string): this {
+    // tslint:disable-next-line:no-parameter-reassignment
+    name = name || this.target.name.replace(/Schema$/, '');
     // TODO: Support Inheritance
     // Copy members from base types
     this.kind = type;

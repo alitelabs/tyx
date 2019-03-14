@@ -1,7 +1,6 @@
 import { Orm } from '../import';
 import { IndexOptions } from '../metadata/indexes';
 import { Metadata } from '../metadata/registry';
-import { Class } from '../types/core';
 
 // tslint:disable:function-name
 
@@ -84,7 +83,7 @@ export function Index(
   nameOrFieldsOrOptions?: string | string[] | ((object: any) => (any[] | { [key: string]: number })) | IndexOptions,
   maybeFieldsOrOptions?: ((object?: any) => (any[] | { [key: string]: number })) | IndexOptions | string[] | { synchronize: false },
   maybeOptions?: IndexOptions
-): ClassDecorator & PropertyDecorator {
+): ClassDecorator | PropertyDecorator {
   // normalize parameters
   const name = typeof nameOrFieldsOrOptions === 'string' ? nameOrFieldsOrOptions : undefined;
   const fields = typeof nameOrFieldsOrOptions === 'string'
@@ -98,13 +97,10 @@ export function Index(
       ? maybeFieldsOrOptions as IndexOptions
       : maybeOptions;
   }
-  return (clsOrObject: Class | Object, propertyKey?: string) => {
-    const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
-    return Metadata.trace(Index, { name, fields, options }, target, propertyKey, void 0, () => {
-      // TODO: EntityMetadata.define(target).addIndex(options);
-      return Orm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(clsOrObject, propertyKey);
-    });
-  };
+  return Metadata.onClassOrProperty(Index, { name, fields, options }, (target: any, propertyKey?: any) => {
+    // TODO: EntityMetadata.define(target).addIndex(options);
+    return Orm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(target, propertyKey);
+  });
 }
 
 /**
@@ -143,7 +139,7 @@ export function Unique(
 export function Unique(
   nameOrFields?: string | string[] | ((object: any) => (any[] | { [key: string]: number })),
   maybeFields?: ((object?: any) => (any[] | { [key: string]: number })) | string[]
-): ClassDecorator & PropertyDecorator {
+): ClassDecorator | PropertyDecorator {
   const name = typeof nameOrFields === 'string'
     ? nameOrFields
     : undefined;
@@ -151,11 +147,9 @@ export function Unique(
     ? <((object?: any) => (any[] | { [key: string]: number })) | string[]>maybeFields
     : nameOrFields as string[];
 
-  return function (clsOrObject: Class | Object, propertyKey?: string) {
-    const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
-    return Metadata.trace(Unique, { name, fields }, target, propertyKey, void 0, () => {
-      // TODO: EntityMetadata.define(target).addUnique(options);
-      return Orm.Unique(nameOrFields as any, maybeFields as any)(clsOrObject, propertyKey);
-    });
-  };
+  // const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
+  return Metadata.onClassOrProperty(Unique, { name, fields }, (target, propertyKey) => {
+    // TODO: EntityMetadata.define(target).addUnique(options);
+    return Orm.Unique(nameOrFields as any, maybeFields as any)(target, propertyKey);
+  });
 }

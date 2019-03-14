@@ -41,15 +41,12 @@ export function Extension<TI, TR>(type: ClassRef, input: InputType<TI>, result: 
 }
 
 function ResolverDecorator(decorator: Function, input: InputType, result: ResultType, select: Select, host?: ClassRef): MethodDecorator {
-  return (target, propertyKey, descriptor) => {
-    if (typeof propertyKey !== 'string') throw new TypeError('propertyKey must be string');
-    return Metadata.trace(decorator, { input, result, select, host }, target, propertyKey, void 0, () => {
-      const oper = decorator.name.toLowerCase();
-      const meta = MethodMetadata.define(target, propertyKey, descriptor).addAuth(oper, { Internal: true });
-      if (decorator === Mutation || decorator === Command) meta.setMutation(input, result, select);
-      else if (decorator === Query || decorator === Advice) meta.setQuery(input, result, select);
-      else if (decorator === Extension) meta.setResolver(host, input, result, select);
-      else throw TypeError(`Unknown decorator: ${decorator.name}`);
-    });
-  };
+  return Metadata.onMethod(decorator, { input, result, select, host }, (target, propertyKey, descriptor) => {
+    const oper = decorator.name.toLowerCase();
+    const meta = MethodMetadata.define(target, propertyKey as string, descriptor).addAuth(oper, { Internal: true });
+    if (decorator === Mutation || decorator === Command) meta.setMutation(input, result, select);
+    else if (decorator === Query || decorator === Advice) meta.setQuery(input, result, select);
+    else if (decorator === Extension) meta.setResolver(host, input, result, select);
+    else throw TypeError(`Unknown decorator: ${decorator.name}`);
+  });
 }
