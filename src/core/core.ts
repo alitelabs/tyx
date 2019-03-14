@@ -10,7 +10,7 @@ import { RemoteRequest } from '../types/proxy';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 
-import Wtf = require('wtfnode');
+const WTF = process.env.WTF_NODE && require('wtfnode');
 
 export abstract class Core {
   public static log = Logger.get('TYX', Core.name);
@@ -137,6 +137,7 @@ export abstract class Core {
 
     let instance = this.pool.find(x => x.state === ContainerState.Ready);
     if (!instance) {
+      // console.log('Instance -> ', this.counter);
       instance = new CoreInstance(this.application, Core.name, this.counter++);
       instance.reserve();
       this.pool.push(instance);
@@ -188,7 +189,7 @@ export abstract class Core {
       await this.connection.close();
       this.log.info('Connection closed');
     }
-    if (process.env.WTF_NODE) Wtf.dump();
+    if (WTF) WTF.dump();
   }
 
   public static lambda(): LambdaHandler {

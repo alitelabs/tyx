@@ -55,11 +55,9 @@ export class CoreGraphQL implements GraphQL {
   @Post('/graphql/{authorization}')
   @ContentType(HttpResponse)
   public async graphql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
-
     if (req.httpMethod !== 'GET') {
       return this.request(ctx, req);
     }
-
     let html: string = undefined;
     if (req.resource === '/graphiql' || req.queryStringParameters.graphiql !== undefined) {
       html = await this.graphiql(ctx, req);
@@ -124,7 +122,7 @@ export class CoreGraphQL implements GraphQL {
   }
 
   protected async playground(ctx: Context, req: HttpRequest, custom?: Partial<PlaygroundRenderPageOptions>): Promise<string> {
-    const sufix = ctx.auth.token ? ('/' + ctx.auth.token) : '';
+    const sufix = ctx.auth.token ? ('?token=' + ctx.auth.token) : '';
     const options = createPlaygroundOptions({
       endpoint: `${this.config.prefix || ''}/graphql${sufix}`,
       settings: {
@@ -132,6 +130,20 @@ export class CoreGraphQL implements GraphQL {
         'editor.fontFamily': `'Menlo', ${defaultPlaygroundOptions.settings["editor.fontFamily"]}`,
         'editor.theme': 'light'
       },
+      workspaceName: 'SmokeTest',
+      // config: {
+      //   schemaPath: "schema.graphql",
+      //   extensions: {
+      //     endpoints: {
+      //       dev: {
+      //         url: `${this.config.prefix || ''}/graphql`,
+      //         headers: {
+      //           Authorization: `Bearer ${ctx.auth.token}`
+      //         }
+      //       }
+      //     }
+      //   }
+      // },
       ...custom
     });
     if (options.tabs) options.tabs.forEach(tab => tab.endpoint = options.endpoint);

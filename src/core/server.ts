@@ -107,7 +107,7 @@ export abstract class CoreServer extends Core {
     });
     app.use(bodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8', ...extraArgs }));
     for (const { httpMethod, path, resource } of this.paths(basePath)) {
-      const adapter = this.expressMiddleware.bind(this, resource);
+      const adapter = (req: any, res: any) => { setImmediate(() => this.expressMiddleware(resource, req, res)); };
       switch (httpMethod) {
         case 'GET':
           app.get(path, adapter); break;
