@@ -340,7 +340,7 @@ export abstract class Metadata implements MetadataRegistry {
     if ((decorator as any).core || target.name.startsWith('Core')) {
       res = executor();
     } else {
-      res = undefined && executor();
+      res = true && executor();
     }
 
     false && console.log(
