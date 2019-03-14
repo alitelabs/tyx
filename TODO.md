@@ -14,8 +14,9 @@
  - [ ] TypeOrm always drop keys, anything wrong with tyx decorator wrappers?
  - [ ] Startup time impact of GraphQL
  - [x] Make it work with Serverless offline API Gateway !
+ - [ ] Unified field / http param declarations
 
- - [ ] Support for multiple input args, GraphQL
+ - [ ] Support for @Arg() -> multiple input args, GraphQL
  - [ ] Performance https://www.smashingmagazine.com/2018/06/nodejs-tools-techniques-performance-servers/
 
  - [x] What is wrong with Playground ???

@@ -73,6 +73,7 @@ export class ConsoleLogger implements Logger {
   }
 
   public timeEnd(start: [number, number], msg: any, ...args: any[]): void {
+    if (LogLevel.bellow(LogLevel.INFO)) return;
     const lapse = process.hrtime(start);
     const ms = lapse[0] * 1000 + Math.floor(lapse[1] / 1000000);
     const ns = Math.floor((lapse[1] % 1000000) / 1000);
