@@ -10,7 +10,8 @@ import { IMethodMetadata } from '../metadata/method';
 import { IServiceMetadata } from '../metadata/service';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
-import { EventRouteMetadataSchema, HttpRouteMetadataSchema } from './http';
+import { EventRouteMetadataSchema } from './event';
+import { HttpRouteMetadataSchema } from './http';
 import { MethodMetadataSchema } from './method';
 import { ServiceMetadataSchema } from './service';
 

@@ -12,7 +12,8 @@ import { Class } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
-import { EventRouteMetadataSchema, HttpBindingMetadataSchema, HttpRouteMetadataSchema } from './http';
+import { EventRouteMetadataSchema } from './event';
+import { HttpBindingMetadataSchema, HttpRouteMetadataSchema } from './http';
 import { InputMetadataSchema, ResultMetadataSchema } from './type';
 
 @Schema()

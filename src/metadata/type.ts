@@ -462,15 +462,28 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
     this.name = name || this.target.name;
     if (this.kind && !GraphKind.isStruc(this.kind)) throw new TypeError(`Not a struct type: ${this.kind}`);
     // this.name = name;
+    let prev: TypeMetadata;
     switch (type) {
       case GraphKind.Metadata:
-        Metadata.RegistryMetadata[this.target.name] = this; break;
+        prev = Metadata.RegistryMetadata[this.target.name];
+        if (prev && prev !== this) throw new TypeError(`Duplicate metadata class ${this.target.name}`);
+        Metadata.RegistryMetadata[this.target.name] = this;
+        break;
       case GraphKind.Input:
-        Metadata.InputMetadata[this.target.name] = this; break;
+        prev = Metadata.InputMetadata[this.target.name];
+        if (prev && prev !== this) throw new TypeError(`Duplicate input class ${this.target.name}`);
+        Metadata.InputMetadata[this.target.name] = this;
+        break;
       case GraphKind.Type:
-        Metadata.TypeMetadata[this.target.name] = this; break;
+        prev = Metadata.TypeMetadata[this.target.name];
+        if (prev && prev !== this) throw new TypeError(`Duplicate type class ${this.target.name}`);
+        Metadata.TypeMetadata[this.target.name] = this;
+        break;
       case GraphKind.Entity:
-        Metadata.EntityMetadata[this.target.name] = this as any; break;
+        prev = Metadata.EntityMetadata[this.target.name];
+        if (prev && prev !== this) throw new TypeError(`Duplicate entity class ${this.target.name}`);
+        Metadata.EntityMetadata[this.target.name] = this as any;
+        break;
       default:
         throw new TypeError(`Not Implemented: ${type}`);
     }
