@@ -109,3 +109,12 @@ export function Handler(): MethodDecorator {
     ServiceMetadata.define(target.constructor).addHandler(propertyKey as string, descriptor);
   });
 }
+
+/**
+ * Decorate methods providing Api implementation.
+ */
+export function Override(): MethodDecorator {
+  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+    ServiceMetadata.define(target.constructor).addOverride(propertyKey as string, descriptor);
+  });
+}

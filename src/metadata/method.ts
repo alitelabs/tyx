@@ -288,7 +288,7 @@ export class MethodMetadata implements IMethodMetadata {
       }
       if (prev && prev !== meta && prev === meta.base) {
         // TODO: Logger, from method to method
-        console.log(`Takeover route [${route}]: [${MethodMetadata.id(prev.api.name, prev.method.name)}] -> [${id}]`);
+        console.log(`Route takeover [${route}]: [${MethodMetadata.id(prev.api.name, prev.method.name)}] -> [${id}]`);
       }
       Metadata.HttpRouteMetadata[route] = meta;
     }
@@ -300,7 +300,7 @@ export class MethodMetadata implements IMethodMetadata {
       const prevIndex = handlers.indexOf(meta.base);
       if (prevIndex !== -1) {
         const prev = handlers[prevIndex];
-        console.log(`Takeover event [${route}]: [${MethodMetadata.id(prev.method.api.name, prev.method.name)}] -> [${id}]`);
+        console.log(`Event takeover [${route}]: [${MethodMetadata.id(prev.method.api.name, prev.method.name)}] -> [${id}]`);
         handlers[prevIndex] = meta;
       } else if (!handlers.includes(meta)) {
         handlers.push(meta);

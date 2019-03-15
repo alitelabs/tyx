@@ -10,6 +10,12 @@ import { Metadata } from '../metadata/registry';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { Utils } from '../utils';
 
+export interface CoreServerPath {
+  httpMethod: string;
+  path: string;
+  resource: string;
+}
+
 export abstract class CoreServer extends Core {
   public static log: Logger = Logger.get('TYX', 'Server');
 
@@ -27,13 +33,14 @@ export abstract class CoreServer extends Core {
   public static start(port: number, basePath?: string, extraArgs?: any) {
     process.env.IS_OFFLINE = 'true';
     this.init();
-    const app = CoreServer.koa(basePath || '/local');
+    const paths = CoreServer.paths(basePath || '/local');
+    const app = CoreServer.koa(paths);
     this.server = createServer(app.callback());
-    // const app = CoreServer.express(basePath || '/local', extraArgs);
+    // const app = CoreServer.express(extraArgs, paths);
     // this.server = createServer(app);
     this.server.listen(port || 5000);
     this.log.info('👌  Server initialized.');
-    CoreServer.paths(basePath || '/local').forEach(p => this.log.info(`${p.httpMethod} http://localhost:${port}${p.path}`));
+    paths.forEach(p => this.log.info(`${p.httpMethod} http://localhost:${port}${p.path}`));
     this.log.info('🚀  Server started at %s ...', port);
   }
 
@@ -42,9 +49,9 @@ export abstract class CoreServer extends Core {
     Core.release(true);
   }
 
-  public static paths(basePath?: string) {
+  public static paths(basePath?: string): CoreServerPath[] {
     const used: Record<string, boolean> = {};
-    const paths: { httpMethod: string, path: string, resource: string }[] = [];
+    const paths: CoreServerPath[] = [];
     for (const meta of Object.values(Metadata.HttpRouteMetadata)) {
       const httpMethod = meta.verb;
       const resource = meta.resource;
@@ -66,7 +73,9 @@ export abstract class CoreServer extends Core {
     return paths;
   }
 
-  public static koa(basePath: string): Koa {
+  public static koa(baseOrPaths?: string | CoreServerPath[]): Koa {
+    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '/local';
+    const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
     const koaClass = require('koa');
     const routerClass = require('koa-router');
     const rawBody = require('raw-body');
@@ -76,7 +85,7 @@ export abstract class CoreServer extends Core {
       Object.entries(this.HEADERS).forEach(h => ctx.set(h[0], h[1]));
       return next();
     });
-    for (const { httpMethod, path, resource } of this.paths(basePath)) {
+    for (const { httpMethod, path, resource } of paths) {
       const adapter = this.koaMiddleware.bind(this, resource, rawBody);
       switch (httpMethod) {
         case 'GET':
@@ -97,7 +106,9 @@ export abstract class CoreServer extends Core {
     return app;
   }
 
-  public static express(basePath: string, extraArgs: any = {}): Express {
+  public static express(extraArgs: any, baseOrPaths?: string | CoreServerPath[]): Express {
+    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '/local';
+    const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
     const express = require('express');
     const bodyParser = require('body-parser');
     const app: Express = express();
@@ -106,8 +117,8 @@ export abstract class CoreServer extends Core {
       next();
     });
     app.use(bodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8', ...extraArgs }));
-    for (const { httpMethod, path, resource } of this.paths(basePath)) {
-      const adapter = (req: any, res: any) => { setImmediate(() => this.expressMiddleware(resource, req, res)); };
+    for (const { httpMethod, path, resource } of paths) {
+      const adapter = this.expressMiddleware.bind(resource);
       switch (httpMethod) {
         case 'GET':
           app.get(path, adapter); break;
@@ -157,7 +168,9 @@ export abstract class CoreServer extends Core {
 
     let result: HttpResponse;
     try {
-      result = await Core.httpRequest(request);
+      result = await new Promise((resolve, reject) => {
+        setImmediate(() => Core.httpRequest(request).then(resolve).catch(reject));
+      });
     } catch (err) {
       result = HttpUtils.error(err);
     }
@@ -186,16 +199,18 @@ export abstract class CoreServer extends Core {
       httpMethod: ctx.method as HttpMethod,
       resource,
       path: ctx.path,
-      pathParameters: { ...ctx.params },
-      queryStringParameters: { ...ctx.query },
-      headers: { ...ctx.headers },
+      pathParameters: ctx.params,
+      queryStringParameters: ctx.query,
+      headers: ctx.headers,
       body,
       isBase64Encoded: false, // TODO
     };
 
     let result: HttpResponse;
     try {
-      result = await Core.httpRequest(request);
+      result = await new Promise((resolve, reject) => {
+        setImmediate(() => Core.httpRequest(request).then(resolve).catch(reject));
+      });
     } catch (err) {
       result = HttpUtils.error(InternalServerError.wrap(err));
     }

@@ -16,6 +16,7 @@ export interface IHandlerMetadata {
   base?: IServiceMetadata;
   method: string;
   target: Class;
+  override?: boolean;
   source?: string;
 }
 
@@ -60,6 +61,7 @@ export class HandlerMetadata implements IHandlerMetadata {
   public base: ServiceMetadata;
   public target: Class;
   public method: string;
+  public override: boolean;
 
   constructor(val: IHandlerMetadata) {
     Object.assign(this, val);
@@ -133,7 +135,13 @@ export class ServiceMetadata implements IServiceMetadata {
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate handler [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
+    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value, override: false });
+    return this;
+  }
+
+  public addOverride(propertyKey: string, descriptor: PropertyDescriptor): this {
+    if (this.handlers[propertyKey]) throw new TypeError(`Duplicate override [${this.name}.${propertyKey}]`);
+    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value, override: true });
     return this;
   }
 
@@ -200,7 +208,25 @@ export class ServiceMetadata implements IServiceMetadata {
     if (prev && prev !== this) throw new TypeError(`Duplicate service name [${this.name}]`);
     Metadata.ServiceMetadata[this.name] = this;
 
-    if (this.api) this.api.publish(this);
+    if (this.api) {
+      for (const method in this.api.methods) {
+        const meta = this.api.methods[method];
+        const handler = this.handlers[method];
+        if (!handler && this.api.owner !== this) {
+          throw new TypeError(`Service [${this.name}] missing handler for [${this.api.name}.${method}]`);
+        }
+        const own = Object.getOwnPropertyDescriptor(this.target.prototype, method);
+        if (own && this.base && meta.base && (!handler || handler.base || !handler.override)) {
+          throw new TypeError(`Service [${this.name}] missing override handler for [${this.base.name}.${method}]`);
+        }
+      }
+      for (const method in this.handlers) {
+        if (this.api && !this.api.methods[method]) {
+          throw new TypeError(`Service [${this.name}] lose handler on [${method}]`);
+        }
+      }
+      this.api.publish(this);
+    }
 
     return this;
   }

@@ -137,12 +137,13 @@ export abstract class Core {
 
     let instance = this.pool.find(x => x.state === ContainerState.Ready);
     if (!instance) {
-      // console.log('Instance -> ', this.counter);
       instance = new CoreInstance(this.application, Core.name, this.counter++);
+      // console.log('Create ->', instance.name);
       instance.reserve();
       this.pool.push(instance);
       this.instance = this.instance || instance;
     } else {
+      // console.log('Reuse ->', instance.name);
       instance.reserve();
     }
     return instance;

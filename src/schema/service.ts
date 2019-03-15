@@ -55,6 +55,7 @@ export class HandlerMetadataSchema implements IHandlerMetadata {
   @Field(ref => ServiceMetadataSchema) service: ServiceMetadataSchema;
   @Field(ref => ServiceMetadataSchema) base?: ServiceMetadataSchema;
   @Field() method: string;
+  @Field() override: boolean;
   @Field(String) target: Class;
 
   @Field() source: string;

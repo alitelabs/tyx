@@ -26,7 +26,7 @@ import { CoreSecurity } from './security';
 export class CoreInstance implements CoreContainer {
 
   private application: string;
-  private name: string;
+  public name: string;
   public log: Logger;
 
   private container: ContainerInstance;

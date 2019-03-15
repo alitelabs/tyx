@@ -85,7 +85,7 @@
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "aws-sdk": "^2.421.0",
+    "aws-sdk": "^2.422.0",
     "aws-serverless-express": "^3.3.5",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
