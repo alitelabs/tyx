@@ -1,9 +1,10 @@
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { CoreSchema } from '../graphql/schema';
+import { Di } from '../import';
 import { Connection, ConnectionOptions, getConnection, getConnectionManager } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
-import { Class, ContainerState, ObjectType, Prototype } from '../types/core';
+import { Class, ContainerState, ObjectType, Prototype, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
@@ -120,6 +121,12 @@ export abstract class Core {
   public static async get<T = any>(api?: ObjectType<T> | string): Promise<T | CoreInstance> {
     const ins = await this.activate();
     return api ? ins.get(api) : ins;
+  }
+
+  public static info(): ServiceInfo[] {
+    const glob: any = Di.Container.of(undefined);
+    const services = [...glob.services];
+    return services;
   }
 
   public static async activate(): Promise<CoreInstance> {

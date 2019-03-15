@@ -16,6 +16,7 @@
 ## Container
  - [ ] Publish API only if there is a service implementation
  - [ ] Use Api class in inject (proxy)
+ - [ ] Global proxy
  - [ ] Api Service suffix removal
 
 ## Inheritance
@@ -27,9 +28,12 @@
 
 ## Metadata
  - [ ] Repository validation, no uncommited Api, Service ....
- - [ ] Core as array of all instances
+ - [x] Core as array of all instances, 
+ - [ ] Core info configuration
+ - [ ] Core info statistics ... (method invokes, time, code size, num instances)
  - [x] Remove adapter functions from http and event decorators
  - [x] Metdata.decorate to return a decorator function
+ - [x] Api methods throw undefined
 
 ## Runtime
  - [x] Integrate wtfnode in error log
@@ -44,6 +48,7 @@
  - [x] Make it work with Serverless offline API Gateway !
  - [ ] Why GraphQL does not return syntax error details
  - [ ] Upgrade to new Lambda request types ...
+ - [ ] Extend CoreInfo schema with statistics ...
 
 ## 2018
  - [x] Rename Query nodes, sufix: Expr, Record

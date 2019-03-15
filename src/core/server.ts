@@ -33,7 +33,9 @@ export abstract class CoreServer extends Core {
   public static start(port: number, basePath?: string, extraArgs?: any) {
     process.env.IS_OFFLINE = 'true';
     this.init();
-    const paths = CoreServer.paths(basePath || '/local');
+    const paths = CoreServer.paths(basePath);
+    // TODO: Try load koa, then express
+    // Move start to Core
     const app = CoreServer.koa(paths);
     this.server = createServer(app.callback());
     // const app = CoreServer.express(extraArgs, paths);
@@ -74,7 +76,7 @@ export abstract class CoreServer extends Core {
   }
 
   public static koa(baseOrPaths?: string | CoreServerPath[]): Koa {
-    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '/local';
+    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '';
     const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
     const koaClass = require('koa');
     const routerClass = require('koa-router');
@@ -107,7 +109,7 @@ export abstract class CoreServer extends Core {
   }
 
   public static express(extraArgs: any, baseOrPaths?: string | CoreServerPath[]): Express {
-    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '/local';
+    const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '';
     const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
     const express = require('express');
     const bodyParser = require('body-parser');

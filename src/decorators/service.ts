@@ -1,7 +1,7 @@
 import { Di } from '../import';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, ClassRef } from '../types/core';
 import { Utils } from '../utils';
 
 // tslint:disable:function-name
@@ -56,11 +56,19 @@ export function Service(aliasApiFinal?: Class | string | false | true, finalOrNo
   });
 }
 
-export function Inject(resource?: string): PropertyDecorator | ParameterDecorator | any {
+/**
+ * Injects a service into a class property or constructor parameter.
+ */
+export function Inject(type?: ClassRef): Function;
+/**
+ * Injects a service into a class property or constructor parameter.
+ */
+export function Inject(serviceName?: string): PropertyDecorator | ParameterDecorator | any;
+export function Inject(resource?: ClassRef | string): PropertyDecorator | ParameterDecorator | any {
   return Metadata.onParameter(Inject, { resource }, (target, propertyKey, index) => {
     const constructor = Utils.isClass(target) ? target as Function : target.constructor;
     ServiceMetadata.define(constructor).inject(propertyKey as string, index, resource);
-    return Di.Inject(resource)(target, propertyKey, index);
+    return Di.Inject(resource as any)(target, propertyKey, index);
   });
 }
 
@@ -73,14 +81,14 @@ export function Initialize(): MethodDecorator {
   });
 }
 
-/**
- * Decorate method providing per request activation.
- */
-export function Selector(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
-    ServiceMetadata.define(target.constructor).setSelector(propertyKey as string, descriptor);
-  });
-}
+// /**
+//  * Decorate method providing per request activation.
+//  */
+// export function Selector(): MethodDecorator {
+//   return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+//     ServiceMetadata.define(target.constructor).setSelector(propertyKey as string, descriptor);
+//   });
+// }
 
 /**
  * Decorate method providing per request activation.

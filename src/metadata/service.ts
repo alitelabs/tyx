@@ -1,4 +1,4 @@
-import { Class, Prototype } from '../types/core';
+import { Class, ClassRef, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadata, IApiMetadata } from './api';
 import { Metadata } from './registry';
@@ -6,9 +6,11 @@ import { Metadata } from './registry';
 export interface IInjectMetadata {
   service: IServiceMetadata;
   base?: IServiceMetadata;
+  property: string;
+  index?: number;
   resource: string;
   target?: Class;
-  index?: number;
+  ref?: ClassRef;
 }
 
 export interface IHandlerMetadata {
@@ -43,9 +45,11 @@ export interface IServiceMetadata {
 export class InjectMetadata implements IInjectMetadata {
   public service: ServiceMetadata;
   public base: ServiceMetadata;
-  public target?: Class;
-  public resource: string;
+  public property: string;
   public index?: number;
+  public resource: string;
+  public target?: Class;
+  public ref?: ClassRef;
 
   constructor(literal: IInjectMetadata) {
     Object.assign(this, literal);
@@ -116,21 +120,30 @@ export class ServiceMetadata implements IServiceMetadata {
     return meta;
   }
 
-  public inject(propertyKey: string, index: number, rsrc?: string | Class) {
-    let resource = rsrc;
-    if (!resource) {
+  public inject(propertyKey: string, index: number, rsrc?: string | ClassRef | any) {
+    let resource: any = undefined;
+    if (!rsrc) {
       resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
     }
     let target: Function;
-    if (resource instanceof Function) {
-      target = resource;
-      resource = resource.name;
-    } else {
+    let ref: ClassRef;
+    if (Utils.isClass(rsrc)) {
+      resource = rsrc.name;
+      target = rsrc;
+      ref = undefined;
+    } else if (rsrc instanceof Function) { // TODO: Utils.isInline()
+      resource = '#REF';
       target = undefined;
-      resource = resource.toString();
+      ref = rsrc;
+    } else if (rsrc) {
+      resource = rsrc.toString();
+      target = undefined;
+      ref = undefined;
+    } else {
+      throw TypeError(`Invalid resource [${rsrc}]`);
     }
     const key = (propertyKey || '[constructor]') + (index !== undefined ? `#${index}` : '');
-    this.dependencies[key] = new InjectMetadata({ service: this, resource, target, index });
+    this.dependencies[key] = new InjectMetadata({ service: this, property: key, resource, target, ref, index });
   }
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
@@ -216,13 +229,17 @@ export class ServiceMetadata implements IServiceMetadata {
           throw new TypeError(`Service [${this.name}] missing handler for [${this.api.name}.${method}]`);
         }
         const own = Object.getOwnPropertyDescriptor(this.target.prototype, method);
-        if (own && this.base && meta.base && (!handler || handler.base || !handler.override)) {
+        if (own && this.base && (!this.api.owner || meta.base) && (!handler || handler.base || !handler.override)) {
           throw new TypeError(`Service [${this.name}] missing override handler for [${this.base.name}.${method}]`);
         }
       }
       for (const method in this.handlers) {
         if (this.api && !this.api.methods[method]) {
           throw new TypeError(`Service [${this.name}] lose handler on [${method}]`);
+        }
+        const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, method);
+        if (descriptor) {
+          descriptor.writable = false;
         }
       }
       this.api.publish(this);

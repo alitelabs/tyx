@@ -19,6 +19,7 @@ import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
 import { Utils } from '../utils';
 import { CoreConfiguration } from './config';
+import { Core } from './core';
 import { CoreGraphQL } from './graphql';
 import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
@@ -99,15 +100,21 @@ export class CoreInstance implements CoreContainer {
     return undefined;
   }
 
-  public info(): ServiceInfo[] {
+  public info(core?: boolean): ServiceInfo[] {
+    if (core) return Core.info();
     const services = [...(this.container as any).services];
-    const glob: any = Container.of(undefined);
-    glob.services.forEach((g: any) => {
-      const x = services.find(i => i.id === g.id) || g;
-      // x.global = true;
-      if (x === g) services.push(x);
-    });
+    // const glob: any = Container.of(undefined);
+    // glob.services.forEach((g: any) => {
+    //   const x = services.find(i => i.id === g.id) || g;
+    //   // x.global = true;
+    //   if (x === g) services.push(x);
+    // });
     return services;
+  }
+
+  // Used is CoreInfoSchema
+  protected instances(): CoreInstance[] {
+    return (Core as any).pool;
   }
 
   // --------------------------------------------------

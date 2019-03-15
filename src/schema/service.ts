@@ -5,7 +5,7 @@ import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IHandlerMetadata, IInjectMetadata, IServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, ClassRef } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 
@@ -41,12 +41,15 @@ export class ServiceMetadataSchema implements IServiceMetadata {
 export class InjectMetadataSchema implements IInjectMetadata {
   @Field(ref => ServiceMetadataSchema) service: ServiceMetadataSchema;
   @Field(ref => ServiceMetadataSchema) base?: ServiceMetadataSchema;
+  @Field() property: string;
   @Field() resource: string;
   @Field(String) target?: Class;
+  @Field(String) ref?: ClassRef;
   @Field(0) index?: number;
 
   public static RESOLVERS: SchemaResolvers<IInjectMetadata> = {
     target: obj => Utils.label(obj.target),
+    ref: obj => Utils.label(obj.ref)
   };
 }
 
@@ -62,6 +65,6 @@ export class HandlerMetadataSchema implements IHandlerMetadata {
 
   public static RESOLVERS: SchemaResolvers<IHandlerMetadata> = {
     target: obj => Utils.label(obj.target),
-    source: obj => obj.target.toString(),
+    source: obj => obj.target.toString()
   };
 }
