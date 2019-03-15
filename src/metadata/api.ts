@@ -98,12 +98,11 @@ export class ApiMetadata implements IApiMetadata {
     if (sup && !sup.owner && this.owner) throw TypeError('Extends inline Api');
 
     this.inherit(base || sup);
-    this.wire();
 
     const prev = Metadata.ApiMetadata[this.name];
     if (prev && prev !== this) throw new TypeError(`Duplicate API name [${this.name}]`);
     Metadata.ApiMetadata[this.name] = this;
-    Object.values(this.methods).forEach(item => item.commit(this));
+    Object.values(this.methods).forEach(m => m.commit(this));
     return this;
   }
 
@@ -115,23 +114,6 @@ export class ApiMetadata implements IApiMetadata {
       this.methods[sup.name] = sup.override(this.methods[sup.name]);
     }
     return this;
-  }
-
-  public async wire() {
-    if (this.owner) return;
-    for (const method in this.methods) {
-      const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, method);
-      descriptor.writable = false;
-      descriptor.configurable = false;
-      try {
-        await descriptor.value();
-        throw new TypeError(`Api [${this.name}] non-empty implementation of [${method}]`);
-      } catch (ex) {
-        if (ex !== undefined) {
-          throw new TypeError(`Api [${this.name}] non-empty implementation of [${method}]`);
-        }
-      }
-    }
   }
 
   public publish(service: ServiceMetadata): this {

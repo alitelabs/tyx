@@ -216,7 +216,6 @@ export class MethodMetadata implements IMethodMetadata {
       method: this,
 
       route,
-      handler: this.name,
       verb,
       resource,
       model,
@@ -257,7 +256,6 @@ export class MethodMetadata implements IMethodMetadata {
       method: this,
 
       route,
-      handler: this.name,
       source,
       resource,
       actionFilter,
@@ -273,7 +271,31 @@ export class MethodMetadata implements IMethodMetadata {
     this.api = api;
     const id = MethodMetadata.id(this.api.name, this.name);
     Metadata.MethodMetadata[id] = this;
+    if (!api.owner) {
+      const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
+      this.mustBeEmpty(descriptor.value);
+      const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
+      fun.push(`return function ${this.name}(${fun.join(',')}) {
+        return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
+      }`);
+      // tslint:disable-next-line:no-function-constructor-with-string-args
+      const repl = new Function(...fun);
+      // descriptor.writable = false;
+      // descriptor.configurable = false;
+      this.target.prototype[this.name] = repl();
+    }
     return this;
+  }
+
+  private async mustBeEmpty(fun: Function) {
+    try {
+      await fun();
+      throw new TypeError(`Api [${this.name}] non-empty implementation of [${this.name}]`);
+    } catch (ex) {
+      if (ex !== undefined) {
+        throw new TypeError(`Api [${this.name}] non-empty implementation of [${this.name}]`);
+      }
+    }
   }
 
   public publish(service: ServiceMetadata): this {

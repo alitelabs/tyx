@@ -20,7 +20,6 @@ export class EventRouteMetadataSchema implements IEventRouteMetadata {
   @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
 
   @Field() route: string;
-  @Field() handler: string;
   @Field() source: string;
   @Field() resource: string;
   @Field() objectFilter: string;

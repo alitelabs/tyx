@@ -49,7 +49,7 @@ export interface CoreContainer extends ResolverContainer {
 
   info(): ServiceInfo[];
 
-  apiRequest(api: Prototype, method: Function, ...args: any[]): Promise<any>;
+  apiRequest(api: string, method: string, ...args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;

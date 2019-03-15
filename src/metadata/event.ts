@@ -12,7 +12,6 @@ export interface IEventRouteMetadata {
   service: IServiceMetadata;
 
   route: string;
-  handler: string;
   source: string;
   resource: string;
   objectFilter: string;
@@ -28,7 +27,6 @@ export class EventRouteMetadata implements IEventRouteMetadata {
   public service: ServiceMetadata;
 
   public route: string;
-  public handler: string;
   public source: string;
   public resource: string;
   public objectFilter: string;
@@ -56,7 +54,6 @@ export class EventRouteMetadata implements IEventRouteMetadata {
     if (!over) return this;
     this.over = over;
     this.route = this.route || over.route;
-    this.handler = this.handler || over.handler;
     this.source = this.source || over.source;
     this.objectFilter = this.objectFilter || over.objectFilter;
     this.actionFilter = this.actionFilter || over.actionFilter;

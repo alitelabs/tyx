@@ -4,7 +4,7 @@ import { Di } from '../import';
 import { Connection, ConnectionOptions, getConnection, getConnectionManager } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
-import { Class, ContainerState, ObjectType, Prototype, ServiceInfo } from '../types/core';
+import { Class, ContainerState, ObjectType, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
@@ -156,7 +156,7 @@ export abstract class Core {
     return instance;
   }
 
-  public static async invoke(api: Prototype, method: Function, ...args: any[]): Promise<any> {
+  public static async invoke(api: string, method: string, ...args: any[]): Promise<any> {
     try {
       const instance = await this.activate();
       return await instance.apiRequest(api, method, args);
@@ -204,3 +204,5 @@ export abstract class Core {
     return new LambdaAdapter().export();
   }
 }
+
+(global as any).Core = Core;

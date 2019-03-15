@@ -54,7 +54,6 @@ export interface IHttpRouteMetadata {
   service: IServiceMetadata;
 
   route: string;
-  handler: string;
   verb: string;
   resource: string;
   model: string;
@@ -72,7 +71,6 @@ export class HttpRouteMetadata implements IHttpRouteMetadata {
   public service: ServiceMetadata;
 
   public route: string;
-  public handler: string;
   public verb: string;
   public resource: string;
   public model: string;
@@ -101,7 +99,6 @@ export class HttpRouteMetadata implements IHttpRouteMetadata {
     if (!over) return this;
     this.over = over;
     this.route = this.route || over.route;
-    this.handler = this.handler || over.handler;
     this.verb = this.verb || over.verb;
     this.resource = this.resource || over.resource;
     this.model = this.model || over.model;

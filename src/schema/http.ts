@@ -32,7 +32,6 @@ export class HttpRouteMetadataSchema implements IHttpRouteMetadata {
   @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
 
   @Field() route: string;
-  @Field() handler: string;
   @Field() verb: string;
   @Field() resource: string;
   @Field() model: string;

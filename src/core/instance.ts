@@ -1,8 +1,7 @@
-import { Forbidden, InternalServerError, NotImplemented } from '../errors/http';
+import { Forbidden, InternalServerError } from '../errors/http';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
-import { ApiMetadata } from '../metadata/api';
 import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
 import { MethodMetadata } from '../metadata/method';
@@ -11,7 +10,7 @@ import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
-import { ContainerState, Context, CoreContainer, ObjectType, Prototype, ServiceInfo } from '../types/core';
+import { ContainerState, Context, CoreContainer, ObjectType, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -147,16 +146,15 @@ export class CoreInstance implements CoreContainer {
   }
 
   // TODO: Execute within same container
-  public async apiRequest(apiType: Prototype, apiMethod: Function, ...args: any[]): Promise<any> {
+  public async apiRequest(apiType: string, apiMethod: string, ...args: any[]): Promise<any> {
     // throw new Error(`Not implemented. Called [${meta.api.name}.${meta.name}]`);
     if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
     try {
       // this.log.debug('API Request [] %j', req);
-      const api = ApiMetadata.get(apiType);
-      // TODO: type  name
+      const api = Metadata.ApiMetadata[apiType];
       if (!api) throw this.log.error(new Forbidden(`Service not found ${apiType}`));
-      const method = api.methods[apiMethod.name];
-      if (!method) throw this.log.error(new Forbidden(`Method not found [${api.name}.${apiMethod.name}]`));
+      const method = api.methods[apiMethod];
+      if (!method) throw this.log.error(new Forbidden(`Method not found [${api.name}.${apiMethod}]`));
 
       this.istate = ContainerState.Busy;
       const ctx = await this.security.apiAuth(this, method, args[0]);
@@ -164,11 +162,11 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(api.name);
+        const service = this.container.get<any>(api.alias);
         log = Logger.get(service);
         await this.activate(ctx);
         const handler: Function = service[method.name];
-        if (handler === apiMethod) throw new NotImplemented(`Method not implemented [${api.name}.${method.name}]`);
+        // if (handler === apiMethod) throw new NotImplemented(`Method not implemented [${api.name}.${method.name}]`);
         const result = await handler.apply(service, args);
         return result;
       } catch (e) {
@@ -370,7 +368,7 @@ export class CoreInstance implements CoreContainer {
           await this.activate(ctx);
           for (const record of req.records) {
             req.record = record;
-            const handler = service[target.handler];
+            const handler = service[target.method.name];
             const data = await handler.call(service, ctx, req);
             result.status = result.status || 'OK';
             result.returns.push({
@@ -390,7 +388,7 @@ export class CoreInstance implements CoreContainer {
             data: null,
           });
         } finally {
-          log.timeEnd(startTime, `${target.handler}`);
+          log.timeEnd(startTime, `${target.method.name}`);
           await this.release(ctx);
         }
       }
