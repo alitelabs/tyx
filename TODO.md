@@ -5,18 +5,20 @@
  - [ ] Support for @Arg() -> multiple input args, GraphQL
  - [ ] Support abstract services
  - [ ] Convention (ctx, req) or (req, ctx) !!!
- - [ ] Support Service/Type, Configuration
+ - [ ] Support Service&Type, Configuration ...
  - [ ] Wording of all TypeError
  - [ ] Exception response, configurable to have stack trace
- - [ ] Core.init(+config: object)
+ - [ ] Core.init(+config: object) instead of individual params
  - [ ] Application concept ???
  - [ ] Move Database connections out of core
  - [ ] Split on core and orm
+ - [ ] Fallback code for proxy if no local service
+ - [ ] Save tyx.context in CoreInstance, as thread local variable
 
 ## Container
- - [ ] Publish API only if there is a service implementation
- - [ ] Use Api class in inject (proxy)
- - [ ] Global proxy
+ - [x] Publish API only if there is a service implementation
+ - [X] Use Api class in inject (proxy) instead of alias
+ - [x] Use Api class as global proxy
  - [ ] Api Service suffix removal
 
 ## Inheritance
@@ -29,7 +31,7 @@
 ## Metadata
  - [ ] Repository validation, no uncommited Api, Service ....
  - [x] Core as array of all instances, 
- - [ ] Core info configuration
+ - [ ] Core info add configuration, replace process.env.XX in code with static methods
  - [ ] Core info statistics ... (method invokes, time, code size, num instances)
  - [x] Remove adapter functions from http and event decorators
  - [x] Metdata.decorate to return a decorator function
