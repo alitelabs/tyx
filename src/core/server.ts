@@ -47,8 +47,9 @@ export abstract class CoreServer extends Core {
   }
 
   public static stop() {
+    process.env.IS_OFFLINE = null;
     if (this.server) this.server.close();
-    Core.release(true);
+    Core.release();
   }
 
   public static paths(basePath?: string): CoreServerPath[] {

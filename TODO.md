@@ -10,7 +10,7 @@
  - [ ] Exception response, configurable to have stack trace
  - [ ] Core.init(+config: object) instead of individual params
  - [ ] Application concept ???
- - [ ] Move Database connections out of core
+ - [x] Move Database connections out of core in providers
  - [ ] Split on core and orm
  - [ ] Fallback code for proxy if no local service
  - [ ] Save tyx.context in CoreInstance, as thread local variable
@@ -20,13 +20,12 @@
  - [X] Use Api class in inject (proxy) instead of alias
  - [x] Use Api class as global proxy
  - [ ] Api Service suffix removal
+ - [x] Initialize services on instance creation
 
-## Inheritance
- - [x] Inline API inheritance
- - [x] Service inheritance
- - [x] Inheritance of HTTP bindings
- - [x] Validate Service has handlers for all Api methods
- - [x] Explicit @Override
+ ## Runtime
+ - [x] Integrate wtfnode in error log
+ - [ ] Optimize apiRequest, for local Api proxy instances
+ - [ ] Add Logger.debug log ... startup ...
 
 ## Metadata
  - [ ] Repository validation, no uncommited Api, Service ....
@@ -37,9 +36,12 @@
  - [x] Metdata.decorate to return a decorator function
  - [x] Api methods throw undefined
 
-## Runtime
- - [x] Integrate wtfnode in error log
- - [ ] Add Logger.debug log ... startup ...
+## Inheritance
+ - [x] Inline API inheritance
+ - [x] Service inheritance
+ - [x] Inheritance of HTTP bindings
+ - [x] Validate Service has handlers for all Api methods
+ - [x] Explicit @Override
 
 ## Other
  - [ ] TypeOrm always drop keys, anything wrong with tyx decorator wrappers?

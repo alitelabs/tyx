@@ -158,6 +158,7 @@ export class ServiceMetadata implements IServiceMetadata {
 
   public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.initializer) throw new TypeError(`Duplicate initializer [${this.name}.${propertyKey}]`);
+    // TODO: Check if return type is not Promise
     this.initializer = new HandlerMetadata({ service: this, method: propertyKey });
     return this;
   }

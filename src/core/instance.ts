@@ -1,6 +1,6 @@
 import { Forbidden, InternalServerError } from '../errors/http';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
-import { Container, ContainerInstance } from '../import/typedi';
+import { Di } from '../import';
 import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { EventRouteMetadata } from '../metadata/event';
@@ -28,7 +28,7 @@ export class CoreInstance implements CoreContainer {
   public name: string;
   public log: Logger;
 
-  private container: ContainerInstance;
+  private container: Di.ContainerInstance;
   private config: Configuration;
   private security: Security;
   private istate: ContainerState;
@@ -40,16 +40,18 @@ export class CoreInstance implements CoreContainer {
     this.name = name || CoreInstance.name;
     if (index !== undefined) this.name += ':' + index;
 
-    this.container = Container.of(this.name);
+    this.container = Di.Container.of(this.name);
     this.container.set(CoreContainer, this);
 
     this.log = Logger.get(this.application, this.name);
     this.istate = ContainerState.Pending;
+  }
 
-    // if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
+  public initialize(): this {
+    if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
-    if (!Container.has(Configuration)) {
-      this.log.warn('Using default configuration service!');
+    if (!Di.Container.has(Configuration)) {
+      this.log.info('Using core configuration service');
       this.container.set({ id: Configuration, type: CoreConfiguration });
     }
     this.config = this.container.get(Configuration);
@@ -59,8 +61,8 @@ export class CoreInstance implements CoreContainer {
       throw new TypeError(`Configuration must be a service`);
     }
 
-    if (!Container.has(Security)) {
-      this.log.warn('Using default security service!');
+    if (!Di.Container.has(Security)) {
+      this.log.info('Using core security service');
       this.container.set({ id: Security, type: CoreSecurity });
     }
     this.security = this.container.get(Security);
@@ -70,25 +72,33 @@ export class CoreInstance implements CoreContainer {
       throw new TypeError(`Security must be a service`);
     }
 
-    if (!Container.has(GraphQL)) {
+    if (!Di.Container.has(GraphQL)) {
+      this.log.info('Using core GraphQL service');
       // TODO: CoreGraphQL.finalize()
       this.container.set({ id: GraphQL, type: CoreGraphQL });
     }
 
+    // Prioritize services with initializer
+    for (const service of Object.values(Metadata.ServiceMetadata)) {
+      if (!service.final || !service.initializer) continue;
+      this.log.info('Initialize [%s]', service.name);
+      this.container.set({ id: service.target, type: service.target });
+      const inst = this.get(service.target);
+      // TODO: Avoid double set
+      this.container.set({ id: service.alias, type: service.target, value: inst });
+      inst[service.initializer.method]();
+    }
+
     // Create private Api instances
     for (const api of Object.values(Metadata.ApiMetadata)) {
+      if (api.owner || !api.service) continue;
       const local = api.local(this);
       // TODO: Recoursive set for inherited api
       if (local) this.container.set(api.target, local);
     }
 
-    // Prioritize databases
-    // for (const db of Object.values(Metadata.DatabaseMetadata)) {
-    //   // this.container.set({ id: db.alias, type: db.target });
-    //   this.container.set({ id: db.target, type: db.target });
-    // }
-
     this.istate = ContainerState.Ready;
+    return this;
   }
 
   public get state() {
@@ -104,14 +114,14 @@ export class CoreInstance implements CoreContainer {
 
   public has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean {
     if (typeof id === 'string') return this.container.has(id);
-    if (id instanceof ApiMetadata) return !!id.publisher && this.has(id.publisher);
+    if (id instanceof ApiMetadata) return !!id.service && this.has(id.service);
     if (id instanceof ServiceMetadata) return this.container.has(id.inline ? id.alias : id.target as any);
     return this.container.has(id);
   }
 
   public get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T {
     if (typeof id === 'string') return this.container.get(id);
-    if (id instanceof ApiMetadata) return id.publisher && this.get(id.publisher);
+    if (id instanceof ApiMetadata) return id.service && this.get(id.service);
     if (id instanceof ServiceMetadata) return this.container.get(id.inline ? id.alias : id.target as any);
     return this.container.get<T>(id);
   }
@@ -443,7 +453,7 @@ export class CoreInstance implements CoreContainer {
   public async release(ctx: Context): Promise<void> {
     const services: ServiceInfo[] = (this.container as any).services;
     for (let i = 0; i < services.length; i++) {
-      const service = services[i];
+      const service = services[services.length - i - 1];
       if (!service || !service.value) continue;
       const meta = ServiceMetadata.get(service.type || service.value);
       if (!meta || !meta.releasor) continue;

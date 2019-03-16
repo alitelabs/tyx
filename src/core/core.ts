@@ -1,7 +1,6 @@
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { CoreSchema } from '../graphql/schema';
 import { Di } from '../import';
-import { Connection, ConnectionOptions, getConnection, getConnectionManager } from '../import/typeorm';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
 import { Class, ContainerState, ObjectType, ServiceInfo } from '../types/core';
@@ -21,8 +20,6 @@ export abstract class Core {
   private static application: string;
   private static crudAllowed: boolean;
   private static instance: CoreInstance;
-  private static options: ConnectionOptions;
-  private static connection: Connection;
 
   private static pool: CoreInstance[];
   private static counter: number = 0;
@@ -53,67 +50,8 @@ export abstract class Core {
 
     this.application = this.application || application || 'Core';
     this.instance = new CoreInstance(this.application, Core.name);
+    this.instance.initialize();
     this.pool = [this.instance];
-
-    const cfg: string = process.env.DATABASE;
-    if (!cfg) return;
-
-    // this.label = options.substring(options.indexOf("@") + 1);
-    const tokens = cfg.split(/:|@|\/|;/);
-    const logQueries = tokens.findIndex(x => x === 'logall') > 5;
-    // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
-
-    // invalid connection
-    if (tokens.length < 5) {
-      return;
-    }
-
-    const slavesConfig: string = process.env.DB_SLAVES;
-
-    if (slavesConfig) {
-      const slaves = slavesConfig.split(';').map(host => ({
-        username: tokens[0],
-        password: tokens[1],
-        host,
-        port: +tokens[4],
-        database: tokens[5],
-      }));
-
-      this.options = {
-        type: tokens[2] as any,
-        name: 'tyx',
-        replication: {
-          master: {
-            username: tokens[0],
-            password: tokens[1],
-            host: tokens[3],
-            port: +tokens[4],
-            database: tokens[5],
-          },
-          slaves,
-        },
-        // timezone: "Z",
-        logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
-      };
-    } else {
-      this.options = {
-        name: 'tyx',
-        username: tokens[0],
-        password: tokens[1],
-        type: tokens[2] as any,
-        host: tokens[3],
-        port: +tokens[4],
-        database: tokens[5],
-        // timezone: "Z",
-        logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
-      };
-    }
-    if (!getConnectionManager().has('tyx')) {
-      this.connection = getConnectionManager().create(this.options);
-      this.log.info('Connection created');
-    }
   }
 
   public static async get(): Promise<CoreInstance>;
@@ -131,23 +69,14 @@ export abstract class Core {
 
   public static async activate(): Promise<CoreInstance> {
     this.init();
-    if (this.options) {
-      if (!this.connection) {
-        this.log.info('Connecting');
-        this.connection = getConnection('tyx');
-      }
-      if (!this.connection.isConnected) {
-        await this.connection.connect();
-        this.log.info('Connected');
-      }
-    }
-
     let instance = this.pool.find(x => x.state === ContainerState.Ready);
     if (!instance) {
       instance = new CoreInstance(this.application, Core.name, this.counter++);
       // console.log('Create ->', instance.name);
+      await instance.initialize();
       instance.reserve();
       this.pool.push(instance);
+      this.counter++;
       this.instance = this.instance || instance;
     } else {
       // console.log('Reuse ->', instance.name);
@@ -192,11 +121,7 @@ export abstract class Core {
     }
   }
 
-  public static async release(force?: boolean) {
-    if (this.connection && !process.env.IS_OFFLINE && !force) {
-      await this.connection.close();
-      this.log.info('Connection closed');
-    }
+  public static async release() {
     if (WTF) WTF.dump();
   }
 
@@ -205,4 +130,8 @@ export abstract class Core {
   }
 }
 
+declare global {
+  // tslint:disable-next-line:variable-name
+  const Core: Core;
+}
 (global as any).Core = Core;
