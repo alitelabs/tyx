@@ -122,7 +122,7 @@ export class CoreGraphQL implements GraphQL {
   }
 
   protected async playground(ctx: Context, req: HttpRequest, custom?: Partial<PlaygroundRenderPageOptions>): Promise<string> {
-    const sufix = ctx.auth.token ? ('?token=' + ctx.auth.token) : '';
+    const sufix = ctx.auth.token ? ('/' + ctx.auth.token) : '';
     const options = createPlaygroundOptions({
       endpoint: `${this.config.prefix || ''}/graphql${sufix}`,
       settings: {
@@ -130,7 +130,7 @@ export class CoreGraphQL implements GraphQL {
         'editor.fontFamily': `'Menlo', ${defaultPlaygroundOptions.settings["editor.fontFamily"]}`,
         'editor.theme': 'light'
       },
-      workspaceName: 'SmokeTest',
+      // workspaceName: 'SmokeTest',
       // config: {
       //   schemaPath: "schema.graphql",
       //   extensions: {

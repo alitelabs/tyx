@@ -10,7 +10,7 @@ export interface Class extends Function { }
 
 export interface Prototype extends Object { }
 
-export type ObjectType<T> = { new(...args: any[]): T };
+export type ObjectType<T = any> = { new(...args: any[]): T };
 
 export type ClassRef<T = any> = (type?: any) => ObjectType<T>;
 export type TypeRef<T = any> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);

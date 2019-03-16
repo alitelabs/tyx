@@ -1,3 +1,4 @@
+import { CoreInstance } from '../core/instance';
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { IEventRouteMetadata } from './event';
@@ -117,6 +118,7 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public publish(service: ServiceMetadata): this {
+    if (this.base && !this.base.publisher) this.base.publish(service);
     if (this.publisher && this.publisher !== service) {
       // const parent = Utils.baseClass(service.target);
       if (this.publisher !== service.base) {
@@ -128,5 +130,15 @@ export class ApiMetadata implements IApiMetadata {
       method.publish(service);
     }
     return this;
+  }
+
+  public local(container: CoreInstance) {
+    if (this.owner) return undefined;
+    const obj: any = new (this.target as any)();
+    for (const method of Object.values(this.methods)) {
+      const value = method.local(container);
+      Object.defineProperty(obj, method.name, { configurable: false, writable: false, value });
+    }
+    return obj;
   }
 }

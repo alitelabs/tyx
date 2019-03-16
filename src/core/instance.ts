@@ -2,15 +2,14 @@ import { Forbidden, InternalServerError } from '../errors/http';
 import { MethodInfo, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { Container, ContainerInstance } from '../import/typedi';
 import { Logger } from '../logger';
+import { ApiMetadata } from '../metadata/api';
 import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
-import { MethodMetadata } from '../metadata/method';
-import { ProxyMetadata } from '../metadata/proxy';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
-import { ContainerState, Context, CoreContainer, ObjectType, ServiceInfo } from '../types/core';
+import { Class, ContainerState, Context, CoreContainer, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -25,7 +24,7 @@ import { CoreSecurity } from './security';
 
 export class CoreInstance implements CoreContainer {
 
-  private application: string;
+  public application: string;
   public name: string;
   public log: Logger;
 
@@ -76,6 +75,19 @@ export class CoreInstance implements CoreContainer {
       this.container.set({ id: GraphQL, type: CoreGraphQL });
     }
 
+    // Create private Api instances
+    for (const api of Object.values(Metadata.ApiMetadata)) {
+      const local = api.local(this);
+      // TODO: Recoursive set for inherited api
+      if (local) this.container.set(api.target, local);
+    }
+
+    // Prioritize databases
+    // for (const db of Object.values(Metadata.DatabaseMetadata)) {
+    //   // this.container.set({ id: db.alias, type: db.target });
+    //   this.container.set({ id: db.target, type: db.target });
+    // }
+
     this.istate = ContainerState.Ready;
   }
 
@@ -90,13 +102,18 @@ export class CoreInstance implements CoreContainer {
     this.istate = ContainerState.Reserved;
   }
 
-  public get<T>(type: ObjectType<T> | string): T {
-    if (typeof type === 'string') return this.container.get<T>(type);
-    const proxy = ProxyMetadata.get(type);
-    if (proxy) return this.container.get(proxy.alias);
-    const service = ServiceMetadata.get(type);
-    if (service) return this.container.get(service.alias);
-    return undefined;
+  public has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean {
+    if (typeof id === 'string') return this.container.has(id);
+    if (id instanceof ApiMetadata) return !!id.publisher && this.has(id.publisher);
+    if (id instanceof ServiceMetadata) return this.container.has(id.inline ? id.alias : id.target as any);
+    return this.container.has(id);
+  }
+
+  public get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T {
+    if (typeof id === 'string') return this.container.get(id);
+    if (id instanceof ApiMetadata) return id.publisher && this.get(id.publisher);
+    if (id instanceof ServiceMetadata) return this.container.get(id.inline ? id.alias : id.target as any);
+    return this.container.get<T>(id);
   }
 
   public info(core?: boolean): ServiceInfo[] {
@@ -162,7 +179,8 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(api.alias);
+        const service = this.get(api);
+        if (!service) throw new InternalServerError(`Service not resolved [${apiType}]`);
         log = Logger.get(service);
         await this.activate(ctx);
         const handler: Function = service[method.name];
@@ -191,7 +209,7 @@ export class CoreInstance implements CoreContainer {
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
       const target = Metadata.HttpRouteMetadata[route];
       if (!target) throw this.log.error(new Forbidden(`Route not found [${route}]`));
-      if (!target.method.roles) throw this.log.error(new Forbidden(`Method [${target.method.name}] not available`));
+      if (!target.method.roles) throw this.log.error(new Forbidden(`Method [${target.api.name}.${target.method.name}] not available`));
 
       req.application = this.application;
       req.service = target.api.name;
@@ -203,7 +221,8 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(target.api.alias);
+        const service = this.get(target.service);
+        if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
         log = Logger.get(service);
 
         await this.activate(ctx);
@@ -212,7 +231,6 @@ export class CoreInstance implements CoreContainer {
         this.log.debug('HTTP Request: %j', req);
 
         const handler: Function = service[target.method.name];
-
         const args: any = [];
         if (target.method.bindings) {
           for (const [index, arg] of target.method.bindings.entries()) {
@@ -248,12 +266,11 @@ export class CoreInstance implements CoreContainer {
 
       if (req.application !== this.application) throw this.log.error(new Forbidden(`Application not found [${req.application}]`));
       const api = Metadata.ApiMetadata[req.service];
-      if (!api) throw this.log.error(new Forbidden(`Service not found [${req.service}]`));
+      if (!api) throw this.log.error(new Forbidden(`Api not found [${req.service}]`));
       // if (!this.container.has(req.service)) throw this.log.error(new InternalServerError(`Service not found [${req.service}]`));
-      const methodId = MethodMetadata.id(req.service, req.method);
-      const method = Metadata.MethodMetadata[methodId];
-      if (!method) throw this.log.error(new Forbidden(`Method [${methodId}] not found `));
-      if (!method.roles) throw this.log.error(new Forbidden(`Method [${methodId}] not available`));
+      const method = api.methods[req.method];
+      if (!method) throw this.log.error(new Forbidden(`Method [${req.service}.${req.method}] not found `));
+      if (!method.roles) throw this.log.error(new Forbidden(`Method [${req.service}.${req.method}] not available`));
 
       this.istate = ContainerState.Busy;
       const ctx = await this.security.graphAuth(this, method, req);
@@ -261,7 +278,8 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(req.service);
+        const service = this.get(api);
+        if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
         log = Logger.get(service);
 
         await this.activate(ctx);
@@ -295,9 +313,8 @@ export class CoreInstance implements CoreContainer {
       const api = Metadata.ApiMetadata[req.service];
       if (!api) throw this.log.error(new Forbidden(`Service not found [${req.service}]`));
       // if (!this.container.has(req.service)) throw this.log.error(new InternalServerError(`Service not found [${req.service}]`));
-      const methodId = MethodMetadata.id(req.service, req.method);
-      const method = Metadata.MethodMetadata[methodId];
-      if (!method) throw this.log.error(new Forbidden(`Method not found [${methodId}]`));
+      const method = api.methods[req.method];
+      if (!method) throw this.log.error(new Forbidden(`Method not found [${api.services}.${req.method}]`));
       if (!method.roles) throw this.log.error(new Forbidden(`Method not available`));
 
       this.istate = ContainerState.Busy;
@@ -306,12 +323,12 @@ export class CoreInstance implements CoreContainer {
       let log = this.log;
       const startTime = log.time();
       try {
-        const service = this.container.get<any>(req.service);
+        const service = this.get(api);
+        if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
         log = Logger.get(service);
-
         await this.activate(ctx);
         const handler: Function = service[method.name];
-        const result = await handler.apply(service, req.args);
+        const result = await handler.call(service, ...req.args);
         return result;
       } catch (e) {
         throw this.log.error(e);
@@ -362,7 +379,8 @@ export class CoreInstance implements CoreContainer {
         let log = this.log;
         const startTime = log.time();
         try {
-          const service = this.container.get<any>(target.api.name);
+          const service = this.get(target.api);
+          if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
           log = Logger.get(service);
 
           await this.activate(ctx);
@@ -400,17 +418,20 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async activate(ctx: Context): Promise<Context> {
-    for (const meta of Object.values(Metadata.ServiceMetadata)) {
-      if (!meta.activator) continue;
-      if (!this.container.has(meta.alias)) continue;
+    const services: ServiceInfo[] = (this.container as any).services;
+    for (let i = 0; i < services.length; i++) {
+      const service = services[i];
+      if (!service || !service.value) continue;
+      const meta = ServiceMetadata.get(service.type || service.value);
+      if (!meta || !meta.activator) continue;
       try {
-        const service = this.container.get<any>(meta.alias);
-        if (this.services.includes(service)) continue;
-        const handler = service[meta.activator.method] as Function;
-        await handler.call(service, ctx);
-        this.services.push(service);
+        // TODO: Optimeze with map ...
+        if (this.services.includes(service.value)) continue;
+        const handler = service.value[meta.activator.method] as Function;
+        await handler.call(service.value, ctx);
+        this.services.push(service.value);
       } catch (e) {
-        this.log.error('Failed to activate service: [%s]', meta.alias);
+        this.log.error('Failed to activate service: [%s]', meta.name);
         this.log.error(e);
         throw e;
         // TODO: Error state for container
@@ -420,15 +441,17 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async release(ctx: Context): Promise<void> {
-    for (const meta of Object.values(Metadata.ServiceMetadata)) {
-      if (!meta.releasor) continue;
-      if (!this.container.has(meta.alias)) continue;
+    const services: ServiceInfo[] = (this.container as any).services;
+    for (let i = 0; i < services.length; i++) {
+      const service = services[i];
+      if (!service || !service.value) continue;
+      const meta = ServiceMetadata.get(service.type || service.value);
+      if (!meta || !meta.releasor) continue;
       try {
-        const service = this.container.get<any>(meta.alias);
-        const handler = service[meta.releasor.method] as Function;
-        await handler.call(service, ctx);
+        const handler = service.value[meta.releasor.method] as Function;
+        await handler.call(service.value, ctx);
       } catch (e) {
-        this.log.error('Failed to release service: [%s:%s]', meta.alias, meta.name);
+        this.log.error('Failed to release service: [%s]', meta.name);
         this.log.error(e);
         // TODO: Error state for container
       }

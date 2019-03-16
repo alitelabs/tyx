@@ -1,3 +1,4 @@
+import { CoreInstance } from '../core/instance';
 import { Class, ClassRef, Prototype } from '../types/core';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
@@ -271,18 +272,12 @@ export class MethodMetadata implements IMethodMetadata {
     this.api = api;
     const id = MethodMetadata.id(this.api.name, this.name);
     Metadata.MethodMetadata[id] = this;
-    if (!api.owner) {
+    if (!api.owner && this.target === api.target) {
       const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
       this.mustBeEmpty(descriptor.value);
-      const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
-      fun.push(`return function ${this.name}(${fun.join(',')}) {
-        return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
-      }`);
-      // tslint:disable-next-line:no-function-constructor-with-string-args
-      const repl = new Function(...fun);
       // descriptor.writable = false;
       // descriptor.configurable = false;
-      this.target.prototype[this.name] = repl();
+      this.target.prototype[this.name] = this.core();
     }
     return this;
   }
@@ -290,10 +285,10 @@ export class MethodMetadata implements IMethodMetadata {
   private async mustBeEmpty(fun: Function) {
     try {
       await fun();
-      throw new TypeError(`Api [${this.name}] non-empty implementation of [${this.name}]`);
+      throw new TypeError(`Api [${this.api.name}] non-empty implementation of [${this.name}]`);
     } catch (ex) {
       if (ex !== undefined) {
-        throw new TypeError(`Api [${this.name}] non-empty implementation of [${this.name}]`);
+        throw new TypeError(`Api [${this.api.name}] non-empty implementation of [${this.name}]`);
       }
     }
   }
@@ -329,5 +324,25 @@ export class MethodMetadata implements IMethodMetadata {
       }
     }
     return this;
+  }
+
+  public core(): Function {
+    const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
+    fun.push(`return function ${this.name}(${fun.join(',')}) {
+      return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
+    }`);
+    // tslint:disable-next-line:no-function-constructor-with-string-args
+    const gen = new Function(...fun);
+    return gen();
+  }
+
+  public local(container: CoreInstance): Function {
+    const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
+    fun.push(`return function ${this.name}(${fun.join(',')}) {
+      return this.invoke('${this.api.name}', '${this.name}', ...arguments);
+    }`);
+    // tslint:disable-next-line:no-function-constructor-with-string-args
+    const gen = new Function(...fun);
+    return gen().bind(container);
   }
 }

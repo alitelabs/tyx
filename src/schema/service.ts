@@ -59,12 +59,10 @@ export class HandlerMetadataSchema implements IHandlerMetadata {
   @Field(ref => ServiceMetadataSchema) base?: ServiceMetadataSchema;
   @Field() method: string;
   @Field() override: boolean;
-  @Field(String) target: Class;
 
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IHandlerMetadata> = {
-    target: obj => Utils.label(obj.target),
-    source: obj => obj.target.toString()
+    source: obj => obj.service.target.prototype[obj.method].toString()
   };
 }

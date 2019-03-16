@@ -29,7 +29,7 @@ export abstract class BaseProxy {
       const call: RemoteRequest = {
         type,
         application: appId,
-        service: meta.alias,
+        service: meta.name,
         method: method.name,
         requestId: undefined,
         token: undefined,

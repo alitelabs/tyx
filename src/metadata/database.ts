@@ -4,11 +4,12 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { Metadata } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
-import { ServiceMetadata } from './service';
+import { IServiceMetadata, ServiceMetadata } from './service';
 
 export interface IDatabaseMetadata {
   target: Class;
   alias: string;
+  service: IServiceMetadata;
 
   targets: Class[];
   entities: IEntityMetadata[];
@@ -18,9 +19,11 @@ export interface IDatabaseMetadata {
 
 export class DatabaseMetadata implements IDatabaseMetadata {
   public target: Class;
+  public name: string;
   public alias: string;
-  public targets: Class[] = [];
+  public service: ServiceMetadata;
 
+  public targets: Class[] = [];
   public entities: EntityMetadata[] = [];
   public columns: ColumnMetadata[] = [];
   public relations: RelationMetadata[] = [];
@@ -28,6 +31,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   protected constructor(target: Class) {
     if (!Utils.isClass(target)) throw new TypeError('Not a class');
     this.target = target;
+    this.name = target.name;
     this.alias = 'database';
   }
 
@@ -58,8 +62,8 @@ export class DatabaseMetadata implements IDatabaseMetadata {
       this.targets.push(target);
       this.entities.push(meta);
     }
-    ServiceMetadata.define(this.target).commit(alias, null, true);
-    Metadata.DatabaseMetadata[this.alias] = this;
+    this.service = ServiceMetadata.define(this.target).commit(alias, null, true);
+    Metadata.DatabaseMetadata[this.name] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;
   }

@@ -7,16 +7,19 @@ import { IColumnMetadata } from '../metadata/column';
 import { IDatabaseMetadata } from '../metadata/database';
 import { IEntityMetadata } from '../metadata/entity';
 import { IRelationMetadata } from '../metadata/relation';
+import { IServiceMetadata } from '../metadata/service';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
 import { EntityMetadataSchema } from './entity';
 import { RelationMetadataSchema } from './relation';
+import { ServiceMetadataSchema } from './service';
 
 @Schema()
 export class DatabaseMetadataSchema implements IDatabaseMetadata {
   @Field(String) target: Class;
   @Field() alias: string;
+  @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
 
   @Field([String]) targets: Class[];
   @Field(list => [EntityMetadataSchema]) entities: IEntityMetadata[];

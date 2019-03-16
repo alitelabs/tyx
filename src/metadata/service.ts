@@ -17,7 +17,6 @@ export interface IHandlerMetadata {
   service: IServiceMetadata;
   base?: IServiceMetadata;
   method: string;
-  target: Class;
   override?: boolean;
   source?: string;
 }
@@ -63,7 +62,6 @@ export class InjectMetadata implements IInjectMetadata {
 export class HandlerMetadata implements IHandlerMetadata {
   public service: ServiceMetadata;
   public base: ServiceMetadata;
-  public target: Class;
   public method: string;
   public override: boolean;
 
@@ -148,37 +146,37 @@ export class ServiceMetadata implements IServiceMetadata {
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate handler [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value, override: false });
+    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, override: false });
     return this;
   }
 
   public addOverride(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate override [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value, override: true });
+    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, override: true });
     return this;
   }
 
   public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.initializer) throw new TypeError(`Duplicate initializer [${this.name}.${propertyKey}]`);
-    this.initializer = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
+    this.initializer = new HandlerMetadata({ service: this, method: propertyKey });
     return this;
   }
 
   public setSelector(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.selector) throw new TypeError(`Duplicate selector [${this.name}.${propertyKey}]`);
-    this.selector = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
+    this.selector = new HandlerMetadata({ service: this, method: propertyKey });
     return this;
   }
 
   public setActivator(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.activator) throw new TypeError(`Duplicate activator [${this.name}.${propertyKey}]`);
-    this.activator = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
+    this.activator = new HandlerMetadata({ service: this, method: propertyKey });
     return this;
   }
 
   public setReleasor(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.releasor) throw new TypeError(`Duplicate releasor [${this.name}.${propertyKey}]`);
-    this.releasor = new HandlerMetadata({ service: this, method: propertyKey, target: descriptor.value });
+    this.releasor = new HandlerMetadata({ service: this, method: propertyKey });
     return this;
   }
 
@@ -210,7 +208,7 @@ export class ServiceMetadata implements IServiceMetadata {
     if (api && sap) throw new TypeError('Service implements and defines own Api');
     this.api = api || sap;
     // if (!this.api) this.api = sap = ApiMetadata.define(this.target);
-    this.inline = !!sap;
+    this.inline = !!sap || !api;
     if (sap) sap.commit();
     if (api) api.addService(this);
 

@@ -52,7 +52,8 @@ export function Service(aliasApiFinal?: Class | string | false | true, finalOrNo
       final = finalOrNot === undefined || !!finalOrNot;
     }
     const meta = ServiceMetadata.define(target).commit(alias, api, final);
-    return final ? Di.Service(meta.alias)(target) : undefined;
+    if (!meta.final) return undefined;
+    return meta.inline ? Di.Service(meta.alias)(target) : Di.Service()(target);
   });
 }
 
