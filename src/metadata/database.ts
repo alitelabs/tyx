@@ -63,7 +63,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
       this.entities.push(meta);
     }
     this.service = ServiceMetadata.define(this.target).commit(alias, null, true);
-    Metadata.DatabaseMetadata[this.name] = this;
+    Metadata.Database[this.name] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;
   }

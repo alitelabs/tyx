@@ -1,4 +1,4 @@
-import { Orm } from '../import';
+import { TypeOrm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
 import { Metadata } from '../metadata/registry';
 import { Int, VarType } from '../metadata/type';
@@ -8,7 +8,7 @@ import { Enum } from './type';
 
 export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
   return Metadata.onProperty(Column, { strategy }, (target, propertyKey) => {
-    const col = Orm.Generated(strategy || 'uuid')(target, propertyKey);
+    const col = TypeOrm.Generated(strategy || 'uuid')(target, propertyKey);
     const meta = ColumnMetadata.get(target, propertyKey as string);
     if (!meta) throw new TypeError(`Column decorator must be applied first on ${target.constructor.name}.${propertyKey as string}`);
     meta.setGenerated(strategy);
@@ -19,7 +19,7 @@ export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
 export function Column(options?: ColumnOptions): PropertyDecorator {
   return Metadata.onProperty(Column, { options }, (target, propertyKey) => {
     const opts = { nullable: false, ...options };
-    const col = Orm.Column(opts)(target, propertyKey);
+    const col = TypeOrm.Column(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, opts);
     return col;
   });
@@ -28,7 +28,7 @@ export function Column(options?: ColumnOptions): PropertyDecorator {
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
   return Metadata.onProperty(PrimaryColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, primary: true, nullable: false };
-    const col = Orm.PrimaryColumn(opts)(target, propertyKey);
+    const col = TypeOrm.PrimaryColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, opts);
     return col;
   });
@@ -37,7 +37,7 @@ export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
   return Metadata.onProperty(CreateDateColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.DateTime };
-    const col = Orm.CreateDateColumn(opts)(target, propertyKey);
+    const col = TypeOrm.CreateDateColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.CreateDate, opts || {});
     return col;
   });
@@ -46,7 +46,7 @@ export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
   return Metadata.onProperty(UpdateDateColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.DateTime };
-    const col = Orm.UpdateDateColumn(opts)(target, propertyKey);
+    const col = TypeOrm.UpdateDateColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.CreateDate, opts || {});
     return col;
   });
@@ -55,7 +55,7 @@ export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
   return Metadata.onProperty(VersionColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.BigInt };
-    const col = Orm.VersionColumn(opts)(target, propertyKey);
+    const col = TypeOrm.VersionColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Version, opts);
     return col;
   });
@@ -109,7 +109,7 @@ export function EnumColumn(type?: Object, options?: ColumnOptions): PropertyDeco
     // tslint:disable-next-line:no-parameter-reassignment
     options = { ...options, enum: type, type: ColumnType.Enum };
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, options, Enum(type));
-    return Orm.Column(options)(target, propertyKey);
+    return TypeOrm.Column(options)(target, propertyKey);
   });
 }
 

@@ -9,7 +9,7 @@ import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
-import { Class, ContainerState, Context, CoreContainer, ServiceInfo } from '../types/core';
+import { Class, ContainerState, Context, CoreContainer, ProcessInfo, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
 import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -79,7 +79,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     // Prioritize services with initializer
-    for (const service of Object.values(Metadata.ServiceMetadata)) {
+    for (const service of Object.values(Metadata.Service)) {
       if (!service.final || !service.initializer) continue;
       this.log.info('Initialize [%s]', service.name);
       this.container.set({ id: service.target, type: service.target });
@@ -90,7 +90,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     // Create private Api instances
-    for (const api of Object.values(Metadata.ApiMetadata)) {
+    for (const api of Object.values(Metadata.Api)) {
       if (api.owner || !api.service) continue;
       const local = api.local(this);
       // TODO: Recoursive set for inherited api
@@ -126,8 +126,8 @@ export class CoreInstance implements CoreContainer {
     return this.container.get<T>(id);
   }
 
-  public info(core?: boolean): ServiceInfo[] {
-    if (core) return Core.info();
+  public serviceInfo(core?: boolean): ServiceInfo[] {
+    if (core) return Core.serviceInfo();
     const services = [...(this.container as any).services];
     // const glob: any = Container.of(undefined);
     // glob.services.forEach((g: any) => {
@@ -136,6 +136,10 @@ export class CoreInstance implements CoreContainer {
     //   if (x === g) services.push(x);
     // });
     return services;
+  }
+
+  public processInfo(): ProcessInfo {
+    return Core.processInfo();
   }
 
   // Used is CoreInfoSchema
@@ -178,7 +182,7 @@ export class CoreInstance implements CoreContainer {
     if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
     try {
       // this.log.debug('API Request [] %j', req);
-      const api = Metadata.ApiMetadata[apiType];
+      const api = Metadata.Api[apiType];
       if (!api) throw this.log.error(new Forbidden(`Service not found ${apiType}`));
       const method = api.methods[apiMethod];
       if (!method) throw this.log.error(new Forbidden(`Method not found [${api.name}.${apiMethod}]`));
@@ -217,7 +221,7 @@ export class CoreInstance implements CoreContainer {
       HttpUtils.request(req);
 
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
-      const target = Metadata.HttpRouteMetadata[route];
+      const target = Metadata.HttpRoute[route];
       if (!target) throw this.log.error(new Forbidden(`Route not found [${route}]`));
       if (!target.method.roles) throw this.log.error(new Forbidden(`Method [${target.api.name}.${target.method.name}] not available`));
 
@@ -275,7 +279,7 @@ export class CoreInstance implements CoreContainer {
       this.log.debug('GraphQL Request: %j', req);
 
       if (req.application !== this.application) throw this.log.error(new Forbidden(`Application not found [${req.application}]`));
-      const api = Metadata.ApiMetadata[req.service];
+      const api = Metadata.Api[req.service];
       if (!api) throw this.log.error(new Forbidden(`Api not found [${req.service}]`));
       // if (!this.container.has(req.service)) throw this.log.error(new InternalServerError(`Service not found [${req.service}]`));
       const method = api.methods[req.method];
@@ -320,7 +324,7 @@ export class CoreInstance implements CoreContainer {
       this.log.debug('Remote Request: %j', req);
 
       if (req.application !== this.application) throw this.log.error(new Forbidden(`Application not found [${req.application}]`));
-      const api = Metadata.ApiMetadata[req.service];
+      const api = Metadata.Api[req.service];
       if (!api) throw this.log.error(new Forbidden(`Service not found [${req.service}]`));
       // if (!this.container.has(req.service)) throw this.log.error(new InternalServerError(`Service not found [${req.service}]`));
       const method = api.methods[req.method];
@@ -359,10 +363,10 @@ export class CoreInstance implements CoreContainer {
 
       let route = EventRouteMetadata.route(req.source, req.resource);
       const alias = this.config.resources && this.config.resources[req.resource];
-      let targets = Metadata.EventRouteMetadata[route];
+      let targets = Metadata.EventRoute[route];
       if (!targets) {
         route = EventRouteMetadata.route(req.source, alias);
-        targets = Metadata.EventRouteMetadata[route];
+        targets = Metadata.EventRoute[route];
       }
       if (!targets) throw this.log.error(new Forbidden(`Event handler not found [${route}] [${req.object}]`));
 

@@ -59,48 +59,48 @@ export class DecorationMetadataSchema implements DecorationMetadata {
 @Schema()
 export class MetadataRegistrySchema implements MetadataRegistry {
 
-  @Field(list => [TypeMetadataSchema]) RegistryMetadata: Record<string, TypeMetadata>;
-  @Field(list => [DecoratorMetadataSchema]) DecoratorMetadata: Record<string, DecoratorMetadata>;
-  @Field(list => [DecorationMetadataSchema]) DecorationMetadata: DecorationMetadata[];
+  @Field(list => [TypeMetadataSchema]) Registry: Record<string, TypeMetadata>;
+  @Field(list => [DecoratorMetadataSchema]) Decorator: Record<string, DecoratorMetadata>;
+  @Field(list => [DecorationMetadataSchema]) Decoration: DecorationMetadata[];
 
-  @Field(list => [ApiMetadataSchema]) ApiMetadata: Record<string, ApiMetadata>;
-  @Field(list => [ServiceMetadataSchema]) ServiceMetadata: Record<string, ServiceMetadata>;
-  @Field(list => [ProxyMetadataSchema]) ProxyMetadata: Record<string, ProxyMetadata>;
+  @Field(list => [ApiMetadataSchema]) Api: Record<string, ApiMetadata>;
+  @Field(list => [ServiceMetadataSchema]) Service: Record<string, ServiceMetadata>;
+  @Field(list => [ProxyMetadataSchema]) Proxy: Record<string, ProxyMetadata>;
 
-  @Field(list => [DatabaseMetadataSchema]) DatabaseMetadata: Record<string, DatabaseMetadata>;
-  @Field(list => [EntityMetadataSchema]) EntityMetadata: Record<string, EntityMetadata>;
-  @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, ColumnMetadata>;
-  @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, RelationMetadata>;
+  @Field(list => [DatabaseMetadataSchema]) Database: Record<string, DatabaseMetadata>;
+  @Field(list => [EntityMetadataSchema]) Entity: Record<string, EntityMetadata>;
+  @Field(list => [ColumnMetadataSchema]) Column: Record<string, ColumnMetadata>;
+  @Field(list => [RelationMetadataSchema]) Relation: Record<string, RelationMetadata>;
 
-  @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, EnumMetadata>;
-  @Field(list => [TypeMetadataSchema]) InputMetadata: Record<string, TypeMetadata>;
-  @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, TypeMetadata>;
+  @Field(list => [EnumMetadataSchema]) Enum: Record<string, EnumMetadata>;
+  @Field(list => [TypeMetadataSchema]) Input: Record<string, TypeMetadata>;
+  @Field(list => [TypeMetadataSchema]) Type: Record<string, TypeMetadata>;
 
-  @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, MethodMetadata>;
+  @Field(list => [MethodMetadataSchema]) Method: Record<string, MethodMetadata>;
   @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, MethodMetadata>;
-  @Field(list => [HttpRouteMetadataSchema]) HttpRouteMetadata: Record<string, HttpRouteMetadata>;
-  @Field(list => [EventRouteMetadataSchema]) EventRouteMetadata: Record<string, EventRouteMetadata[]>;
+  @Field(list => [HttpRouteMetadataSchema]) HttpRoute: Record<string, HttpRouteMetadata>;
+  @Field(list => [EventRouteMetadataSchema]) EventRoute: Record<string, EventRouteMetadata[]>;
 
   public static RESOLVERS: SchemaResolvers<MetadataRegistry> = {
-    RegistryMetadata: (obj, args) => Lo.filter(Object.values(obj.RegistryMetadata), args),
-    DecoratorMetadata: (obj, args) => Lo.filter(Object.values(obj.DecoratorMetadata), args),
-    DecorationMetadata: (obj, args) => {
+    Registry: (obj, args) => Lo.filter(Object.values(obj.Registry), args),
+    Decorator: (obj, args) => Lo.filter(Object.values(obj.Decorator), args),
+    Decoration: (obj, args) => {
       if (args.target) args.target = `[class: ${args.target}]`;
-      const mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
+      const mapped = obj.Decoration.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
       return Lo.filter(mapped as any[], args);
     },
-    ApiMetadata: (obj, args) => Lo.filter(Object.values(obj.ApiMetadata), args),
-    ServiceMetadata: (obj, args) => Lo.filter(Object.values(obj.ServiceMetadata), args),
-    ProxyMetadata: (obj, args) => Lo.filter(Object.values(obj.ProxyMetadata), args),
-    DatabaseMetadata: (obj, args) => Lo.filter(Object.values(obj.DatabaseMetadata), args),
-    EntityMetadata: (obj, args) => Lo.filter(Object.values(obj.EntityMetadata), args),
-    ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
-    RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
-    EnumMetadata: (obj, args) => Lo.filter(Object.values(obj.EnumMetadata), args),
-    InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
-    TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
-    MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
-    HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),
-    EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args),
+    Api: (obj, args) => Lo.filter(Object.values(obj.Api), args),
+    Service: (obj, args) => Lo.filter(Object.values(obj.Service), args),
+    Proxy: (obj, args) => Lo.filter(Object.values(obj.Proxy), args),
+    Database: (obj, args) => Lo.filter(Object.values(obj.Database), args),
+    Entity: (obj, args) => Lo.filter(Object.values(obj.Entity), args),
+    Column: (obj, args) => Lo.filter(Object.values(obj.Column), args),
+    Relation: (obj, args) => Lo.filter(Object.values(obj.Relation), args),
+    Enum: (obj, args) => Lo.filter(Object.values(obj.Enum), args),
+    Input: (obj, args) => Lo.filter(Object.values(obj.Input), args),
+    Type: (obj, args) => Lo.filter(Object.values(obj.Type), args),
+    Method: (obj, args) => Lo.filter(Object.values(obj.Method), args),
+    HttpRoute: (obj, args) => Lo.filter(Object.values(obj.HttpRoute), args),
+    EventRoute: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRoute)), args),
   };
 }

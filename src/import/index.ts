@@ -1,10 +1,10 @@
 import * as Di from './typedi';
-import * as Orm from './typeorm';
+import { TypeOrm } from './typeorm';
 
 // tslint:disable-next-line:variable-name
 export const Imports = [
   Di,
-  Orm
+  TypeOrm
 ];
 
-export { Di, Orm, Express };
+export { Di, TypeOrm };

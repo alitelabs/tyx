@@ -282,7 +282,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     }
     // TODO: More validations and optional inverse relation
     const key = `${entity.name}.${this.propertyName}`;
-    Metadata.RelationMetadata[key] = this;
+    Metadata.Relation[key] = this;
     database.relations.push(this);
   }
 }

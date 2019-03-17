@@ -100,9 +100,9 @@ export class ApiMetadata implements IApiMetadata {
 
     this.inherit(base || sup);
 
-    const prev = Metadata.ApiMetadata[this.name];
+    const prev = Metadata.Api[this.name];
     if (prev && prev !== this) throw new TypeError(`Duplicate API name [${this.name}]`);
-    Metadata.ApiMetadata[this.name] = this;
+    Metadata.Api[this.name] = this;
     Object.values(this.methods).forEach(m => m.commit(this));
     return this;
   }

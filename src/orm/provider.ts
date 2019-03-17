@@ -1,16 +1,13 @@
 import { Database } from '../decorators/database';
 import { Activate, CoreService, Initialize, Inject, Release } from '../decorators/service';
-import { TypeOrmProvider } from '../graphql/typeorm';
-import { Orm } from '../import';
-import { getConnection } from '../import/typeorm';
+import { TypeOrm } from '../import';
 import { Logger } from '../logger';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { Metadata } from '../metadata/registry';
 import { Configuration } from '../types/config';
 import { Class } from '../types/core';
-
-export { Connection, ConnectionOptions, EntityManager, Repository } from '../import/typeorm';
+import { TypeOrmProvider } from './typeorm';
 
 @CoreService()
 export class DatabaseProvider extends TypeOrmProvider implements Database {
@@ -21,9 +18,9 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   public log = Logger.get(this);
 
   protected alias: string;
-  protected options: Orm.ConnectionOptions;
-  protected connection: Orm.Connection;
-  public manager: Orm.EntityManager;
+  protected options: TypeOrm.ConnectionOptions;
+  protected connection: TypeOrm.Connection;
+  public manager: TypeOrm.EntityManager;
 
   public get entities(): Class[] { return DatabaseMetadata.get(this).targets; }
 
@@ -77,7 +74,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         },
         // timezone: "Z",
         logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
+        entities: Object.values(Metadata.Entity).map(meta => meta.target),
       };
     } else {
       this.options = {
@@ -90,11 +87,11 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         database: tokens[5],
         // timezone: "Z",
         logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.EntityMetadata).map(meta => meta.target),
+        entities: Object.values(Metadata.Entity).map(meta => meta.target),
       };
     }
-    if (!Orm.getConnectionManager().has(this.alias)) {
-      this.connection = Orm.getConnectionManager().create(this.options);
+    if (!TypeOrm.getConnectionManager().has(this.alias)) {
+      this.connection = TypeOrm.getConnectionManager().create(this.options);
       this.log.info('Connection created');
     }
   }
@@ -103,7 +100,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   protected async activate() {
     if (!this.connection) {
       this.log.info('Connecting');
-      this.connection = getConnection(this.alias);
+      this.connection = TypeOrm.getConnection(this.alias);
     }
     if (!this.connection.isConnected) {
       await this.connection.connect();

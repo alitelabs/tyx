@@ -1,4 +1,4 @@
-import { CoreSchema, EntitySchema } from './schema';
+import { CoreSchema, EntitySchema } from '../graphql/schema';
 
 const ENTITY = '';
 const GET = '';
@@ -82,7 +82,7 @@ function resolver(target: string, relations: Record<string, { target: string, ty
     ` + Object.entries(relations).map(rel => `
         @Resolve()
         public async ${rel[0]}(root: ${target}, args: ToolkitArgs, context: ToolkitContext, info?: ToolkitInfo)`
-      + `: Promise<${rel[1].target}${rel[1].type.endsWith('Many') ? '[]' : ''}> {
+        + `: Promise<${rel[1].target}${rel[1].type.endsWith('Many') ? '[]' : ''}> {
             return TypeOrm.${rel[1].type}(${target}.name, this.${rel[0]}.name, root, args, context, info);
         }`).join('\n') + `
     }`);

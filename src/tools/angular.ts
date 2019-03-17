@@ -1,9 +1,9 @@
 import { Core } from '../core/core';
+import { CoreSchema } from '../graphql/schema';
 import { ApiMetadata } from '../metadata/api';
 import { GraphKind, Select, TypeMetadata, VarMetadata } from '../metadata/type';
 import '../schema/registry';
-import { CoreSchema } from './schema';
-import { back } from './utils';
+import { Utils } from '../utils';
 
 export class AngularCodeGen {
 
@@ -14,7 +14,7 @@ export class AngularCodeGen {
   }
 
   public emit(): string {
-    let script = back(`
+    let script = Utils.unindent(`
     import { Injectable } from '@angular/core';
     import { Apollo } from 'apollo-angular';
     import { ApolloQueryResult } from 'apollo-client';

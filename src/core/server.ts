@@ -55,7 +55,7 @@ export abstract class CoreServer extends Core {
   public static paths(basePath?: string): CoreServerPath[] {
     const used: Record<string, boolean> = {};
     const paths: CoreServerPath[] = [];
-    for (const meta of Object.values(Metadata.HttpRouteMetadata)) {
+    for (const meta of Object.values(Metadata.HttpRoute)) {
       const httpMethod = meta.verb;
       const resource = meta.resource;
       // TODO: Regex

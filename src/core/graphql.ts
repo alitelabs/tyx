@@ -8,8 +8,8 @@ import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorat
 import { Activate, CoreService, Inject } from '../decorators/service';
 import { InternalServerError } from '../errors';
 import { CoreSchema } from '../graphql/schema';
-import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../graphql/voyager';
 import { Logger } from '../logger';
+import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../tools/voyager';
 import { Configuration } from '../types/config';
 import { Context } from '../types/core';
 import { GraphQL } from '../types/graphql';

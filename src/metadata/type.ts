@@ -368,8 +368,8 @@ export class EnumMetadata extends VarMetadata implements IEnumMetadata {
     if (!meta) {
       meta = new EnumMetadata(target, name);
       Reflect.defineMetadata(Metadata.TYX_ENUM, meta, target);
-      if (Metadata.EntityMetadata[name]) throw new TypeError(`Duplicate enum name: ${name}`);
-      Metadata.EnumMetadata[name] = meta;
+      if (Metadata.Entity[name]) throw new TypeError(`Duplicate enum name: ${name}`);
+      Metadata.Enum[name] = meta;
     } else if (name && name !== meta.name) {
       throw new TypeError(`Can not rename enum from: ${meta.name} to: ${name}`);
     }
@@ -467,24 +467,24 @@ export class TypeMetadata extends VarMetadata implements ITypeMetadata {
     let prev: TypeMetadata;
     switch (type) {
       case GraphKind.Metadata:
-        prev = Metadata.RegistryMetadata[this.target.name];
+        prev = Metadata.Registry[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate metadata class ${this.target.name}`);
-        Metadata.RegistryMetadata[this.target.name] = this;
+        Metadata.Registry[this.target.name] = this;
         break;
       case GraphKind.Input:
-        prev = Metadata.InputMetadata[this.target.name];
+        prev = Metadata.Input[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate input class ${this.target.name}`);
-        Metadata.InputMetadata[this.target.name] = this;
+        Metadata.Input[this.target.name] = this;
         break;
       case GraphKind.Type:
-        prev = Metadata.TypeMetadata[this.target.name];
+        prev = Metadata.Type[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate type class ${this.target.name}`);
-        Metadata.TypeMetadata[this.target.name] = this;
+        Metadata.Type[this.target.name] = this;
         break;
       case GraphKind.Entity:
-        prev = Metadata.EntityMetadata[this.target.name];
+        prev = Metadata.Entity[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate entity class ${this.target.name}`);
-        Metadata.EntityMetadata[this.target.name] = this as any;
+        Metadata.Entity[this.target.name] = this as any;
         break;
       default:
         throw new TypeError(`Not Implemented: ${type}`);

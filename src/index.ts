@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'typedi';
 
 if (Symbol['asyncIterator'] === undefined) ((Symbol as any)['asyncIterator']) = Symbol.for('asyncIterator');
 
@@ -48,10 +49,7 @@ export * from './decorators/exception';
 // ---- graphql/index.ts ----
 
 export * from './graphql/types';
-export * from './graphql/query';
-export * from './graphql/typeorm';
 export * from './graphql/schema';
-export * from './graphql/angular';
 
 // ---- general/index.ts ----
 
@@ -65,10 +63,19 @@ export * from './core/core';
 export * from './core/config';
 export * from './core/security';
 export * from './core/proxy';
-export * from './core/provider';
 export * from './core/graphql';
 export * from './core/server';
+
+// ---- orm/index.ts ----
+
+export * from './orm/typeorm';
+export * from './orm/provider';
+
+// ---- tools/index.ts ---
+
+export * from './tools/angular';
 
 // --- TODO ---
 
 export * from './aws';
+export * from './import';

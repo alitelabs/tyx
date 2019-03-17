@@ -1,4 +1,4 @@
-import { Orm } from '../import';
+import { TypeOrm } from '../import';
 import { EntityMetadata, EntityOptions } from '../metadata/entity';
 import { Metadata } from '../metadata/registry';
 
@@ -6,6 +6,6 @@ import { Metadata } from '../metadata/registry';
 export function Entity(options?: EntityOptions): ClassDecorator {
   return Metadata.onClass(Entity, { options }, (target) => {
     EntityMetadata.define(target).submit(options);
-    return Orm.Entity(options)(target);
+    return TypeOrm.Entity(options)(target);
   });
 }

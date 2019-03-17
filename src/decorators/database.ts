@@ -1,4 +1,4 @@
-import { Di, Orm } from '../import';
+import { Di } from '../import';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { Metadata } from '../metadata/registry';
@@ -8,7 +8,6 @@ import { Class } from '../types/core';
 export const Database = 'Database';
 
 export interface Database {
-  manager: Orm.EntityManager;
   metadata: EntityMetadata[];
 }
 

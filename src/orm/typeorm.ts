@@ -1,9 +1,9 @@
 import { NotImplemented } from '../errors';
-import { EntityManager, SelectQueryBuilder } from '../import/typeorm';
+import { EntityResolver, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
+import { TypeOrm } from '../import/typeorm';
 import { EntityMetadata } from '../metadata/entity';
 import { RelationMetadata } from '../metadata/relation';
 import { QueryToolkit } from './query';
-import { EntityResolver, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from './types';
 
 export interface IRecord {
   created: Date;
@@ -14,9 +14,9 @@ export interface IRecord {
 export class TypeOrmProvider implements EntityResolver {
   public static readonly LIMIT = 1000;
 
-  protected manager: EntityManager;
+  protected manager: TypeOrm.EntityManager;
 
-  constructor(manager?: EntityManager) { this.manager = manager; }
+  constructor(manager?: TypeOrm.EntityManager) { this.manager = manager; }
 
   public get(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
     return this.prepareQuery(entity.name, args, null, context).getOne();
@@ -145,9 +145,9 @@ export class TypeOrmProvider implements EntityResolver {
     keys: ResolverArgs,
     query: ResolverQuery,
     context: ResolverContext
-  ): SelectQueryBuilder<any> {
+  ): TypeOrm.SelectQueryBuilder<any> {
     const sql = QueryToolkit.prepareSql(keys, query);
-    const builder: SelectQueryBuilder<any> = this.manager.createQueryBuilder(target, QueryToolkit.ALIAS)
+    const builder: TypeOrm.SelectQueryBuilder<any> = this.manager.createQueryBuilder(target, QueryToolkit.ALIAS)
       .where(sql.where, sql.params);
     sql.order.forEach(ord => builder.addOrderBy(ord.column, ord.asc ? 'ASC' : 'DESC'));
     if (sql.skip) builder.skip(sql.skip);

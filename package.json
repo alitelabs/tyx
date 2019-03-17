@@ -54,7 +54,6 @@
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.13",
     "typedi": "^0.8.0",
-    "typeorm": "^0.2.15",
     "uuid": "^3.3.2",
     "wtfnode": "^0.8.0"
   },
@@ -66,7 +65,8 @@
     "express": "^4.16.4",
     "aws-sdk": "^2.420.0",
     "aws-serverless-express": "^3.3.5",
-    "raw-body": "^2.3.3"
+    "raw-body": "^2.3.3",
+    "typeorm": "^0.2.15"
   },
   "devDependencies": {
     "@types/aws-serverless-express": "^3.3.0",
@@ -100,6 +100,7 @@
     "ts-node": "^8.0.3",
     "tslint": "^5.14.0",
     "tslint-config-airbnb": "^5.11.1",
+    "typeorm": "^0.2.15",
     "typescript": "^3.3.3333"
   },
   "prettier": {

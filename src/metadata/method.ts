@@ -271,7 +271,7 @@ export class MethodMetadata implements IMethodMetadata {
   public commit(api: ApiMetadata): this {
     this.api = api;
     const id = MethodMetadata.id(this.api.name, this.name);
-    Metadata.MethodMetadata[id] = this;
+    Metadata.Method[id] = this;
     if (!api.owner && this.target === api.target) {
       const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
       this.mustBeEmpty(descriptor.value);
@@ -299,7 +299,7 @@ export class MethodMetadata implements IMethodMetadata {
     for (const [route, meta] of Object.entries(this.http || {})) {
       meta.api = this.api;
       meta.service = service;
-      const prev = Metadata.HttpRouteMetadata[route];
+      const prev = Metadata.HttpRoute[route];
       if (prev && prev !== meta && prev !== meta.base) {
         throw new TypeError(`Duplicate HTTP route [${route}]`);
       }
@@ -307,12 +307,12 @@ export class MethodMetadata implements IMethodMetadata {
         // TODO: Logger, from method to method
         console.log(`Route takeover [${route}]: [${MethodMetadata.id(prev.api.name, prev.method.name)}] -> [${id}]`);
       }
-      Metadata.HttpRouteMetadata[route] = meta;
+      Metadata.HttpRoute[route] = meta;
     }
     for (const [route, meta] of Object.entries(this.events || {})) {
       meta.api = this.api;
       meta.service = service;
-      const handlers = Metadata.EventRouteMetadata[route] = Metadata.EventRouteMetadata[route] || [];
+      const handlers = Metadata.EventRoute[route] = Metadata.EventRoute[route] || [];
       // TODO: handlers.includes(meta.over)
       const prevIndex = handlers.indexOf(meta.base);
       if (prevIndex !== -1) {

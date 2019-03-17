@@ -12,8 +12,8 @@ import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/
 import { CoreInfoSchema } from '../schema/core';
 import '../schema/registry';
 import { Class } from '../types/core';
+import { Utils } from '../utils';
 import { SchemaResolver } from './types';
-import { back, scalar } from './utils';
 
 import GraphQLJSON = require('graphql-type-json');
 import FS = require('fs');
@@ -144,32 +144,32 @@ export class CoreSchema {
     this.crud = crud;
 
     // Enums
-    for (const type of Object.values(registry.EnumMetadata)) {
+    for (const type of Object.values(registry.Enum)) {
       this.enums[type.name] = this.genEnum(type);
     }
     // Metadata
-    for (const type of Object.values(registry.RegistryMetadata)) {
+    for (const type of Object.values(registry.Registry)) {
       this.genType(type, this.metadata);
     }
     // Databases & Entities
-    for (const type of Object.values(registry.DatabaseMetadata)) {
+    for (const type of Object.values(registry.Database)) {
       this.genDatabase(type);
     }
     // Unbound entites as types
-    for (const type of Object.values(registry.EntityMetadata)) {
+    for (const type of Object.values(registry.Entity)) {
       if (this.entities[type.name]) continue;
       this.genType(type, this.types);
     }
     // Inputs
-    for (const type of Object.values(registry.InputMetadata)) {
+    for (const type of Object.values(registry.Input)) {
       this.genType(type, this.inputs);
     }
     // Results
-    for (const type of Object.values(registry.TypeMetadata)) {
+    for (const type of Object.values(registry.Type)) {
       this.genType(type, this.types);
     }
     // Api
-    for (const api of Object.values(registry.ApiMetadata)) {
+    for (const api of Object.values(registry.Api)) {
       this.genApi(api);
     }
   }
@@ -193,7 +193,7 @@ export class CoreSchema {
   }
 
   public static prolog(): string {
-    return back(`
+    return Utils.unindent(`
       # -- Scalars --
       ${DEF_SCALARS}
 
@@ -209,7 +209,7 @@ export class CoreSchema {
   }
 
   public typeDefs(): string {
-    return back(`
+    return Utils.unindent(`
             # -- Scalars --
             ${DEF_SCALARS}
 
@@ -602,7 +602,7 @@ export class CoreSchema {
       // TODO: Get it from typedef
       const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
       const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
-      const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${scalar(method.roles)})`;
+      const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${Utils.scalar(method.roles)})`;
       const host: Class = method.host && method.host();
       const meth: MethodSchema = {
         metadata: method,

@@ -1,4 +1,4 @@
-import { ArrayNode, InputNode, LikeNode, ResolverArgs, ResolverExpression, ResolverQuery } from './types';
+import { ArrayNode, InputNode, LikeNode, ResolverArgs, ResolverExpression, ResolverQuery } from '../graphql/types';
 
 const ES = '`';
 

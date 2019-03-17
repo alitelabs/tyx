@@ -1,5 +1,6 @@
 // tslint:disable-next-line:import-name
 import uuidr = require('uuid/v4');
+import fs = require('fs');
 import { Class } from '../types/core';
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
@@ -145,3 +146,65 @@ export function snakeCase(str: string) {
 export function titleCase(str: string): string {
   return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 }
+
+export function scalar(obj: any): string {
+  let res = '{';
+  let i = 0;
+  for (const [key, val] of Object.entries(obj)) res += `${(i++) ? ', ' : ' '}${key}: ${JSON.stringify(val)}`;
+  res += ' }';
+  return res;
+}
+
+export function unindent(text: string) {
+  const lines = text.split('\n');
+  let first = lines[0];
+  if (!first.trim().length) first = lines[1];
+  const pad = first.substr(0, first.indexOf(first.trim()));
+  const res = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
+    .map(line => line.trimRight())
+    .join('\n');
+  return res;
+}
+
+export function relative(path: string, root: string, rem?: string, wit?: string): string {
+  let i = 0;
+  while (path[i] === root[i] && i < path.length) i++;
+  return path.substring(i).replace(rem || '', wit || '');
+}
+
+export function fsize(path: string) {
+  try {
+    return fs.statSync(path).size;
+  } catch (err) {
+    return undefined;
+  }
+}
+
+export function mem() {
+  const usg = process.memoryUsage();
+  return `rss: ${mb(usg.rss)}, heap: ${mb(usg.heapUsed)}`;
+}
+
+export function mb(size: number) {
+  const kb = size / 1024;
+  if (kb < 1025) return kb.toFixed(0) + ' KB';
+  return (kb / 1024).toFixed(3) + ' MB';
+}
+
+// export function reload(level?: number): NodeModule {
+//   const dump = modules(level);
+//   const list = Object.keys(require.cache);
+//   console.log('Before relaod:', list.length);
+//   // const now = Object.keys(require.cache);
+//   for (const key of list) {
+//     delete require.cache[key];
+//   }
+//   let first: NodeModule = undefined;
+//   for (const mod of dump.files) {
+//     if (require.cache[mod.id]) continue;
+//     console.log('Reload:', mod.id);
+//     first = first || require(mod.id);
+//   }
+//   console.log('After relaod:', Object.keys(require.cache).length);
+//   return first;
+// }

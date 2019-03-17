@@ -47,12 +47,56 @@ export const CoreContainer = 'container';
 export interface CoreContainer extends ResolverContainer {
   state: ContainerState;
 
-  info(): ServiceInfo[];
+  serviceInfo(): ServiceInfo[];
+  processInfo(): ProcessInfo;
 
   apiRequest(api: string, method: string, ...args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;
+}
+
+export interface MemoryInfo {
+  rss: number;
+  heapTotal: number;
+  heapUsed: number;
+  external: number;
+}
+
+export interface ProcessInfo {
+  timestamp: Date;
+  versions: any;
+  uptime: number;
+  // TODO: Statistics, mem usage, uptime etc
+  // Package and modules size
+  memory: MemoryInfo;
+  node: any;
+  root: ModuleInfo;
+  moduleCount: number;
+  packageCount: number;
+  scriptSize: number;
+  packages: PackageInfo[];
+  modules: ModuleInfo[];
+}
+
+export interface PackageInfo {
+  name: string;
+  level: number;
+  size: number;
+  parent: PackageInfo;
+  import: ModuleInfo;
+  modules: ModuleInfo[];
+  uses: PackageInfo[];
+}
+
+export interface ModuleInfo {
+  id: string;
+  name: string;
+  file: string;
+  size: number;
+  level: number;
+  parent: ModuleInfo;
+  package: PackageInfo;
 }
 
 /**

@@ -11,7 +11,7 @@
  - [ ] Core.init(+config: object) instead of individual params
  - [ ] Application concept ???
  - [x] Move Database connections out of core in providers
- - [ ] Split on core and orm
+ - [x] Make typeorm an peer dependecy
  - [ ] Fallback code for proxy if no local service
  - [ ] Save tyx.context in CoreInstance, as thread local variable
 

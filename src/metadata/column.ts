@@ -432,7 +432,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
     this.entityMetadata = entity;
     const key = `${entity.name}.${this.propertyName}`;
-    Metadata.ColumnMetadata[key] = this;
+    Metadata.Column[key] = this;
     database.columns.push(this);
   }
 }

@@ -1,4 +1,4 @@
-import { Orm } from '../import';
+import { TypeOrm } from '../import';
 import { IndexOptions } from '../metadata/indexes';
 import { Metadata } from '../metadata/registry';
 
@@ -99,7 +99,7 @@ export function Index(
   }
   return Metadata.onClassOrProperty(Index, { name, fields, options }, (target: any, propertyKey?: any) => {
     // TODO: EntityMetadata.define(target).addIndex(options);
-    return Orm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(target, propertyKey);
+    return TypeOrm.Index(nameOrFieldsOrOptions as any, maybeFieldsOrOptions as any, maybeOptions)(target, propertyKey);
   });
 }
 
@@ -150,6 +150,6 @@ export function Unique(
   // const target = propertyKey ? clsOrObject.constructor : clsOrObject as Function;
   return Metadata.onClassOrProperty(Unique, { name, fields }, (target, propertyKey) => {
     // TODO: EntityMetadata.define(target).addUnique(options);
-    return Orm.Unique(nameOrFields as any, maybeFields as any)(target, propertyKey);
+    return TypeOrm.Unique(nameOrFields as any, maybeFields as any)(target as any, propertyKey);
   });
 }

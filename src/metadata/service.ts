@@ -215,10 +215,10 @@ export class ServiceMetadata implements IServiceMetadata {
 
     this.inherit(base);
 
-    const prev = Metadata.ServiceMetadata[this.name];
+    const prev = Metadata.Service[this.name];
     // TODO: Store by name, separate unique by alias
     if (prev && prev !== this) throw new TypeError(`Duplicate service name [${this.name}]`);
-    Metadata.ServiceMetadata[this.name] = this;
+    Metadata.Service[this.name] = this;
 
     if (this.api) {
       for (const method in this.api.methods) {
