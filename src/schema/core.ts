@@ -89,6 +89,8 @@ export class ProcessInfoSchema implements ProcessInfo {
   @Field() timestamp: Date;
   @Field(Any) versions: any;
   @Field() uptime: number;
+  @Field() loadTime: number;
+  @Field() initTime: number;
   @Field(ref => MemoryInfoSchema) memory: MemoryInfo;
   @Field(Any) node: any;
   // TODO: Statistics, mem usage, uptime etc

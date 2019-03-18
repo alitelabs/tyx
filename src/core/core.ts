@@ -25,6 +25,9 @@ export abstract class Core {
   private static pool: CoreInstance[];
   private static counter: number = 0;
 
+  public static loadTime: number = Math.round(process.uptime() * 1000);
+  public static initTime: number;
+
   protected constructor() { }
 
   public static get metadata(): Metadata {
@@ -43,6 +46,8 @@ export abstract class Core {
   public static init(application?: string, register?: Class[], isCrud?: boolean): void;
   public static init(application?: string, args?: Class[] | boolean, isCrud?: boolean): void {
     if (this.instance) return;
+
+    this.initTime = Math.round(process.uptime() * 1000) - this.loadTime;
 
     if (args === true) CoreGraphQL.makePublic();
 
@@ -140,6 +145,8 @@ export abstract class Core {
         platform: process.platform,
         release: process.release
       },
+      loadTime: this.loadTime,
+      initTime: this.initTime,
       root,
       packageCount: Object.keys(packages).length,
       moduleCount: Object.keys(modules).length,

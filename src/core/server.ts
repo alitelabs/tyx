@@ -1,10 +1,9 @@
-import { Express, Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { createServer, Server } from 'http';
-import Koa, { Context as Kontext } from 'koa';
-import Router from 'koa-router';
 import { Core } from '../core/core';
 import { HttpUtils } from '../core/http';
 import { InternalServerError } from '../errors/http';
+import { Express } from '../import/express';
+import { Koa } from '../import/koa';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
@@ -30,16 +29,20 @@ export abstract class CoreServer extends Core {
 
   private static server: Server;
 
-  public static start(port: number, basePath?: string, extraArgs?: any) {
+  public static start(port: number, basePath?: string, extraArgs?: any): void {
     process.env.IS_OFFLINE = 'true';
     this.init();
     const paths = CoreServer.paths(basePath);
-    // TODO: Try load koa, then express
-    // Move start to Core
-    const app = CoreServer.koa(paths);
-    this.server = createServer(app.callback());
-    // const app = CoreServer.express(extraArgs, paths);
-    // this.server = createServer(app);
+    if (Koa.load()) {
+      const app = CoreServer.koa(paths);
+      this.server = createServer(app.callback());
+    } else if (Express.load()) {
+      const app = CoreServer.express(extraArgs, paths);
+      this.server = createServer(app);
+    } else {
+      this.log.error('🛑  Neither koa or express installed.');
+      return;
+    }
     this.server.listen(port || 5000);
     this.log.info('👌  Server initialized.');
     paths.forEach(p => this.log.info(`${p.httpMethod} http://localhost:${port}${p.path}`));
@@ -76,14 +79,12 @@ export abstract class CoreServer extends Core {
     return paths;
   }
 
-  public static koa(baseOrPaths?: string | CoreServerPath[]): Koa {
+  public static koa(baseOrPaths?: string | CoreServerPath[]): Koa.Koa {
     const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '';
     const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
-    const koaClass = require('koa');
-    const routerClass = require('koa-router');
-    const rawBody = require('raw-body');
-    const app: Koa = new koaClass();
-    const routes: Router = new routerClass();
+    const app = Koa.create();
+    const routes = Koa.router();
+    const rawBody = Koa.rawBody();
     app.use(async (ctx, next) => {
       Object.entries(this.HEADERS).forEach(h => ctx.set(h[0], h[1]));
       return next();
@@ -109,17 +110,15 @@ export abstract class CoreServer extends Core {
     return app;
   }
 
-  public static express(extraArgs: any, baseOrPaths?: string | CoreServerPath[]): Express {
+  public static express(extraArgs: any, baseOrPaths?: string | CoreServerPath[]): Express.Express {
     const basePath = (typeof baseOrPaths === 'string') ? baseOrPaths : '';
     const paths = Array.isArray(baseOrPaths) ? baseOrPaths : this.paths(basePath);
-    const express = require('express');
-    const bodyParser = require('body-parser');
-    const app: Express = express();
+    const app: Express.Express = Express.create();
     app.use((req, res, next) => {
       Object.entries(this.HEADERS).forEach(h => res.setHeader(h[0], h[1]));
       next();
     });
-    app.use(bodyParser.text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8', ...extraArgs }));
+    app.use(Express.bodyParser().text({ type: ['*/json', 'text/*'], defaultCharset: 'utf-8', ...extraArgs }));
     for (const { httpMethod, path, resource } of paths) {
       const adapter = this.expressMiddleware.bind(resource);
       switch (httpMethod) {
@@ -139,7 +138,7 @@ export abstract class CoreServer extends Core {
     return app;
   }
 
-  public static async expressMiddleware(resource: string, req: ExpressRequest, res: ExpressResponse): Promise<void> {
+  public static async expressMiddleware(resource: string, req: Express.Request, res: Express.Response): Promise<void> {
     this.log.info('%s: %s', req.method, req.url);
     if (Buffer.isBuffer(req.body)) req.body = req.body.toString('utf-8');
     if (req.body instanceof Object) {
@@ -185,7 +184,7 @@ export abstract class CoreServer extends Core {
     res.status(result.statusCode).send(result.body);
   }
 
-  public static async koaMiddleware(resource: string, rawBody: (req: any) => Buffer, ctx: Kontext): Promise<void> {
+  public static async koaMiddleware(resource: string, rawBody: (req: any) => Buffer, ctx: Koa.Context): Promise<void> {
     this.log.info('%s: %s', ctx.method, ctx.url);
     const buffer: Buffer = await rawBody(ctx.req);
     const body = buffer.toString();

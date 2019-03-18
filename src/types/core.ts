@@ -67,6 +67,8 @@ export interface ProcessInfo {
   timestamp: Date;
   versions: any;
   uptime: number;
+  loadTime: number;
+  initTime: number;
   // TODO: Statistics, mem usage, uptime etc
   // Package and modules size
   memory: MemoryInfo;
