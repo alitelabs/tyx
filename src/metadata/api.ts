@@ -63,6 +63,7 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public addMethod(meta: MethodMetadata) {
+    if (this.methods[meta.name] && this.methods[meta.name] !== meta) throw TypeError(`Duplicate method: [${meta.name}]`);
     this.methods[meta.name] = meta;
   }
 

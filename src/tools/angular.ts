@@ -1,7 +1,8 @@
 import { Core } from '../core/core';
 import { CoreSchema } from '../graphql/schema';
 import { ApiMetadata } from '../metadata/api';
-import { GraphKind, Select, TypeMetadata, VarMetadata } from '../metadata/type';
+import { TypeMetadata } from '../metadata/type';
+import { Select, VarKind, VarMetadata } from '../metadata/var';
 import '../schema/registry';
 import { Utils } from '../utils';
 
@@ -88,40 +89,51 @@ export class AngularCodeGen {
     script += `  constructor(private graphql: Apollo) { }\n`;
     let count = 0;
     for (const method of Object.values(metadata.methods)) {
-      if (!method.query && !method.mutation && !method.resolver) continue;
+      if (!method.query && !method.mutation) continue;
       count++;
-      const input = method.input.build;
       const result = method.result.build;
-      const param = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const jsArg = (GraphKind.isVoid(input.kind) ? '' : `${param}: ${input.js}`);
-      const reqArg = (GraphKind.isVoid(input.kind) ? '' : `($${param}: ${input.gql}!)`);
-      const qlArg = (GraphKind.isVoid(input.kind) ? '' : `(${param}: $${param})`);
       const action = method.mutation ? 'mutate' : 'query';
+      let jsArgs = '';
+      let reqArgs = '';
+      let qlArgs = '';
+      let params = '';
+      for (let i = 0; i < method.inputs.length; i++) {
+        const inb = method.inputs[i].build;
+        if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
+        params += method.design[i].name || `arg${i}`;
+        if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; }
+        jsArgs += `${params}: ${inb.js}`;
+        reqArgs += `$${params}: ${inb.gql}!`;
+        qlArgs += `${params}: $${params}`;
+      }
+      if (reqArgs) reqArgs = `(${reqArgs})`;
+      if (qlArgs) qlArgs = `(${qlArgs})`;
+
       if (method.mutation) {
-        script += `\n  public ${method.name}(${jsArg}): Observable<${result.js}> {\n`;
+        script += `\n  public ${method.name}(${jsArgs}): Observable<${result.js}> {\n`;
       } else {
-        script += `\n  public ${method.name}(${jsArg}${jsArg ? ', ' : ''}refresh?: boolean): Observable<${result.js}> {\n`;
+        script += `\n  public ${method.name}(${jsArgs}${jsArgs ? ', ' : ''}refresh?: boolean): Observable<${result.js}> {\n`;
       }
       script += `    return this.graphql.${action}<Result<${result.js}>>({\n`;
       if (method.mutation) {
-        script += `      mutation: gql\`mutation request${reqArg} {\n`;
+        script += `      mutation: gql\`mutation request${reqArgs} {\n`;
       } else {
-        script += `      query: gql\`query request${reqArg} {\n`;
+        script += `      query: gql\`query request${reqArgs} {\n`;
       }
-      script += `        result: ${method.api.name}_${method.name}${qlArg}`;
-      if (GraphKind.isStruc(result.kind)) {
-        const x = (GraphKind.isType(result.kind)) ? 0 : 0;
+      script += `        result: ${method.api.name}_${method.name}${qlArgs}`;
+      if (VarKind.isStruc(result.kind)) {
+        const x = (VarKind.isType(result.kind)) ? 0 : 0;
         const select = this.genSelect(result, method.select, 0, 1 + x);
         script += ' ' + select;
-      } else if (GraphKind.isArray(result.kind)) {
-        const x = (GraphKind.isType(result.item.kind)) ? 0 : 0;
+      } else if (VarKind.isArray(result.kind)) {
+        const x = (VarKind.isType(result.item.kind)) ? 0 : 0;
         const select = this.genSelect(result.item, method.select, 0, 1 + x);
         script += ' ' + select;
       } else {
         script += ` # : ANY`;
       }
       script += `\n      }\``;
-      if (qlArg) script += `,\n      variables: { ${param} }`;
+      if (qlArgs) script += `,\n      variables: { ${params} }`;
       if (method.mutation) {
         script += `    }).pipe(map(res => fetch(res)), catchError(err => erorr(err)));\n`;
       } else {
@@ -136,9 +148,9 @@ export class AngularCodeGen {
 
   private genSelect(meta: VarMetadata, select: Select | any, level: number, depth: number): string {
     if (level >= depth) return null;
-    if (GraphKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (GraphKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
-    if (GraphKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
+    if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
+    if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
+    if (VarKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
     // script += ` # [ANY]\n`;
     // #  NONE
     const type = meta as TypeMetadata;
@@ -146,10 +158,10 @@ export class AngularCodeGen {
     let script = `{`;
     let i = 0;
     for (const member of Object.values(type.members)) {
-      if (GraphKind.isVoid(member.kind)) continue;
+      if (VarKind.isVoid(member.kind)) continue;
       let name = member.name;
       let def = `# ${member.build.js}`;
-      if (!GraphKind.isScalar(member.kind) && !GraphKind.isEnum(member.build.kind)) {
+      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
         def += ' ...';
         if (select instanceof Object && select[member.name]) {
           const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);

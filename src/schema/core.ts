@@ -2,7 +2,7 @@
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { InfoSchemaResolvers, ResolverContext, SchemaResolvers } from '../graphql/types';
-import { Any } from '../metadata/type';
+import { Any } from '../metadata/var';
 import { Class, MemoryInfo, ModuleInfo, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 
@@ -33,6 +33,7 @@ export class ServiceInfoSchema {
 @Schema()
 export class InstanceInfoSchema {
   @Field() name: string;
+  @Field() state: string;
   @Field(list => [ServiceInfoSchema]) context: ServiceInfoSchema[];
 
   public static get(ctx: ResolverContext) {
@@ -86,6 +87,8 @@ export class MemoryInfoSchema implements MemoryInfo {
 
 @Schema()
 export class ProcessInfoSchema implements ProcessInfo {
+  @Field() name: string;
+  @Field() state: string;
   @Field() timestamp: Date;
   @Field(Any) versions: any;
   @Field() uptime: number;
@@ -124,6 +127,7 @@ export class CoreInfoSchema {
     return ctx.container;
   }
 
+  // TODO: Move logic to instance and core
   public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, ResolverContext | any> = {
     process: (obj, args) => obj.processInfo(),
     global: (obj, args) => {

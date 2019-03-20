@@ -1,11 +1,12 @@
 import { Metadata } from '../metadata/registry';
-import { GraphKind, TypeMetadata } from '../metadata/type';
+import { TypeMetadata } from '../metadata/type';
+import { VarKind } from '../metadata/var';
 
 // tslint:disable:function-name
 
 export function Schema(name?: string): ClassDecorator {
-  return Metadata.onClass(Schema, { type: GraphKind.Metadata, name }, (target) => {
-    return void TypeMetadata.define(target).commit(GraphKind.Metadata, name);
+  return Metadata.onClass(Schema, { type: VarKind.Metadata, name }, (target) => {
+    return void TypeMetadata.define(target).commit(VarKind.Metadata, name);
   });
 }
 Schema.core = true;

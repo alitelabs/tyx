@@ -4,8 +4,9 @@
  - [ ] Unified field / http param declarations
  - [ ] Support for @Arg() -> multiple input args, GraphQL
  - [ ] Support abstract services
- - [ ] Convention (ctx, req) or (req, ctx) !!!
+ - [ ] Convention (ctx, req) or (req, ctx) !!! ==> (obj?, ...args, ctx?, info?)
  - [ ] Support Service&Type, Configuration ...
+ - [ ] !! Final solution for @Extension
  - [ ] Wording of all TypeError
  - [ ] Exception response, configurable to have stack trace
  - [ ] Core.init(+config: object) instead of individual params
@@ -14,6 +15,7 @@
  - [x] Make typeorm an peer dependecy
  - [ ] Fallback code for proxy if no local service
  - [ ] Save tyx.context in CoreInstance, as thread local variable
+ - [ ] Remove design from method
 
 ## Container
  - [x] Publish API only if there is a service implementation
@@ -23,9 +25,13 @@
  - [x] Initialize services on instance creation
 
  ## Runtime
+ - [ ] Error handling and logging, too many throw this.log.error(...)
+ - [ ] Error on activate() and release()
  - [x] Integrate wtfnode in error log
  - [ ] Optimize apiRequest, for local Api proxy instances
  - [ ] Add Logger.debug log ... startup ...
+ - [ ] Solve Context circular refernce problem
+ - [ ] Lambda proxy behaviour on 501, exception in general
 
 ## Metadata
  - [ ] Repository validation, no uncommited Api, Service ....

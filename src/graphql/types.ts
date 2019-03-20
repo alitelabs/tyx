@@ -64,13 +64,13 @@ export interface ResolverContext {
 
 export type ResolverInfo = GraphQLResolveInfo;
 
-export interface SchemaResolver<O = any> {
+export interface Resolver<O = any> {
   (obj?: O, args?: ResolverQuery & ResolverArgs, ctx?: ResolverContext, info?: ResolverInfo): Promise<any> | any;
 }
 
-export type SchemaResolvers<T> = { [P in keyof T]?: SchemaResolver<T> };
+export type SchemaResolvers<T> = { [P in keyof T]?: Resolver<T> };
 
-export type InfoSchemaResolvers<T = any, V = any> = { [P in keyof T]?: SchemaResolver<V> };
+export type InfoSchemaResolvers<T = any, V = any> = { [P in keyof T]?: Resolver<V> };
 
 export interface EntityResolver {
   get: QueryResolver;

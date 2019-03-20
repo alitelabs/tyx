@@ -3,18 +3,19 @@ import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
-import { ApiMetadata } from '../metadata/api';
-import { ColumnMetadata } from '../metadata/column';
-import { DatabaseMetadata } from '../metadata/database';
-import { EntityMetadata } from '../metadata/entity';
-import { EventRouteMetadata } from '../metadata/event';
-import { HttpRouteMetadata } from '../metadata/http';
-import { MethodMetadata } from '../metadata/method';
-import { ProxyMetadata } from '../metadata/proxy';
-import { DecorationMetadata, DecoratorMetadata, MetadataRegistry } from '../metadata/registry';
-import { RelationMetadata } from '../metadata/relation';
-import { ServiceMetadata } from '../metadata/service';
-import { EnumMetadata, TypeMetadata } from '../metadata/type';
+import { IApiMetadata } from '../metadata/api';
+import { IColumnMetadata } from '../metadata/column';
+import { IDatabaseMetadata } from '../metadata/database';
+import { IEntityMetadata } from '../metadata/entity';
+import { IEnumMetadata } from '../metadata/enum';
+import { IEventRouteMetadata } from '../metadata/event';
+import { IHttpRouteMetadata } from '../metadata/http';
+import { IMethodMetadata } from '../metadata/method';
+import { IProxyMetadata } from '../metadata/proxy';
+import { IDecorationMetadata, IDecoratorMetadata, MetadataRegistry } from '../metadata/registry';
+import { IRelationMetadata } from '../metadata/relation';
+import { IServiceMetadata } from '../metadata/service';
+import { ITypeMetadata } from '../metadata/type';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -30,18 +31,18 @@ import { ServiceMetadataSchema } from './service';
 import { EnumMetadataSchema, TypeMetadataSchema } from './type';
 
 @Schema()
-export class DecoratorMetadataSchema implements DecoratorMetadata {
+export class DecoratorMetadataSchema implements IDecoratorMetadata {
   @Field() decorator: string;
   @Field(0) count: number;
   @Field([String]) targets: Record<string, Class>;
 
-  public static RESOLVERS: SchemaResolvers<DecoratorMetadata> = {
+  public static RESOLVERS: SchemaResolvers<IDecoratorMetadata> = {
     targets: obj => Object.values(obj.targets).map(t => Utils.label(t)),
   };
 }
 
 @Schema()
-export class DecorationMetadataSchema implements DecorationMetadata {
+export class DecorationMetadataSchema implements IDecorationMetadata {
   @Field() decorator: string;
   @Field(0) ordinal: number;
   @Field(String) target?: Class;
@@ -50,7 +51,7 @@ export class DecorationMetadataSchema implements DecorationMetadata {
   @Field(0) index?: number;
   @Field(Object) args: Record<string, any>;
 
-  public static RESOLVERS: SchemaResolvers<DecorationMetadata> = {
+  public static RESOLVERS: SchemaResolvers<IDecorationMetadata> = {
     target: obj => Utils.label(obj.target),
   };
 }
@@ -59,27 +60,27 @@ export class DecorationMetadataSchema implements DecorationMetadata {
 @Schema()
 export class MetadataRegistrySchema implements MetadataRegistry {
 
-  @Field(list => [TypeMetadataSchema]) Registry: Record<string, TypeMetadata>;
-  @Field(list => [DecoratorMetadataSchema]) Decorator: Record<string, DecoratorMetadata>;
-  @Field(list => [DecorationMetadataSchema]) Decoration: DecorationMetadata[];
+  @Field(list => [TypeMetadataSchema]) Registry: Record<string, ITypeMetadata>;
+  @Field(list => [DecoratorMetadataSchema]) Decorator: Record<string, IDecoratorMetadata>;
+  @Field(list => [DecorationMetadataSchema]) Decoration: IDecorationMetadata[];
 
-  @Field(list => [ApiMetadataSchema]) Api: Record<string, ApiMetadata>;
-  @Field(list => [ServiceMetadataSchema]) Service: Record<string, ServiceMetadata>;
-  @Field(list => [ProxyMetadataSchema]) Proxy: Record<string, ProxyMetadata>;
+  @Field(list => [ApiMetadataSchema]) Api: Record<string, IApiMetadata>;
+  @Field(list => [ServiceMetadataSchema]) Service: Record<string, IServiceMetadata>;
+  @Field(list => [ProxyMetadataSchema]) Proxy: Record<string, IProxyMetadata>;
 
-  @Field(list => [DatabaseMetadataSchema]) Database: Record<string, DatabaseMetadata>;
-  @Field(list => [EntityMetadataSchema]) Entity: Record<string, EntityMetadata>;
-  @Field(list => [ColumnMetadataSchema]) Column: Record<string, ColumnMetadata>;
-  @Field(list => [RelationMetadataSchema]) Relation: Record<string, RelationMetadata>;
+  @Field(list => [DatabaseMetadataSchema]) Database: Record<string, IDatabaseMetadata>;
+  @Field(list => [EntityMetadataSchema]) Entity: Record<string, IEntityMetadata>;
+  @Field(list => [ColumnMetadataSchema]) Column: Record<string, IColumnMetadata>;
+  @Field(list => [RelationMetadataSchema]) Relation: Record<string, IRelationMetadata>;
 
-  @Field(list => [EnumMetadataSchema]) Enum: Record<string, EnumMetadata>;
-  @Field(list => [TypeMetadataSchema]) Input: Record<string, TypeMetadata>;
-  @Field(list => [TypeMetadataSchema]) Type: Record<string, TypeMetadata>;
+  @Field(list => [EnumMetadataSchema]) Enum: Record<string, IEnumMetadata>;
+  @Field(list => [TypeMetadataSchema]) Input: Record<string, ITypeMetadata>;
+  @Field(list => [TypeMetadataSchema]) Type: Record<string, ITypeMetadata>;
 
-  @Field(list => [MethodMetadataSchema]) Method: Record<string, MethodMetadata>;
-  @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, MethodMetadata>;
-  @Field(list => [HttpRouteMetadataSchema]) HttpRoute: Record<string, HttpRouteMetadata>;
-  @Field(list => [EventRouteMetadataSchema]) EventRoute: Record<string, EventRouteMetadata[]>;
+  @Field(list => [MethodMetadataSchema]) Method: Record<string, IMethodMetadata>;
+  @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, IMethodMetadata>;
+  @Field(list => [HttpRouteMetadataSchema]) HttpRoute: Record<string, IHttpRouteMetadata>;
+  @Field(list => [EventRouteMetadataSchema]) EventRoute: Record<string, IEventRouteMetadata[]>;
 
   public static RESOLVERS: SchemaResolvers<MetadataRegistry> = {
     Registry: (obj, args) => Lo.filter(Object.values(obj.Registry), args),

@@ -1,9 +1,10 @@
 import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
+import { FieldMetadata } from './field';
 import { IDesignMetadata } from './method';
 import { Metadata } from './registry';
-import { FieldMetadata, GraphKind, VarMetadata, VarType } from './type';
+import { FieldType, VarKind, VarMetadata } from './var';
 
 export enum ColumnType {
   Int = 'int',
@@ -60,23 +61,23 @@ export namespace ColumnType {
   export function kind(type: ColumnType, size: number) {
     switch (type) {
       case ColumnType.TinyInt:
-        return size === 1 ? GraphKind.Boolean : GraphKind.Int;
+        return size === 1 ? VarKind.Boolean : VarKind.Int;
       case ColumnType.Int:
       case ColumnType.SmallInt:
       case ColumnType.MediumInt:
       case ColumnType.BigInt:
-        return GraphKind.Int;
+        return VarKind.Int;
       case ColumnType.Float:
       case ColumnType.Double:
       case ColumnType.Decimal:
       case ColumnType.Numeric:
-        return GraphKind.Float;
+        return VarKind.Float;
       case ColumnType.Date:
       case ColumnType.DateTime:
       case ColumnType.Timestamp:
       case ColumnType.Time:
       case ColumnType.Year:
-        return GraphKind.Date;
+        return VarKind.Date;
       case ColumnType.Char:
       case ColumnType.Varchar:
       case ColumnType.Nvarchar:
@@ -85,7 +86,7 @@ export namespace ColumnType {
       case ColumnType.MediumText:
       case ColumnType.LongText:
       case ColumnType.Enum:
-        return GraphKind.String;
+        return VarKind.String;
       // case ColumnType.Enum:
       //     return GraphType.Enum;
       // case ColumnType.Json:
@@ -336,7 +337,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public generateStrategy: 'increment' | 'uuid';
 
   protected constructor(
-    kind: GraphKind,
+    kind: VarKind,
     target: Class,
     propertyKey: string,
     design: IDesignMetadata,
@@ -388,12 +389,12 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     propertyKey: string,
     mode: ColumnMode,
     options: ColumnOptions,
-    type?: VarType,
+    type?: FieldType,
   ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
     if (meta) throw new TypeError(`Duplicate column decoration on [${propertyKey}]`);
     const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, target, propertyKey);
-    let kind: GraphKind;
+    let kind: VarKind;
     let ref: Class;
     if (mode === ColumnMode.Transient) {
       const vt = VarMetadata.of(type || design, !type);

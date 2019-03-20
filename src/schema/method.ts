@@ -6,8 +6,10 @@ import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpBindingMetadata, IHttpRouteMetadata } from '../metadata/http';
-import { IDesignMetadata, IMethodMetadata } from '../metadata/method';
-import { IInputMetadata, IResultMetadata, Select } from '../metadata/type';
+import { IInputMetadata } from '../metadata/input';
+import { IDesignMetadata, IMethodMetadata, MethodType } from '../metadata/method';
+import { IResultMetadata } from '../metadata/result';
+import { Select } from '../metadata/var';
 import { Class } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
@@ -21,6 +23,8 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(String) target: Class;
   @Field(ref => ApiMetadataSchema) api: IApiMetadata;
   @Field(ref => ApiMetadataSchema) base: IApiMetadata;
+  @Field() type: MethodType;
+
   @Field(String) host: Class;
 
   @Field() name: string;
@@ -32,7 +36,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() query: boolean;
   @Field() mutation: boolean;
   @Field() resolver: boolean;
-  @Field(ref => InputMetadataSchema) input: IInputMetadata;
+  @Field(list => [InputMetadataSchema]) inputs: IInputMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: Select;
 
@@ -46,6 +50,8 @@ export class MethodMetadataSchema implements IMethodMetadata {
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
     target: obj => Utils.label(obj.target),
     host: obj => Utils.label(obj.host),
+    inputs: (obj, args) => Lo.filter(Object.values(obj.inputs || {}), args),
+    bindings: (obj, args) => Lo.filter(Object.values(obj.bindings || {}), args),
     http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),
     events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args),
     source: obj => obj.target.prototype[obj.name].toString(),

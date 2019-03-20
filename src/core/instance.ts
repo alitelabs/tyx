@@ -7,7 +7,6 @@ import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
-import { GraphKind } from '../metadata/type';
 import { Configuration } from '../types/config';
 import { Class, ContainerState, Context, CoreContainer, ProcessInfo, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult } from '../types/event';
@@ -298,14 +297,8 @@ export class CoreInstance implements CoreContainer {
 
         await this.activate(ctx);
         const handler: Function = service[method.name];
-        let result: any;
-        if (method.resolver) {
-          result = await handler.call(service, req.obj, req.args, ctx, req.info);
-        } else if (method.input.kind === GraphKind.Void) {
-          result = await handler.call(service, ctx);
-        } else {
-          result = await handler.call(service, req.args, ctx);
-        }
+        const args = method.resolve(req.obj, req.args, ctx as any, req.info);
+        const result = await handler.call(service, ...args);
         return result;
       } catch (e) {
         throw this.log.error(e);

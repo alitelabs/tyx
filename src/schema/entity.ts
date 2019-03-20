@@ -6,8 +6,9 @@ import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
 import { IDatabaseMetadata } from '../metadata/database';
 import { IEntityMetadata } from '../metadata/entity';
+import { IFieldMetadata } from '../metadata/field';
 import { IRelationMetadata } from '../metadata/relation';
-import { GraphKind, IFieldMetadata } from '../metadata/type';
+import { VarKind } from '../metadata/var';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
@@ -17,7 +18,7 @@ import { FieldMetadataSchema } from './type';
 
 @Schema()
 export class EntityMetadataSchema implements IEntityMetadata {
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field(String) target: Class;
   @Field() name: string;
   @Field(ref => DatabaseMetadataSchema) database: IDatabaseMetadata;

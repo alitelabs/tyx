@@ -1,7 +1,7 @@
 // tslint:disable-next-line:import-name
 import uuidr = require('uuid/v4');
 import fs = require('fs');
-import { Class } from '../types/core';
+import os = require('os');
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
 export function getArgs(func: (...args: any[]) => any): string[] {
@@ -39,7 +39,7 @@ export function isClass(cls: any): cls is Function {
   return false;
 }
 
-export function baseClass(cls: Class): Class {
+export function baseClass(cls: Function): Function {
   const p = cls && Object.getPrototypeOf(cls.prototype);
   return p && p.constructor;
 }
@@ -189,6 +189,29 @@ export function mb(size: number) {
   const kb = size / 1024;
   if (kb < 1025) return kb.toFixed(0) + ' KB';
   return (kb / 1024).toFixed(3) + ' MB';
+}
+
+export function interfaces() {
+  const ifaces = os.networkInterfaces();
+  const result: string[] = [];
+  Object.keys(ifaces).forEach((ifname) => {
+    let alias = 0;
+    ifaces[ifname].forEach((iface) => {
+      if ('IPv4' !== iface.family || iface.internal !== false) {
+        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+        return;
+      }
+      if (alias >= 1) {
+        // this single interface has multiple ipv4 addresses
+        result.push(`${alias}@${ifname}: ${iface.address}`);
+      } else {
+        // this interface has only one ipv4 adress
+        result.push(`${ifname}: ${iface.address}`);
+      }
+      ++alias;
+    });
+  });
+  return result;
 }
 
 // export function reload(level?: number): NodeModule {

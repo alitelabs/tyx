@@ -3,15 +3,20 @@ import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { SchemaResolvers } from '../graphql/types';
+import { IEnumMetadata } from '../metadata/enum';
+import { IFieldMetadata } from '../metadata/field';
+import { IInputMetadata } from '../metadata/input';
 import { IDesignMetadata } from '../metadata/method';
-import { GraphKind, IEnumMetadata, IFieldMetadata, IInputMetadata, IResultMetadata, ITypeMetadata, IVarMetadata } from '../metadata/type';
+import { IResultMetadata } from '../metadata/result';
+import { ITypeMetadata } from '../metadata/type';
+import { IVarMetadata, VarKind } from '../metadata/var';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 
 @Schema()
 export class VarMetadataSchema implements IVarMetadata {
   @Field(String) ref?: Class;
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
@@ -21,32 +26,41 @@ export class VarMetadataSchema implements IVarMetadata {
 
 @Schema()
 export class InputMetadataSchema implements IInputMetadata {
+  @Field(0) index: number;
+  @Field() name: string;
+  @Field(String) kind: VarKind;
+  @Field(String) design: Class;
   @Field(String) ref?: Class;
-  @Field(String) kind: GraphKind;
+  @Field() defined: boolean;
   @Field(type => VarMetadataSchema) build: IVarMetadata;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
-  public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
-    ref: obj => Utils.label(obj.ref),
+  public static RESOLVERS: SchemaResolvers<IInputMetadata> = {
+    design: obj => Utils.label(obj.design),
+    ref: obj => Utils.label(obj.ref)
   };
 }
 
 @Schema()
 export class ResultMetadataSchema implements IResultMetadata {
+  @Field(String) kind: VarKind;
+  @Field(String) design: Class;
+  @Field() promise: boolean;
   @Field(String) ref?: Class;
-  @Field(String) kind: GraphKind;
+  @Field() defined: boolean;
   @Field(type => VarMetadataSchema) build: IVarMetadata;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
-  public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
+  public static RESOLVERS: SchemaResolvers<IResultMetadata> = {
+    design: obj => Utils.label(obj.design),
     ref: obj => Utils.label(obj.ref),
   };
 }
 
 @Schema()
 export class EnumMetadataSchema implements IEnumMetadata {
-  @Field(String) kind: GraphKind;
   @Field() name: string;
+  @Field(String) kind: VarKind;
   @Field(String) ref: any;
   @Field([String]) options: string[];
 
@@ -57,7 +71,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
 
 @Schema()
 export class FieldMetadataSchema implements IFieldMetadata {
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field() name: string;
   @Field() required: boolean;
   @Field(Object) design: IDesignMetadata;
@@ -72,7 +86,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
 
 @Schema()
 export class TypeMetadataSchema implements ITypeMetadata {
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field() name: string;
   @Field(String) target: Class;
   @Field(ref => VarMetadataSchema) item: never;

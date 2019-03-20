@@ -3,7 +3,7 @@ import FS = require('fs');
 import { Core, Enum, Field, Input, Mutation, Query, Service, Type } from '..';
 import { CoreServer } from '../core/server';
 import { Public } from '../decorators/auth';
-import { Any } from '../metadata/type';
+import { Any } from '../metadata/var';
 
 @Type()
 export class TypeA {
@@ -56,31 +56,31 @@ export class TestResult {
 export class HelloWorld {
 
   @Public()
-  @Query(req => TestInput, res => TestResult)
+  @Query([req => TestInput, b => String], res => TestResult)
   public test(req: TestInput): TestResult {
     return { res: 'world', versions: Object.entries(process.versions).map(p => p[0] + '=' + p[1]) };
   }
 
   @Public()
-  @Mutation(req => TestInput, res => TestResult)
+  @Mutation([req => TestInput], res => TestResult)
   public operation(req: TestInput): TestResult {
     return { res: JSON.stringify(req), versions: ['1', '2', '3'] };
   }
 
   @Public()
-  @Query(req => String, res => [String])
+  @Query(res => [String])
   public testLiteral(req: string): string[] {
     return [req];
   }
 
   @Public()
-  @Query([undefined], res => [String])
+  @Query([], res => [String])
   public testVoid(): string[] {
     return [undefined];
   }
 
   @Public()
-  @Query(state => Enum(OnOff), res => String)
+  @Query([state => Enum(OnOff)], res => String)
   public testEnum(state: OnOff): string {
     return state;
   }

@@ -5,15 +5,17 @@ import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
+import { EnumMetadata } from '../metadata/enum';
 import { MethodMetadata } from '../metadata/method';
-import { Metadata, MetadataRegistry } from '../metadata/registry';
+import { Metadata } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
-import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from '../metadata/type';
+import { TypeMetadata } from '../metadata/type';
+import { VarKind, VarMetadata } from '../metadata/var';
 import { CoreInfoSchema } from '../schema/core';
 import '../schema/registry';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
-import { SchemaResolver } from './types';
+import { Resolver } from './types';
 
 import GraphQLJSON = require('graphql-type-json');
 import FS = require('fs');
@@ -68,9 +70,9 @@ export interface DatabaseSchema {
   meta: string;
   model: string;
   entities: Record<string, EntitySchema>;
-  root: SchemaResolver;
-  queries: Record<string, SchemaResolver>;
-  mutations: Record<string, SchemaResolver>;
+  root: Resolver;
+  queries: Record<string, Resolver>;
+  mutations: Record<string, Resolver>;
 }
 
 export interface EntitySchema {
@@ -86,7 +88,7 @@ export interface EntitySchema {
   // TODO: Remove
   relations: Record<string, { target: string, type: string }>;
 
-  resolvers: Record<string, SchemaResolver>;
+  resolvers: Record<string, Resolver>;
 }
 
 export interface TypeSchema {
@@ -97,7 +99,7 @@ export interface TypeSchema {
   // query: string;
   params: string;
   // registry: SchemaResolver;
-  resolvers: Record<string, SchemaResolver>;
+  resolvers: Record<string, Resolver>;
 }
 
 export interface ApiSchema {
@@ -116,7 +118,7 @@ export interface MethodSchema {
   name: string;
   signature: string;
   extension: string;
-  resolver: SchemaResolver;
+  resolver: Resolver;
 }
 
 export interface EnumSchema {
@@ -140,7 +142,7 @@ export class CoreSchema {
   public entities: Record<string, EntitySchema> = {};
   public apis: Record<string, ApiSchema> = {};
 
-  constructor(registry: MetadataRegistry, crud: boolean) {
+  constructor(registry: Metadata, crud: boolean) {
     this.crud = crud;
 
     // Enums
@@ -374,7 +376,7 @@ export class CoreSchema {
       const pn = col.propertyName;
       let dt = col.build.gql;
       let nl = col.required ? '!' : '';
-      if (pn.endsWith('Id')) dt = GraphKind.ID;
+      if (pn.endsWith('Id')) dt = VarKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
       partial += `${cm ? '' : ','}\n  ${pn}: ${dt}`;
@@ -466,7 +468,7 @@ export class CoreSchema {
     this.entities[name] = schema;
 
     let simple = model;
-    const navigation: Record<string, SchemaResolver> = {};
+    const navigation: Record<string, Resolver> = {};
     for (const relation of metadata.relations) {
       const property = relation.propertyName;
       const inverse = relation.inverseEntityMetadata.name;
@@ -534,16 +536,16 @@ export class CoreSchema {
 
   private genType(metadata: VarMetadata, reg: Record<string, TypeSchema>): TypeSchema | EntitySchema {
 
-    if (GraphKind.isScalar(metadata.kind)) return undefined;
-    if (GraphKind.isEnum(metadata.kind)) return undefined;
-    if (GraphKind.isRef(metadata.kind)) throw new TypeError('Unresolved reference');
-    if (GraphKind.isArray(metadata.kind)) return this.genType(metadata.item, reg);
+    if (VarKind.isScalar(metadata.kind)) return undefined;
+    if (VarKind.isEnum(metadata.kind)) return undefined;
+    if (VarKind.isRef(metadata.kind)) throw new TypeError('Unresolved reference');
+    if (VarKind.isArray(metadata.kind)) return this.genType(metadata.item, reg);
 
     const struc = metadata as TypeMetadata;
     if (reg[struc.name]) return reg[struc.name];
     if (this.entities[struc.gql]) return this.entities[struc.gql];
 
-    if (!GraphKind.isStruc(struc.kind) || !struc.members) {
+    if (!VarKind.isStruc(struc.kind) || !struc.members) {
       throw new TypeError(`Empty type difinition ${struc.target}`);
     }
 
@@ -560,19 +562,19 @@ export class CoreSchema {
     schema.params = '';
     for (const field of Object.values(struc.members)) {
       const type = field.build;
-      if (GraphKind.isStruc(type.kind) || GraphKind.isArray(type.kind)) continue;
-      if (field.kind === GraphKind.Object) continue;
+      if (VarKind.isStruc(type.kind) || VarKind.isArray(type.kind)) continue;
+      if (field.kind === VarKind.Object) continue;
       schema.params += (schema.params ? ',\n    ' : '    ') + `${field.name}: ${field.kind}`;
     }
     const scope = metadata.kind;
-    schema.model = (scope === GraphKind.Input)
+    schema.model = (scope === VarKind.Input)
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
       : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
     for (const member of Object.values(struc.members)) {
       const type = member.build;
-      const doc = GraphKind.isVoid(member.kind) ? '# ' : '';
-      if (GraphKind.isMetadata(struc.kind) && GraphKind.isArray(type.kind)) {
-        const sch = !GraphKind.isScalar(type.item.kind) && reg[type.item.gql];
+      const doc = VarKind.isVoid(member.kind) ? '# ' : '';
+      if (VarKind.isMetadata(struc.kind) && VarKind.isArray(type.kind)) {
+        const sch = !VarKind.isScalar(type.item.kind) && reg[type.item.gql];
         const args = (sch && sch.params) ? `(\n${reg[type.item.gql].params}\n  )` : '';
         schema.model += `  ${doc}${member.name}${args}: ${type.gql}\n`;
       } else {
@@ -595,13 +597,22 @@ export class CoreSchema {
       resolvers: undefined,
     };
     for (const method of Object.values(metadata.methods)) {
-      if (!method.query && !method.mutation && !method.resolver) continue;
-      const input = method.input.build;
+      if (!method.query && !method.mutation && !method.extension) continue;
       const result = method.result.build;
-      const name = method.resolver ? method.name : `${metadata.target.name}_${method.name}`;
-      // TODO: Get it from typedef
-      const arg = (method.resolver ? method.design[1].name : method.design[0].name) || 'input';
-      const call = GraphKind.isVoid(input.kind) ? `: ${result.gql}` : `(${arg}: ${input.gql}!): ${result.gql}`;
+      const name = method.extension ? method.name : `${metadata.target.name}_${method.name}`;
+
+      let call = '';
+      for (let i = 0; i < method.inputs.length; i++) {
+        if (VarKind.isVoid(method.inputs[i].kind) || VarKind.isResolver(method.inputs[i].kind)) continue;
+        // TODO: Move to metadata
+        const name = (method.extension ? method.design[i].name : method.design[i].name) || `arg${i}`;
+        if (!method.inputs[i]) throw new TypeError(`Unbound input argmument [${method.api.name}.${method.name}:${i}] [${name}]`);
+        const inb = method.inputs[i].build;
+        call += (call ? ', ' : '') + `${name}: ${inb.gql}!`;
+      }
+      if (call) call = `(${call})`;
+      call += `: ${result.gql}`;
+
       const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${Utils.scalar(method.roles)})`;
       const host: Class = method.host && method.host();
       const meth: MethodSchema = {
@@ -614,7 +625,7 @@ export class CoreSchema {
         extension: undefined,
         // TODO: Move resolver functions to this.resolvers()
         resolver: (obj, args, ctx, info) => {
-          return ctx.container.resolve(meth, obj, args[arg], ctx, info);
+          return ctx.container.resolve(meth, obj, args, ctx, info);
         }
       };
       if (method.mutation) {
@@ -623,7 +634,7 @@ export class CoreSchema {
       } else if (method.query) {
         api.queries = api.queries || {};
         api.queries[method.name] = meth;
-      } else if (method.resolver) {
+      } else if (method.extension) {
         meth.extension = `extend type ${host.name} {\n  ${method.name}${call}${dir}\n}`;
         api.resolvers = api.resolvers || {};
         api.resolvers[method.name] = meth;

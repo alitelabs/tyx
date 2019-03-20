@@ -1,17 +1,19 @@
 import { Logger } from '../logger';
 import { Class } from '../types/core';
 import * as Utils from '../utils/misc';
-import { ApiMetadata } from './api';
-import { ColumnMetadata } from './column';
-import { DatabaseMetadata } from './database';
-import { EntityMetadata } from './entity';
-import { EventRouteMetadata } from './event';
-import { HttpRouteMetadata } from './http';
-import { MethodMetadata } from './method';
-import { ProxyMetadata } from './proxy';
-import { RelationMetadata } from './relation';
-import { ServiceMetadata } from './service';
-import { EnumMetadata, GraphKind, TypeMetadata, VarMetadata } from './type';
+import { ApiMetadata, IApiMetadata } from './api';
+import { ColumnMetadata, IColumnMetadata } from './column';
+import { DatabaseMetadata, IDatabaseMetadata } from './database';
+import { EntityMetadata, IEntityMetadata } from './entity';
+import { EnumMetadata, IEnumMetadata } from './enum';
+import { EventRouteMetadata, IEventRouteMetadata } from './event';
+import { HttpRouteMetadata, IHttpRouteMetadata } from './http';
+import { IMethodMetadata, MethodMetadata } from './method';
+import { IProxyMetadata, ProxyMetadata } from './proxy';
+import { IRelationMetadata, RelationMetadata } from './relation';
+import { IServiceMetadata, ServiceMetadata } from './service';
+import { ITypeMetadata, TypeMetadata } from './type';
+import { VarKind, VarMetadata } from './var';
 
 export type CoreDecorator = (
   over: Object | Function,
@@ -19,7 +21,7 @@ export type CoreDecorator = (
   indexOrDescriptor?: number | PropertyDescriptor
 ) => void | Function;
 
-export interface DecorationMetadata {
+export interface IDecorationMetadata {
   decorator: string;
   ordinal: number;
   target?: Class;
@@ -29,33 +31,33 @@ export interface DecorationMetadata {
   args: Record<string, any>;
 }
 
-export interface DecoratorMetadata {
+export interface IDecoratorMetadata {
   decorator: string;
   count: number;
   targets: Record<string, Class>;
 }
 
 export interface MetadataRegistry {
-  Registry: Record<string, TypeMetadata>;
-  Decorator: Record<string, DecoratorMetadata>;
-  Decoration: DecorationMetadata[];
+  Registry: Record<string, ITypeMetadata>;
+  Decorator: Record<string, IDecoratorMetadata>;
+  Decoration: IDecorationMetadata[];
 
-  Api: Record<string, ApiMetadata>;
-  Service: Record<string, ServiceMetadata>;
-  Proxy: Record<string, ProxyMetadata>;
+  Api: Record<string, IApiMetadata>;
+  Service: Record<string, IServiceMetadata>;
+  Proxy: Record<string, IProxyMetadata>;
 
-  Database: Record<string, DatabaseMetadata>;
-  Entity: Record<string, EntityMetadata>;
-  Column: Record<string, ColumnMetadata>;
-  Relation: Record<string, RelationMetadata>;
+  Database: Record<string, IDatabaseMetadata>;
+  Entity: Record<string, IEntityMetadata>;
+  Column: Record<string, IColumnMetadata>;
+  Relation: Record<string, IRelationMetadata>;
 
-  Enum: Record<string, EnumMetadata>;
-  Input: Record<string, TypeMetadata>;
-  Type: Record<string, TypeMetadata>;
+  Enum: Record<string, IEnumMetadata>;
+  Input: Record<string, ITypeMetadata>;
+  Type: Record<string, ITypeMetadata>;
 
-  Method: Record<string, MethodMetadata>;
-  HttpRoute: Record<string, HttpRouteMetadata>;
-  EventRoute: Record<string, EventRouteMetadata[]>;
+  Method: Record<string, IMethodMetadata>;
+  HttpRoute: Record<string, IHttpRouteMetadata>;
+  EventRoute: Record<string, IEventRouteMetadata[]>;
 }
 
 // tslint:disable:variable-name
@@ -83,8 +85,8 @@ export abstract class Metadata implements MetadataRegistry {
   public static readonly TYX_RELATION = 'tyx:relation';
 
   public static readonly Registry: Record<string, TypeMetadata> = {};
-  public static readonly Decorator: Record<string, DecoratorMetadata> = {};
-  public static readonly Decoration: DecorationMetadata[] = [];
+  public static readonly Decorator: Record<string, IDecoratorMetadata> = {};
+  public static readonly Decoration: IDecorationMetadata[] = [];
 
   public static readonly Api: Record<string, ApiMetadata> = {};
   public static readonly Service: Record<string, ServiceMetadata> = {};
@@ -106,8 +108,8 @@ export abstract class Metadata implements MetadataRegistry {
   // ---
 
   public abstract Registry: Record<string, TypeMetadata>;
-  public abstract Decorator: Record<string, DecoratorMetadata>;
-  public abstract Decoration: DecorationMetadata[];
+  public abstract Decorator: Record<string, IDecoratorMetadata>;
+  public abstract Decoration: IDecorationMetadata[];
 
   public abstract Api: Record<string, ApiMetadata>;
   public abstract Service: Record<string, ServiceMetadata>;
@@ -163,7 +165,7 @@ export abstract class Metadata implements MetadataRegistry {
     return this.validated;
   }
 
-  public static validate(force?: boolean): MetadataRegistry {
+  public static validate(force?: boolean): Metadata {
     if (this.validated && !force) return this.get();
 
     const metadata: Record<string, TypeMetadata> = {};
@@ -172,36 +174,38 @@ export abstract class Metadata implements MetadataRegistry {
     const types: Record<string, TypeMetadata> = {};
     // Metadata
     for (const type of Object.values(this.Registry)) {
-      this.resolve(type, GraphKind.Metadata, metadata);
+      this.resolve(type, VarKind.Metadata, metadata);
     }
     // Databases & Entities
     for (const db of Object.values(this.Database)) {
       for (const type of Object.values(db.entities)) {
-        this.resolve(type, GraphKind.Entity, entities);
+        this.resolve(type, VarKind.Entity, entities);
       }
     }
     // Resolve unbound entites
     for (const type of Object.values(this.Entity)) {
       if (entities[type.name]) continue;
       this.log.warn(`Unbound entity type [${type.name}]`);
-      this.resolve(type, GraphKind.Entity, entities);
+      this.resolve(type, VarKind.Entity, entities);
     }
     // API
     for (const api of Object.values(this.Api)) {
       for (const method of Object.values(api.methods)) {
-        if (!method.query && !method.mutation && !method.resolver) continue;
-        method.input.build = this.resolve(method.input, GraphKind.Input, inputs);
-        method.result.build = this.resolve(method.result, GraphKind.Type, types);
+        if (!method.query && !method.mutation && !method.extension) continue;
+        for (const input of method.inputs) {
+          input.build = this.resolve(input, VarKind.Input, inputs);
+        }
+        method.result.build = this.resolve(method.result, VarKind.Type, types);
       }
     }
     // TODO: Check for unused inputs and results
     // Inputs
     for (const type of Object.values(this.Input)) {
-      this.resolve(type, GraphKind.Input, inputs);
+      this.resolve(type, VarKind.Input, inputs);
     }
     // Results
     for (const type of Object.values(this.Type)) {
-      this.resolve(type, GraphKind.Type, types);
+      this.resolve(type, VarKind.Type, types);
     }
 
     // TODO: Validate for no lose handler, methods, routes, events
@@ -210,27 +214,35 @@ export abstract class Metadata implements MetadataRegistry {
     return this.get();
   }
 
-  private static resolve(metadata: VarMetadata, scope: GraphKind, reg: Record<string, TypeMetadata>): VarMetadata {
-    if (GraphKind.isEnum(metadata.kind)) {
+  private static resolve(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
+    if (VarKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
       metadata.gql = e.name;
       metadata.js = e.name;
       metadata.idl = e.name;
       return metadata;
     }
-    if (GraphKind.isScalar(metadata.kind)) {
+    if (VarKind.isScalar(metadata.kind)) {
       return VarMetadata.on({
         kind: metadata.kind,
         gql: metadata.kind,
-        js: GraphKind.toJS(metadata.kind),
-        idl: GraphKind.toIDL(metadata.kind)
+        js: VarKind.toJS(metadata.kind),
+        idl: VarKind.toIDL(metadata.kind)
       });
     }
-    if (GraphKind.isArray(metadata.kind)) {
+    if (VarKind.isResolver(metadata.kind)) {
+      return VarMetadata.on({
+        kind: metadata.kind,
+        gql: metadata.kind,
+        js: VarKind.toJS(metadata.kind),
+        idl: VarKind.toIDL(metadata.kind)
+      });
+    }
+    if (VarKind.isArray(metadata.kind)) {
       const item = this.resolve(metadata.item, scope, reg);
       if (item) {
         return VarMetadata.on({
-          kind: GraphKind.Array,
+          kind: VarKind.Array,
           item, gql: `[${item.gql}]`,
           js: `${item.js}[]`,
           idl: `${item.idl}`
@@ -238,39 +250,39 @@ export abstract class Metadata implements MetadataRegistry {
         // tslint:disable-next-line:no-else-after-return
       } else {
         return VarMetadata.on({
-          kind: GraphKind.Array,
+          kind: VarKind.Array,
           item,
-          gql: `[${GraphKind.Object}]`,
+          gql: `[${VarKind.Object}]`,
           js: `any[]`,
           idl: `${item.idl}`
         });
       }
     }
-    if (GraphKind.isRef(metadata.kind)) {
+    if (VarKind.isRef(metadata.kind)) {
       let type: VarMetadata = undefined;
       const target: any = metadata.ref();
       const ref = VarMetadata.of(target);
-      if (GraphKind.isEnum(target && target.kind)) {
+      if (VarKind.isEnum(target && target.kind)) {
         type = this.resolve(target, scope, reg);
-      } else if (GraphKind.isScalar(ref.kind)) {
+      } else if (VarKind.isScalar(ref.kind)) {
         type = this.resolve(ref, scope, reg);
-      } else if (GraphKind.isArray(ref.kind)) {
+      } else if (VarKind.isArray(ref.kind)) {
         const z = ref.item.ref;
         if (z) ref.item.ref = () => z;
         type = this.resolve(ref, scope, reg);
-      } else if (GraphKind.isRef(ref.kind)) {
+      } else if (VarKind.isRef(ref.kind)) {
         // TODO: Make sure entity exists
         const entity = EntityMetadata.get(ref.ref);
         const meta = TypeMetadata.get(ref.ref);
         if (entity) {
-          if (GraphKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
+          if (VarKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
           type = this.resolve(entity, scope, reg);
         } else if (meta) {
           type = this.resolve(meta, scope, reg);
         } else {
           type = VarMetadata.on({
-            kind: GraphKind.Object,
-            gql: GraphKind.Object,
+            kind: VarKind.Object,
+            gql: VarKind.Object,
             js: 'any',
             idl: '?ANY?'
           });
@@ -287,7 +299,7 @@ export abstract class Metadata implements MetadataRegistry {
     // }
 
     const struc = metadata as TypeMetadata;
-    if (!GraphKind.isStruc(struc.kind)) {
+    if (!VarKind.isStruc(struc.kind)) {
       throw new TypeError('Internal metadata error');
     }
     const link = struc.target && struc.name;
@@ -296,13 +308,13 @@ export abstract class Metadata implements MetadataRegistry {
       throw new TypeError(`Empty type difinition ${struc.target}`);
     }
 
-    if (scope === GraphKind.Metadata && !GraphKind.isMetadata(metadata.kind)) {
+    if (scope === VarKind.Metadata && !VarKind.isMetadata(metadata.kind)) {
       throw new TypeError(`Metadata type can not reference [${metadata.kind}]`);
     }
-    if (scope === GraphKind.Input && !GraphKind.isInput(metadata.kind)) {
+    if (scope === VarKind.Input && !VarKind.isInput(metadata.kind)) {
       throw new TypeError(`Input type can not reference [${metadata.kind}]`);
     }
-    if (scope === GraphKind.Type && !GraphKind.isType(metadata.kind) && !GraphKind.isEntity(metadata.kind)) {
+    if (scope === VarKind.Type && !VarKind.isType(metadata.kind) && !VarKind.isEntity(metadata.kind)) {
       throw new TypeError(`Type type can not reference [${metadata.kind}]`);
     }
 
@@ -392,7 +404,7 @@ export abstract class Metadata implements MetadataRegistry {
     const name = decorator instanceof Function ? decorator.name : decorator;
     const target = (typeof over === 'object' ? over.constructor : over);
     const key = propertyKey && propertyKey.toString();
-    const traceInfo: DecorationMetadata = {
+    const traceInfo: IDecorationMetadata = {
       decorator: name,
       ordinal: this.ordinal,
       target, prototype: target !== over,

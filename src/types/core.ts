@@ -21,8 +21,8 @@ export class Context {
   public sourceIp: string;
   public method: MethodMetadata;
   public auth: AuthInfo;
-  constructor(ctx: Context) {
-    Object.assign(this, ctx);
+  constructor(ctx?: Context) {
+    if (ctx) Object.assign(this, ctx);
   }
 }
 
@@ -64,6 +64,8 @@ export interface MemoryInfo {
 }
 
 export interface ProcessInfo {
+  name: string;
+  state: string;
   timestamp: Date;
   versions: any;
   uptime: number;

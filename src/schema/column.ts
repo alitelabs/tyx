@@ -4,7 +4,7 @@ import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/method';
-import { GraphKind, IVarMetadata } from '../metadata/type';
+import { IVarMetadata, VarKind } from '../metadata/var';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
@@ -16,7 +16,7 @@ export class ColumnTypeSchema {
 
 @Schema()
 export class ColumnMetadataSchema implements IColumnMetadata {
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field() name: string;
   @Field() required: boolean;
   @Field(Object) design: IDesignMetadata;

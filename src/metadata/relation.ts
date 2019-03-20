@@ -3,8 +3,9 @@ import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
+import { FieldMetadata, IFieldMetadata } from './field';
 import { Metadata } from './registry';
-import { FieldMetadata, GraphKind, IFieldMetadata } from './type';
+import { VarKind } from './var';
 
 /**
  * All types that relation can be.
@@ -235,13 +236,13 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     switch (type) {
       case RelationType.ManyToOne:
       case RelationType.OneToOne:
-        this.kind = GraphKind.Ref;
+        this.kind = VarKind.Ref;
         this.ref = typeFunction;
         break;
       case RelationType.OneToMany:
       case RelationType.ManyToMany:
-        this.kind = GraphKind.Array;
-        this.item = { kind: GraphKind.Ref, ref: typeFunction };
+        this.kind = VarKind.Array;
+        this.item = { kind: VarKind.Ref, ref: typeFunction };
         break;
       default:
         throw new TypeError('Internal metadata error');

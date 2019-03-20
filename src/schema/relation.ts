@@ -7,7 +7,7 @@ import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/method';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
-import { GraphKind, IVarMetadata } from '../metadata/type';
+import { IVarMetadata, VarKind } from '../metadata/var';
 import { Class } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
@@ -16,7 +16,7 @@ import { VarMetadataSchema } from './type';
 
 @Schema()
 export class RelationMetadataSchema implements IRelationMetadata<any> {
-  @Field(String) kind: GraphKind;
+  @Field(String) kind: VarKind;
   @Field() name: string;
   @Field() required: boolean;
   @Field(item => VarMetadataSchema) item: IVarMetadata;

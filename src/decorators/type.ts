@@ -1,18 +1,20 @@
+import { EnumMetadata } from '../metadata/enum';
 import { Metadata } from '../metadata/registry';
-import { EnumMetadata, GraphKind, Int, TypeMetadata, VarType } from '../metadata/type';
+import { TypeMetadata } from '../metadata/type';
+import { FieldType, Int, VarKind } from '../metadata/var';
 
 // tslint:disable:function-name
 
 export function Input(name?: string): ClassDecorator {
-  return Metadata.onClass(Input, { type: GraphKind.Type, name }, (target) => {
-    TypeMetadata.define(target).commit(GraphKind.Input, name);
+  return Metadata.onClass(Input, { type: VarKind.Type, name }, (target) => {
+    TypeMetadata.define(target).commit(VarKind.Input, name);
   });
 }
 Input.core = true;
 
 export function Type(name?: string): ClassDecorator {
-  return Metadata.onClass(Type, { type: GraphKind.Type, name }, (target) => {
-    TypeMetadata.define(target).commit(GraphKind.Type, name);
+  return Metadata.onClass(Type, { type: VarKind.Type, name }, (target) => {
+    TypeMetadata.define(target).commit(VarKind.Type, name);
   });
 }
 Type.core = true;
@@ -24,15 +26,12 @@ Enum.core = true;
 
 // export function Field(target: Object, propertyKey: string): void;
 export function Field<T = any>(): PropertyDecorator;
-export function Field<T = any>(type: VarType<T> | 0): PropertyDecorator;
+export function Field<T = any>(type: FieldType<T> | 0): PropertyDecorator;
 export function Field<T = any>(required?: boolean): PropertyDecorator;
-export function Field<T = any>(type?: VarType<T> | 0, required?: boolean): PropertyDecorator;
-export function Field<T = any>(first?: VarType<T> | 0 | boolean | Object, second?: boolean | string | symbol): PropertyDecorator | void {
-  // if (typeof first === 'object' && typeof second === 'string') {
-  //   return void decorator(first, second);
-  // }
+export function Field<T = any>(type?: FieldType<T> | 0, required?: boolean): PropertyDecorator;
+export function Field<T = any>(first?: FieldType<T> | 0 | boolean | Object, second?: boolean | string | symbol): PropertyDecorator | void {
   return Metadata.onProperty(Field, { first, second }, (target, propertyKey) => {
-    let type: VarType<T> = undefined;
+    let type: FieldType<T> = undefined;
     let required = false;
     if (typeof first === 'boolean') {
       required = first;
@@ -44,7 +43,6 @@ export function Field<T = any>(first?: VarType<T> | 0 | boolean | Object, second
       required = second as any;
     }
     TypeMetadata.define(target.constructor).addField(propertyKey as string, type, required);
-
   });
 }
 Field.core = true;

@@ -1,14 +1,24 @@
 import { CoreInstance } from '../core/instance';
-import { Class, ClassRef, Prototype } from '../types/core';
+import { ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
+import { Class, ClassRef, Context, Prototype } from '../types/core';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { EventRouteMetadata, IEventRouteMetadata } from './event';
 import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';
+import { IInputMetadata, InputMetadata } from './input';
 import { Metadata } from './registry';
+import { IResultMetadata, ResultMetadata } from './result';
 import { ServiceMetadata } from './service';
-import { GraphKind, IInputMetadata, InputMetadata, InputType, IResultMetadata, ResultMetadata, ResultType, Select } from './type';
+import { Any, Args, Info, InputType, Obj, ResultType, Select } from './var';
+
+export enum MethodType {
+  Internal = 'Internal',
+  Query = 'Query',
+  Mutation = 'Mutation',
+  Extension = 'Extension'
+}
 
 export type IDesignMetadata = {
   name?: string;
@@ -20,6 +30,8 @@ export interface IMethodMetadata {
   target: Class;
   api: IApiMetadata;
   base: IApiMetadata;
+  type: MethodType;
+
   // Temporary, type extension point
   host: Class;
 
@@ -29,10 +41,7 @@ export interface IMethodMetadata {
   auth: string;
   roles: Roles;
 
-  query: boolean;
-  mutation: boolean;
-  resolver: boolean;
-  input: IInputMetadata;
+  inputs: IInputMetadata[];
   result: IResultMetadata;
   select: Select;
 
@@ -50,6 +59,7 @@ export class MethodMetadata implements IMethodMetadata {
   public api: ApiMetadata;
   public base: ApiMetadata;
   public over: MethodMetadata;
+  public type: MethodType;
   public host: ClassRef;
 
   public name: string;
@@ -58,10 +68,7 @@ export class MethodMetadata implements IMethodMetadata {
   public auth: string = undefined;
   public roles: Roles = undefined;
 
-  public query: boolean = undefined;
-  public mutation: boolean = undefined;
-  public resolver: boolean = undefined;
-  public input: InputMetadata = undefined;
+  public inputs: InputMetadata[] = [];
   public result: ResultMetadata = undefined;
   public select: Select = undefined;
 
@@ -69,6 +76,10 @@ export class MethodMetadata implements IMethodMetadata {
   public bindings: HttpBindingMetadata[] = undefined;
   public http: Record<string, HttpRouteMetadata> = undefined;
   public events: Record<string, EventRouteMetadata> = undefined;
+
+  public get query(): boolean { return this.type === 'Query'; }
+  public get mutation(): boolean { return this.type === 'Mutation'; }
+  public get extension(): boolean { return this.type === 'Extension'; }
 
   public inherit(api: ApiMetadata): this {
     const copy = { ...this };
@@ -96,10 +107,10 @@ export class MethodMetadata implements IMethodMetadata {
     this.auth = this.auth || over.auth;
     this.roles = this.roles || over.roles;
 
-    this.query = this.query || over.query;
-    this.mutation = this.mutation || over.mutation;
-    this.resolver = this.resolver || over.resolver;
-    this.input = this.input || over.input;
+    this.type = this.type || over.type;
+
+    // TODO: Merge
+    this.inputs = this.inputs || over.inputs;
     this.result = this.result || over.result;
     this.select = this.select || over.select;
     this.contentType = this.contentType || over.contentType;
@@ -137,6 +148,7 @@ export class MethodMetadata implements IMethodMetadata {
     if (!meta) {
       meta = new MethodMetadata(target.constructor, propertyKey);
       Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
+      ApiMetadata.define(target.constructor).addMethod(meta);
     }
 
     // If resolved
@@ -147,18 +159,59 @@ export class MethodMetadata implements IMethodMetadata {
     const params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
     const returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
     meta.design = meta.design || [];
-    params.forEach((param, i) => meta.design[i] = {
-      name: names[i],
-      type: param && param.name || 'void',
-      target: param,
-    });
-    meta.design[params.length] = {
-      name: descriptor ? '#return' : undefined,
-      type: returns && returns.name || 'void',
-      target: returns,
-    };
-    ApiMetadata.define(target.constructor).addMethod(meta);
+    for (let i = 0; i < params.length; i++) {
+      const param = params[i];
+      const name = names[i] || `arg${i}`;
+      meta.design[i] = {
+        name,
+        type: param && param.name || 'void',
+        target: param,
+      };
+      const imeta = InputMetadata.of(param || [void 0]);
+      let input = meta.inputs[i];
+      if (!input) {
+        input = imeta;
+        meta.inputs[i] = input;
+      }
+      input.index = i;
+      // input.kind = imeta.kind;
+      input.name = name;
+      input.design = param;
+    }
+    if (returns) {
+      meta.design[params.length] = {
+        name: descriptor ? '#return' : undefined,
+        type: returns && returns.name || 'void',
+        target: returns,
+      };
+      // TODO: Void
+      const rmeta = ResultMetadata.of(returns || Any);
+      if (!meta.result) {
+        meta.result = rmeta;
+      }
+      // meta.result.kind = rmeta.kind;
+      meta.result.design = returns;
+      meta.result.promise = returns === Promise;
+    }
+
     return meta;
+  }
+
+  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: Select): this {
+    // TODO: Wrap arguments
+    if (type === MethodType.Extension && (!inputs || inputs.length === 0 || inputs.length === 1 && inputs[0] === void 0)) {
+      // tslint:disable-next-line:no-parameter-reassignment
+      inputs = [Obj, Args, Context, Info];
+    }
+    this.type = type;
+    this.host = host;
+    this.select = select;
+    inputs.forEach((inp, index) => this.setInput(index, inp));
+    this.setResult(result);
+    if (this.design.length === 1 && inputs.length > 0) {
+      throw new TypeError(`Invalid input kind [${this.inputs[0].kind}], method [${this.target.name}.${this.name}] has no parameters`);
+    }
+    return this;
   }
 
   public addAuth(auth: string, addRoles: Roles): this {
@@ -170,30 +223,27 @@ export class MethodMetadata implements IMethodMetadata {
     return this;
   }
 
-  public setQuery(input?: InputType, result?: ResultType, select?: Select): this {
-    this.query = true;
-    return this.setSignature(input, result, select);
-  }
-
-  public setMutation(input?: InputType, result?: ResultType, select?: Select): this {
-    this.mutation = true;
-    return this.setSignature(input, result, select);
-  }
-
-  public setResolver(type: ClassRef, input?: InputType, result?: ResultType, select?: Select): this {
-    this.resolver = true;
-    this.host = type;
-    return this.setSignature(input, result, select);
-  }
-
-  private setSignature(input?: InputType, result?: ResultType, select?: Select): this {
-    this.input = InputMetadata.of(input);
-    this.result = ResultMetadata.of(result);
-    this.select = select;
-    if (this.design && this.design.length === 1 && !GraphKind.isVoid(this.input.kind)) {
-      throw new TypeError(`Invalid input kind [${this.input.kind}], method [${this.target.name}.${this.name}] has no parameters`);
+  public setInput(index: number, type: InputType): InputMetadata {
+    const over = InputMetadata.of(type);
+    let input = this.inputs[index];
+    if (!input) {
+      input = over;
+      this.inputs[index] = over;
+    } else {
+      // TODO: May be not overidde design type if non in decoration
+      Object.assign(input, over);
     }
-    return this;
+    input.defined = true;
+    // TODO: Validate in registy that all inputs are defined
+    return input;
+  }
+
+  public setResult(type: ResultType): ResultMetadata {
+    const over = ResultMetadata.of(type);
+    Object.assign(this.result, over);
+    this.result.defined = true;
+    // TODO: Validate in registy that all inputs are defined
+    return this.result;
   }
 
   public setContentType(type: string): this {
@@ -344,5 +394,18 @@ export class MethodMetadata implements IMethodMetadata {
     // tslint:disable-next-line:no-function-constructor-with-string-args
     const gen = new Function(...fun);
     return gen().bind(container);
+  }
+
+  public resolve(
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx?: ResolverContext,
+    info?: ResolverInfo,
+  ): any[] {
+    const params: any[] = [];
+    for (const input of this.inputs) {
+      params[input.index] = input.resolve(obj, args, ctx, info);
+    }
+    return params;
   }
 }

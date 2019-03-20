@@ -4,7 +4,8 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata, IDatabaseMetadata } from './database';
 import { Metadata } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
-import { GraphKind, ITypeMetadata, TypeMetadata } from './type';
+import { ITypeMetadata, TypeMetadata } from './type';
+import { VarKind } from './var';
 
 export interface EntityOptions {
   /**
@@ -106,7 +107,7 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
 
   public submit(options?: EntityOptions): this {
     if (options && options.name) this.name = options.name;
-    super.commit(GraphKind.Entity, this.name);
+    super.commit(VarKind.Entity, this.name);
     return this;
   }
 

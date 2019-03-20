@@ -135,6 +135,8 @@ export abstract class Core {
     process.uptime;
 
     return {
+      name: this.name,
+      state: this.instance ? 'Init' : 'New',
       timestamp: new Date(),
       versions: process.versions,
       uptime: process.uptime(),
