@@ -2,11 +2,10 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IProxyMetadata } from '../metadata/proxy';
 import { IHandlerMetadata, IInjectMetadata, IServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { HandlerMetadataSchema, InjectMetadataSchema, ServiceMetadataSchema } from './service';

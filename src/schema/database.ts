@@ -2,13 +2,12 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { IColumnMetadata } from '../metadata/column';
 import { IDatabaseMetadata } from '../metadata/database';
 import { IEntityMetadata } from '../metadata/entity';
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
 import { EntityMetadataSchema } from './entity';

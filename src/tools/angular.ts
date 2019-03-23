@@ -1,75 +1,90 @@
-import { Core } from '../core/core';
-import { CoreSchema } from '../graphql/schema';
 import { ApiMetadata } from '../metadata/api';
+import { EnumMetadata } from '../metadata/enum';
+import { Metadata } from '../metadata/registry';
 import { TypeMetadata } from '../metadata/type';
-import { Select, VarKind, VarMetadata } from '../metadata/var';
-import '../schema/registry';
+import { VarKind, VarMetadata, VarSelect } from '../metadata/var';
 import { Utils } from '../utils';
 
 export class AngularCodeGen {
 
-  public constructor(
-    private schema?: CoreSchema
-  ) {
-    this.schema = this.schema || Core.schema;
+  public static emit(): string {
+    return new AngularCodeGen().emit();
   }
 
+  private constructor() { }
+
   public emit(): string {
-    let script = Utils.unindent(`
-    import { Injectable } from '@angular/core';
-    import { Apollo } from 'apollo-angular';
-    import { ApolloQueryResult } from 'apollo-client';
-    import { FetchResult } from 'apollo-link';
-    import gql from 'graphql-tag';
-    import { Observable } from 'rxjs';
-    import { catchError, map } from 'rxjs/operators';
+    let script = this.prolog() + '\n';
 
-    const NO_CACHE = true;
-
-    export interface ApiError {
-      code: number;
-      message: string;
-    }
-
-    interface Result<T> { result: T; }
-
-    function result<T>(res: ApolloQueryResult<Result<T>>): T {
-      return res.data.result;
-    }
-
-    function fetch<T>(res: FetchResult<Result<T>>): T {
-      return res.data.result;
-    }
-
-    function erorr(err: any): never {
-      err = err.networkError ? (err.networkError.error || err.networkError) : err;
-      err.code = err.code || err.status;
-      throw err;
-    }
-
-    `).trimLeft();
+    const registry = Metadata.get();
     script += '///////// API /////////\n';
-    for (const api of Object.values(this.schema.apis).sort((a, b) => a.api.localeCompare(b.api))) {
-      const code = this.genAngular(api.metadata);
+    for (const api of Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name))) {
+      const code = this.genApi(api);
       if (code) script += code + '\n\n';
     }
     script += '///////// ENUM ////////\n';
-    for (const type of Object.values(this.schema.enums).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += type.script + '\n\n';
+    for (const type of Object.values(registry.Enum).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += this.genEnum(type) + '\n\n';
     }
-    script += '/////// ENTITIES //////\n';
     // const db = Object.values(this.schema.databases)[0];
-    for (const type of Object.values(this.schema.entities).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
+    script += '/////// ENTITIES //////\n';
+    for (const type of Object.values(registry.Entity).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += this.genInterface(type) + '\n\n';
     }
     script += '//////// INPUTS ///////\n';
-    for (const type of Object.values(this.schema.inputs).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
+    for (const type of Object.values(registry.Input).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += this.genInterface(type) + '\n\n';
     }
     script += '//////// TYPES ////////\n';
-    for (const type of Object.values(this.schema.types).sort((a, b) => a.name.localeCompare(b.name))) {
-      script += this.genInterface(type.metadata) + '\n\n';
+    for (const type of Object.values(registry.Type).sort((a, b) => a.name.localeCompare(b.name))) {
+      script += this.genInterface(type) + '\n\n';
     }
+    return script;
+  }
+
+  private prolog(): string {
+    return Utils.unindent(`
+      import { Injectable } from '@angular/core';
+      import { Apollo } from 'apollo-angular';
+      import { ApolloQueryResult } from 'apollo-client';
+      import { FetchResult } from 'apollo-link';
+      import gql from 'graphql-tag';
+      import { Observable } from 'rxjs';
+      import { catchError, map } from 'rxjs/operators';
+
+      const NO_CACHE = true;
+
+      export interface ApiError {
+        code: number;
+        message: string;
+      }
+
+      interface Result<T> { result: T; }
+
+      function result<T>(res: ApolloQueryResult<Result<T>>): T {
+        return res.data.result;
+      }
+
+      function fetch<T>(res: FetchResult<Result<T>>): T {
+        return res.data.result;
+      }
+
+      function erorr(err: any): never {
+        err = err.networkError ? (err.networkError.error || err.networkError) : err;
+        err.code = err.code || err.status;
+        throw err;
+      }
+    `).trimLeft();
+  }
+
+  private genEnum(metadata: EnumMetadata): string {
+    let script = `export enum ${metadata.name} {`;
+    let i = 0;
+    for (const key of metadata.options) {
+      script += `${i ? ',' : ''}\n  ${key} = '${key}'`;
+      i++;
+    }
+    script += '\n}';
     return script;
   }
 
@@ -84,7 +99,7 @@ export class AngularCodeGen {
     return script;
   }
 
-  private genAngular(metadata: ApiMetadata): string {
+  private genApi(metadata: ApiMetadata): string {
     let script = `@Injectable()\nexport class ${metadata.name} {\n`;
     script += `  constructor(private graphql: Apollo) { }\n`;
     let count = 0;
@@ -100,11 +115,12 @@ export class AngularCodeGen {
       for (let i = 0; i < method.inputs.length; i++) {
         const inb = method.inputs[i].build;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
-        params += method.design[i].name || `arg${i}`;
-        if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; }
-        jsArgs += `${params}: ${inb.js}`;
-        reqArgs += `$${params}: ${inb.gql}!`;
-        qlArgs += `${params}: $${params}`;
+        const param = method.inputs[i].name;
+        if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
+        params += param;
+        jsArgs += `${param}: ${inb.js}`;
+        reqArgs += `$${param}: ${inb.gql}!`;
+        qlArgs += `${param}: $${param}`;
       }
       if (reqArgs) reqArgs = `(${reqArgs})`;
       if (qlArgs) qlArgs = `(${qlArgs})`;
@@ -146,7 +162,7 @@ export class AngularCodeGen {
     return count ? script : '';
   }
 
-  private genSelect(meta: VarMetadata, select: Select | any, level: number, depth: number): string {
+  private genSelect(meta: VarMetadata, select: VarSelect | any, level: number, depth: number): string {
     if (level >= depth) return null;
     if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
     if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);

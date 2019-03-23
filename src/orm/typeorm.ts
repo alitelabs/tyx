@@ -1,8 +1,9 @@
 import { NotImplemented } from '../errors';
-import { EntityResolver, ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
 import { TypeOrm } from '../import/typeorm';
+import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { RelationMetadata } from '../metadata/relation';
+import { Context, EntityResolver, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { QueryToolkit } from './query';
 
 export interface IRecord {
@@ -18,7 +19,11 @@ export class TypeOrmProvider implements EntityResolver {
 
   constructor(manager?: TypeOrm.EntityManager) { this.manager = manager; }
 
-  public get(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: ResolverContext, info?: ResolverInfo): Promise<any> {
+  public get metadata() {
+    return DatabaseMetadata.get(this) as any;
+  }
+
+  public get(entity: EntityMetadata, obj: ResolverArgs, args: ResolverArgs, context: Context, info?: ResolverInfo): Promise<any> {
     return this.prepareQuery(entity.name, args, null, context).getOne();
   }
 
@@ -26,7 +31,7 @@ export class TypeOrmProvider implements EntityResolver {
     entity: EntityMetadata,
     obj: ResolverArgs,
     args: ResolverQuery,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<any[]> {
     let query = args;
@@ -34,14 +39,14 @@ export class TypeOrmProvider implements EntityResolver {
       query = { ...args.query, ...args };
       delete query.query;
     }
-    return this.prepareQuery(entity.name, null, query, context).getMany();
+    return this.prepareQuery(entity.name, null, query, ctx).getMany();
   }
 
   public async create(
     entity: EntityMetadata,
     obj: ResolverArgs,
     args: ResolverArgs,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<any> {
     const record = this.manager.create<any>(entity.name, args);
@@ -56,7 +61,7 @@ export class TypeOrmProvider implements EntityResolver {
     entity: EntityMetadata,
     obj: ResolverArgs,
     args: ResolverArgs,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<any> {
     const record = this.manager.create(entity.name, args);
@@ -71,7 +76,7 @@ export class TypeOrmProvider implements EntityResolver {
     entity: EntityMetadata,
     obj: ResolverArgs,
     args: ResolverArgs,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<any> {
     const record = await this.manager.findOneOrFail(entity.name, args);
@@ -84,7 +89,7 @@ export class TypeOrmProvider implements EntityResolver {
     relation: RelationMetadata,
     root: ResolverArgs,
     query: ResolverQuery,
-    context?: ResolverContext,
+    ctx?: Context,
     info?: ResolverInfo
   ): Promise<object[]> {
     const target = relation.inverseEntityMetadata.name;
@@ -92,7 +97,7 @@ export class TypeOrmProvider implements EntityResolver {
     const fks = relation.inverseRelation.joinColumns.map(col => col.propertyName);
     const keys: any = {};
     fks.forEach((fk, i) => keys[fk] = root[pks[i]]);
-    return this.prepareQuery(target, keys, query, context).getMany();
+    return this.prepareQuery(target, keys, query, ctx).getMany();
   }
 
   public oneToOne(
@@ -100,7 +105,7 @@ export class TypeOrmProvider implements EntityResolver {
     relation: RelationMetadata,
     root: ResolverArgs,
     query: ResolverQuery,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<object> {
     const target = relation.inverseEntityMetadata.name;
@@ -110,7 +115,7 @@ export class TypeOrmProvider implements EntityResolver {
       entity.primaryColumns.map(col => col.propertyName);
     const keys: any = {};
     pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
-    return this.prepareQuery(target, keys, query, context).getOne();
+    return this.prepareQuery(target, keys, query, ctx).getOne();
   }
 
   public manyToOne(
@@ -118,7 +123,7 @@ export class TypeOrmProvider implements EntityResolver {
     relation: RelationMetadata,
     root: ResolverArgs,
     query: ResolverQuery,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<object> {
     const target = relation.inverseEntityMetadata.name;
@@ -126,7 +131,7 @@ export class TypeOrmProvider implements EntityResolver {
     const fks = relation.joinColumns.map(col => col.propertyName);
     const keys: any = {};
     pks.forEach((pk, i) => keys[pk] = root[fks[i]]);
-    return this.prepareQuery(target, keys, query, context).getOne();
+    return this.prepareQuery(target, keys, query, ctx).getOne();
   }
 
   public manyToMany(
@@ -134,7 +139,7 @@ export class TypeOrmProvider implements EntityResolver {
     relation: RelationMetadata,
     root: ResolverArgs,
     query: ResolverQuery,
-    context: ResolverContext,
+    ctx: Context,
     info?: ResolverInfo
   ): Promise<object> {
     throw new NotImplemented('manyToMany not implemented');
@@ -144,7 +149,7 @@ export class TypeOrmProvider implements EntityResolver {
     target: string,
     keys: ResolverArgs,
     query: ResolverQuery,
-    context: ResolverContext
+    ctx: Context
   ): TypeOrm.SelectQueryBuilder<any> {
     const sql = QueryToolkit.prepareSql(keys, query);
     const builder: TypeOrm.SelectQueryBuilder<any> = this.manager.createQueryBuilder(target, QueryToolkit.ALIAS)

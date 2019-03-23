@@ -1,11 +1,9 @@
-// tslint:disable-next-line:import-name
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { InfoSchemaResolvers, ResolverContext, SchemaResolvers } from '../graphql/types';
 import { Any } from '../metadata/var';
-import { Class, MemoryInfo, ModuleInfo, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
+// tslint:disable-next-line:max-line-length
+import { Class, Context, InfoSchemaResolvers, MemoryInfo, ModuleInfo, PackageInfo, ProcessInfo, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
-
 import Lo = require('lodash');
 
 @Schema()
@@ -36,11 +34,11 @@ export class InstanceInfoSchema {
   @Field() state: string;
   @Field(list => [ServiceInfoSchema]) context: ServiceInfoSchema[];
 
-  public static get(ctx: ResolverContext) {
+  public static get(ctx: Context) {
     return ctx.container;
   }
 
-  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, ResolverContext | any> = {
+  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, Context | any> = {
     context: (obj, args) => {
       const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
@@ -123,12 +121,8 @@ export class CoreInfoSchema {
 
   // TODO: Statistics .....
 
-  public static get(ctx: ResolverContext) {
-    return ctx.container;
-  }
-
   // TODO: Move logic to instance and core
-  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, ResolverContext | any> = {
+  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, Context | any> = {
     process: (obj, args) => obj.processInfo(),
     global: (obj, args) => {
       const info = obj.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));

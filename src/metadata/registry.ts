@@ -161,6 +161,12 @@ export abstract class Metadata implements MetadataRegistry {
     return reg as any;
   }
 
+  public static resolve(type: string, member: string, obj: any, args: any, ctx: any, info: any) {
+    const meta: any = this.Registry[type];
+    if (!meta || !meta.RESOLVERS || !meta.RESOLVERS[member]) return undefined;
+    return meta.RESOLVERS[member](obj, args, ctx, info);
+  }
+
   public static isValidated(): boolean {
     return this.validated;
   }
@@ -174,38 +180,38 @@ export abstract class Metadata implements MetadataRegistry {
     const types: Record<string, TypeMetadata> = {};
     // Metadata
     for (const type of Object.values(this.Registry)) {
-      this.resolve(type, VarKind.Metadata, metadata);
+      this.build(type, VarKind.Metadata, metadata);
     }
     // Databases & Entities
     for (const db of Object.values(this.Database)) {
       for (const type of Object.values(db.entities)) {
-        this.resolve(type, VarKind.Entity, entities);
+        this.build(type, VarKind.Entity, entities);
       }
     }
     // Resolve unbound entites
     for (const type of Object.values(this.Entity)) {
       if (entities[type.name]) continue;
       this.log.warn(`Unbound entity type [${type.name}]`);
-      this.resolve(type, VarKind.Entity, entities);
+      this.build(type, VarKind.Entity, entities);
     }
     // API
     for (const api of Object.values(this.Api)) {
       for (const method of Object.values(api.methods)) {
         if (!method.query && !method.mutation && !method.extension) continue;
         for (const input of method.inputs) {
-          input.build = this.resolve(input, VarKind.Input, inputs);
+          input.build = this.build(input, VarKind.Input, inputs);
         }
-        method.result.build = this.resolve(method.result, VarKind.Type, types);
+        method.result.build = this.build(method.result, VarKind.Type, types);
       }
     }
     // TODO: Check for unused inputs and results
     // Inputs
     for (const type of Object.values(this.Input)) {
-      this.resolve(type, VarKind.Input, inputs);
+      this.build(type, VarKind.Input, inputs);
     }
     // Results
     for (const type of Object.values(this.Type)) {
-      this.resolve(type, VarKind.Type, types);
+      this.build(type, VarKind.Type, types);
     }
 
     // TODO: Validate for no lose handler, methods, routes, events
@@ -214,7 +220,7 @@ export abstract class Metadata implements MetadataRegistry {
     return this.get();
   }
 
-  private static resolve(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
+  private static build(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
     if (VarKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
       metadata.gql = e.name;
@@ -239,13 +245,13 @@ export abstract class Metadata implements MetadataRegistry {
       });
     }
     if (VarKind.isArray(metadata.kind)) {
-      const item = this.resolve(metadata.item, scope, reg);
+      const item = this.build(metadata.item, scope, reg);
       if (item) {
         return VarMetadata.on({
           kind: VarKind.Array,
           item, gql: `[${item.gql}]`,
           js: `${item.js}[]`,
-          idl: `${item.idl}`
+          idl: `list<${item.idl}>`
         });
         // tslint:disable-next-line:no-else-after-return
       } else {
@@ -263,22 +269,22 @@ export abstract class Metadata implements MetadataRegistry {
       const target: any = metadata.ref();
       const ref = VarMetadata.of(target);
       if (VarKind.isEnum(target && target.kind)) {
-        type = this.resolve(target, scope, reg);
+        type = this.build(target, scope, reg);
       } else if (VarKind.isScalar(ref.kind)) {
-        type = this.resolve(ref, scope, reg);
+        type = this.build(ref, scope, reg);
       } else if (VarKind.isArray(ref.kind)) {
         const z = ref.item.ref;
         if (z) ref.item.ref = () => z;
-        type = this.resolve(ref, scope, reg);
+        type = this.build(ref, scope, reg);
       } else if (VarKind.isRef(ref.kind)) {
         // TODO: Make sure entity exists
         const entity = EntityMetadata.get(ref.ref);
         const meta = TypeMetadata.get(ref.ref);
         if (entity) {
           if (VarKind.isInput(scope)) throw new TypeError(`Input type can not reference entity [${entity.name}]`);
-          type = this.resolve(entity, scope, reg);
+          type = this.build(entity, scope, reg);
         } else if (meta) {
-          type = this.resolve(meta, scope, reg);
+          type = this.build(meta, scope, reg);
         } else {
           type = VarMetadata.on({
             kind: VarKind.Object,
@@ -324,7 +330,7 @@ export abstract class Metadata implements MetadataRegistry {
     struc.idl = struc.name;
     reg[struc.name] = struc;
     for (const member of Object.values(struc.members)) {
-      member.build = this.resolve(member, scope, reg);
+      member.build = this.build(member, scope, reg);
     }
     return struc;
   }

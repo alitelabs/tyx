@@ -1,10 +1,10 @@
-import { CoreSchema, EntitySchema } from '../graphql/schema';
+import { CoreSchema } from '../graphql/schema';
 
 const ENTITY = '';
 const GET = '';
 const SEARCH = '';
 
-export default function codegen(schema: CoreSchema, folder: string, extension?: string) {
+export default function codegen(schema: CoreSchema | any, folder: string, extension?: string) {
   const ext = extension || 'gql';
   const fs = require('fs');
   fs.writeFileSync(
@@ -88,7 +88,7 @@ function resolver(target: string, relations: Record<string, { target: string, ty
     }`);
 }
 
-function indexes(schema: Record<string, EntitySchema>) {
+function indexes(schema: Record<string, any>) {
   let conImport = '';
   let conArray = '';
   let resImport = '';

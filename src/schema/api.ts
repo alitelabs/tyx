@@ -2,13 +2,12 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpRouteMetadata } from '../metadata/http';
 import { IMethodMetadata } from '../metadata/method';
 import { IServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { EventRouteMetadataSchema } from './event';
 import { HttpRouteMetadataSchema } from './http';

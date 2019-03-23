@@ -24,7 +24,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   public get entities(): Class[] { return DatabaseMetadata.get(this).targets; }
 
-  public get metadata(): EntityMetadata[] { return DatabaseMetadata.get(this).entities; }
+  public get metadata(): DatabaseMetadata { return DatabaseMetadata.get(this); }
   // { return this.connection.entityMetadatas as any; }
 
   public getMetadata(entity: string | Function): EntityMetadata {

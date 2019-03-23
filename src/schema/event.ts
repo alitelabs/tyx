@@ -1,11 +1,10 @@
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { ResolverArgs, SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IMethodMetadata } from '../metadata/method';
 import { IServiceMetadata } from '../metadata/service';
-import { Class } from '../types/core';
+import { Class, ResolverArgs, SchemaResolvers } from '../types/core';
 import { ApiMetadataSchema } from './api';
 import { MethodMetadataSchema } from './method';
 import { ServiceMetadataSchema } from './service';

@@ -171,16 +171,12 @@ export interface LambdaHandler {
   ): boolean | void;
 }
 
-export class LambdaAdapter {
+export abstract class LambdaAdapter {
 
-  private log: Logger;
+  private static log = Logger.get('TYX', LambdaAdapter);
 
-  constructor() {
-    this.log = Logger.get('TYX', this);
+  public static export(): LambdaHandler {
     LogLevel.set(process.env.LOG_LEVEL as any);
-  }
-
-  public export(): LambdaHandler {
     return (event, context, callback) => {
       this.handler(event, context)
         .then(res => callback(null, res))
@@ -188,12 +184,12 @@ export class LambdaAdapter {
     };
   }
 
-  private async handler(event: LambdaEvent, context: LambdaContext) {
+  public static async handler(event: LambdaEvent, context: LambdaContext) {
     this.log.debug('Lambda Event: %j', event);
     this.log.debug('Lambda Context: %j', context);
 
     if (event.httpMethod) {
-      this.log.info('HTTP event detected');
+      this.log.debug('HTTP event detected');
       try {
         const res = await this.http(event, context);
         return HttpUtils.prepare(res);
@@ -203,7 +199,7 @@ export class LambdaAdapter {
       }
     }
     if ((event.type === 'remote' || event.type === 'internal') && event.service && event.method) {
-      this.log.info('Remote event detected');
+      this.log.debug('Remote event detected');
       try {
         return await this.remote(event, context);
       } catch (err) {
@@ -211,7 +207,7 @@ export class LambdaAdapter {
         throw InternalServerError.wrap(err);
       }
     } else if (event.type === 'schedule' && event.action) {
-      this.log.info('Schedule event detected');
+      this.log.debug('Schedule event detected');
       try {
         return await this.schedule(event, context);
       } catch (err) {
@@ -219,7 +215,7 @@ export class LambdaAdapter {
         throw InternalServerError.wrap(err);
       }
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:sqs') {
-      this.log.info('SQS event detected');
+      this.log.debug('SQS event detected');
       try {
         return await this.sqs(event, context);
       } catch (err) {
@@ -227,7 +223,7 @@ export class LambdaAdapter {
         throw InternalServerError.wrap(err);
       }
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:s3') {
-      this.log.info('S3 event detected');
+      this.log.debug('S3 event detected');
       try {
         return await this.s3(event, context);
       } catch (err) {
@@ -235,7 +231,7 @@ export class LambdaAdapter {
         throw InternalServerError.wrap(err);
       }
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:dynamodb') {
-      this.log.info('DynamoDB event detected');
+      this.log.debug('DynamoDB event detected');
       try {
         return await this.dynamo(event, context);
       } catch (err) {
@@ -247,7 +243,7 @@ export class LambdaAdapter {
     }
   }
 
-  private async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
+  private static async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
     let resource = event.resource;
     const prefix = process.env.PREFIX || ('/' + process.env.STAGE);
     if (event.resource && prefix && resource.startsWith(prefix)) resource = resource.replace(prefix, '');
@@ -272,15 +268,17 @@ export class LambdaAdapter {
       body: event.body,
       isBase64Encoded: event.isBase64Encoded || false,
     };
-    return Core.httpRequest(req);
+    const core = await Core.get();
+    return core.httpRequest(req);
   }
 
-  private async remote(event: RemoteEvent, context: LambdaContext): Promise<any> {
+  private static async remote(event: RemoteEvent, context: LambdaContext): Promise<any> {
     event.requestId = context && context.awsRequestId || Utils.uuid();
-    return Core.remoteRequest(event);
+    const core = await Core.get();
+    return core.remoteRequest(event);
   }
 
-  private async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
+  private static async s3(event: LambdaS3Event, context: LambdaContext): Promise<EventResult> {
     const requestId = context && context.awsRequestId || Utils.uuid();
     const time = new Date().toISOString();
     const reqs: Record<string, EventRequest> = {};
@@ -314,12 +312,13 @@ export class LambdaAdapter {
     for (const key in reqs) {
       const req = reqs[key];
       this.log.info('S3 Request [%s:%s]: %j', req.resource, req.object, req);
-      result = await Core.eventRequest(req);
+      const core = await Core.get();
+      result = await core.eventRequest(req);
     }
     return result;
   }
 
-  private async sqs(event: LambdaSQSEvent, context: LambdaContext): Promise<EventResult[]> {
+  private static async sqs(event: LambdaSQSEvent, context: LambdaContext): Promise<EventResult[]> {
 
     const requestId = context && context.awsRequestId || Utils.uuid();
     const time = new Date().toISOString();
@@ -355,15 +354,16 @@ export class LambdaAdapter {
     }
 
     const events: Promise<EventResult>[] = [];
-    reqs.forEach((value) => {
+    for (const value of reqs.values()) {
       this.log.info('SQS Request [%s:%s]: %j', value.resource, value.object, value);
-      events.push(Core.eventRequest(value));
-    });
+      const core = await Core.get();
+      events.push(core.eventRequest(value));
+    }
 
     return Promise.all(events);
   }
 
-  private async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {
+  private static async schedule(event: LambdaScheduleEvent, context: LambdaContext): Promise<EventResult> {
     const requestId = context && context.awsRequestId || Utils.uuid();
     const time = new Date().toISOString();
 
@@ -384,11 +384,12 @@ export class LambdaAdapter {
     };
 
     this.log.info('Schedule Request [%s:%s]: %j', req.resource, req.object, req);
-    const result = await Core.eventRequest(req);
+    const core = await Core.get();
+    const result = await core.eventRequest(req);
     return result;
   }
 
-  private async dynamo(event: LambdaDynamoEvent, context: LambdaContext): Promise<EventResult> {
+  private static async dynamo(event: LambdaDynamoEvent, context: LambdaContext): Promise<EventResult> {
     const requestId = context && context.awsRequestId || Utils.uuid();
     const time = new Date().toISOString();
     const reqs: Record<string, EventRequest> = {};
@@ -422,7 +423,8 @@ export class LambdaAdapter {
     for (const key in reqs) {
       const req = reqs[key];
       this.log.info('Dynamo Request [%s]: %j', req.resource, req);
-      result = await Core.eventRequest(req);
+      const core = await Core.get();
+      result = await core.eventRequest(req);
     }
     return result;
   }

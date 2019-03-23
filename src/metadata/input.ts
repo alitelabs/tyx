@@ -1,5 +1,4 @@
-import { ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
-import { Class } from '../types/core';
+import { Class, Context, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { EnumMetadata } from './enum';
 import { InputType, IVarMetadata, VarKind, VarMetadata } from './var';
 
@@ -40,7 +39,7 @@ export class InputMetadata implements IInputMetadata {
   public resolve(
     obj: any,
     args: ResolverQuery & ResolverArgs,
-    ctx?: ResolverContext,
+    ctx?: Context,
     info?: ResolverInfo,
   ): any {
     switch (this.kind) {

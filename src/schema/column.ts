@@ -1,11 +1,10 @@
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/method';
 import { IVarMetadata, VarKind } from '../metadata/var';
-import { Class } from '../types/core';
+import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
 import { VarMetadataSchema } from './type';

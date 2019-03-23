@@ -1,6 +1,5 @@
 import { CoreInstance } from '../core/instance';
-import { ResolverArgs, ResolverContext, ResolverInfo, ResolverQuery } from '../graphql/types';
-import { Class, ClassRef, Context, Prototype } from '../types/core';
+import { Class, ClassRef, Context, Prototype, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
 import * as Utils from '../utils/misc';
@@ -11,7 +10,7 @@ import { IInputMetadata, InputMetadata } from './input';
 import { Metadata } from './registry';
 import { IResultMetadata, ResultMetadata } from './result';
 import { ServiceMetadata } from './service';
-import { Any, Args, Info, InputType, Obj, ResultType, Select } from './var';
+import { Any, Args, Info, InputType, Obj, ResultType, VarSelect } from './var';
 
 export enum MethodType {
   Internal = 'Internal',
@@ -28,22 +27,20 @@ export type IDesignMetadata = {
 
 export interface IMethodMetadata {
   target: Class;
+  name: string;
+
   api: IApiMetadata;
   base: IApiMetadata;
   type: MethodType;
-
   // Temporary, type extension point
   host: Class;
-
-  name: string;
-  design: IDesignMetadata[];
 
   auth: string;
   roles: Roles;
 
   inputs: IInputMetadata[];
   result: IResultMetadata;
-  select: Select;
+  select: VarSelect;
 
   contentType: string;
   bindings: IHttpBindingMetadata[];
@@ -56,21 +53,20 @@ export interface IMethodMetadata {
 export class MethodMetadata implements IMethodMetadata {
 
   public target: Class;
+  public name: string;
+  public type: MethodType;
+
   public api: ApiMetadata;
   public base: ApiMetadata;
   public over: MethodMetadata;
-  public type: MethodType;
   public host: ClassRef;
-
-  public name: string;
-  public design: IDesignMetadata[] = undefined;
 
   public auth: string = undefined;
   public roles: Roles = undefined;
 
   public inputs: InputMetadata[] = [];
   public result: ResultMetadata = undefined;
-  public select: Select = undefined;
+  public select: VarSelect = undefined;
 
   public contentType: string = undefined;
   public bindings: HttpBindingMetadata[] = undefined;
@@ -103,16 +99,16 @@ export class MethodMetadata implements IMethodMetadata {
     // TODO: Implement
     this.over = over;
     this.target = over.target;
-    this.design = over.design;
     this.auth = this.auth || over.auth;
     this.roles = this.roles || over.roles;
 
     this.type = this.type || over.type;
 
-    // TODO: Merge
+    // TODO: Merge inputs and result
     this.inputs = this.inputs || over.inputs;
     this.result = this.result || over.result;
     this.select = this.select || over.select;
+
     this.contentType = this.contentType || over.contentType;
     this.bindings = this.bindings || over.bindings;
 
@@ -152,21 +148,15 @@ export class MethodMetadata implements IMethodMetadata {
     }
 
     // If resolved
-    const ret = meta.design && meta.design[meta.design.length - 1];
-    if (ret && ret.name === '#return') return meta;
+    if (meta.result && meta.result.promise !== undefined) return meta;
 
-    const names = descriptor ? Utils.getArgs(descriptor.value as any) : [];
+    const names = descriptor && Utils.getArgs(descriptor.value as any);
     const params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
     const returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
-    meta.design = meta.design || [];
+
     for (let i = 0; i < params.length; i++) {
       const param = params[i];
-      const name = names[i] || `arg${i}`;
-      meta.design[i] = {
-        name,
-        type: param && param.name || 'void',
-        target: param,
-      };
+      const name = names && names[i] || `arg${i}`;
       const imeta = InputMetadata.of(param || [void 0]);
       let input = meta.inputs[i];
       if (!input) {
@@ -178,12 +168,7 @@ export class MethodMetadata implements IMethodMetadata {
       input.name = name;
       input.design = param;
     }
-    if (returns) {
-      meta.design[params.length] = {
-        name: descriptor ? '#return' : undefined,
-        type: returns && returns.name || 'void',
-        target: returns,
-      };
+    if (returns && names) {
       // TODO: Void
       const rmeta = ResultMetadata.of(returns || Any);
       if (!meta.result) {
@@ -197,7 +182,7 @@ export class MethodMetadata implements IMethodMetadata {
     return meta;
   }
 
-  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: Select): this {
+  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: VarSelect): this {
     // TODO: Wrap arguments
     if (type === MethodType.Extension && (!inputs || inputs.length === 0 || inputs.length === 1 && inputs[0] === void 0)) {
       // tslint:disable-next-line:no-parameter-reassignment
@@ -208,11 +193,6 @@ export class MethodMetadata implements IMethodMetadata {
     this.select = select;
     if (inputs) inputs.forEach((inp, index) => this.setInput(index, inp));
     this.setResult(result);
-
-    // TODO: Validation of inputs
-    if (this.design.length === 1 && inputs.length > 0) {
-      throw new TypeError(`Invalid input kind [${this.inputs[0].kind}], method [${this.target.name}.${this.name}] has no parameters`);
-    }
     return this;
   }
 
@@ -379,7 +359,7 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public core(): Function {
-    const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
+    const fun = this.inputs.map(a => a.name);
     fun.push(`return function ${this.name}(${fun.join(',')}) {
       return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
     }`);
@@ -389,7 +369,7 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public local(container: CoreInstance): Function {
-    const fun = this.design.filter(a => a.name !== '#return').map(a => a.name);
+    const fun = this.inputs.map(a => a.name);
     fun.push(`return function ${this.name}(${fun.join(',')}) {
       return this.invoke('${this.api.name}', '${this.name}', ...arguments);
     }`);
@@ -401,7 +381,7 @@ export class MethodMetadata implements IMethodMetadata {
   public resolve(
     obj: any,
     args: ResolverQuery & ResolverArgs,
-    ctx?: ResolverContext,
+    ctx?: Context,
     info?: ResolverInfo,
   ): any[] {
     const params: any[] = [];

@@ -155,13 +155,13 @@ export function scalar(obj: any): string {
   return res;
 }
 
-export function unindent(text: string) {
+export function unindent(text: string, indent?: string) {
   const lines = text.split('\n');
   let first = lines[0];
   if (!first.trim().length) first = lines[1];
   const pad = first.substr(0, first.indexOf(first.trim()));
   const res = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
-    .map(line => line.trimRight())
+    .map(line => (indent || '') + line.trimRight())
     .join('\n');
   return res;
 }

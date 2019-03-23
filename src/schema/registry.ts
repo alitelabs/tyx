@@ -2,7 +2,6 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IColumnMetadata } from '../metadata/column';
 import { IDatabaseMetadata } from '../metadata/database';
@@ -16,10 +15,11 @@ import { IDecorationMetadata, IDecoratorMetadata, MetadataRegistry } from '../me
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
 import { ITypeMetadata } from '../metadata/type';
-import { Class } from '../types/core';
+import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { ColumnMetadataSchema } from './column';
+import { CoreInfoSchema } from './core';
 import { DatabaseMetadataSchema } from './database';
 import { EntityMetadataSchema } from './entity';
 import { EventRouteMetadataSchema } from './event';
@@ -29,6 +29,9 @@ import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
 import { EnumMetadataSchema, TypeMetadataSchema } from './type';
+
+// Keep
+CoreInfoSchema.name;
 
 @Schema()
 export class DecoratorMetadataSchema implements IDecoratorMetadata {

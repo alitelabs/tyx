@@ -41,13 +41,13 @@ export type VarType<T = any> = LiteralType | [LiteralType] | LiteralRef<T> | Typ
 // export type InputType<T = any> = VarType<T> | EnumRef;
 // export type ResultType<T = any> = VarType<T>;
 
-export type Select<T = any> = {
+export type VarSelect<T = any> = {
   // tslint:disable-next-line:prefer-array-literal
   [P in keyof T]?: T[P] extends Array<infer U>
-  ? (Select<U> | true | false | 1 | 2)
+  ? (VarSelect<U> | true | false | 1 | 2)
   : T[P] extends ReadonlyArray<infer U>
-  ? (Select<U> | true | false | 1 | 2)
-  : (Select<T[P]> | true | false | 1 | 2)
+  ? (VarSelect<U> | true | false | 1 | 2)
+  : (VarSelect<T[P]> | true | false | 1 | 2)
 };
 
 export enum VarKind {
@@ -110,34 +110,37 @@ export namespace VarKind {
         return null;
     }
   }
+
   export function toIDL(type: VarKind | string): string {
     switch (type) {
       case VarKind.ID:
       case VarKind.String:
         return 'string';
       case VarKind.Int:
+        return 'i64';
       case VarKind.Float:
-        return 'number';
+        return 'double';
       case VarKind.Boolean:
-        return 'boolean';
+        return 'bool';
       case VarKind.Date:
       case VarKind.DateTime:
       case VarKind.Timestamp:
         return 'Date';
       case VarKind.Object:
       case VarKind.ANY:
-        return 'any';
+        return 'Json';
       case VarKind.Void:
         return 'void';
       case VarKind.Obj:
       case VarKind.Args:
       case VarKind.Ctx:
       case VarKind.Info:
-        return 'any';
+        return 'Json';
       default:
         return null;
     }
   }
+
   export function toVar(type: VarKind | string): VarType {
     switch (type) {
       case VarKind.ID:
@@ -268,7 +271,7 @@ export interface IVarMetadata {
   item?: IVarMetadata;
   ref?: Class;
   build?: IVarMetadata;
-  def?: never;
+  // Names
   gql?: string;
   js?: string;
   idl?: string;

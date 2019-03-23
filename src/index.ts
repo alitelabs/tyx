@@ -53,8 +53,8 @@ export * from './decorators/exception';
 
 // ---- graphql/index.ts ----
 
-export * from './graphql/types';
 export * from './graphql/schema';
+export * from './graphql/tag';
 
 // ---- general/index.ts ----
 
@@ -79,6 +79,7 @@ export * from './orm/provider';
 // ---- tools/index.ts ---
 
 export * from './tools/angular';
+export * from './tools/thrift';
 
 // --- TODO ---
 

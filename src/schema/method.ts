@@ -2,15 +2,14 @@
 import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
-import { SchemaResolvers } from '../graphql/types';
 import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpBindingMetadata, IHttpRouteMetadata } from '../metadata/http';
 import { IInputMetadata } from '../metadata/input';
 import { IDesignMetadata, IMethodMetadata, MethodType } from '../metadata/method';
 import { IResultMetadata } from '../metadata/result';
-import { Select } from '../metadata/var';
-import { Class } from '../types/core';
+import { VarSelect } from '../metadata/var';
+import { Class, SchemaResolvers } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -38,7 +37,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() resolver: boolean;
   @Field(list => [InputMetadataSchema]) inputs: IInputMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
-  @Field(Object) select: Select;
+  @Field(Object) select: VarSelect;
 
   @Field() contentType: string;
   @Field(list => [HttpBindingMetadataSchema]) bindings: IHttpBindingMetadata[];

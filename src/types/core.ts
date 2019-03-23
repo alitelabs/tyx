@@ -1,20 +1,39 @@
+import { String } from 'aws-sdk/clients/rdsdataservice';
+import { GraphQLResolveInfo } from 'graphql';
 import { ServiceIdentifier, ServiceMetadata as TypeDiServiceMetadata } from 'typedi';
-import { ResolverContainer } from '../graphql/types';
+import { ApiMetadata } from '../metadata/api';
+import { DatabaseMetadata } from '../metadata/database';
+import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
+import { Metadata, MetadataRegistry } from '../metadata/registry';
+import { RelationMetadata } from '../metadata/relation';
+import { ServiceMetadata } from '../metadata/service';
 import { EventRequest, EventResult } from './event';
 import { HttpRequest, HttpResponse } from './http';
 import { RemoteRequest, RemoteResponse } from './proxy';
 import { AuthInfo } from './security';
 
 export interface Class extends Function { }
-
 export interface Prototype extends Object { }
 
 export type ObjectType<T = any> = { new(...args: any[]): T };
-
 export type NameRef = (type?: any) => string;
 export type ClassRef<T = any> = (type?: any) => ObjectType<T>;
 export type TypeRef<T = any> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
+
+export interface Context {
+  container: CoreContainer;
+  requestId: string;
+  sourceIp: string;
+  method: MethodMetadata;
+  auth: AuthInfo;
+
+  resolve?: ResolverFunction;
+  execute?: ExecuteFunction;
+  metadata?: MetadataRegistry;
+  provider?: any; // TODO: Type
+  results?: Record<string, any[]>;
+}
 
 export class Context {
   public container: CoreContainer = undefined;
@@ -22,8 +41,14 @@ export class Context {
   public sourceIp: string;
   public method: MethodMetadata;
   public auth: AuthInfo;
+
   constructor(ctx?: Context) {
     if (ctx) Object.assign(this, ctx);
+    if (!this.container) return;
+    this.resolve = this.container.resolve.bind(this.container);
+    this.execute = this.container.execute.bind(this.container);
+    this.metadata = this.container.metadata();
+    this.provider = ProviderResolver; // TODO
   }
 }
 
@@ -45,11 +70,19 @@ export enum ContainerState {
 // tslint:disable-next-line:variable-name
 export const CoreContainer = 'container';
 
-export interface CoreContainer extends ResolverContainer {
+export interface CoreContainer {
   state: ContainerState;
+
+  metadata(): Metadata;
 
   serviceInfo(): ServiceInfo[];
   processInfo(): ProcessInfo;
+
+  has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean;
+  get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T;
+
+  resolve(method: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info: ResolverInfo): Promise<any>;
+  execute(graphReq: any): Promise<any>;
 
   apiRequest(api: string, method: string, args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
@@ -149,4 +182,221 @@ export interface ServiceInfo<T = any, K extends keyof T = any> extends TypeDiSer
    */
   value?: any;
 
+}
+
+export interface ResolverFunction {
+  (method: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info: ResolverInfo): Promise<any>;
+}
+
+export interface ExecuteFunction {
+  (graphReq: any): Promise<any>;
+}
+
+export type InputNode = Record<string, string | boolean | number>;
+export type ArrayNode = Record<string, string[] | boolean[] | number[]>;
+export type LikeNode = Record<string, string>;
+export type NullNode = Record<string, boolean>;
+export type OrderNode = Record<string, number>;
+
+// https://docs.mongodb.com/manual/reference/operator/
+
+export interface ResolverExpression {
+  if?: InputNode;
+  eq?: InputNode;
+  gt?: InputNode;
+  gte?: InputNode;
+  lt?: InputNode;
+  lte?: InputNode;
+  ne?: InputNode;
+  like?: LikeNode;
+  nlike?: LikeNode;
+  rlike?: LikeNode;
+  in?: ArrayNode;
+  nin?: ArrayNode;
+  nil?: NullNode;
+  not?: ResolverExpression;
+  nor?: ResolverExpression;
+  and?: ResolverExpression[];
+  or?: ResolverExpression[];
+}
+
+export interface ResolverQuery extends ResolverExpression {
+  order?: OrderNode;
+  where?: string;
+  offset?: number;
+  limit?: number;
+  exists?: boolean;
+  skip?: number;
+  take?: number;
+  query?: ResolverQuery;
+}
+
+export type ResolverArgs = any;
+
+export type ResolverInfo = GraphQLResolveInfo;
+
+export type SchemaResolvers<T> = { [P in keyof T]?: Resolver<T> };
+
+export type InfoSchemaResolvers<T = any, V = any> = { [P in keyof T]?: Resolver<V> };
+
+export interface Resolver<O = any> {
+  (obj?: O, args?: ResolverQuery & ResolverArgs, ctx?: Context, info?: ResolverInfo): Promise<any> | any;
+}
+
+export interface EntityResolver {
+  metadata: DatabaseMetadata;
+  get: QueryResolver;
+  search: QueryResolver;
+  create: MutationResolver;
+  update: MutationResolver;
+  remove: MutationResolver;
+  oneToMany: RelationResolver;
+  oneToOne: RelationResolver;
+  manyToOne: RelationResolver;
+  manyToMany: RelationResolver;
+}
+
+export abstract class ProviderResolver {
+
+  private static resolve(ctx: Context, entityId: string, rel?: string) {
+    const [alias, name] = entityId.split('.');
+    const db = ctx.container.get<EntityResolver>(alias);
+    const entity = db.metadata.entities.find(e => e.name === name);
+    const relation = rel && entity.relations.find(r => r.name === rel);
+    return { db, entity, relation };
+  }
+
+  public static async get(
+    entityId: string,
+    obj: ResolverArgs,
+    args: ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo
+  ): Promise<any> {
+    const { db, entity } = this.resolve(ctx, entityId);
+    return db.get(entity, obj, args, ctx, info);
+  }
+
+  public static async search(
+    entityId: string,
+    obj: ResolverArgs,
+    args: ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo
+  ): Promise<any> {
+    const { db, entity } = this.resolve(ctx, entityId);
+    return db.search(entity, obj, args, ctx, info);
+  }
+
+  public static async create(
+    entityId: string,
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo
+  ): Promise<any> {
+    const { db, entity } = this.resolve(ctx, entityId);
+    return db.create(entity, obj, args, ctx, info);
+  }
+
+  public static async update(
+    entityId: string,
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo
+  ): Promise<any> {
+    const { db, entity } = this.resolve(ctx, entityId);
+    return db.update(entity, obj, args, ctx, info);
+  }
+
+  public static async remove(
+    entityId: String,
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo
+  ): Promise<any> {
+    const { db, entity } = this.resolve(ctx, entityId);
+    return db.remove(entity, obj, args, ctx, info);
+  }
+
+  public static async oneToMany(
+    entityId: string,
+    relId: string,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    ctx?: Context,
+    info?: ResolverInfo,
+  ): Promise<any[]> {
+    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
+    return db.oneToMany(entity, relation, root, query, ctx, info);
+  }
+
+  public static oneToOne(
+    entityId: string,
+    relId: string,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    ctx?: Context,
+    info?: ResolverInfo,
+  ): Promise<any> {
+    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
+    return db.oneToOne(entity, relation, root, query, ctx, info);
+  }
+
+  public static manyToOne(
+    entityId: string,
+    relId: string,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    ctx?: Context,
+    info?: ResolverInfo,
+  ): Promise<any> {
+    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
+    return db.manyToOne(entity, relation, root, query, ctx, info);
+  }
+
+  public static manyToMany(
+    entityId: string,
+    relId: string,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    ctx?: Context,
+    info?: ResolverInfo,
+  ): Promise<any[]> {
+    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
+    return db.manyToMany(entity, relation, root, query, ctx, info);
+  }
+}
+
+export interface MutationResolver {
+  (
+    entity: EntityMetadata,
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo,
+  ): Promise<any>;
+}
+
+export interface QueryResolver {
+  (
+    entity: EntityMetadata,
+    obj: ResolverArgs,
+    args: ResolverArgs,
+    ctx: Context,
+    info?: ResolverInfo,
+  ): Promise<any>;
+}
+
+export interface RelationResolver {
+  (
+    entity: EntityMetadata,
+    rel: RelationMetadata,
+    root: ResolverArgs,
+    query: ResolverQuery,
+    ctx?: Context,
+    info?: ResolverInfo,
+  ): Promise<any>;
 }

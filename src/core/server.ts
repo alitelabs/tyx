@@ -52,7 +52,6 @@ export abstract class CoreServer extends Core {
   public static stop() {
     process.env.IS_OFFLINE = null;
     if (this.server) this.server.close();
-    Core.release();
   }
 
   public static paths(basePath?: string): CoreServerPath[] {
@@ -171,7 +170,9 @@ export abstract class CoreServer extends Core {
     let result: HttpResponse;
     try {
       result = await new Promise((resolve, reject) => {
-        setImmediate(() => Core.httpRequest(request).then(resolve).catch(reject));
+        setImmediate(async () => {
+          (await Core.get()).httpRequest(request).then(resolve).catch(reject);
+        });
       });
     } catch (err) {
       result = HttpUtils.error(err);
@@ -211,7 +212,9 @@ export abstract class CoreServer extends Core {
     let result: HttpResponse;
     try {
       result = await new Promise((resolve, reject) => {
-        setImmediate(() => Core.httpRequest(request).then(resolve).catch(reject));
+        setImmediate(async () => {
+          (await Core.get()).httpRequest(request).then(resolve).catch(reject);
+        });
       });
     } catch (err) {
       result = HttpUtils.error(InternalServerError.wrap(err));

@@ -15,7 +15,7 @@
  - [x] Make typeorm an peer dependecy
  - [ ] Fallback code for proxy if no local service
  - [ ] Save tyx.context in CoreInstance, as thread local variable
- - [ ] Remove design from method
+ - [x] Remove design from method
 
 ## Container
  - [x] Publish API only if there is a service implementation
@@ -30,7 +30,7 @@
  - [x] Integrate wtfnode in error log
  - [ ] Optimize apiRequest, for local Api proxy instances
  - [ ] Add Logger.debug log ... startup ...
- - [ ] Solve Context circular refernce problem
+ - [ ] Solve Context circular refernce problem, for logging
  - [ ] Lambda proxy behaviour on 501, exception in general
 
 ## Metadata
