@@ -12,6 +12,7 @@ export interface Prototype extends Object { }
 
 export type ObjectType<T = any> = { new(...args: any[]): T };
 
+export type NameRef = (type?: any) => string;
 export type ClassRef<T = any> = (type?: any) => ObjectType<T>;
 export type TypeRef<T = any> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
 
@@ -50,7 +51,7 @@ export interface CoreContainer extends ResolverContainer {
   serviceInfo(): ServiceInfo[];
   processInfo(): ProcessInfo;
 
-  apiRequest(api: string, method: string, ...args: any[]): Promise<any>;
+  apiRequest(api: string, method: string, args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;

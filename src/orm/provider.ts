@@ -12,7 +12,7 @@ import { TypeOrmProvider } from './typeorm';
 @CoreService()
 export class DatabaseProvider extends TypeOrmProvider implements Database {
 
-  @Inject(Configuration)
+  @Inject(alias => Configuration)
   public config: Configuration;
 
   public log = Logger.get(this);

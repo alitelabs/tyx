@@ -206,8 +206,10 @@ export class MethodMetadata implements IMethodMetadata {
     this.type = type;
     this.host = host;
     this.select = select;
-    inputs.forEach((inp, index) => this.setInput(index, inp));
+    if (inputs) inputs.forEach((inp, index) => this.setInput(index, inp));
     this.setResult(result);
+
+    // TODO: Validation of inputs
     if (this.design.length === 1 && inputs.length > 0) {
       throw new TypeError(`Invalid input kind [${this.inputs[0].kind}], method [${this.target.name}.${this.name}] has no parameters`);
     }

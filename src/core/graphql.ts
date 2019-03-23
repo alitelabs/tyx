@@ -34,7 +34,7 @@ export class CoreGraphQL implements GraphQL {
 
   private log = Logger.get(this);
 
-  @Inject(Configuration)
+  @Inject(alias => Configuration)
   protected config: Configuration;
 
   protected schema: CoreSchema;

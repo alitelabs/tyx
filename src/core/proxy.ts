@@ -9,10 +9,10 @@ export abstract class BaseProxy {
 
   public readonly log: Logger;
 
-  @Inject(Configuration)
+  @Inject(alias => Configuration)
   protected config: Configuration;
 
-  @Inject(Security)
+  @Inject(alias => Security)
   protected security: Security;
 
   constructor() {

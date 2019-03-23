@@ -1,7 +1,7 @@
 import { Di } from '../import';
 import { Metadata } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
-import { Class, ClassRef } from '../types/core';
+import { Class, ClassRef, NameRef } from '../types/core';
 import { Utils } from '../utils';
 
 // tslint:disable:function-name
@@ -64,12 +64,24 @@ export function Inject(type?: ClassRef): Function;
 /**
  * Injects a service into a class property or constructor parameter.
  */
-export function Inject(serviceName?: string): PropertyDecorator | ParameterDecorator | any;
-export function Inject(resource?: ClassRef | string): PropertyDecorator | ParameterDecorator | any {
+export function Inject(alias?: NameRef): Function;
+// /**
+//  * Injects a service into a class property or constructor parameter.
+//  */
+// export function Inject(serviceName?: string): PropertyDecorator | ParameterDecorator | any;
+export function Inject(resource?: ClassRef | NameRef | string): PropertyDecorator | ParameterDecorator | any {
   return Metadata.onParameter(Inject, { resource }, (target, propertyKey, index) => {
     const constructor = Utils.isClass(target) ? target as Function : target.constructor;
     ServiceMetadata.define(constructor).inject(propertyKey as string, index, resource);
-    return Di.Inject(resource as any)(target, propertyKey, index);
+    let rsrc: any = resource;
+    if (resource instanceof Function) {
+      try {
+        rsrc = resource() || rsrc;
+        rsrc = typeof rsrc === 'string' ? rsrc : resource;
+      } catch (e) {
+      }
+    }
+    return Di.Inject(rsrc)(target, propertyKey, index);
   });
 }
 

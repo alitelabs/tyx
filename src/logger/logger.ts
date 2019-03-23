@@ -1,5 +1,6 @@
 import { ApiMetadata } from '../metadata/api';
 import { ServiceMetadata } from '../metadata/service';
+import { Utils } from '../utils';
 import { ConsoleLogger } from './console';
 
 export interface Logger {
@@ -16,7 +17,7 @@ export interface Logger {
 
 export namespace Logger {
   export const sys: Logger = new ConsoleLogger('tyx', 'log');
-  // TODO: Simplify
+  // TODO: Simplify, remove depenency on metadata
   export function get(emitter: object): Logger;
   export function get(logName: string, emitter?: any): Logger;
   export function get(logNameOrEmitter: string | object, emit?: any): Logger {
@@ -24,15 +25,21 @@ export namespace Logger {
     let emitter = emit;
     if (typeof logNameOrEmitter === 'string') {
       logName = logNameOrEmitter;
-    } else if (typeof logNameOrEmitter === 'object') {
+    } else if (logNameOrEmitter instanceof ServiceMetadata) {
+      logName = logNameOrEmitter.alias;
+      emitter = logNameOrEmitter.name;
+    } else if (logNameOrEmitter instanceof ApiMetadata) {
+      logName = logNameOrEmitter.alias;
+      emitter = logNameOrEmitter.name;
+    } else if (typeof logNameOrEmitter === 'object' || Utils.isClass(logNameOrEmitter)) {
       const service = ServiceMetadata.get(logNameOrEmitter);
       const api = ApiMetadata.get(logNameOrEmitter);
       // let db = DatabaseMetadata.get(logNameOrEmitter);
       if (service) {
-        logName = service.alias || service.target.name;
+        logName = service.alias || service.name;
         emitter = logNameOrEmitter;
       } else if (api) {
-        logName = api.name || api.target.name;
+        logName = api.name || api.name;
         emitter = logNameOrEmitter;
       } else {
         logName = undefined;

@@ -22,7 +22,7 @@ export class CoreSecurity implements Security {
     this.log = Logger.get(Security, this);
   }
 
-  @Inject(Configuration)
+  @Inject(alias => Configuration)
   protected config: Configuration;
 
   public async httpAuth(container: CoreContainer, method: MethodMetadata, req: HttpRequest): Promise<Context> {

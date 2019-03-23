@@ -48,8 +48,8 @@
     "graphql-iso-date": "^3.6.1",
     "graphql-tag": "^2.10.1",
     "graphql-tools": "^4.0.4",
-    "graphql-type-json": "^0.2.1",
-    "jsonwebtoken": "^8.5.0",
+    "graphql-type-json": "^0.2.2",
+    "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.11",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.13",
@@ -85,7 +85,7 @@
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "aws-sdk": "^2.422.0",
+    "aws-sdk": "^2.424.0",
     "aws-serverless-express": "^3.3.5",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
@@ -101,7 +101,7 @@
     "tslint": "^5.14.0",
     "tslint-config-airbnb": "^5.11.1",
     "typeorm": "^0.2.15",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.3.4000"
   },
   "prettier": {
     "singleQuote": true,
