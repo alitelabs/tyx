@@ -31,7 +31,7 @@
   "scripts": {
     "clean": "rm -rf ./lib",
     "prebuild": "rm -rf ./lib",
-    "build": "tsc -p . && tslint -p . --fix",
+    "build": "tsc -p . && tslint -p .",
     "watch": "rm -rf ./lib ; tsc -p . --watch",
     "release": "npm run build && npm version patch && git push --follow-tags && npm publish",
     "beta": "npm run build && npm version patch && git push --follow-tags && npm publish --tag beta"
