@@ -48,6 +48,8 @@ const CREATE = 'create';
 const UPDATE = 'update';
 const REMOVE = 'remove';
 
+const GEN = 'srv';
+
 const RESERVED = ['required', 'optional', 'service', 'enum', 'extends', 'exception', 'struct', 'throws', 'string', 'bool', 'list', 'set'];
 
 function esc(name: string) {
@@ -58,19 +60,24 @@ export class ThriftCodeGen {
 
   protected crud: boolean = true;
 
-  public static emit(): Result {
-    return new ThriftCodeGen().emit();
+  public static emit(name: string): Result {
+    return new ThriftCodeGen().emit(name);
   }
 
   private constructor() { }
 
-  public emit(): Result {
+  public emit(name: string): Result {
     let thrift = this.prolog() + '\n';
-    let script = `import { Metadata, ResolverContext as Context } from 'tyx';\nimport gen = require('./gen/app');\n\n`;
+    // tslint:disable:max-line-length
+    let script = '';
 
     const registry = Metadata.get();
+    const dbs = Object.values(registry.Database).sort((a, b) => a.name.localeCompare(b.name));
+    const apis = Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name));
+
+    script += this.genClass(name, dbs, apis);
     thrift += '///////// API /////////\n\n';
-    for (const api of Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const api of apis) {
       const res = this.genApi(api);
       thrift += res.thrift + '\n\n';
       script += res.script + '\n';
@@ -89,7 +96,7 @@ export class ThriftCodeGen {
     }
     // const db = Object.values(this.schema.databases)[0];
     thrift += '/////// DATABASE //////\n\n';
-    for (const type of Object.values(registry.Database).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of dbs) {
       const res = this.genDatabase(type);
       thrift += res.thrift + '\n\n';
       script += res.script + '\n';
@@ -103,7 +110,7 @@ export class ThriftCodeGen {
 
   private prolog(): string {
     return Utils.unindent(`
-      namespace java tyx
+      typedef string ID
 
       union Json {
         1: double N;
@@ -113,8 +120,9 @@ export class ThriftCodeGen {
         5: map<string, Json> M;
       }
 
-      typedef string ID
-      typedef string Date
+      struct Date {
+        1: i64 timestamp
+      }
 
       // TODO: CoreException
     `).trimLeft();
@@ -144,9 +152,79 @@ export class ThriftCodeGen {
     return script;
   }
 
+  private genClass(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
+    let script = `
+      // tslint:disable:function-name
+      import * as thrift from "@creditkarma/thrift-server-core";
+      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Metadata, Post, Public, RequestObject, Service, Utils } from 'tyx';
+      import ${GEN} = require('./gen');
+
+      {
+        const org = { ...srv.DateCodec };
+        srv.DateCodec.encode = (args: srv.IDateArgs, output: thrift.TProtocol) => {
+          if (args instanceof Date) args = { timestamp: args.getTime() }
+          org.encode(args, output);
+        };
+        srv.DateCodec.decode = (input: thrift.TProtocol): srv.IDate => {
+          const val = org.decode(input);
+          if (!val) return val;
+          const obj: any = new Date(val.timestamp.toString());
+          obj.timestamp = val.timestamp;
+          return obj;
+        };
+      }
+
+      {
+        const org = { ...srv.JsonCodec };
+        srv.JsonCodec.encode = (args: srv.IJsonArgs, output: thrift.TProtocol) => {
+          const keys = args && Object.keys(args);
+          if (!args || keys.length === 1 && ['N', 'B', 'S', 'M'].includes(keys[0])) return org.encode(args, output);
+          const tson = Utils.marshal(args);
+          org.encode(tson, output);
+        };
+        srv.JsonCodec.decode = (input: thrift.TProtocol): srv.IJson => {
+          const val = org.decode(input);
+          const json = Utils.unmarshal(val);
+          return json;
+        };
+      }
+
+      ///////// SERVICE /////////
+
+      @Service(true)
+      export class ${name}ThriftService {
+        @Public()
+        @Post('/thrift/{service}')
+        @ContentType(HttpResponse)
+        public async process(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
+          const service = req.pathParameters['service'];
+          let result: any = undefined;
+          switch (service) {\n`;
+    for (const db of dbs) {
+      const snake = Utils.snakeCase(db.name, true);
+      script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
+    }
+    for (const api of apis) {
+      const snake = Utils.snakeCase(api.name, true);
+      script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
+    }
+    script += `            default: throw new Forbidden(\`Unknwon service [\${service}]\`);
+          }
+          return { statusCode: 200, body: result };
+        }
+      }
+
+    `;
+    return Utils.unindent(script).trimLeft();
+  }
+
   private genApi(metadata: ApiMetadata): Result {
+    const kebab = Utils.kebapCase(metadata.name);
+    const snake = Utils.snakeCase(metadata.name, true);
+    const proxy = snake + '_PROXY';
     let thrift = `service ${metadata.name} {`;
-    let script = `const handler${metadata.name}: gen.${metadata.name}.IHandler<any> = {\n`;
+    let query = `const ${snake} = '${kebab}';\n\n`;
+    let handler = `const ${proxy}: ${GEN}.${metadata.name}.IHandler<Context> = {\n`;
     let count = 0;
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation) continue;
@@ -164,14 +242,14 @@ export class ThriftCodeGen {
         if (idlArgs) { idlArgs += ', '; jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
         params += param;
         idlArgs += `${i + 1}: ${inb.idl} ${esc(param)}`;
-        jsArgs += `${param}: ${VarKind.isScalar(inb.kind) ? '' : 'gen.'}${inb.js}`;
+        jsArgs += `${param}`; // `: ${VarKind.isScalar(inb.kind) ? '' : `${GEN}.`}${inb.js}`;
         reqArgs += `$${param}: ${inb.gql}!`;
         qlArgs += `${param}: $${param}`;
       }
       if (reqArgs) reqArgs = `(${reqArgs})`;
       if (qlArgs) qlArgs = `(${qlArgs})`;
       if (jsArgs) jsArgs += ', ';
-      jsArgs += 'ctx?: Context';
+      jsArgs += 'ctx?';
 
       if (count) thrift += ',';
       // if (method.mutation) {
@@ -180,39 +258,48 @@ export class ThriftCodeGen {
       //   script += `\n  ${result.idl} ${method.name}(${idlArgs}${idlArgs ? ', ' : ''}refresh: bool)`;
       // }
 
-      script += `${count ? ',\n\n' : ''}  ${method.name}(${jsArgs}): gen.${result.js} {\n`;
-      script += `    const graphReq = {\n`;
+      const gql = Utils.snakeCase(metadata.name + '_' + method.name, true) + '_GQL';
+      query += `const ${gql} = gql\`\n`;
       if (method.mutation) {
-        script += `      mutation: gql\`mutation request${reqArgs} {\n`;
+        query += `  mutation request${reqArgs} {\n`;
       } else {
-        script += `      query: gql\`query request${reqArgs} {\n`;
+        query += `  query request${reqArgs} {\n`;
       }
-      script += `        result: ${method.api.name}_${method.name}${qlArgs} `;
+      query += `    result: ${method.api.name}_${method.name}${qlArgs} `;
       if (VarKind.isStruc(result.kind)) {
         const x = (VarKind.isType(result.kind)) ? 0 : 0;
         const select = this.genSelect(result, method.select, 0, 1 + x);
-        script += select;
+        query += select;
       } else if (VarKind.isArray(result.kind)) {
         const x = (VarKind.isType(result.item.kind)) ? 0 : 0;
         const select = this.genSelect(result.item, method.select, 0, 1 + x);
-        script += select;
+        query += select;
       } else {
-        script += `// : Scalar`;
+        query += `# : ${result.kind}`;
       }
-      script += `\n      }\``;
-      if (qlArgs) script += `,\n      variables: { ${params} }`;
-      if (method.query) {
-        script += `,\n      // fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'`;
-      }
-      script += `\n    };\n`;
-      script += `    return ctx.execute(graphReq);\n`;
-      script += `  }`;
+      if (qlArgs) query += `\n    # variables: { ${params} }`;
+      query += `\n}\`;\n\n`;
+      // if (method.query) {
+      //   query += `,\n    // fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'`;
+      // }
+      // query += `\n};\n\n`;
+
+      handler += `${count ? ',\n' : ''}  async ${esc(method.name)}(${jsArgs}) {\n`;
+      // `: Promise<${VarKind.isScalar(result.kind) ? '' : `${GEN}.`}${result.js}> {\n`;
+      handler += `    const res = await ctx.execute(${gql}, { ${params} });\n`;
+      handler += `    return res;\n`;
+      handler += `  }`;
 
       count++;
     }
     thrift += '\n}';
-    script += '\n};\n';
-    return { thrift, script };
+    handler += '\n};\n';
+    handler += Utils.unindent(`
+    const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
+      serviceName: ${snake},
+      handler: new ${GEN}.${metadata.name}.Processor(${proxy}),
+    });\n`);
+    return { thrift, script: query + handler };
   }
 
   private genSelect(meta: VarMetadata, select: VarSelect | any, level: number, depth: number): string {
@@ -223,7 +310,7 @@ export class ThriftCodeGen {
     // script += ` # [ANY]\n`;
     // #  NONE
     const type = meta as TypeMetadata;
-    const tab = '  '.repeat(level + 4);
+    const tab = '  '.repeat(level + 2);
     let script = `{`;
     let i = 0;
     for (const member of Object.values(type.members)) {
@@ -277,7 +364,11 @@ export class ThriftCodeGen {
       thrift += "\n";
     }
 
-    let script = `const handler${metadata.name}: gen.${metadata.name}.IHandler<any> = {\n`;
+    const snake = Utils.snakeCase(metadata.name, true);
+    const kebab = Utils.kebapCase(metadata.name);
+
+    let script = `const ${snake} = '${kebab}';\n`;
+    script += `const ${snake}_PROXY: ${GEN}.${metadata.name}.IHandler<any> = {\n`;
     for (let [name, body] of Object.entries(db.queries)) {
       body = Utils.unindent(body, '  ').trimLeft();
       script += `  ${name}${body},\n`;
@@ -286,7 +377,14 @@ export class ThriftCodeGen {
       body = Utils.unindent(body, '  ').trimLeft();
       script += `  ${name}${body},\n`;
     }
-    script += '};';
+
+    script += '};\n';
+
+    script += Utils.unindent(`
+    const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
+      serviceName: ${snake},
+      handler: new ${GEN}.${metadata.name}.Processor(${snake}_PROXY),
+    });`);
 
     return { thrift, script };
   }
@@ -401,26 +499,26 @@ export class ThriftCodeGen {
     db.queries = {
       ...db.queries,
       [`${GET}${name}`]: `
-      (${keyJs}, ctx?: Context): Promise<gen.${entity.name}> {
+      (${keyJs}, ctx?: Context): Promise<${GEN}.${entity.name}> {
         return ctx.provider.get(Metadata.Entity['${entity.name}'], null, { ${keyNames} }, ctx);
       }`,
       [`${SEARCH}${name}`]: `
-      (query: gen.${ARGS}${name}QueryExpr, ctx?: Context): Promise<gen.${entity.name}[]> {
+      (query: ${GEN}.${ARGS}${name}QueryExpr, ctx?: Context): Promise<${GEN}.${entity.name}[]> {
         return ctx.provider.search(Metadata.Entity['${entity.name}'], null, { query }, ctx);
       }`,
     };
     db.mutations = this.crud ? {
       ...db.mutations,
       [`${CREATE}${name}`]: `
-      (record: gen.${ARGS}${name}CreateRecord, ctx?: Context): Promise<gen.${name}${ENTITY}> {
+      (record: ${GEN}.${ARGS}${name}CreateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
         return ctx.provider.create(Metadata.Entity['${entity.name}'], null, record, ctx);
       }`,
       [`${UPDATE}${name}`]: `
-      (record: gen.${ARGS}${name}UpdateRecord, ctx?: Context): Promise<gen.${name}${ENTITY}> {
+      (record: ${GEN}.${ARGS}${name}UpdateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
         return ctx.provider.update(Metadata.Entity['${entity.name}'], null, record, ctx);
       }`,
       [`${REMOVE}${name}`]: `
-      (${keyJs}, ctx?: Context): Promise<gen.${name}${ENTITY}> {
+      (${keyJs}, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
         return ctx.provider.remove(Metadata.Entity['${entity.name}'], null, { ${keyNames} }, ctx);
       }`,
     } : db.mutations;

@@ -15,6 +15,14 @@ export interface Logger {
   timeEnd(start: [number, number], message: any, ...args: any[]): void;
 }
 
+/**
+ * Injects logger into a class property or constructor parameter.
+ */
+// tslint:disable-next-line:function-name
+// export function Logger(): PropertyDecorator | ParameterDecorator | any {
+//   return Inject(alias => 'Logger');
+// }
+
 export namespace Logger {
   export const sys: Logger = new ConsoleLogger('tyx', 'log');
   // TODO: Simplify, remove depenency on metadata

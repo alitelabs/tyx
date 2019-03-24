@@ -1,4 +1,11 @@
 import 'reflect-metadata';
-// tslint:disable-next-line:import-name
-import Utils = require('./misc');
-export { Utils };
+import misc = require('./misc');
+import thrift = require('./thrift');
+import text = require('./text');
+
+// tslint:disable-next-line:variable-name
+export const Utils = {
+  ...misc,
+  ...thrift,
+  ...text
+};

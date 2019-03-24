@@ -1,3 +1,4 @@
+import { DocumentNode } from 'graphql';
 import { Forbidden, InternalServerError } from '../errors/http';
 import { Di } from '../import';
 import { Logger } from '../logger';
@@ -30,6 +31,7 @@ export class CoreInstance implements CoreContainer {
   private container: Di.ContainerInstance;
   private config: Configuration;
   private security: Security;
+  private graphql: GraphQL;
   private istate: ContainerState;
 
   private services: object[] = [];
@@ -99,6 +101,9 @@ export class CoreInstance implements CoreContainer {
       if (local) this.container.set(api.target, local);
     }
 
+    this.graphql = this.get(GraphQL);
+    this.graphql.initialize();
+
     this.istate = ContainerState.Ready;
     return this;
   }
@@ -155,8 +160,11 @@ export class CoreInstance implements CoreContainer {
     return Metadata as any;
   }
 
-  public async execute(graphReq: any): Promise<any> {
-    return null;
+  public async execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
+  public async execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
+  public async execute(ctx: Context, oper: DocumentNode | string, variables?: Record<string, any>): Promise<any> {
+    const data = await this.graphql.execute(ctx, oper as any, variables);
+    return data.result;
   }
 
   // TODO: Why just wrapper for graph request?

@@ -1,5 +1,5 @@
 import { String } from 'aws-sdk/clients/rdsdataservice';
-import { GraphQLResolveInfo } from 'graphql';
+import { DocumentNode, GraphQLResolveInfo } from 'graphql';
 import { ServiceIdentifier, ServiceMetadata as TypeDiServiceMetadata } from 'typedi';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
@@ -46,7 +46,7 @@ export class Context {
     if (ctx) Object.assign(this, ctx);
     if (!this.container) return;
     this.resolve = this.container.resolve.bind(this.container);
-    this.execute = this.container.execute.bind(this.container);
+    this.execute = this.container.execute.bind(this.container, this);
     this.metadata = this.container.metadata();
     this.provider = ProviderResolver; // TODO
   }
@@ -82,7 +82,8 @@ export interface CoreContainer {
   get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T;
 
   resolve(method: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info: ResolverInfo): Promise<any>;
-  execute(graphReq: any): Promise<any>;
+  execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
+  execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
 
   apiRequest(api: string, method: string, args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
@@ -189,7 +190,7 @@ export interface ResolverFunction {
 }
 
 export interface ExecuteFunction {
-  (graphReq: any): Promise<any>;
+  (oper: DocumentNode | string, variables: Record<string, any>): Promise<any>;
 }
 
 export type InputNode = Record<string, string | boolean | number>;

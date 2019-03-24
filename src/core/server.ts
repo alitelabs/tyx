@@ -15,7 +15,7 @@ export interface CoreServerPath {
   resource: string;
 }
 
-export abstract class CoreServer extends Core {
+export abstract class CoreServer {
   public static log: Logger = Logger.get('TYX', 'Server');
 
   public static HEADERS = {
@@ -31,7 +31,7 @@ export abstract class CoreServer extends Core {
 
   public static start(port: number, basePath?: string, extraArgs?: any): void {
     process.env.IS_OFFLINE = 'true';
-    this.init();
+    Core.init();
     const paths = CoreServer.paths(basePath);
     if (Koa.load()) {
       const app = CoreServer.koa(paths);
@@ -139,7 +139,11 @@ export abstract class CoreServer extends Core {
 
   public static async expressMiddleware(resource: string, req: Express.Request, res: Express.Response): Promise<void> {
     this.log.info('%s: %s', req.method, req.url);
-    if (Buffer.isBuffer(req.body)) req.body = req.body.toString('utf-8');
+    let buffer: Buffer;
+    if (Buffer.isBuffer(req.body)) {
+      buffer = req.body;
+      req.body = req.body.toString('utf-8');
+    }
     if (req.body instanceof Object) {
       if (Object.getOwnPropertyNames(req.body).length) {
         req.body = JSON.stringify(req.body);
@@ -164,6 +168,7 @@ export abstract class CoreServer extends Core {
       queryStringParameters: req.query || {},
       headers: req.headers as Record<string, string> || {},
       body: req.body,
+      buffer,
       isBase64Encoded: false, // TODO
     };
 
@@ -188,7 +193,9 @@ export abstract class CoreServer extends Core {
   public static async koaMiddleware(resource: string, rawBody: (req: any) => Buffer, ctx: Koa.Context): Promise<void> {
     this.log.info('%s: %s', ctx.method, ctx.url);
     const buffer: Buffer = await rawBody(ctx.req);
-    const body = buffer.toString();
+    const utf = ctx.is('json', 'text');
+    // TODO: Check encoding, raw data with BINARY
+    const body = buffer.toString(utf ? 'utf-8' : 'BINARY');
 
     const request: HttpRequest = {
       type: 'http',
@@ -206,6 +213,7 @@ export abstract class CoreServer extends Core {
       queryStringParameters: ctx.query,
       headers: ctx.headers,
       body,
+      buffer,
       isBase64Encoded: false, // TODO
     };
 

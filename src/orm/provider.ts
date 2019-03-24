@@ -36,7 +36,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   protected initialize() {
     this.alias = DatabaseMetadata.get(this).alias;
     const cfg: string = process.env.DATABASE;
-    if (!cfg || this.options) return;
+    if (this.options || !cfg) return;
 
     // this.label = options.substring(options.indexOf("@") + 1);
     const tokens = cfg.split(/:|@|\/|;/);

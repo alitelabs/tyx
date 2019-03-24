@@ -16,6 +16,9 @@
  - [ ] Fallback code for proxy if no local service
  - [ ] Save tyx.context in CoreInstance, as thread local variable
  - [x] Remove design from method
+ - [ ] Logger injection
+ - [ ] Complete Utils.reload() -> Core.reload()
+ - [ ] Allow @Type to extend @Input and the oposite, when required to declare the same struc twice
 
 ## Container
  - [x] Publish API only if there is a service implementation

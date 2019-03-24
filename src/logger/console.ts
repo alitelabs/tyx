@@ -1,6 +1,17 @@
+import { Di } from '../import';
 import { LogLevel } from '../types/config';
 import { Logger } from './logger';
 
+function createLogger(...target: any[]): Logger {
+  return new ConsoleLogger('tyx');
+}
+
+@Di.Service({
+  id: 'Logger',
+  transient: true,
+  global: true,
+  factory: createLogger
+})
 export class ConsoleLogger implements Logger {
   protected logName: string;
   protected logEmitter: string;

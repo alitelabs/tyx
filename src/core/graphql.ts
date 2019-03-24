@@ -1,13 +1,13 @@
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
 // tslint:disable-next-line:max-line-length
-import { createPlaygroundOptions, defaultPlaygroundOptions, GraphQLOptions, HttpQueryRequest, PlaygroundConfig, PlaygroundRenderPageOptions, runHttpQuery } from 'apollo-server-core';
+import { createPlaygroundOptions, defaultPlaygroundOptions, gql, GraphQLOptions, HttpQueryRequest, PlaygroundConfig, PlaygroundRenderPageOptions, runHttpQuery } from 'apollo-server-core';
 import { GraphiQLData } from 'apollo-server-module-graphiql';
-import { GraphQLSchema } from 'graphql';
+import { DocumentNode, execute, GraphQLSchema } from 'graphql';
+import { ILogger, IResolvers, makeExecutableSchema, SchemaDirectiveVisitor } from 'graphql-tools';
 import { Public } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
-import { Activate, CoreService, Inject } from '../decorators/service';
-import { InternalServerError } from '../errors';
-import { CoreSchema } from '../graphql/schema';
+import { CoreService, Initialize, Inject } from '../decorators/service';
+import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../tools/voyager';
 import { Configuration } from '../types/config';
@@ -32,19 +32,67 @@ export class CoreGraphQL implements GraphQL {
     );
   }
 
+  // @Logger()
   private log = Logger.get(this);
 
   @Inject(alias => Configuration)
   protected config: Configuration;
 
-  protected schema: CoreSchema;
+  private typeDefs?: DocumentNode | string;
+  private resolvers?: IResolvers<any, Context>;
+  private schemaDirectives?: Record<string, typeof SchemaDirectiveVisitor>;
+  private logger?: ILogger;
   private executable: GraphQLSchema;
 
-  @Activate()
-  protected async activate(ctx: Context, req: HttpRequest) {
-    if (this.schema) return;
-    // TODO: Instance schema per user role
-    this.schema = Core.schema;
+  protected constructor(
+    typeDefs?: DocumentNode | string,
+    resolvers?: IResolvers<any, Context>,
+    schemaDirectives?: Record<string, typeof SchemaDirectiveVisitor>,
+    logger?: ILogger
+  ) {
+    this.typeDefs = typeDefs || Core.schema.typeDefs();
+    this.resolvers = resolvers || Core.schema.resolvers();
+    this.schemaDirectives = schemaDirectives || Core.schema.directives();
+    this.logger = logger;
+  }
+
+  @Initialize()
+  public initialize() {
+    this.logger = this.logger || { log: this.log.error.bind(this.log) };
+    try {
+      this.executable = makeExecutableSchema<Context>({
+        typeDefs: this.typeDefs,
+        resolvers: this.resolvers,
+        schemaDirectives: this.schemaDirectives,
+        logger: this.logger,
+      });
+    } catch (err) {
+      if (err.name === 'GraphQLError' && err.locations) {
+        const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
+        err.message = err.message.replace('Error:', `Error: ${loc}`);
+      }
+      throw err;
+    }
+  }
+
+  public async execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
+  public async execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
+  public async execute(ctx: Context, oper: DocumentNode | string, variables?: Record<string, any>): Promise<any> {
+    const document = typeof oper === 'string' ? gql(oper) : oper;
+    const result = await execute({
+      schema: this.executable,
+      document,
+      // rootValue?: any,
+      contextValue: ctx,
+      variableValues: variables || {}
+      // operationName?: Maybe<string>,
+      // fieldResolver?: Maybe<Gr
+    });
+    if (result.errors) {
+      // TODO: Format the error
+      throw new BadRequest(result.errors.map(e => e.message).join(','));
+    }
+    return result.data;
   }
 
   // TODO: Move this to httpRequest of CoreInstance
@@ -70,7 +118,6 @@ export class CoreGraphQL implements GraphQL {
   }
 
   private async request(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
-    this.executable = this.executable || this.schema.executable({ log: msg => this.log.info(msg) });
     const options: GraphQLOptions = {
       schema: this.executable,
       context: ctx,

@@ -1,3 +1,4 @@
+import { DocumentNode } from 'graphql';
 import { Context, Request } from './core';
 import { HttpRequest, HttpResponse } from './http';
 
@@ -15,5 +16,8 @@ export interface GraphRequest extends Request {
 }
 
 export interface GraphQL {
+  initialize(): void;
+  execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
+  execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
   graphql(ctx: Context, req: HttpRequest): Promise<HttpResponse>;
 }

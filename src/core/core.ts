@@ -1,12 +1,13 @@
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
-import { CoreSchema } from '../graphql/schema';
 import { Di } from '../import';
 import { Logger } from '../logger';
 import { Metadata } from '../metadata/registry';
+import { CoreSchema } from '../tools/schema';
 import { Class, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
+import { CoreServer } from './server';
 
 export abstract class Core {
   public static log = Logger.get('TYX', Core.name);
@@ -56,6 +57,10 @@ export abstract class Core {
     } finally {
       this.initTime = Math.round(process.uptime() * 1000) - this.loadTime;
     }
+  }
+
+  public static start(port: number, basePath?: string, extraArgs?: any) {
+    return CoreServer.start(port, basePath, extraArgs);
   }
 
   public static async get(): Promise<CoreInstance>;

@@ -116,53 +116,11 @@ export function parseMap(map: string, prefix?: string) {
   return res;
 }
 
-/**
- * Converts string into camelCase.
- *
- * @see http://stackoverflow.com/questions/2970525/converting-any-string-into-camel-case
- */
-export function camelCase(str: string, firstCapital: boolean = false): string {
-  return str.replace(/^([A-Z])|[\s-_](\w)/g, (match, p1, p2, offset) => {
-    if (firstCapital && offset === 0) return p1;
-    if (p2) return p2.toUpperCase();
-    return p1.toLowerCase();
-  });
-}
-
-/**
- * Converts string into snake-case.
- *
- * @see https://regex101.com/r/QeSm2I/1
- */
-export function snakeCase(str: string) {
-  return str.replace(/(?:([a-z])([A-Z]))|(?:((?!^)[A-Z])([a-z]))/g, '$1_$3$2$4').toLowerCase();
-}
-
-/**
- * Converts string into title-case.
- *
- * @see http://stackoverflow.com/questions/196972/convert-string-to-title-case-with-javascript
- */
-export function titleCase(str: string): string {
-  return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-}
-
 export function scalar(obj: any): string {
   let res = '{';
   let i = 0;
   for (const [key, val] of Object.entries(obj)) res += `${(i++) ? ', ' : ' '}${key}: ${JSON.stringify(val)}`;
   res += ' }';
-  return res;
-}
-
-export function unindent(text: string, indent?: string) {
-  const lines = text.split('\n');
-  let first = lines[0];
-  if (!first.trim().length) first = lines[1];
-  const pad = first.substr(0, first.indexOf(first.trim()));
-  const res = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
-    .map(line => (indent || '') + line.trimRight())
-    .join('\n');
   return res;
 }
 
@@ -189,6 +147,22 @@ export function mb(size: number) {
   const kb = size / 1024;
   if (kb < 1025) return kb.toFixed(0) + ' KB';
   return (kb / 1024).toFixed(3) + ' MB';
+}
+
+export function time(): [number, number] {
+  return process.hrtime();
+}
+
+export function end(start: [number, number], offset?: number): string {
+  const lapse = process.hrtime(start);
+  const ms = (lapse[0] * 1000) + Math.floor(lapse[1] / 1000000) - (offset || 0);
+  const ns = Math.floor((lapse[1] % 1000000) / 1000);
+  return `${ms}.${ns}`;
+}
+
+export function writeFile(path: string, content: string | Buffer) {
+  fs.writeFileSync(path, content);
+  return fs.statSync(path);
 }
 
 export function interfaces() {

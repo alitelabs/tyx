@@ -12,6 +12,7 @@ import { RelationType } from '../metadata/relation';
 import { TypeMetadata } from '../metadata/type';
 import { VarKind, VarMetadata } from '../metadata/var';
 import { Class } from '../types/core';
+import { Roles } from '../types/security';
 import { Utils } from '../utils';
 
 import Reg = require('../schema/registry');
@@ -128,7 +129,6 @@ export class CoreSchema {
   private static log: Logger = Logger.get('TYX', CoreSchema.name);
 
   private crud: boolean;
-  private ts: boolean;
 
   protected enums: Record<string, EnumSchema> = {};
   protected metadata: Record<string, TypeSchema> = {};
@@ -138,10 +138,12 @@ export class CoreSchema {
   protected entities: Record<string, EntitySchema> = {};
   protected apis: Record<string, ApiSchema> = {};
 
-  constructor(registry?: Metadata, crud?: boolean) {
-    // tslint:disable-next-line:no-parameter-reassignment
-    registry = registry || Reg && Metadata.get();
-    this.crud = !!crud || crud === undefined;
+  constructor(crud?: boolean);
+  constructor(registry: Metadata | typeof Metadata);
+  constructor(registry: Metadata | typeof Metadata, crud: boolean);
+  constructor(registryOrCrud?: Metadata | typeof Metadata | boolean, maybeCrud?: boolean) {
+    const registry = typeof registryOrCrud !== 'boolean' && registryOrCrud || Reg && Metadata.validate();
+    this.crud = typeof registryOrCrud === 'boolean' ? registryOrCrud : !!maybeCrud;
 
     // Enums
     for (const type of Object.values(registry.Enum)) {
@@ -208,6 +210,43 @@ export class CoreSchema {
         mutation: Mutation
       }
     `;
+  }
+
+  public static service(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
+    const schema = new CoreSchema(crud);
+    const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
+    let script = '';
+    script += Utils.unindent(`
+      import { DocumentNode } from 'graphql';
+      import { Auth, Context, CoreGraphQL, gql, HttpRequest, HttpResponse, Override, Resolver, Service } from 'tyx';
+    `).trimRight() + '\n';
+    script += Utils.unindent(`
+      @Service(true)
+      export class ${name}GraphQL extends CoreGraphQL {
+
+        public constructor() {
+          super(TYPE_DEFS, RESOLVERS);
+        }
+
+        @Override()
+        @Auth({ ${auth} })
+        public async graphql(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+          return super.graphql(ctx, req);
+        }
+
+        public async playground(ctx: Context, req: HttpRequest): Promise<string> {
+          return super.playground(ctx, req, PLAYGROUND_TABS);
+        }
+      }
+    `) + '\n';
+    // script += `export const DIRECTIVES: any = {};\n\n`;
+    script += `export const TYPE_DEFS: DocumentNode = gql\`\n${Utils.unindent(schema.typeDefs(), '  ')}\`;\n\n`;
+    script += `export const RESOLVERS: Record<string, Record<string, Resolver>> = ${Utils.unindent(schema.script(true), '')};\n\n`;
+    script += '// tslint:disable:object-literal-key-quotes\n';
+    script += `export const PLAYGROUND_TABS: any = `;
+    script += tabs ? JSON.stringify(tabs, null, 2) : 'undefined';
+    script += ';\n';
+    return script;
   }
 
   public typeDefs(): string {
@@ -301,7 +340,11 @@ export class CoreSchema {
     return map;
   }
 
-  public script() {
+  public directives() {
+    return DIRECTIVES;
+  }
+
+  public script(ts?: boolean) {
     const resolvers: Record<string, Record<string, string>> = {
       Query: { Metadata: undefined },
       Mutation: { ping: undefined },
@@ -309,7 +352,7 @@ export class CoreSchema {
     };
     resolvers.Query.Metadata = `ctx.metadata`;
     resolvers.Query.Core = `ctx.container`;
-    resolvers.Mutation.ping = `{ args, timestamp: new Date().toISOString(), version: process.versions }`;
+    resolvers.Mutation.ping = `({ args, timestamp: new Date().toISOString(), version: process.versions })`;
     for (const schema of Object.values(this.databases)) {
       resolvers.Query = { ...resolvers.Query, [schema.name]: schema.root };
       resolvers.Mutation = { ...resolvers.Mutation, ...schema.mutations };
@@ -345,11 +388,16 @@ export class CoreSchema {
       script += `  ${key}: {\n`;
       const group = resolvers[key];
       for (const res in group) {
-        script += `    ${res}: (obj, args, ctx, info) => { return ${group[res]}; },\n`;
+        if (ts) {
+          // script += `    ${res}(obj, args, ctx, info) { return ${group[res]}; },\n`;
+          script += `    ${res}: (obj, args, ctx, info) => ${group[res]},\n`;
+        } else {
+          script += `    ${res}: (obj, args, ctx, info) => ${group[res]},\n`;
+        }
       }
       script += `  },\n`;
     }
-    script += '}\n';
+    script += '}';
     return script;
   }
 
@@ -602,7 +650,7 @@ export class CoreSchema {
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) {
-        schema.resolvers[member.name] = `Metadata.resolve('${metadata.name}', '${member.name}', obj, args, ctx, info)`;
+        schema.resolvers[member.name] = `ctx.metadata.resolve('${metadata.name}', '${member.name}', obj, args, ctx, info)`;
       }
     }
     schema.model += '}';

@@ -58,6 +58,8 @@ export interface MetadataRegistry {
   Method: Record<string, IMethodMetadata>;
   HttpRoute: Record<string, IHttpRouteMetadata>;
   EventRoute: Record<string, IEventRouteMetadata[]>;
+
+  resolve?(type: string, member: string, obj: any, args: any, ctx: any, info: any): any;
 }
 
 // tslint:disable:variable-name
@@ -162,6 +164,12 @@ export abstract class Metadata implements MetadataRegistry {
   }
 
   public static resolve(type: string, member: string, obj: any, args: any, ctx: any, info: any) {
+    const meta: any = this.Registry[type];
+    if (!meta || !meta.RESOLVERS || !meta.RESOLVERS[member]) return undefined;
+    return meta.RESOLVERS[member](obj, args, ctx, info);
+  }
+
+  public resolve(type: string, member: string, obj: any, args: any, ctx: any, info: any) {
     const meta: any = this.Registry[type];
     if (!meta || !meta.RESOLVERS || !meta.RESOLVERS[member]) return undefined;
     return meta.RESOLVERS[member](obj, args, ctx, info);

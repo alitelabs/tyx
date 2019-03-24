@@ -1,4 +1,4 @@
-import { CoreSchema } from '../graphql/schema';
+import { CoreSchema } from './schema';
 
 const ENTITY = '';
 const GET = '';

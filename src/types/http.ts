@@ -14,6 +14,7 @@ export interface HttpRequest extends Request {
   pathParameters?: Record<string, string>;
   queryStringParameters?: Record<string, string>;
   body?: string | null;
+  buffer?: Buffer;
   isBase64Encoded?: boolean;
 
   json?: any;

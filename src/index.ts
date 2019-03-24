@@ -51,11 +51,6 @@ export * from './decorators/indexes';
 export * from './decorators/database';
 export * from './decorators/exception';
 
-// ---- graphql/index.ts ----
-
-export * from './graphql/schema';
-export * from './graphql/tag';
-
 // ---- general/index.ts ----
 
 export * from './errors';
@@ -69,6 +64,7 @@ export * from './core/config';
 export * from './core/security';
 export * from './core/proxy';
 export * from './core/graphql';
+export * from './core/thrift';
 export * from './core/server';
 
 // ---- orm/index.ts ----
@@ -78,6 +74,8 @@ export * from './orm/provider';
 
 // ---- tools/index.ts ---
 
+export * from './tools/schema';
+export * from './tools/tag';
 export * from './tools/angular';
 export * from './tools/thrift';
 
