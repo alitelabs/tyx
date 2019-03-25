@@ -149,17 +149,6 @@ export function mb(size: number) {
   return (kb / 1024).toFixed(3) + ' MB';
 }
 
-export function time(): [number, number] {
-  return process.hrtime();
-}
-
-export function end(start: [number, number], offset?: number): string {
-  const lapse = process.hrtime(start);
-  const ms = (lapse[0] * 1000) + Math.floor(lapse[1] / 1000000) - (offset || 0);
-  const ns = Math.floor((lapse[1] % 1000000) / 1000);
-  return `${ms}.${ns}`;
-}
-
 export function writeFile(path: string, content: string | Buffer) {
   fs.writeFileSync(path, content);
   return fs.statSync(path);

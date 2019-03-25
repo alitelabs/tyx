@@ -19,6 +19,7 @@
  - [ ] Logger injection
  - [ ] Complete Utils.reload() -> Core.reload()
  - [ ] Allow @Type to extend @Input and the oposite, when required to declare the same struc twice
+ - [ ] Action / Claim based security
 
 ## Container
  - [x] Publish API only if there is a service implementation

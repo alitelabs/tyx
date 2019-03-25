@@ -10,7 +10,7 @@ export interface Roles {
   Internal?: boolean;
   External?: boolean;
   Remote?: boolean;
-  Debug?: boolean;
+  Local?: boolean;
   Application?: never;
   [role: string]: boolean;
 }

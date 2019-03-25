@@ -45,7 +45,7 @@ export class CoreSecurity implements Security {
   ): Promise<Context> {
     const localhost = sourceIp === '127.0.0.1' || sourceIp === '::1';
 
-    if (!method.roles.Public && !(method.roles.Debug && localhost)) {
+    if (!method.roles.Public && !(method.roles.Local && localhost)) {
       if (!token) throw new Unauthorized('Missing authorization token');
       let auth = await this.verify(requestId, token, method, sourceIp);
       auth = this.renew(auth);
@@ -76,7 +76,7 @@ export class CoreSecurity implements Security {
       },
     });
 
-    if (method.roles.Debug) {
+    if (method.roles.Local) {
       if (!localhost) throw new Forbidden('Debug role only valid for localhost');
       ctx.auth.subject = 'user:debug';
       ctx.auth.role = 'Debug';

@@ -8,8 +8,8 @@ export function Public() {
   return AuthDecorator(Public, { Public: true, Internal: true, External: true, Remote: true });
 }
 
-export function Debug() {
-  return AuthDecorator(Debug, { Debug: true, Internal: true, External: false, Remote: true });
+export function Local() {
+  return AuthDecorator(Local, { Local: true, Internal: true, External: false, Remote: true });
 }
 
 export function Private() {
