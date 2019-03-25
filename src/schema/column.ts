@@ -17,7 +17,7 @@ export class ColumnTypeSchema {
 export class ColumnMetadataSchema implements IColumnMetadata {
   @Field(String) kind: VarKind;
   @Field() name: string;
-  @Field() required: boolean;
+  @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;
 

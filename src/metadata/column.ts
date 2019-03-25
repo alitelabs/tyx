@@ -352,7 +352,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       design,
       ref,
       name: propertyKey,
-      required: options.primary || !options.nullable,
+      mandatory: options.primary || !options.nullable,
       build: undefined,
 
       entityMetadata: undefined,

@@ -135,14 +135,39 @@ export function Debug(namespace?: string): Debugger {
   debug.time = debug.bind(Debug.time);
   debug.timeEnd = debug.bind(Debug.timeEnd);
 
-  if (typeof Debug.init === 'function') {
-    Debug.init(debug);
-  }
+  if (typeof Debug.init === 'function') Debug.init(debug);
 
   Debug.instances.push(debug);
-
   return debug;
 }
+
+/**
+ * Adds ANSI color escape codes if enabled.
+ *
+ * @api public
+ */
+Debug.formatArgs = function formatArgs(this: any, fun: any, timer: string, args: any[]): void {
+  const useColors = this.useColors;
+  let level = '';
+  if (fun && fun.name !== 'log') {
+    // TODO: Color code per level
+    // fun.color
+    let z = (fun.label || fun.name);
+    if (z === 'timeEnd') z = 'time';
+    level = `${z.toUpperCase()} `;
+  }
+  const name = `[${this.namespace}]`;
+  if (useColors) {
+    const c = this.color;
+    const colorCode = "\x1B[3" + (c < 8 ? c : '8;5;' + c);
+    const prefix = "".concat(colorCode, ";1m").concat(name, " \x1B[0m");
+
+    args[0] = level + prefix + timer + args[0].split('\n').join('\n' + prefix);
+    args.push(colorCode + 'm+' + Debug.humanize(this.diff) + "\x1B[0m");
+  } else {
+    args[0] = getDate() + level + name + ' ' + timer + args[0];
+  }
+};
 
 // Debug.debug = Debug;
 // Debug.default = Debug;
@@ -350,34 +375,6 @@ Debug.coerce = function coerce(val: any) {
     return val.stack || val.message;
   }
   return val;
-};
-
-/**
- * Adds ANSI color escape codes if enabled.
- *
- * @api public
- */
-Debug.formatArgs = function formatArgs(this: any, fun: any, timer: string, args: any[]): void {
-  const name = this.namespace;
-  const useColors = this.useColors;
-  let level = '';
-  if (fun && fun.name !== 'log') {
-    // TODO: Color code per level
-    // fun.color
-    let z = (fun.label || fun.name);
-    if (z === 'timeEnd') z = 'time';
-    level = `[${z.toUpperCase()}] `;
-  }
-  if (useColors) {
-    const c = this.color;
-    const colorCode = "\x1B[3" + (c < 8 ? c : '8;5;' + c);
-    const prefix = "  ".concat(colorCode, ";1m").concat(name, " \x1B[0m");
-
-    args[0] = prefix + level + timer + args[0].split('\n').join('\n' + prefix);
-    args.push(colorCode + 'm+' + Debug.humanize(this.diff) + "\x1B[0m");
-  } else {
-    args[0] = getDate() + name + ' ' + level + timer + args[0];
-  }
 };
 
 /**

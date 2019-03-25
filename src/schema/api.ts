@@ -22,7 +22,7 @@ export class ApiMetadataSchema implements IApiMetadata {
 
   @Field(ref => ServiceMetadataSchema) owner: IServiceMetadata;
   @Field(ref => ApiMetadataSchema) base: IApiMetadata;
-  @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
+  @Field(ref => ServiceMetadataSchema) servicer: IServiceMetadata;
   @Field(list => [ServiceMetadataSchema]) services: Record<string, IServiceMetadata>;
 
   @Field(list => [MethodMetadataSchema]) methods: Record<string, IMethodMetadata>;

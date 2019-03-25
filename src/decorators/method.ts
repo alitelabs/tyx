@@ -1,7 +1,8 @@
 import { EnumMetadata } from '../metadata/enum';
 import { MethodMetadata, MethodType } from '../metadata/method';
 import { Metadata } from '../metadata/registry';
-import { Any, Args, Info, InputType, LiteralRef, LiteralType, Obj, ResultType, VarSelect } from '../metadata/var';
+import { ResultSelect } from '../metadata/result';
+import { Any, Args, Info, InputType, LiteralRef, LiteralType, Obj, ResultType } from '../metadata/var';
 import { ClassRef, Context, TypeRef } from '../types/core';
 
 // tslint:disable:function-name
@@ -12,11 +13,11 @@ export function Query<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>):
 export function Query<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Query<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Query<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Query<TR>(inputs: InputType, result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
+export function Query<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
 export function Query<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Query<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Query<TR>(inputs: InputType[], result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
-export function Query<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | VarSelect<TR>, maybeSelect?: VarSelect<TR>): MethodDecorator {
+export function Query<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Query<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
   return ResolverDecorator(Query, MethodType.Query, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -25,12 +26,12 @@ export function Advice<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>)
 export function Advice<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Advice<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Advice<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Advice<TR>(inputs: InputType, result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
+export function Advice<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
 export function Advice<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Advice<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Advice<TR>(inputs: InputType[], result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
+export function Advice<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
 
-export function Advice<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | VarSelect<TR>, maybeSelect?: VarSelect<TR>): MethodDecorator {
+export function Advice<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
   return ResolverDecorator(Advice, MethodType.Query, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -39,11 +40,11 @@ export function Mutation<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR
 export function Mutation<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Mutation<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Mutation<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Mutation<TR>(inputs: InputType, result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
+export function Mutation<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
 export function Mutation<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Mutation<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Mutation<TR>(inputs: InputType[], result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
-export function Mutation<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | VarSelect<TR>, maybeSelect?: VarSelect<TR>): MethodDecorator {
+export function Mutation<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Mutation<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
   return ResolverDecorator(Mutation, MethodType.Mutation, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -52,38 +53,38 @@ export function Command<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>
 export function Command<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Command<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Command<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Command<TR>(inputs: InputType, result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
+export function Command<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
 export function Command<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Command<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Command<TR>(inputs: InputType[], result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
-export function Command<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | VarSelect<TR>, maybeSelect?: VarSelect<TR>): MethodDecorator {
+export function Command<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Command<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
   return ResolverDecorator(Command, MethodType.Mutation, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
-export function Extension<TR>(host: ClassRef, result: EnumMetadata): MethodDecorator;
-export function Extension<TR>(host: ClassRef, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, result: TypeRef<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType, result: EnumMetadata): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType, result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType[], result: EnumMetadata): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputs: InputType[], result: TypeRef<TR>, select?: VarSelect<TR>): MethodDecorator;
-export function Extension<TR>(host: ClassRef, inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | VarSelect<TR>, maybeSelect?: VarSelect<TR>): MethodDecorator {
-  return ResolverDecorator(Extension, MethodType.Extension, host, inputsOrResult, resultOrSelect, maybeSelect);
+export function Extension<TR>(scope: ClassRef, result: EnumMetadata): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, result: TypeRef<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType, result: EnumMetadata): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: EnumMetadata): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+  return ResolverDecorator(Extension, MethodType.Extension, scope, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
 function ResolverDecorator(
   decorator: Function,
   type: MethodType,
-  host: ClassRef,
+  scope: ClassRef,
   inputsOrResult: InputType | InputType[] | ResultType,
-  resultOrSelect: ResultType | VarSelect,
-  mayBeSelect?: VarSelect
+  resultOrSelect: ResultType | ResultSelect,
+  mayBeSelect?: ResultSelect
 ): MethodDecorator {
   let inputs: InputType[];
   let result: ResultType;
-  let select: VarSelect;
+  let select: ResultSelect;
   if (!resultOrSelect && !mayBeSelect) {
     inputs = undefined;
     result = inputsOrResult as any;
@@ -102,10 +103,10 @@ function ResolverDecorator(
     throw new TypeError('Assert');
   }
 
-  return Metadata.onMethod(decorator, { host, inputs, result, select }, (target, propertyKey, descriptor) => {
+  return Metadata.onMethod(decorator, { host: scope, inputs, result, select }, (target, propertyKey, descriptor) => {
     const oper = decorator.name.toLowerCase();
     const meta = MethodMetadata.define(target, propertyKey as string, descriptor).addAuth(oper, { Internal: true });
-    meta.confirm(type, host, inputs, result, select);
+    meta.confirm(type, scope, inputs, result, select);
   });
 }
 

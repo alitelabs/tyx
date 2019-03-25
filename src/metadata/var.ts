@@ -41,15 +41,6 @@ export type VarType<T = any> = LiteralType | [LiteralType] | LiteralRef<T> | Typ
 // export type InputType<T = any> = VarType<T> | EnumRef;
 // export type ResultType<T = any> = VarType<T>;
 
-export type VarSelect<T = any> = {
-  // tslint:disable-next-line:prefer-array-literal
-  [P in keyof T]?: T[P] extends Array<infer U>
-  ? (VarSelect<U> | true | false | 1 | 2)
-  : T[P] extends ReadonlyArray<infer U>
-  ? (VarSelect<U> | true | false | 1 | 2)
-  : (VarSelect<T[P]> | true | false | 1 | 2)
-};
-
 export enum VarKind {
   ID = 'ID',
   Int = 'Int',

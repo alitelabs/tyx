@@ -14,7 +14,7 @@ export interface IApiMetadata {
 
   base: IApiMetadata;
   owner: IServiceMetadata;
-  service: IServiceMetadata;
+  servicer: IServiceMetadata;
   services: Record<string, IServiceMetadata>;
 
   methods: Record<string, IMethodMetadata>;
@@ -31,7 +31,7 @@ export class ApiMetadata implements IApiMetadata {
 
   public base: ApiMetadata;
   public owner: ServiceMetadata;
-  public service: ServiceMetadata;
+  public servicer: ServiceMetadata;
   public services: Record<string, ServiceMetadata> = {};
 
   public methods: Record<string, MethodMetadata> = {};
@@ -119,14 +119,14 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public publish(service: ServiceMetadata): this {
-    if (this.base && !this.base.service) this.base.publish(service);
-    if (this.service && this.service !== service) {
+    if (this.base && !this.base.servicer) this.base.publish(service);
+    if (this.servicer && this.servicer !== service) {
       // const parent = Utils.baseClass(service.target);
-      if (this.service !== service.base) {
-        throw new TypeError(`Duplicate Api implementation: [${service.name}] > [${this.service.name}]`);
+      if (this.servicer !== service.base) {
+        throw new TypeError(`Duplicate Api implementation: [${service.name}] > [${this.servicer.name}]`);
       }
     }
-    this.service = service;
+    this.servicer = service;
     for (const method of Object.values(this.methods)) {
       method.publish(service);
     }

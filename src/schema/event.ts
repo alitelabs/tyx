@@ -16,7 +16,7 @@ export class EventRouteMetadataSchema implements IEventRouteMetadata {
   @Field(ref => MethodMetadataSchema) method: IMethodMetadata;
   @Field(ref => EventRouteMetadataSchema) base: IEventRouteMetadata;
   @Field(ref => EventRouteMetadataSchema) over: IEventRouteMetadata;
-  @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
+  @Field(ref => ServiceMetadataSchema) servicer: IServiceMetadata;
 
   @Field() route: string;
   @Field() source: string;

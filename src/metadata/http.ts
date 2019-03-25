@@ -51,7 +51,7 @@ export interface IHttpRouteMetadata {
   method: IMethodMetadata;
   base: IHttpRouteMetadata;
   over: IHttpRouteMetadata;
-  service: IServiceMetadata;
+  servicer: IServiceMetadata;
 
   route: string;
   verb: string;
@@ -68,7 +68,7 @@ export class HttpRouteMetadata implements IHttpRouteMetadata {
   public method: MethodMetadata;
   public base: HttpRouteMetadata;
   public over: HttpRouteMetadata;
-  public service: ServiceMetadata;
+  public servicer: ServiceMetadata;
 
   public route: string;
   public verb: string;

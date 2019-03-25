@@ -38,7 +38,7 @@ export class ServiceMetadataSchema implements IServiceMetadata {
 
 @Schema()
 export class InjectMetadataSchema implements IInjectMetadata {
-  @Field(ref => ServiceMetadataSchema) service: ServiceMetadataSchema;
+  @Field(ref => ServiceMetadataSchema) host: ServiceMetadataSchema;
   @Field(ref => ServiceMetadataSchema) base?: ServiceMetadataSchema;
   @Field() property: string;
   @Field() resource: string;
@@ -54,7 +54,7 @@ export class InjectMetadataSchema implements IInjectMetadata {
 
 @Schema()
 export class HandlerMetadataSchema implements IHandlerMetadata {
-  @Field(ref => ServiceMetadataSchema) service: ServiceMetadataSchema;
+  @Field(ref => ServiceMetadataSchema) host: ServiceMetadataSchema;
   @Field(ref => ServiceMetadataSchema) base?: ServiceMetadataSchema;
   @Field() method: string;
   @Field() override: boolean;
@@ -62,6 +62,6 @@ export class HandlerMetadataSchema implements IHandlerMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IHandlerMetadata> = {
-    source: obj => obj.service.target.prototype[obj.method].toString()
+    source: obj => obj.host.target.prototype[obj.method].toString()
   };
 }

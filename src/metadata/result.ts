@@ -9,6 +9,15 @@ export interface IResultMetadata extends IVarMetadata {
   build: IVarMetadata;
 }
 
+export type ResultSelect<T = any> = {
+  // tslint:disable-next-line:prefer-array-literal
+  [P in keyof T]?: T[P] extends Array<infer U>
+  ? (ResultSelect<U> | true | false | 1 | 2)
+  : T[P] extends ReadonlyArray<infer U>
+  ? (ResultSelect<U> | true | false | 1 | 2)
+  : (ResultSelect<T[P]> | true | false | 1 | 2)
+};
+
 export class ResultMetadata implements IResultMetadata {
   public kind: VarKind = VarKind.Type;
   public design: Class = undefined;

@@ -75,7 +75,7 @@ export class TypeMetadata implements ITypeMetadata {
     }
     meta = FieldMetadata.on(meta);
     meta.name = propertyKey;
-    meta.required = !!required;
+    meta.mandatory = !!required;
     meta.design = design && { type: design.name, target: design };
     this.members[propertyKey] = meta;
     Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, this.target.prototype, propertyKey);

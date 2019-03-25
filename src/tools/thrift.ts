@@ -4,8 +4,9 @@ import { EntityMetadata } from '../metadata/entity';
 import { EnumMetadata } from '../metadata/enum';
 import { Metadata } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
+import { ResultSelect } from '../metadata/result';
 import { TypeMetadata } from '../metadata/type';
-import { VarKind, VarMetadata, VarSelect } from '../metadata/var';
+import { VarKind, VarMetadata } from '../metadata/var';
 import { Utils } from '../utils';
 
 interface DatabaseSchema {
@@ -302,7 +303,7 @@ export class ThriftCodeGen {
     return { thrift, script: query + handler };
   }
 
-  private genSelect(meta: VarMetadata, select: VarSelect | any, level: number, depth: number): string {
+  private genSelect(meta: VarMetadata, select: ResultSelect | any, level: number, depth: number): string {
     if (level >= depth) return null;
     if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
     if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
@@ -412,7 +413,7 @@ export class ThriftCodeGen {
       index++;
       const pn = col.propertyName;
       let dt = col.build.idl;
-      let nl = col.required ? 'required' : 'optional';
+      let nl = col.mandatory ? 'required' : 'optional';
       if (pn.endsWith('Id')) dt = VarKind.ID;
       model += `${cm ? '' : ','}\n  ${index}: ${nl} ${dt} ${pn}`;
       if (col.isPrimary) {

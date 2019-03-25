@@ -4,7 +4,7 @@ import { IVarMetadata, VarKind, VarMetadata } from './var';
 
 export interface IFieldMetadata extends IVarMetadata {
   name: string;
-  required: boolean;
+  mandatory: boolean;
   design: IDesignMetadata;
   build: IVarMetadata;
 }
@@ -12,7 +12,7 @@ export interface IFieldMetadata extends IVarMetadata {
 export abstract class FieldMetadata /* extends VarMetadata */ implements IFieldMetadata {
   public kind: VarKind = undefined;
   public name: string = undefined;
-  public required: boolean = undefined;
+  public mandatory: boolean = undefined;
   public item?: VarMetadata = undefined;
   public ref?: Class = undefined;
   public design: IDesignMetadata = undefined;

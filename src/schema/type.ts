@@ -72,7 +72,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
 export class FieldMetadataSchema implements IFieldMetadata {
   @Field(String) kind: VarKind;
   @Field() name: string;
-  @Field() required: boolean;
+  @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;
   @Field(String) ref?: Class;

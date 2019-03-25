@@ -445,7 +445,7 @@ export class CoreSchema {
       if (col.isTransient) continue;
       const pn = col.propertyName;
       let dt = col.build.gql;
-      let nl = col.required ? '!' : '';
+      let nl = col.mandatory ? '!' : '';
       if (pn.endsWith('Id')) dt = VarKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
       if (col.isPrimary) keys += `${cm ? '' : ', '}${pn}: ${dt}${nl}`;
@@ -573,7 +573,7 @@ export class CoreSchema {
     for (const col of metadata.columns) {
       if (!col.isTransient) continue;
       const pn = col.propertyName;
-      const nl = col.required ? '!' : '';
+      const nl = col.mandatory ? '!' : '';
       model += `${cm ? '' : ','}\n  ${pn}: ${col.build.gql}${nl} @transient`;
     }
     model += '\n}';
@@ -645,7 +645,7 @@ export class CoreSchema {
         const args = (sch && sch.params) ? `(\n${reg[type.item.gql].params}\n  )` : '';
         schema.model += `  ${doc}${member.name}${args}: ${type.gql}\n`;
       } else {
-        const nl = member.required ? '!' : '';
+        const nl = member.mandatory ? '!' : '';
         schema.model += `  ${doc}${member.name}: ${type.gql}${nl}\n`;
       }
       const resolvers = (struc.target as any).RESOLVERS;
@@ -683,7 +683,7 @@ export class CoreSchema {
       call += `: ${result.gql}`;
 
       const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${Utils.scalar(method.roles)})`;
-      const host: Class = method.host && method.host();
+      const host: Class = method.scope && method.scope();
       const meth: MethodSchema = {
         metadata: method,
         api: metadata.name,

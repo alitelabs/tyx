@@ -17,7 +17,7 @@ import { VarMetadataSchema } from './type';
 export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(String) kind: VarKind;
   @Field() name: string;
-  @Field() required: boolean;
+  @Field() mandatory: boolean;
   @Field(item => VarMetadataSchema) item: IVarMetadata;
   @Field(Object) design: IDesignMetadata;
   @Field(ref => VarMetadataSchema) build: IVarMetadata;

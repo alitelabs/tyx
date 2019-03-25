@@ -4,7 +4,7 @@ import { ApiMetadata, IApiMetadata } from './api';
 import { Metadata } from './registry';
 
 export interface IInjectMetadata {
-  service: IServiceMetadata;
+  host: IServiceMetadata;
   base?: IServiceMetadata;
   property: string;
   index?: number;
@@ -14,7 +14,7 @@ export interface IInjectMetadata {
 }
 
 export interface IHandlerMetadata {
-  service: IServiceMetadata;
+  host: IServiceMetadata;
   base?: IServiceMetadata;
   method: string;
   override?: boolean;
@@ -42,7 +42,7 @@ export interface IServiceMetadata {
 }
 
 export class InjectMetadata implements IInjectMetadata {
-  public service: ServiceMetadata;
+  public host: ServiceMetadata;
   public base: ServiceMetadata;
   public property: string;
   public index?: number;
@@ -55,12 +55,12 @@ export class InjectMetadata implements IInjectMetadata {
   }
 
   public inherit(service: ServiceMetadata): InjectMetadata {
-    return new InjectMetadata({ ...this, base: this.service, service });
+    return new InjectMetadata({ ...this, base: this.host, host: service });
   }
 }
 
 export class HandlerMetadata implements IHandlerMetadata {
-  public service: ServiceMetadata;
+  public host: ServiceMetadata;
   public base: ServiceMetadata;
   public method: string;
   public override: boolean;
@@ -70,7 +70,7 @@ export class HandlerMetadata implements IHandlerMetadata {
   }
 
   public inherit(service: ServiceMetadata): HandlerMetadata {
-    return new HandlerMetadata({ ...this, base: this.service, service });
+    return new HandlerMetadata({ ...this, base: this.host, host: service });
   }
 }
 
@@ -141,43 +141,43 @@ export class ServiceMetadata implements IServiceMetadata {
       throw TypeError(`Invalid resource [${rsrc}]`);
     }
     const key = (propertyKey || '[constructor]') + (index !== undefined ? `#${index}` : '');
-    this.dependencies[key] = new InjectMetadata({ service: this, property: key, resource, target, ref, index });
+    this.dependencies[key] = new InjectMetadata({ host: this, property: key, resource, target, ref, index });
   }
 
   public addHandler(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate handler [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, override: false });
+    this.handlers[propertyKey] = new HandlerMetadata({ host: this, method: propertyKey, override: false });
     return this;
   }
 
   public addOverride(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.handlers[propertyKey]) throw new TypeError(`Duplicate override [${this.name}.${propertyKey}]`);
-    this.handlers[propertyKey] = new HandlerMetadata({ service: this, method: propertyKey, override: true });
+    this.handlers[propertyKey] = new HandlerMetadata({ host: this, method: propertyKey, override: true });
     return this;
   }
 
   public setInitializer(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.initializer) throw new TypeError(`Duplicate initializer [${this.name}.${propertyKey}]`);
     // TODO: Check if return type is not Promise
-    this.initializer = new HandlerMetadata({ service: this, method: propertyKey });
+    this.initializer = new HandlerMetadata({ host: this, method: propertyKey });
     return this;
   }
 
   public setSelector(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.selector) throw new TypeError(`Duplicate selector [${this.name}.${propertyKey}]`);
-    this.selector = new HandlerMetadata({ service: this, method: propertyKey });
+    this.selector = new HandlerMetadata({ host: this, method: propertyKey });
     return this;
   }
 
   public setActivator(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.activator) throw new TypeError(`Duplicate activator [${this.name}.${propertyKey}]`);
-    this.activator = new HandlerMetadata({ service: this, method: propertyKey });
+    this.activator = new HandlerMetadata({ host: this, method: propertyKey });
     return this;
   }
 
   public setReleasor(propertyKey: string, descriptor: PropertyDescriptor): this {
     if (this.releasor) throw new TypeError(`Duplicate releasor [${this.name}.${propertyKey}]`);
-    this.releasor = new HandlerMetadata({ service: this, method: propertyKey });
+    this.releasor = new HandlerMetadata({ host: this, method: propertyKey });
     return this;
   }
 

@@ -7,9 +7,9 @@ import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpBindingMetadata, IHttpRouteMetadata } from '../metadata/http';
 import { IInputMetadata } from '../metadata/input';
 import { IDesignMetadata, IMethodMetadata, MethodType } from '../metadata/method';
-import { IResultMetadata } from '../metadata/result';
-import { VarSelect } from '../metadata/var';
-import { Class, SchemaResolvers } from '../types/core';
+import { IResultMetadata, ResultSelect } from '../metadata/result';
+import { } from '../metadata/var';
+import { Class, ClassRef, SchemaResolvers } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -24,7 +24,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(ref => ApiMetadataSchema) base: IApiMetadata;
   @Field() type: MethodType;
 
-  @Field(String) host: Class;
+  @Field(String) scope: ClassRef;
 
   @Field() name: string;
   @Field(Object) design: IDesignMetadata[];
@@ -37,7 +37,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() resolver: boolean;
   @Field(list => [InputMetadataSchema]) inputs: IInputMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
-  @Field(Object) select: VarSelect;
+  @Field(Object) select: ResultSelect;
 
   @Field() contentType: string;
   @Field(list => [HttpBindingMetadataSchema]) bindings: IHttpBindingMetadata[];
@@ -48,7 +48,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
 
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
     target: obj => Utils.label(obj.target),
-    host: obj => Utils.label(obj.host),
+    scope: obj => Utils.label(obj.scope),
     inputs: (obj, args) => Lo.filter(Object.values(obj.inputs || {}), args),
     bindings: (obj, args) => Lo.filter(Object.values(obj.bindings || {}), args),
     http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),

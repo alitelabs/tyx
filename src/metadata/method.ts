@@ -8,9 +8,9 @@ import { EventRouteMetadata, IEventRouteMetadata } from './event';
 import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';
 import { IInputMetadata, InputMetadata } from './input';
 import { Metadata } from './registry';
-import { IResultMetadata, ResultMetadata } from './result';
+import { IResultMetadata, ResultMetadata, ResultSelect } from './result';
 import { ServiceMetadata } from './service';
-import { Any, Args, Info, InputType, Obj, ResultType, VarSelect } from './var';
+import { Any, Args, Info, InputType, Obj, ResultType } from './var';
 
 export enum MethodType {
   Internal = 'Internal',
@@ -33,14 +33,14 @@ export interface IMethodMetadata {
   base: IApiMetadata;
   type: MethodType;
   // Temporary, type extension point
-  host: Class;
+  scope: ClassRef;
 
   auth: string;
   roles: Roles;
 
   inputs: IInputMetadata[];
   result: IResultMetadata;
-  select: VarSelect;
+  select: ResultSelect;
 
   contentType: string;
   bindings: IHttpBindingMetadata[];
@@ -59,14 +59,14 @@ export class MethodMetadata implements IMethodMetadata {
   public api: ApiMetadata;
   public base: ApiMetadata;
   public over: MethodMetadata;
-  public host: ClassRef;
+  public scope: ClassRef;
 
   public auth: string = undefined;
   public roles: Roles = undefined;
 
   public inputs: InputMetadata[] = [];
   public result: ResultMetadata = undefined;
-  public select: VarSelect = undefined;
+  public select: ResultSelect = undefined;
 
   public contentType: string = undefined;
   public bindings: HttpBindingMetadata[] = undefined;
@@ -182,14 +182,14 @@ export class MethodMetadata implements IMethodMetadata {
     return meta;
   }
 
-  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: VarSelect): this {
+  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: ResultSelect): this {
     // TODO: Wrap arguments
     if (type === MethodType.Extension && (!inputs || inputs.length === 0 || inputs.length === 1 && inputs[0] === void 0)) {
       // tslint:disable-next-line:no-parameter-reassignment
       inputs = [Obj, Args, Context, Info];
     }
     this.type = type;
-    this.host = host;
+    this.scope = host;
     this.select = select;
     if (inputs) inputs.forEach((inp, index) => this.setInput(index, inp));
     this.setResult(result);
@@ -330,7 +330,7 @@ export class MethodMetadata implements IMethodMetadata {
     // TODO: ---- Move this to service ....
     for (const [route, meta] of Object.entries(this.http || {})) {
       meta.api = this.api;
-      meta.service = service;
+      meta.servicer = service;
       const prev = Metadata.HttpRoute[route];
       if (prev && prev !== meta && prev !== meta.base) {
         throw new TypeError(`Duplicate HTTP route [${route}]`);
@@ -343,7 +343,7 @@ export class MethodMetadata implements IMethodMetadata {
     }
     for (const [route, meta] of Object.entries(this.events || {})) {
       meta.api = this.api;
-      meta.service = service;
+      meta.servicer = service;
       const handlers = Metadata.EventRoute[route] = Metadata.EventRoute[route] || [];
       // TODO: handlers.includes(meta.over)
       const prevIndex = handlers.indexOf(meta.base);

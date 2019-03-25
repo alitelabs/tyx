@@ -18,7 +18,7 @@ import { ServiceMetadataSchema } from './service';
 export class DatabaseMetadataSchema implements IDatabaseMetadata {
   @Field(String) target: Class;
   @Field() alias: string;
-  @Field(ref => ServiceMetadataSchema) service: IServiceMetadata;
+  @Field(ref => ServiceMetadataSchema) servicer: IServiceMetadata;
 
   @Field([String]) targets: Class[];
   @Field(list => [EntityMetadataSchema]) entities: IEntityMetadata[];

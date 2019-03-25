@@ -95,7 +95,7 @@ export class CoreInstance implements CoreContainer {
 
     // Create private Api instances
     for (const api of Object.values(Metadata.Api)) {
-      if (api.owner || !api.service) continue;
+      if (api.owner || !api.servicer) continue;
       const local = api.local(this);
       // TODO: Recoursive set for inherited api
       if (local) this.container.set(api.target, local);
@@ -121,14 +121,14 @@ export class CoreInstance implements CoreContainer {
 
   public has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean {
     if (typeof id === 'string') return this.container.has(id);
-    if (id instanceof ApiMetadata) return !!id.service && this.has(id.service);
+    if (id instanceof ApiMetadata) return !!id.servicer && this.has(id.servicer);
     if (id instanceof ServiceMetadata) return this.container.has(id.inline ? id.alias : id.target as any);
     return this.container.has(id);
   }
 
   public get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T {
     if (typeof id === 'string') return this.container.get(id);
-    if (id instanceof ApiMetadata) return id.service && this.get(id.service);
+    if (id instanceof ApiMetadata) return id.servicer && this.get(id.servicer);
     if (id instanceof ServiceMetadata) return this.container.get(id.inline ? id.alias : id.target as any);
     return this.container.get<T>(id);
   }
@@ -214,9 +214,9 @@ export class CoreInstance implements CoreContainer {
       // TODO: Reenter context
       const ctx = await this.security.apiAuth(this, method, args[0]);
 
-      log = Logger.get(api.service);
+      log = Logger.get(api.servicer);
       const startTime = log.time();
-      const service = this.get(api.service);
+      const service = this.get(api.servicer);
       if (!service) throw new InternalServerError(`Service not resolved [${apiType}]`);
       await this.activate(ctx);
       try {
@@ -257,8 +257,8 @@ export class CoreInstance implements CoreContainer {
       this.istate = ContainerState.Busy;
       const ctx = await this.security.httpAuth(this, target.method, req);
 
-      log = Logger.get(target.service);
-      const service = this.get(target.service);
+      log = Logger.get(target.servicer);
+      const service = this.get(target.servicer);
       const startTime = log.time();
       if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
       await this.activate(ctx);
@@ -313,9 +313,9 @@ export class CoreInstance implements CoreContainer {
       // TODO: Keep context if present for reenter
       const ctx = await this.security.graphAuth(this, method, req);
 
-      log = Logger.get(api.service);
+      log = Logger.get(api.servicer);
       const startTime = log.time();
-      const service = this.get(api.service);
+      const service = this.get(api.servicer);
       if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
       await this.activate(ctx);
       try {
@@ -352,9 +352,9 @@ export class CoreInstance implements CoreContainer {
       this.istate = ContainerState.Busy;
       const ctx = await this.security.remoteAuth(this, method, req);
 
-      log = Logger.get(api.service);
+      log = Logger.get(api.servicer);
       const startTime = log.time();
-      const service = this.get(api.service);
+      const service = this.get(api.servicer);
       if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
       await this.activate(ctx);
       try {
@@ -409,9 +409,9 @@ export class CoreInstance implements CoreContainer {
 
         const ctx = await this.security.eventAuth(this, target.method, req);
 
-        log = Logger.get(target.service);
+        log = Logger.get(target.servicer);
         const startTime = log.time();
-        const service = this.get(target.service);
+        const service = this.get(target.servicer);
         if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
         await this.activate(ctx);
         try {

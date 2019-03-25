@@ -1,8 +1,9 @@
 import { ApiMetadata } from '../metadata/api';
 import { EnumMetadata } from '../metadata/enum';
 import { Metadata } from '../metadata/registry';
+import { ResultSelect } from '../metadata/result';
 import { TypeMetadata } from '../metadata/type';
-import { VarKind, VarMetadata, VarSelect } from '../metadata/var';
+import { VarKind, VarMetadata } from '../metadata/var';
 import { Utils } from '../utils';
 
 export class AngularCodeGen {
@@ -162,7 +163,7 @@ export class AngularCodeGen {
     return count ? script : '';
   }
 
-  private genSelect(meta: VarMetadata, select: VarSelect | any, level: number, depth: number): string {
+  private genSelect(meta: VarMetadata, select: ResultSelect | any, level: number, depth: number): string {
     if (level >= depth) return null;
     if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
     if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);

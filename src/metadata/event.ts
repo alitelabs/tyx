@@ -9,7 +9,7 @@ export interface IEventRouteMetadata {
   method: IMethodMetadata;
   base: IEventRouteMetadata;
   over: IEventRouteMetadata;
-  service: IServiceMetadata;
+  servicer: IServiceMetadata;
 
   route: string;
   source: string;
@@ -24,7 +24,7 @@ export class EventRouteMetadata implements IEventRouteMetadata {
   public method: MethodMetadata;
   public base: EventRouteMetadata;
   public over: EventRouteMetadata;
-  public service: ServiceMetadata;
+  public servicer: ServiceMetadata;
 
   public route: string;
   public source: string;

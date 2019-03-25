@@ -9,7 +9,7 @@ import { IServiceMetadata, ServiceMetadata } from './service';
 export interface IDatabaseMetadata {
   target: Class;
   alias: string;
-  service: IServiceMetadata;
+  servicer: IServiceMetadata;
 
   targets: Class[];
   entities: IEntityMetadata[];
@@ -21,7 +21,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   public target: Class;
   public name: string;
   public alias: string;
-  public service: ServiceMetadata;
+  public servicer: ServiceMetadata;
 
   public targets: Class[] = [];
   public entities: EntityMetadata[] = [];
@@ -62,7 +62,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
       this.targets.push(target);
       this.entities.push(meta);
     }
-    this.service = ServiceMetadata.define(this.target).commit(alias, null, true);
+    this.servicer = ServiceMetadata.define(this.target).commit(alias, null, true);
     Metadata.Database[this.name] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;

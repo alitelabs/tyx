@@ -248,7 +248,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
         throw new TypeError('Internal metadata error');
     }
 
-    this.required = !!(options && !options.nullable);
+    this.mandatory = !!(options && !options.nullable);
     const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, this.propertyName);
     this.design = design && { type: design.name, target: design };
 
