@@ -1,9 +1,8 @@
 import { ApiMetadata } from '../metadata/api';
 import { EnumMetadata } from '../metadata/enum';
 import { Metadata } from '../metadata/registry';
-import { ResultSelect } from '../metadata/result';
-import { TypeMetadata } from '../metadata/type';
-import { VarKind, VarMetadata } from '../metadata/var';
+import { TypeMetadata, TypeSelect } from '../metadata/type';
+import { VarKind } from '../metadata/var';
 import { Utils } from '../utils';
 
 export class AngularCodeGen {
@@ -17,7 +16,7 @@ export class AngularCodeGen {
   public emit(): string {
     let script = this.prolog() + '\n';
 
-    const registry = Metadata.get();
+    const registry = Metadata.copy();
     script += '///////// API /////////\n';
     for (const api of Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name))) {
       const code = this.genApi(api);
@@ -44,7 +43,7 @@ export class AngularCodeGen {
   }
 
   private prolog(): string {
-    return Utils.unindent(`
+    return Utils.indent(`
       import { Injectable } from '@angular/core';
       import { Apollo } from 'apollo-angular';
       import { ApolloQueryResult } from 'apollo-client';
@@ -140,12 +139,12 @@ export class AngularCodeGen {
       script += `        result: ${method.api.name}_${method.name}${qlArgs}`;
       if (VarKind.isStruc(result.kind)) {
         const x = (VarKind.isType(result.kind)) ? 0 : 0;
-        const select = this.genSelect(result, method.select, 0, 1 + x);
-        script += ' ' + select;
+        const select = TypeSelect.emit(result, method.select, 0, 1 + x);
+        script += ' ' + Utils.indent(select, '  '.repeat(4));
       } else if (VarKind.isArray(result.kind)) {
         const x = (VarKind.isType(result.item.kind)) ? 0 : 0;
-        const select = this.genSelect(result.item, method.select, 0, 1 + x);
-        script += ' ' + select;
+        const select = TypeSelect.emit(result.item, method.select, 0, 1 + x);
+        script += ' ' + Utils.indent(select, '  '.repeat(4));
       } else {
         script += ` # : ANY`;
       }
@@ -161,36 +160,5 @@ export class AngularCodeGen {
     }
     script += '}';
     return count ? script : '';
-  }
-
-  private genSelect(meta: VarMetadata, select: ResultSelect | any, level: number, depth: number): string {
-    if (level >= depth) return null;
-    if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
-    if (VarKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
-    // script += ` # [ANY]\n`;
-    // #  NONE
-    const type = meta as TypeMetadata;
-    const tab = '  '.repeat(level + 4);
-    let script = `{`;
-    let i = 0;
-    for (const member of Object.values(type.members)) {
-      if (VarKind.isVoid(member.kind)) continue;
-      let name = member.name;
-      let def = `# ${member.build.js}`;
-      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
-        def += ' ...';
-        if (select instanceof Object && select[member.name]) {
-          const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);
-          def = sub || def;
-          if (!sub) name = '# ' + name;
-        } else {
-          name = '# ' + name;
-        }
-      }
-      script += `${i++ ? ',' : ''}\n${tab}  ${name} ${def}`;
-    }
-    script += `\n${tab}}`;
-    return script;
   }
 }

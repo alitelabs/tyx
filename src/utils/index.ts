@@ -3,11 +3,13 @@ import misc = require('./misc');
 import thrift = require('./thrift');
 import text = require('./text');
 import time = require('./time');
+import file = require('./file');
 
 // tslint:disable-next-line:variable-name
 export const Utils = {
   ...misc,
   ...thrift,
   ...text,
-  ...time
+  ...time,
+  ...file
 };

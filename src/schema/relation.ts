@@ -4,7 +4,7 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
-import { IDesignMetadata } from '../metadata/method';
+import { IDesignMetadata } from '../metadata/field';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
 import { IVarMetadata, VarKind } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';

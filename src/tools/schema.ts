@@ -216,11 +216,11 @@ export class CoreSchema {
     const schema = new CoreSchema(crud);
     const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
-    script += Utils.unindent(`
+    script += Utils.indent(`
       import { DocumentNode } from 'graphql';
       import { Auth, Context, CoreGraphQL, gql, HttpRequest, HttpResponse, Override, Resolver, Service } from 'tyx';
     `).trimRight() + '\n';
-    script += Utils.unindent(`
+    script += Utils.indent(`
       @Service(true)
       export class ${name}GraphQL extends CoreGraphQL {
 
@@ -240,8 +240,8 @@ export class CoreSchema {
       }
     `) + '\n';
     // script += `export const DIRECTIVES: any = {};\n\n`;
-    script += `export const TYPE_DEFS: DocumentNode = gql\`\n${Utils.unindent(schema.typeDefs(), '  ')}\`;\n\n`;
-    script += `export const RESOLVERS: Record<string, Record<string, Resolver>> = ${Utils.unindent(schema.script(true), '')};\n\n`;
+    script += `export const TYPE_DEFS: DocumentNode = gql\`\n${Utils.indent(schema.typeDefs(), '  ')}\`;\n\n`;
+    script += `export const RESOLVERS: Record<string, Record<string, Resolver>> = ${Utils.indent(schema.script(true), '')};\n\n`;
     script += '// tslint:disable:object-literal-key-quotes\n';
     script += `export const PLAYGROUND_TABS: any = `;
     script += tabs ? JSON.stringify(tabs, null, 2) : 'undefined';
@@ -329,7 +329,7 @@ export class CoreSchema {
         .map(m => m.model).join('\n')
       + `\n`;
 
-    return Utils.unindent(schema).trimLeft();
+    return Utils.indent(schema).trimLeft();
   }
 
   public resolvers() {
@@ -650,7 +650,7 @@ export class CoreSchema {
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) {
-        schema.resolvers[member.name] = `ctx.metadata.resolve('${metadata.name}', '${member.name}', obj, args, ctx, info)`;
+        schema.resolvers[member.name] = `ctx.resolve('${metadata.name}.${member.name}', obj, args, ctx, info)`;
       }
     }
     schema.model += '}';

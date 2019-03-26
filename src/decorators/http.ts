@@ -1,6 +1,6 @@
 import { ContextBinder, HttpBinder, HttpBindingType, RequestBinder } from '../metadata/http';
 import { MethodMetadata } from '../metadata/method';
-import { Metadata } from '../metadata/registry';
+import { CoreDecorator } from '../metadata/registry';
 import { HttpCode, HttpMethod, HttpResponse } from '../types/http';
 
 // tslint:disable:function-name
@@ -32,7 +32,7 @@ function HttpMethod(
   model: boolean | string,
   code: HttpCode
 ): MethodDecorator {
-  return Metadata.onMethod(decorator, { resource, model, code }, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(decorator, { resource, model, code }, (target, propertyKey, descriptor) => {
     const verb = decorator.name.toUpperCase();
     let mod: string;
     if (!model) mod = undefined;
@@ -102,13 +102,13 @@ export function RequestParam(path: string | RequestBinder): ParameterDecorator {
 }
 
 function HttpBinding(decorator: Function, type: HttpBindingType, path: string, binder: HttpBinder): ParameterDecorator {
-  return Metadata.onParameter(decorator, { path, binder }, (target, propertyKey, index) => {
+  return CoreDecorator.onParameter(decorator, { path, binder }, (target, propertyKey, index) => {
     MethodMetadata.define(target, propertyKey as string).addBinding(index, type, path, binder);
   });
 }
 
 export function ContentType(contentType: string | typeof HttpResponse): MethodDecorator {
-  return Metadata.onMethod(ContentType, { contentType }, (target, propertyKey) => {
+  return CoreDecorator.onMethod(ContentType, { contentType }, (target, propertyKey) => {
     MethodMetadata.define(target, propertyKey as string).setContentType(contentType);
   });
 }

@@ -20,6 +20,7 @@
  - [ ] Complete Utils.reload() -> Core.reload()
  - [ ] Allow @Type to extend @Input and the oposite, when required to declare the same struc twice
  - [ ] Action / Claim based security
+ - [ ] Object.freeze metadata after init
 
 ## Container
  - [x] Publish API only if there is a service implementation
@@ -34,6 +35,7 @@
  - [x] Integrate wtfnode in error log
  - [ ] Optimize apiRequest, for local Api proxy instances
  - [ ] Add Logger.debug log ... startup ...
+ - [ ] Debug log as separate npm package
  - [ ] Solve Context circular refernce problem, for logging
  - [ ] Lambda proxy behaviour on 501, exception in general
 

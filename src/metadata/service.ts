@@ -1,7 +1,7 @@
 import { Class, ClassRef, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadata, IApiMetadata } from './api';
-import { Metadata } from './registry';
+import { Metadata, MetadataRegistry } from './registry';
 
 export interface IInjectMetadata {
   host: IServiceMetadata;
@@ -100,13 +100,13 @@ export class ServiceMetadata implements IServiceMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_SERVICE, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_SERVICE, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_SERVICE, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_SERVICE, target.constructor);
   }
 
   public static get(target: Class | Prototype): ServiceMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_SERVICE, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_SERVICE, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_SERVICE, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_SERVICE, target.constructor);
   }
 
   public static define(target: Class): ServiceMetadata {
@@ -114,14 +114,14 @@ export class ServiceMetadata implements IServiceMetadata {
     let meta = this.get(target);
     if (meta) return meta;
     meta = new ServiceMetadata(target);
-    Reflect.defineMetadata(Metadata.TYX_SERVICE, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_SERVICE, meta, target);
     return meta;
   }
 
   public inject(propertyKey: string, index: number, rsrc?: string | ClassRef | any) {
     let resource: any = undefined;
     if (!rsrc) {
-      resource = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
+      resource = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, this.target.prototype, propertyKey);
     }
     let target: Function;
     let ref: ClassRef;

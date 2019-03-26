@@ -1,6 +1,5 @@
 // tslint:disable-next-line:import-name
 import uuidr = require('uuid/v4');
-import fs = require('fs');
 import os = require('os');
 
 // http://stackoverflow.com/questions/1007981/how-to-get-function-parameter-names-values-dynamically-from-javascript
@@ -87,19 +86,6 @@ export function isBase64(str: string): boolean {
     (firstPaddingChar === len - 2 && str[firstPaddingIndex + 1] === '=');
 }
 
-const gzipPrefix = Buffer.from('1F8B', 'hex');
-
-export function isGzip(buf: Buffer | string): boolean {
-  // 1f 8b;
-  if (typeof buf === 'string') {
-    return buf.startsWith(gzipPrefix.toString());
-  }
-  if (typeof buf === 'object' && buf instanceof Buffer) {
-    return (buf[0] === gzipPrefix[0] && buf[1] === gzipPrefix[1]);
-  }
-  return false;
-}
-
 export function wildcardMatch(rule: string, value: string) {
   return new RegExp('^' + rule.split('*').join('.*') + '$').test(value);
 }
@@ -124,20 +110,6 @@ export function scalar(obj: any): string {
   return res;
 }
 
-export function relative(path: string, root: string, rem?: string, wit?: string): string {
-  let i = 0;
-  while (path[i] === root[i] && i < path.length) i++;
-  return path.substring(i).replace(rem || '', wit || '');
-}
-
-export function fsize(path: string) {
-  try {
-    return fs.statSync(path).size;
-  } catch (err) {
-    return undefined;
-  }
-}
-
 export function mem() {
   const usg = process.memoryUsage();
   return `rss: ${mb(usg.rss)}, heap: ${mb(usg.heapUsed)}`;
@@ -147,11 +119,6 @@ export function mb(size: number) {
   const kb = size / 1024;
   if (kb < 1025) return kb.toFixed(0) + ' KB';
   return (kb / 1024).toFixed(3) + ' MB';
-}
-
-export function writeFile(path: string, content: string | Buffer) {
-  fs.writeFileSync(path, content);
-  return fs.statSync(path);
 }
 
 export function interfaces() {

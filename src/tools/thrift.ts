@@ -4,9 +4,8 @@ import { EntityMetadata } from '../metadata/entity';
 import { EnumMetadata } from '../metadata/enum';
 import { Metadata } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
-import { ResultSelect } from '../metadata/result';
-import { TypeMetadata } from '../metadata/type';
-import { VarKind, VarMetadata } from '../metadata/var';
+import { TypeMetadata, TypeSelect } from '../metadata/type';
+import { VarKind } from '../metadata/var';
 import { Utils } from '../utils';
 
 interface DatabaseSchema {
@@ -39,6 +38,8 @@ interface EntitySchema {
 interface Result {
   thrift: string;
   script: string;
+  patch?: string;
+  replace?: Record<string, string>;
 }
 
 const ENTITY = '';
@@ -68,32 +69,46 @@ export class ThriftCodeGen {
   private constructor() { }
 
   public emit(name: string): Result {
-    let thrift = this.prolog() + '\n';
-    // tslint:disable:max-line-length
-    let script = '';
 
-    const registry = Metadata.get();
+    // tslint:disable:max-line-length
+
+    const registry = Metadata.copy();
     const dbs = Object.values(registry.Database).sort((a, b) => a.name.localeCompare(b.name));
     const apis = Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name));
+    const enums = Object.values(registry.Enum).sort((a, b) => a.name.localeCompare(b.name));
 
-    script += this.genClass(name, dbs, apis);
+    let thrift = this.prolog() + '\n';
+    let script = this.genClass(name, dbs, apis);
+    let patch = this.genPatch();
+    let replace: any = {};
+
     thrift += '///////// API /////////\n\n';
     for (const api of apis) {
       const res = this.genApi(api);
       thrift += res.thrift + '\n\n';
       script += res.script + '\n';
+      replace = { ...replace, ...res.replace };
     }
     thrift += '///////// ENUM ////////\n\n';
-    for (const type of Object.values(registry.Enum).sort((a, b) => a.name.localeCompare(b.name))) {
-      thrift += this.genEnum(type) + '\n\n';
+    for (const type of enums) {
+      const res = this.genEnum(type);
+      thrift += res.thrift + '\n\n';
+      patch += res.patch || '';
+      replace = { ...replace, ...res.replace };
     }
     thrift += '//////// INPUTS ///////\n\n';
     for (const type of Object.values(registry.Input).sort((a, b) => a.name.localeCompare(b.name))) {
-      thrift += this.genStruct(type) + '\n\n';
+      const res = this.genStruct(type);
+      thrift += res.thrift + '\n\n';
+      patch += res.patch || '';
+      replace = { ...replace, ...res.replace };
     }
     thrift += '//////// TYPES ////////\n\n';
     for (const type of Object.values(registry.Type).sort((a, b) => a.name.localeCompare(b.name))) {
-      thrift += this.genStruct(type) + '\n\n';
+      const res = this.genStruct(type);
+      thrift += res.thrift + '\n\n';
+      patch += res.patch || '';
+      replace = { ...replace, ...res.replace };
     }
     // const db = Object.values(this.schema.databases)[0];
     thrift += '/////// DATABASE //////\n\n';
@@ -101,16 +116,20 @@ export class ThriftCodeGen {
       const res = this.genDatabase(type);
       thrift += res.thrift + '\n\n';
       script += res.script + '\n';
+      replace = { ...replace, ...res.replace };
     }
     thrift += '//////// METADATA ////////\n\n';
     for (const type of Object.values(registry.Registry).sort((a, b) => a.name.localeCompare(b.name))) {
-      thrift += this.genStruct(type) + '\n\n';
+      const res = this.genStruct(type);
+      thrift += res.thrift + '\n\n';
+      patch += res.patch || '';
+      replace = { ...replace, ...res.replace };
     }
-    return { thrift, script };
+    return { thrift, script, patch, replace };
   }
 
   private prolog(): string {
-    return Utils.unindent(`
+    return Utils.indent(`
       typedef string ID
 
       union Json {
@@ -121,74 +140,98 @@ export class ThriftCodeGen {
         5: map<string, Json> M;
       }
 
-      struct Date {
-        1: i64 timestamp
+      struct Timestamp {
+        1: i64 ms
       }
 
       // TODO: CoreException
     `).trimLeft();
   }
 
-  private genEnum(meta: EnumMetadata): string {
-    let script = `enum ${meta.name} {`;
+  private genEnum(meta: EnumMetadata): Result {
+    let thrift = `enum ${meta.name} {`;
     let i = 0;
     for (const key of meta.options) {
-      script += `${i ? ',' : ''}\n  ${esc(key)} = ${i}`;
-      i++;
+      thrift += `${i ? ',' : ''}\n  ${esc(key)} = ${i}`; i++;
     }
-    script += '\n}';
-    return script;
+    thrift += '\n}';
+    // const patch = `  {\n  // ${meta.name}\n  }\n`;
+    return { script: undefined, thrift };
   }
 
-  private genStruct(meta: TypeMetadata): string {
-    let script = `struct ${meta.name} {`;
+  private genStruct(meta: TypeMetadata): Result {
+    let thrift = `struct ${meta.name} {`;
+    let enmap = '';
+    let demap = '';
+    const replace: any = {};
     let index = 0;
     for (const field of Object.values(meta.members)) {
       const type = field.build;
       const opt = true; // GraphKind.isEntity(struc.kind) ? !field.required : true;
-      script += `${index ? ',' : ''}\n  ${index + 1}: ${opt ? 'optional' : ''} ${type.idl} ${esc(field.name)}`;
+      thrift += `${index ? ',' : ''}\n  ${index + 1}: ${opt ? 'optional' : ''} ${type.idl} ${esc(field.name)}`;
       index++;
+      if (!VarKind.isEnum(type.kind)) continue;
+      enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${type.idl}[obj.${field.name} as any];`;
+      demap += `\nif (obj && typeof obj.${field.name} === 'number') obj.${field.name} = ${type.idl}[obj.${field.name}];`;
+      replace[`output.writeI32(obj.${field.name});`] = `output.writeI32(obj.${field.name} as number);`;
+      replace[`: ${type.idl}`] = `: (${type.idl} | string)`;
     }
-    script += `\n} (kind = "${meta.kind}")`;
-    return script;
+    thrift += `\n} (kind = "${meta.kind}")`;
+    const patch = `
+    {
+      const codec = { ...${meta.name}Codec };
+      ${meta.name}Codec.encode = (obj: I${meta.name}Args, output: thrift.TProtocol) => {
+        ${Utils.indent(enmap.trim(), 8) || '// NOP'}
+        codec.encode(obj, output);
+      }
+      ${meta.name}Codec.decode = (input: thrift.TProtocol): I${meta.name} => {
+        const obj = codec.decode(input);
+        ${Utils.indent(demap.trim(), 8) || '// NOP'}
+        return obj;
+      }
+    }\n`;
+    return { thrift, script: undefined, patch, replace };
+  }
+
+  // TODO: Patch return types in script
+  private genPatch() {
+    return Utils.indent(`
+      /// Patch to support javascript Date and Json
+      {
+        const codec = { ...TimestampCodec };
+        TimestampCodec.encode = (args: ITimestampArgs, output: thrift.TProtocol) => {
+          if (args instanceof Date) args = { ms: args.getTime() };
+          codec.encode(args, output);
+        };
+        TimestampCodec.decode = (input: thrift.TProtocol): ITimestamp => {
+          const val = codec.decode(input);
+          if (!val || val.ms === void 0) return val;
+          const obj: any = new Date(+val.ms.toString());
+          obj.ms = val.ms;
+          return obj;
+        };
+      }
+      {
+        const codec = { ...JsonCodec };
+        JsonCodec.encode = (args: IJsonArgs, output: thrift.TProtocol) => {
+          const tson = isTson(args) ? args : marshal(args);
+          codec.encode(tson, output);
+        };
+        JsonCodec.decode = (input: thrift.TProtocol): IJson => {
+          return unmarshal(codec.decode(input));
+        };
+        ${Utils.indent(Utils.isTson.code(), 8).trimLeft()}
+        ${Utils.indent(Utils.marshal.code(), 8).trimLeft()}
+        ${Utils.indent(Utils.unmarshal.code(), 8).trimLeft()}
+      }
+    `);
   }
 
   private genClass(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
       // tslint:disable:function-name
-      import * as thrift from "@creditkarma/thrift-server-core";
-      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Metadata, Post, Public, RequestObject, Service, Utils } from 'tyx';
-      import ${GEN} = require('./gen');
-
-      {
-        const org = { ...srv.DateCodec };
-        srv.DateCodec.encode = (args: srv.IDateArgs, output: thrift.TProtocol) => {
-          if (args instanceof Date) args = { timestamp: args.getTime() }
-          org.encode(args, output);
-        };
-        srv.DateCodec.decode = (input: thrift.TProtocol): srv.IDate => {
-          const val = org.decode(input);
-          if (!val) return val;
-          const obj: any = new Date(val.timestamp.toString());
-          obj.timestamp = val.timestamp;
-          return obj;
-        };
-      }
-
-      {
-        const org = { ...srv.JsonCodec };
-        srv.JsonCodec.encode = (args: srv.IJsonArgs, output: thrift.TProtocol) => {
-          const keys = args && Object.keys(args);
-          if (!args || keys.length === 1 && ['N', 'B', 'S', 'M'].includes(keys[0])) return org.encode(args, output);
-          const tson = Utils.marshal(args);
-          org.encode(tson, output);
-        };
-        srv.JsonCodec.decode = (input: thrift.TProtocol): srv.IJson => {
-          const val = org.decode(input);
-          const json = Utils.unmarshal(val);
-          return json;
-        };
-      }
+      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Metadata, Post, Public, RequestObject, Service } from 'tyx';
+      import ${GEN} = require('./${name.toLowerCase()}');
 
       ///////// SERVICE /////////
 
@@ -216,7 +259,7 @@ export class ThriftCodeGen {
       }
 
     `;
-    return Utils.unindent(script).trimLeft();
+    return Utils.indent(script).trimLeft();
   }
 
   private genApi(metadata: ApiMetadata): Result {
@@ -269,12 +312,12 @@ export class ThriftCodeGen {
       query += `    result: ${method.api.name}_${method.name}${qlArgs} `;
       if (VarKind.isStruc(result.kind)) {
         const x = (VarKind.isType(result.kind)) ? 0 : 0;
-        const select = this.genSelect(result, method.select, 0, 1 + x);
-        query += select;
+        const select = TypeSelect.emit(result, method.select, 0, 1 + x);
+        query += Utils.indent(select, '  '.repeat(2));
       } else if (VarKind.isArray(result.kind)) {
         const x = (VarKind.isType(result.item.kind)) ? 0 : 0;
-        const select = this.genSelect(result.item, method.select, 0, 1 + x);
-        query += select;
+        const select = TypeSelect.emit(result.item, method.select, 0, 1 + x);
+        query += Utils.indent(select, '  '.repeat(2));
       } else {
         query += `# : ${result.kind}`;
       }
@@ -295,43 +338,12 @@ export class ThriftCodeGen {
     }
     thrift += '\n}';
     handler += '\n};\n';
-    handler += Utils.unindent(`
+    handler += Utils.indent(`
     const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
       serviceName: ${snake},
       handler: new ${GEN}.${metadata.name}.Processor(${proxy}),
     });\n`);
     return { thrift, script: query + handler };
-  }
-
-  private genSelect(meta: VarMetadata, select: ResultSelect | any, level: number, depth: number): string {
-    if (level >= depth) return null;
-    if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (VarKind.isRef(meta.kind)) return this.genSelect(meta.build, select, level, depth);
-    if (VarKind.isArray(meta.kind)) return this.genSelect(meta.item, select, level, depth);
-    // script += ` # [ANY]\n`;
-    // #  NONE
-    const type = meta as TypeMetadata;
-    const tab = '  '.repeat(level + 2);
-    let script = `{`;
-    let i = 0;
-    for (const member of Object.values(type.members)) {
-      if (VarKind.isVoid(member.kind)) continue;
-      let name = member.name;
-      let def = `# ${member.build.js}`;
-      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
-        def += ' ...';
-        if (select instanceof Object && select[member.name]) {
-          const sub = this.genSelect(member.build, select && select[member.name], level + 1, depth + 1);
-          def = sub || def;
-          if (!sub) name = '# ' + name;
-        } else {
-          name = '# ' + name;
-        }
-      }
-      script += `${i++ ? ',' : ''}\n${tab}  ${name} ${def}`;
-    }
-    script += `\n${tab}}`;
-    return script;
   }
 
   private genDatabase(metadata: DatabaseMetadata): Result {
@@ -371,17 +383,17 @@ export class ThriftCodeGen {
     let script = `const ${snake} = '${kebab}';\n`;
     script += `const ${snake}_PROXY: ${GEN}.${metadata.name}.IHandler<any> = {\n`;
     for (let [name, body] of Object.entries(db.queries)) {
-      body = Utils.unindent(body, '  ').trimLeft();
+      body = Utils.indent(body, '  ').trimLeft();
       script += `  ${name}${body},\n`;
     }
     for (let [name, body] of Object.entries(db.mutations)) {
-      body = Utils.unindent(body, '  ').trimLeft();
+      body = Utils.indent(body, '  ').trimLeft();
       script += `  ${name}${body},\n`;
     }
 
     script += '};\n';
 
-    script += Utils.unindent(`
+    script += Utils.indent(`
     const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
       serviceName: ${snake},
       handler: new ${GEN}.${metadata.name}.Processor(${snake}_PROXY),

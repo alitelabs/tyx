@@ -40,13 +40,15 @@ export function titleCase(str: string): string {
   return str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 }
 
-export function unindent(text: string, indent?: string) {
+export function indent(text: string, spaces?: string | number) {
+  // tslint:disable-next-line:no-parameter-reassignment
+  if (typeof spaces === 'number') spaces = ' '.repeat(spaces);
   const lines = text.split('\n');
   let first = lines[0];
-  if (!first.trim().length) first = lines[1];
+  if (!first.trim().length) first = lines[1] || '';
   const pad = first.substr(0, first.indexOf(first.trim()));
   const res = lines.map(line => line.startsWith(pad) ? line.substring(pad.length) : line)
-    .map(line => ((indent || '') + line).trimRight())
+    .map(line => ((spaces || '') + line).trimRight())
     .join('\n');
   return res;
 }

@@ -13,6 +13,7 @@ export interface GraphRequest extends Request {
   info: any;
   sourceIp: string;
   token: string;
+  reenter?: boolean;
 }
 
 export interface GraphQL {

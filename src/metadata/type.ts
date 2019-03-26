@@ -1,8 +1,49 @@
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { FieldMetadata, IFieldMetadata } from './field';
-import { Metadata } from './registry';
+import { Metadata, MetadataRegistry } from './registry';
 import { FieldType, IVarMetadata, VarKind, VarMetadata } from './var';
+
+export type TypeSelect<T = any> = {
+  // tslint:disable-next-line:prefer-array-literal
+  [P in keyof T]?: T[P] extends Array<infer U>
+  ? (TypeSelect<U> | true | false | 1 | 2)
+  : T[P] extends ReadonlyArray<infer U>
+  ? (TypeSelect<U> | true | false | 1 | 2)
+  : (TypeSelect<T[P]> | true | false | 1 | 2)
+};
+
+export namespace TypeSelect {
+  export function emit(meta: VarMetadata, select: TypeSelect | any, level: number, depth: number): string {
+    if (level >= depth) return null;
+    if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
+    if (VarKind.isRef(meta.kind)) return emit(meta.build, select, level, depth);
+    if (VarKind.isArray(meta.kind)) return emit(meta.item, select, level, depth);
+    // script += ` # [ANY]\n`;
+    // #  NONE
+    const type = meta as TypeMetadata;
+    let script = `{`;
+    let i = 0;
+    for (const member of Object.values(type.members)) {
+      if (VarKind.isVoid(member.kind)) continue;
+      let name = member.name;
+      let def = `# ${member.build.js}`;
+      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
+        def += ' ...';
+        if (select instanceof Object && select[member.name]) {
+          const sub = emit(member.build, select && select[member.name], level + 1, depth + 1);
+          def = sub || def;
+          if (!sub) name = '# ' + name;
+        } else {
+          name = '# ' + name;
+        }
+      }
+      script += `${i++ ? ',' : ''}\n  ${name} ${def}`;
+    }
+    script += `\n`;
+    return script;
+  }
+}
 
 export interface ITypeMetadata extends IVarMetadata {
   name: string;
@@ -34,13 +75,13 @@ export class TypeMetadata implements ITypeMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_TYPE, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_TYPE, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_TYPE, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_TYPE, target.constructor);
   }
 
   public static get(target: Class | Prototype): TypeMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_TYPE, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_TYPE, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_TYPE, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_TYPE, target.constructor);
   }
 
   public static define(target: Class): TypeMetadata {
@@ -49,14 +90,14 @@ export class TypeMetadata implements ITypeMetadata {
     let meta = this.get(target);
     if (meta) return meta;
     meta = new TypeMetadata(target);
-    Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_TYPE, meta, target);
     return meta;
   }
 
   public addField(propertyKey: string, type?: FieldType, required?: boolean): this {
     this.members = this.members || {};
     if (this.members[propertyKey]) throw new TypeError(`Duplicate field decoration on [${propertyKey}]`);
-    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, propertyKey);
+    const design = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, this.target.prototype, propertyKey);
     let meta = VarMetadata.of(type || design, !type) as IFieldMetadata;
     if (!meta) {
       throw TypeError(`Design type of [${this.target.name}.${propertyKey}]: `
@@ -78,7 +119,7 @@ export class TypeMetadata implements ITypeMetadata {
     meta.mandatory = !!required;
     meta.design = design && { type: design.name, target: design };
     this.members[propertyKey] = meta;
-    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, this.target.prototype, propertyKey);
+    Reflect.defineMetadata(MetadataRegistry.TYX_MEMBER, meta, this.target.prototype, propertyKey);
     return this;
   }
 

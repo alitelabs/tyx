@@ -1,7 +1,7 @@
 import { EnumMetadata } from '../metadata/enum';
 import { MethodMetadata, MethodType } from '../metadata/method';
-import { Metadata } from '../metadata/registry';
-import { ResultSelect } from '../metadata/result';
+import { CoreDecorator } from '../metadata/registry';
+import { TypeSelect } from '../metadata/type';
 import { Any, Args, Info, InputType, LiteralRef, LiteralType, Obj, ResultType } from '../metadata/var';
 import { ClassRef, Context, TypeRef } from '../types/core';
 
@@ -13,11 +13,11 @@ export function Query<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>):
 export function Query<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Query<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Query<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Query<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Query<TR>(inputs: InputType, result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 export function Query<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Query<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Query<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
-export function Query<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+export function Query<TR>(inputs: InputType[], result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
+export function Query<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | TypeSelect<TR>, maybeSelect?: TypeSelect<TR>): MethodDecorator {
   return ResolverDecorator(Query, MethodType.Query, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -26,12 +26,12 @@ export function Advice<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>)
 export function Advice<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Advice<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Advice<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Advice<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Advice<TR>(inputs: InputType, result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 export function Advice<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Advice<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Advice<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Advice<TR>(inputs: InputType[], result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 
-export function Advice<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+export function Advice<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | TypeSelect<TR>, maybeSelect?: TypeSelect<TR>): MethodDecorator {
   return ResolverDecorator(Advice, MethodType.Query, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -40,11 +40,11 @@ export function Mutation<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR
 export function Mutation<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Mutation<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Mutation<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Mutation<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Mutation<TR>(inputs: InputType, result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 export function Mutation<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Mutation<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Mutation<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
-export function Mutation<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+export function Mutation<TR>(inputs: InputType[], result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
+export function Mutation<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | TypeSelect<TR>, maybeSelect?: TypeSelect<TR>): MethodDecorator {
   return ResolverDecorator(Mutation, MethodType.Mutation, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -53,11 +53,11 @@ export function Command<TR>(result: LiteralType | [LiteralType] | LiteralRef<TR>
 export function Command<TR>(result: TypeRef<TR>): MethodDecorator;
 export function Command<TR>(inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Command<TR>(inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Command<TR>(inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Command<TR>(inputs: InputType, result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 export function Command<TR>(inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Command<TR>(inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Command<TR>(inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
-export function Command<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+export function Command<TR>(inputs: InputType[], result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
+export function Command<TR>(inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | TypeSelect<TR>, maybeSelect?: TypeSelect<TR>): MethodDecorator {
   return ResolverDecorator(Command, MethodType.Mutation, undefined, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -66,11 +66,11 @@ export function Extension<TR>(scope: ClassRef, result: LiteralType | [LiteralTyp
 export function Extension<TR>(scope: ClassRef, result: TypeRef<TR>): MethodDecorator;
 export function Extension<TR>(scope: ClassRef, inputs: InputType, result: EnumMetadata): MethodDecorator;
 export function Extension<TR>(scope: ClassRef, inputs: InputType, result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Extension<TR>(scope: ClassRef, inputs: InputType, result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputs: InputType, result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
 export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: EnumMetadata): MethodDecorator;
 export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: LiteralType | [LiteralType] | LiteralRef<TR>): MethodDecorator;
-export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: TypeRef<TR>, select?: ResultSelect<TR>): MethodDecorator;
-export function Extension<TR>(scope: ClassRef, inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | ResultSelect<TR>, maybeSelect?: ResultSelect<TR>): MethodDecorator {
+export function Extension<TR>(scope: ClassRef, inputs: InputType[], result: TypeRef<TR>, select?: TypeSelect<TR>): MethodDecorator;
+export function Extension<TR>(scope: ClassRef, inputsOrResult: InputType | InputType[] | ResultType<TR>, resultOrSelect?: ResultType<TR> | TypeSelect<TR>, maybeSelect?: TypeSelect<TR>): MethodDecorator {
   return ResolverDecorator(Extension, MethodType.Extension, scope, inputsOrResult, resultOrSelect, maybeSelect);
 }
 
@@ -79,12 +79,12 @@ function ResolverDecorator(
   type: MethodType,
   scope: ClassRef,
   inputsOrResult: InputType | InputType[] | ResultType,
-  resultOrSelect: ResultType | ResultSelect,
-  mayBeSelect?: ResultSelect
+  resultOrSelect: ResultType | TypeSelect,
+  mayBeSelect?: TypeSelect
 ): MethodDecorator {
   let inputs: InputType[];
   let result: ResultType;
-  let select: ResultSelect;
+  let select: TypeSelect;
   if (!resultOrSelect && !mayBeSelect) {
     inputs = undefined;
     result = inputsOrResult as any;
@@ -103,7 +103,7 @@ function ResolverDecorator(
     throw new TypeError('Assert');
   }
 
-  return Metadata.onMethod(decorator, { host: scope, inputs, result, select }, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(decorator, { host: scope, inputs, result, select }, (target, propertyKey, descriptor) => {
     const oper = decorator.name.toLowerCase();
     const meta = MethodMetadata.define(target, propertyKey as string, descriptor).addAuth(oper, { Internal: true });
     meta.confirm(type, scope, inputs, result, select);
@@ -111,19 +111,19 @@ function ResolverDecorator(
 }
 
 export function GraphObject(): ParameterDecorator {
-  return Metadata.onParameter(GraphObject, {}, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(GraphObject, {}, (target, propertyKey, parameterIndex) => {
     MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Obj);
   });
 }
 
 export function ArgsObject(): ParameterDecorator {
-  return Metadata.onParameter(ArgsObject, {}, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(ArgsObject, {}, (target, propertyKey, parameterIndex) => {
     MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Args);
   });
 }
 
 export function ReqTODO(): ParameterDecorator {
-  return Metadata.onParameter(ReqTODO, {}, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(ReqTODO, {}, (target, propertyKey, parameterIndex) => {
     // TODO
   });
 }
@@ -133,20 +133,20 @@ export function ArgParam(required: boolean): ParameterDecorator;
 export function ArgParam(name: string): ParameterDecorator;
 export function ArgParam(name: string, required: boolean): ParameterDecorator;
 export function ArgParam(requiredOrName?: boolean | string, maybeName?: boolean): ParameterDecorator {
-  return Metadata.onParameter(ArgParam, { requiredOrName, maybeName }, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(ArgParam, { requiredOrName, maybeName }, (target, propertyKey, parameterIndex) => {
     // TODO: Add type in decorator
     MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Any);
   });
 }
 
 export function CtxObject(): ParameterDecorator {
-  return Metadata.onParameter(CtxObject, {}, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(CtxObject, {}, (target, propertyKey, parameterIndex) => {
     MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Context);
   });
 }
 
 export function InfoObject(): ParameterDecorator {
-  return Metadata.onParameter(InfoObject, {}, (target, propertyKey, parameterIndex) => {
+  return CoreDecorator.onParameter(InfoObject, {}, (target, propertyKey, parameterIndex) => {
     MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Info);
   });
 }

@@ -7,9 +7,10 @@ import { ApiMetadata, IApiMetadata } from './api';
 import { EventRouteMetadata, IEventRouteMetadata } from './event';
 import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';
 import { IInputMetadata, InputMetadata } from './input';
-import { Metadata } from './registry';
-import { IResultMetadata, ResultMetadata, ResultSelect } from './result';
+import { Metadata, MetadataRegistry } from './registry';
+import { IResultMetadata, ResultMetadata } from './result';
 import { ServiceMetadata } from './service';
+import { TypeSelect } from './type';
 import { Any, Args, Info, InputType, Obj, ResultType } from './var';
 
 export enum MethodType {
@@ -18,12 +19,6 @@ export enum MethodType {
   Mutation = 'Mutation',
   Extension = 'Extension'
 }
-
-export type IDesignMetadata = {
-  name?: string;
-  type: string;
-  target: Function;
-};
 
 export interface IMethodMetadata {
   target: Class;
@@ -40,7 +35,7 @@ export interface IMethodMetadata {
 
   inputs: IInputMetadata[];
   result: IResultMetadata;
-  select: ResultSelect;
+  select: TypeSelect;
 
   contentType: string;
   bindings: IHttpBindingMetadata[];
@@ -66,7 +61,7 @@ export class MethodMetadata implements IMethodMetadata {
 
   public inputs: InputMetadata[] = [];
   public result: ResultMetadata = undefined;
-  public select: ResultSelect = undefined;
+  public select: TypeSelect = undefined;
 
   public contentType: string = undefined;
   public bindings: HttpBindingMetadata[] = undefined;
@@ -131,11 +126,11 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_METHOD, target, propertyKey);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_METHOD, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): MethodMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_METHOD, target, propertyKey);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_METHOD, target, propertyKey);
   }
 
   public static define(target: Prototype, propertyKey: string, descriptor?: PropertyDescriptor): MethodMetadata {
@@ -143,7 +138,7 @@ export class MethodMetadata implements IMethodMetadata {
     let meta = MethodMetadata.get(target, propertyKey);
     if (!meta) {
       meta = new MethodMetadata(target.constructor, propertyKey);
-      Reflect.defineMetadata(Metadata.TYX_METHOD, meta, target, propertyKey);
+      Reflect.defineMetadata(MetadataRegistry.TYX_METHOD, meta, target, propertyKey);
       ApiMetadata.define(target.constructor).addMethod(meta);
     }
 
@@ -151,8 +146,8 @@ export class MethodMetadata implements IMethodMetadata {
     if (meta.result && meta.result.promise !== undefined) return meta;
 
     const names = descriptor && Utils.getArgs(descriptor.value as any);
-    const params: any[] = Reflect.getMetadata(Metadata.DESIGN_PARAMS, target, propertyKey);
-    const returns = Reflect.getMetadata(Metadata.DESIGN_RETURN, target, propertyKey);
+    const params: any[] = Reflect.getMetadata(MetadataRegistry.DESIGN_PARAMS, target, propertyKey);
+    const returns = Reflect.getMetadata(MetadataRegistry.DESIGN_RETURN, target, propertyKey);
 
     for (let i = 0; i < params.length; i++) {
       const param = params[i];
@@ -182,7 +177,7 @@ export class MethodMetadata implements IMethodMetadata {
     return meta;
   }
 
-  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: ResultSelect): this {
+  public confirm(type: MethodType, host: ClassRef, inputs: InputType[], result: ResultType, select?: TypeSelect): this {
     // TODO: Wrap arguments
     if (type === MethodType.Extension && (!inputs || inputs.length === 0 || inputs.length === 1 && inputs[0] === void 0)) {
       // tslint:disable-next-line:no-parameter-reassignment

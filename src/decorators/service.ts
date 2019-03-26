@@ -1,5 +1,5 @@
 import { Di } from '../import';
-import { Metadata } from '../metadata/registry';
+import { CoreDecorator } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { Class, ClassRef, NameRef } from '../types/core';
 import { Utils } from '../utils';
@@ -31,7 +31,7 @@ export function Service(final: false): ClassDecorator;
 // Replacement service, must inherit from final:fasle service
 export function Service(final: true): ClassDecorator;
 export function Service(aliasApiFinal?: Class | string | false | true, finalOrNot?: true | false): ClassDecorator {
-  return Metadata.onClass(Service, { aliasApiFinal, finalOrNot }, (target) => {
+  return CoreDecorator.onClass(Service, { aliasApiFinal, finalOrNot }, (target) => {
     let alias: string = null;
     let api: Class = null;
     let final: boolean;
@@ -70,7 +70,7 @@ export function Inject(alias?: NameRef): Function;
 //  */
 // export function Inject(serviceName?: string): PropertyDecorator | ParameterDecorator | any;
 export function Inject(resource?: ClassRef | NameRef | string): PropertyDecorator | ParameterDecorator | any {
-  return Metadata.onParameter(Inject, { resource }, (target, propertyKey, index) => {
+  return CoreDecorator.onParameter(Inject, { resource }, (target, propertyKey, index) => {
     const constructor = Utils.isClass(target) ? target as Function : target.constructor;
     ServiceMetadata.define(constructor).inject(propertyKey as string, index, resource);
     let rsrc: any = resource;
@@ -89,7 +89,7 @@ export function Inject(resource?: ClassRef | NameRef | string): PropertyDecorato
  * Decorate method providing service initialization.
  */
 export function Initialize(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
     ServiceMetadata.define(target.constructor).setInitializer(propertyKey as string, descriptor);
   });
 }
@@ -107,7 +107,7 @@ export function Initialize(): MethodDecorator {
  * Decorate method providing per request activation.
  */
 export function Activate(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
     ServiceMetadata.define(target.constructor).setActivator(propertyKey as string, descriptor);
   });
 }
@@ -116,7 +116,7 @@ export function Activate(): MethodDecorator {
  * Decorate method providing per request release.
  */
 export function Release(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
     ServiceMetadata.define(target.constructor).setReleasor(propertyKey as string, descriptor);
   });
 }
@@ -126,7 +126,7 @@ export function Release(): MethodDecorator {
  * Decorate methods providing Api implementation.
  */
 export function Handler(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
     ServiceMetadata.define(target.constructor).addHandler(propertyKey as string, descriptor);
   });
 }
@@ -135,7 +135,7 @@ export function Handler(): MethodDecorator {
  * Decorate methods providing Api implementation.
  */
 export function Override(): MethodDecorator {
-  return Metadata.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(Handler, {}, (target, propertyKey, descriptor) => {
     ServiceMetadata.define(target.constructor).addOverride(propertyKey as string, descriptor);
   });
 }

@@ -2,7 +2,7 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
-import { IDesignMetadata } from '../metadata/method';
+import { IDesignMetadata } from '../metadata/field';
 import { IVarMetadata, VarKind } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';

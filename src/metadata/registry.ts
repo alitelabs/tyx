@@ -1,6 +1,5 @@
 import { Logger } from '../logger';
 import { Class } from '../types/core';
-import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata, IDatabaseMetadata } from './database';
@@ -14,12 +13,6 @@ import { IRelationMetadata, RelationMetadata } from './relation';
 import { IServiceMetadata, ServiceMetadata } from './service';
 import { ITypeMetadata, TypeMetadata } from './type';
 import { VarKind, VarMetadata } from './var';
-
-export type CoreDecorator = (
-  over: Object | Function,
-  propertyKey?: string,
-  indexOrDescriptor?: number | PropertyDescriptor
-) => void | Function;
 
 export interface IDecorationMetadata {
   decorator: string;
@@ -59,32 +52,34 @@ export interface MetadataRegistry {
   HttpRoute: Record<string, IHttpRouteMetadata>;
   EventRoute: Record<string, IEventRouteMetadata[]>;
 
-  resolve?(type: string, member: string, obj: any, args: any, ctx: any, info: any): any;
+  resolve?(target: string, obj: any, args: any, ctx: any, info: any): any;
+}
+
+export namespace MetadataRegistry {
+  export const DESIGN_TYPE = 'design:type';
+  export const DESIGN_PARAMS = 'design:paramtypes';
+  export const DESIGN_RETURN = 'design:returntype';
+
+  export const TYX_METADATA = 'tyx:metadata';
+  export const TYX_API = 'tyx:api';
+  export const TYX_SERVICE = 'tyx:service';
+  export const TYX_PROXY = 'tyx:proxy';
+  export const TYX_DATABASE = 'tyx:database';
+  export const TYX_TYPE = 'tyx:type';
+  export const TYX_ENUM = 'tyx:enum';
+  export const TYX_METHOD = 'tyx:method';
+  export const TYX_MEMBER = 'tyx:member';
+
+  export const TYX_ENTITY = 'tyx:entity';
+  export const TYX_COLUMN = 'tyx:column';
+  export const TYX_RELATION = 'tyx:relation';
 }
 
 // tslint:disable:variable-name
 export abstract class Metadata implements MetadataRegistry {
 
-  private static log: Logger = Logger.get('TYX', Metadata.name);
+  public static log: Logger = Logger.get('TYX', Metadata.name);
   private static validated: boolean = false;
-
-  public static readonly DESIGN_TYPE = 'design:type';
-  public static readonly DESIGN_PARAMS = 'design:paramtypes';
-  public static readonly DESIGN_RETURN = 'design:returntype';
-
-  public static readonly TYX_METADATA = 'tyx:metadata';
-  public static readonly TYX_API = 'tyx:api';
-  public static readonly TYX_SERVICE = 'tyx:service';
-  public static readonly TYX_PROXY = 'tyx:proxy';
-  public static readonly TYX_DATABASE = 'tyx:database';
-  public static readonly TYX_TYPE = 'tyx:type';
-  public static readonly TYX_ENUM = 'tyx:enum';
-  public static readonly TYX_METHOD = 'tyx:method';
-  public static readonly TYX_MEMBER = 'tyx:member';
-
-  public static readonly TYX_ENTITY = 'tyx:entity';
-  public static readonly TYX_COLUMN = 'tyx:column';
-  public static readonly TYX_RELATION = 'tyx:relation';
 
   public static readonly Registry: Record<string, TypeMetadata> = {};
   public static readonly Decorator: Record<string, IDecoratorMetadata> = {};
@@ -131,12 +126,11 @@ export abstract class Metadata implements MetadataRegistry {
   public abstract HttpRoute: Record<string, HttpRouteMetadata>;
   public abstract EventRoute: Record<string, EventRouteMetadata[]>;
 
-  private constructor() { }
+  protected constructor() {
+    throw TypeError('Abstract class');
+  }
 
-  // private static regisry = new Registry();
-  private static ordinal = 0;
-
-  public static get(): Metadata {
+  public static copy(): Metadata {
     const reg: MetadataRegistry = {
       Registry: this.Registry,
       Decorator: this.Decorator,
@@ -163,24 +157,12 @@ export abstract class Metadata implements MetadataRegistry {
     return reg as any;
   }
 
-  public static resolve(type: string, member: string, obj: any, args: any, ctx: any, info: any) {
-    const meta: any = this.Registry[type];
-    if (!meta || !meta.RESOLVERS || !meta.RESOLVERS[member]) return undefined;
-    return meta.RESOLVERS[member](obj, args, ctx, info);
-  }
-
-  public resolve(type: string, member: string, obj: any, args: any, ctx: any, info: any) {
-    const meta: any = this.Registry[type];
-    if (!meta || !meta.RESOLVERS || !meta.RESOLVERS[member]) return undefined;
-    return meta.RESOLVERS[member](obj, args, ctx, info);
-  }
-
   public static isValidated(): boolean {
     return this.validated;
   }
 
   public static validate(force?: boolean): Metadata {
-    if (this.validated && !force) return this.get();
+    if (this.validated && !force) return this.copy();
 
     const metadata: Record<string, TypeMetadata> = {};
     const entities: Record<string, TypeMetadata> = {};
@@ -225,10 +207,10 @@ export abstract class Metadata implements MetadataRegistry {
     // TODO: Validate for no lose handler, methods, routes, events
 
     this.validated = true;
-    return this.get();
+    return this.copy();
   }
 
-  private static build(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
+  protected static build(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
     if (VarKind.isEnum(metadata.kind)) {
       const e = metadata as EnumMetadata;
       metadata.gql = e.name;
@@ -343,11 +325,35 @@ export abstract class Metadata implements MetadataRegistry {
     return struc;
   }
 
-  // ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
-  // PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;
-  // MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>)
-  // => TypedPropertyDescriptor<T> | void;
-  // ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
+  // public stringify(ident?: number) {
+  //   // TODO: Circular references
+  //   function filter(key: string, value: any) {
+  //     if (value instanceof Function) {
+  //       if (Utils.isClass(value)) return `[class: ${value.name || 'inline'}]`;
+  //       if (value.name) return `[function: ${value.name}]`;
+  //       // TODO: is arrow function
+  //       return `[ref: ${value.toString()}]`;
+  //     }
+  //     if (key.startsWith('inverse')) {
+  //       if (value instanceof EntityMetadata || value instanceof RelationMetadata) return `#(${value.target.name})`;
+  //     }
+  //     return value;
+  //   }
+  //   return JSON.stringify(this, filter, ident);
+  // }
+}
+
+export interface CoreDecorator {
+  (
+    over: Object | Function,
+    propertyKey?: string,
+    indexOrDescriptor?: number | PropertyDescriptor
+  ): void | Function;
+}
+
+export abstract class CoreDecorator {
+
+  private static ordinal: number = 0;
 
   public static onClass(
     decorator: Function,
@@ -426,9 +432,9 @@ export abstract class Metadata implements MetadataRegistry {
       index,
       args
     };
-    this.Decoration.push(traceInfo);
+    Metadata.Decoration.push(traceInfo);
 
-    const decoratorInfo = this.Decorator[name] = this.Decorator[name] || { decorator: name, count: 0, targets: {} };
+    const decoratorInfo = Metadata.Decorator[name] = Metadata.Decorator[name] || { decorator: name, count: 0, targets: {} };
     decoratorInfo.count++;
     decoratorInfo.targets[target.name] = target;
 
@@ -447,22 +453,5 @@ export abstract class Metadata implements MetadataRegistry {
     );
 
     this.ordinal++;
-  }
-
-  public stringify(ident?: number) {
-    // TODO: Circular references
-    function filter(key: string, value: any) {
-      if (value instanceof Function) {
-        if (Utils.isClass(value)) return `[class: ${value.name || 'inline'}]`;
-        if (value.name) return `[function: ${value.name}]`;
-        // TODO: is arrow function
-        return `[ref: ${value.toString()}]`;
-      }
-      if (key.startsWith('inverse')) {
-        if (value instanceof EntityMetadata || value instanceof RelationMetadata) return `#(${value.target.name})`;
-      }
-      return value;
-    }
-    return JSON.stringify(this, filter, ident);
   }
 }

@@ -1,4 +1,4 @@
-import { Metadata } from '../metadata/registry';
+import { CoreDecorator } from '../metadata/registry';
 
 // tslint:disable:function-name
 
@@ -7,7 +7,7 @@ import { Metadata } from '../metadata/registry';
  */
 export function Exception(target: new () => any): void {
   Exception.ctors[target.name] = target;
-  return void Metadata.trace(Exception, undefined, target, void 0, void 0);
+  return void CoreDecorator.trace(Exception, undefined, target, void 0, void 0);
 }
 Exception.core = true;
 

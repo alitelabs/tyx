@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { Metadata } from './registry';
+import { Metadata, MetadataRegistry } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
@@ -36,13 +36,13 @@ export class DatabaseMetadata implements IDatabaseMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_DATABASE, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_DATABASE, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_DATABASE, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_DATABASE, target.constructor);
   }
 
   public static get(target: Class | Prototype): DatabaseMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_DATABASE, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_DATABASE, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_DATABASE, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_DATABASE, target.constructor);
   }
 
   public static define(target: Class): DatabaseMetadata {
@@ -50,7 +50,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
     let meta = this.get(target);
     if (meta) return meta;
     meta = new DatabaseMetadata(target);
-    Reflect.defineMetadata(Metadata.TYX_DATABASE, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_DATABASE, meta, target);
     return meta;
   }
 

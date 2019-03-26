@@ -116,7 +116,7 @@ export namespace VarKind {
       case VarKind.Date:
       case VarKind.DateTime:
       case VarKind.Timestamp:
-        return 'Date';
+        return 'Timestamp';
       case VarKind.Object:
       case VarKind.ANY:
         return 'Json';

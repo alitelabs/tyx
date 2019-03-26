@@ -1,4 +1,4 @@
-import { Metadata } from "./registry";
+import { Metadata, MetadataRegistry } from "./registry";
 import { IVarMetadata, VarKind } from "./var";
 
 export interface IEnumMetadata extends IVarMetadata {
@@ -30,18 +30,18 @@ export class EnumMetadata implements IEnumMetadata {
   }
 
   public static has(target: Object): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_ENUM, target);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_ENUM, target);
   }
 
   public static get(target: Object): EnumMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_ENUM, target);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_ENUM, target);
   }
 
   public static define(target: Object, name?: string): EnumMetadata {
     let meta = this.get(target);
     if (!meta) {
       meta = new EnumMetadata(target, name);
-      Reflect.defineMetadata(Metadata.TYX_ENUM, meta, target);
+      Reflect.defineMetadata(MetadataRegistry.TYX_ENUM, meta, target);
       if (Metadata.Entity[name]) throw new TypeError(`Duplicate enum name: ${name}`);
       Metadata.Enum[name] = meta;
     } else if (name && name !== meta.name) {

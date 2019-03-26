@@ -1,6 +1,11 @@
 import { Class } from '../types/core';
-import { IDesignMetadata } from './method';
 import { IVarMetadata, VarKind, VarMetadata } from './var';
+
+export type IDesignMetadata = {
+  name?: string;
+  type: string;
+  target: Function;
+};
 
 export interface IFieldMetadata extends IVarMetadata {
   name: string;

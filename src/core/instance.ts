@@ -171,28 +171,30 @@ export class CoreInstance implements CoreContainer {
   public async resolve(
     methodId: string,
     obj: any,
-    input: ResolverQuery & ResolverArgs,
+    args: ResolverQuery & ResolverArgs,
     // TODO: Why new context is generated?
     ctx?: Context,
     // TODO: Why not passed to methods
     info?: ResolverInfo,
   ): Promise<any> {
-    const [service, method] = methodId.split('.');
-    return this.graphRequest(
-      {
-        type: 'graphql',
-        requestId: ctx.requestId,
-        sourceIp: ctx.sourceIp,
-        application: this.application,
-        service,
-        method,
-        obj,
-        args: input,
-        info,
-        token: ctx.auth.token,
-      },
-      true
-    );
+    const [target, member] = methodId.split('.');
+    const meta: any = Metadata.Registry[target];
+    if (meta && meta.RESOLVERS && meta.RESOLVERS[member]) {
+      return meta.RESOLVERS[member](obj, args, ctx, info);
+    }
+    return this.graphRequest({
+      type: 'graphql',
+      requestId: ctx.requestId,
+      sourceIp: ctx.sourceIp,
+      application: this.application,
+      service: target,
+      method: member,
+      obj,
+      args,
+      info,
+      token: ctx.auth.token,
+      reenter: true
+    });
   }
 
   public async invoke(apiType: string, apiMethod: string, ...args: any[]): Promise<any> {
@@ -295,7 +297,9 @@ export class CoreInstance implements CoreContainer {
     }
   }
 
-  public async graphRequest(req: GraphRequest, reenter?: boolean): Promise<any> {
+  public async graphRequest(req: GraphRequest): Promise<any> {
+    const reenter = req.reenter;
+
     if (!reenter && this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
     let log = this.log;
     try {
@@ -491,6 +495,5 @@ export class CoreInstance implements CoreContainer {
       }
     }
     this.services = [];
-
   }
 }

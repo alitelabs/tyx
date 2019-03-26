@@ -1,6 +1,6 @@
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
-import { Metadata } from './registry';
+import { MetadataRegistry } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
 export interface IProxyMetadata extends IServiceMetadata {
@@ -17,13 +17,13 @@ export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_PROXY, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_PROXY, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_PROXY, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_PROXY, target.constructor);
   }
 
   public static get(target: Class | Prototype): ProxyMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_PROXY, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_PROXY, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_PROXY, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_PROXY, target.constructor);
   }
 
   public static define(target: Class): ProxyMetadata {
@@ -34,7 +34,7 @@ export class ProxyMetadata extends ServiceMetadata implements IProxyMetadata {
     if (base && ServiceMetadata.has(base)) throw new TypeError('Inheritance not supported');
     meta = ServiceMetadata.define(target) as any;
     Object.setPrototypeOf(meta, ProxyMetadata.prototype);
-    Reflect.defineMetadata(Metadata.TYX_PROXY, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_PROXY, meta, target);
     return meta;
   }
 

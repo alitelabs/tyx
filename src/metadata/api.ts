@@ -4,7 +4,7 @@ import { Utils } from '../utils';
 import { IEventRouteMetadata } from './event';
 import { IHttpRouteMetadata } from './http';
 import { IMethodMetadata, MethodMetadata } from './method';
-import { Metadata } from './registry';
+import { Metadata, MetadataRegistry } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
 export interface IApiMetadata {
@@ -44,13 +44,13 @@ export class ApiMetadata implements IApiMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_API, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_API, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_API, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_API, target.constructor);
   }
 
   public static get(target: Class | Prototype): ApiMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_API, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_API, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_API, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_API, target.constructor);
   }
 
   public static define(target: Class): ApiMetadata {
@@ -58,7 +58,7 @@ export class ApiMetadata implements IApiMetadata {
     let meta = ApiMetadata.get(target);
     if (meta) return meta;
     meta = new ApiMetadata(target);
-    Reflect.defineMetadata(Metadata.TYX_API, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_API, meta, target);
     return meta;
   }
 

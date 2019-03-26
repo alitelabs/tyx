@@ -1,5 +1,5 @@
 import { MethodMetadata } from '../metadata/method';
-import { Metadata } from '../metadata/registry';
+import { CoreDecorator } from '../metadata/registry';
 import { Roles } from '../types/security';
 
 // tslint:disable:function-name
@@ -33,7 +33,7 @@ export function Auth<TR extends Roles>(roles: TR) {
 }
 
 function AuthDecorator(decorator: Function, roles: Roles): MethodDecorator {
-  return Metadata.onMethod(decorator, { roles }, (target, propertyKey, descriptor) => {
+  return CoreDecorator.onMethod(decorator, { roles }, (target, propertyKey, descriptor) => {
     const auth = decorator.name.toLowerCase();
     MethodMetadata.define(target, propertyKey as string, descriptor).addAuth(auth, roles);
   });

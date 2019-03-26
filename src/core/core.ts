@@ -9,7 +9,7 @@ import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 import { CoreServer } from './server';
 
-export abstract class Core {
+export abstract class Core extends Metadata {
   public static log = Logger.get('TYX', Core.name);
 
   private static graphql: CoreSchema;
@@ -24,10 +24,10 @@ export abstract class Core {
   public static loadTime: number = Math.round(process.uptime() * 1000);
   public static initTime: number;
 
-  protected constructor() { }
+  protected constructor() { super(); }
 
   public static get metadata(): Metadata {
-    return Metadata.get();
+    return Metadata.copy();
   }
 
   public static get schema(): CoreSchema {

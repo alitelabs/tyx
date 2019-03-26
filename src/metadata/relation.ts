@@ -4,7 +4,7 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { FieldMetadata, IFieldMetadata } from './field';
-import { Metadata } from './registry';
+import { Metadata, MetadataRegistry } from './registry';
 import { VarKind } from './var';
 
 /**
@@ -210,11 +210,11 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_RELATION, target, propertyKey);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_RELATION, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): RelationMetadata<any> {
-    return Reflect.getOwnMetadata(Metadata.TYX_RELATION, target, propertyKey);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_RELATION, target, propertyKey);
   }
 
   public static define(target: Prototype, propertyKey: string): RelationMetadata<any> {
@@ -222,8 +222,8 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     let meta = this.get(target, propertyKey);
     if (meta) return meta;
     meta = new RelationMetadata(target.constructor, propertyKey);
-    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
-    Reflect.defineMetadata(Metadata.TYX_RELATION, meta, target, propertyKey);
+    Reflect.defineMetadata(MetadataRegistry.TYX_MEMBER, meta, target, propertyKey);
+    Reflect.defineMetadata(MetadataRegistry.TYX_RELATION, meta, target, propertyKey);
     return meta;
   }
 
@@ -249,7 +249,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     }
 
     this.mandatory = !!(options && !options.nullable);
-    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, this.target.prototype, this.propertyName);
+    const design = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, this.target.prototype, this.propertyName);
     this.design = design && { type: design.name, target: design };
 
     this.relationType = type;

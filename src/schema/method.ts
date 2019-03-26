@@ -6,8 +6,9 @@ import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpBindingMetadata, IHttpRouteMetadata } from '../metadata/http';
 import { IInputMetadata } from '../metadata/input';
-import { IDesignMetadata, IMethodMetadata, MethodType } from '../metadata/method';
-import { IResultMetadata, ResultSelect } from '../metadata/result';
+import { IMethodMetadata, MethodType } from '../metadata/method';
+import { IResultMetadata } from '../metadata/result';
+import { TypeSelect } from '../metadata/type';
 import { } from '../metadata/var';
 import { Class, ClassRef, SchemaResolvers } from '../types/core';
 import { Roles } from '../types/security';
@@ -27,7 +28,6 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field(String) scope: ClassRef;
 
   @Field() name: string;
-  @Field(Object) design: IDesignMetadata[];
 
   @Field() auth: string;
   @Field(Object) roles: Roles;
@@ -37,7 +37,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() resolver: boolean;
   @Field(list => [InputMetadataSchema]) inputs: IInputMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
-  @Field(Object) select: ResultSelect;
+  @Field(Object) select: TypeSelect;
 
   @Field() contentType: string;
   @Field(list => [HttpBindingMetadataSchema]) bindings: IHttpBindingMetadata[];

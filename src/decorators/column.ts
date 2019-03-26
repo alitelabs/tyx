@@ -1,13 +1,13 @@
 import { TypeOrm } from '../import';
 import { ColumnMetadata, ColumnMode, ColumnOptions, ColumnType } from '../metadata/column';
-import { Metadata } from '../metadata/registry';
+import { CoreDecorator } from '../metadata/registry';
 import { FieldType, Int } from '../metadata/var';
 import { Enum } from './type';
 
 // tslint:disable:function-name
 
 export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
-  return Metadata.onProperty(Column, { strategy }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(Column, { strategy }, (target, propertyKey) => {
     const col = TypeOrm.Generated(strategy || 'uuid')(target, propertyKey);
     const meta = ColumnMetadata.get(target, propertyKey as string);
     if (!meta) throw new TypeError(`Column decorator must be applied first on ${target.constructor.name}.${propertyKey as string}`);
@@ -17,7 +17,7 @@ export function Generated(strategy?: 'increment' | 'uuid'): PropertyDecorator {
 }
 
 export function Column(options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(Column, { options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(Column, { options }, (target, propertyKey) => {
     const opts = { nullable: false, ...options };
     const col = TypeOrm.Column(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, opts);
@@ -26,7 +26,7 @@ export function Column(options?: ColumnOptions): PropertyDecorator {
 }
 
 export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(PrimaryColumn, { options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(PrimaryColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, primary: true, nullable: false };
     const col = TypeOrm.PrimaryColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, opts);
@@ -35,7 +35,7 @@ export function PrimaryColumn(options?: ColumnOptions): PropertyDecorator {
 }
 
 export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(CreateDateColumn, { options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(CreateDateColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.DateTime };
     const col = TypeOrm.CreateDateColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.CreateDate, opts || {});
@@ -44,7 +44,7 @@ export function CreateDateColumn(options?: ColumnOptions): PropertyDecorator {
 }
 
 export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(UpdateDateColumn, { options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(UpdateDateColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.DateTime };
     const col = TypeOrm.UpdateDateColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.CreateDate, opts || {});
@@ -53,7 +53,7 @@ export function UpdateDateColumn(options?: ColumnOptions): PropertyDecorator {
 }
 
 export function VersionColumn(options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(VersionColumn, { options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(VersionColumn, { options }, (target, propertyKey) => {
     const opts = { ...options, type: ColumnType.BigInt };
     const col = TypeOrm.VersionColumn(opts)(target, propertyKey);
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Version, opts);
@@ -77,7 +77,7 @@ export function Transient<T = any>(typeOrRequired?: FieldType<T> | 0 | boolean, 
     type = typeOrRequired;
     required = isReq;
   }
-  return Metadata.onProperty(Transient, { type, required }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(Transient, { type, required }, (target, propertyKey) => {
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Transient, { nullable: !required }, type);
   });
 }
@@ -105,7 +105,7 @@ export function StringColumn(numOrOptions?: number | ColumnOptions): PropertyDec
 }
 
 export function EnumColumn(type?: Object, options?: ColumnOptions): PropertyDecorator {
-  return Metadata.onProperty(Transient, { type, options }, (target, propertyKey) => {
+  return CoreDecorator.onProperty(Transient, { type, options }, (target, propertyKey) => {
     // tslint:disable-next-line:no-parameter-reassignment
     options = { ...options, enum: type, type: ColumnType.Enum };
     ColumnMetadata.define(target, propertyKey as string, ColumnMode.Regular, options, Enum(type));

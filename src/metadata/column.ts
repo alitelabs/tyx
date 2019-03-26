@@ -1,9 +1,8 @@
 import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { FieldMetadata } from './field';
-import { IDesignMetadata } from './method';
-import { Metadata } from './registry';
+import { FieldMetadata, IDesignMetadata } from './field';
+import { Metadata, MetadataRegistry } from './registry';
 import { FieldType, VarKind, VarMetadata } from './var';
 
 export enum ColumnType {
@@ -377,11 +376,11 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   }
 
   public static has(target: Prototype, propertyKey: string): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_COLUMN, target, propertyKey);
   }
 
   public static get(target: Prototype, propertyKey: string): ColumnMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_COLUMN, target, propertyKey);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_COLUMN, target, propertyKey);
   }
 
   public static define(
@@ -393,7 +392,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   ): ColumnMetadata {
     let meta = this.get(target, propertyKey);
     if (meta) throw new TypeError(`Duplicate column decoration on [${propertyKey}]`);
-    const design = Reflect.getMetadata(Metadata.DESIGN_TYPE, target, propertyKey);
+    const design = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, target, propertyKey);
     let kind: VarKind;
     let ref: Class;
     if (mode === ColumnMode.Transient) {
@@ -417,8 +416,8 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
       options
     );
     EntityMetadata.define(target.constructor).addColumn(meta);
-    Reflect.defineMetadata(Metadata.TYX_MEMBER, meta, target, propertyKey);
-    Reflect.defineMetadata(Metadata.TYX_COLUMN, meta, target, propertyKey);
+    Reflect.defineMetadata(MetadataRegistry.TYX_MEMBER, meta, target, propertyKey);
+    Reflect.defineMetadata(MetadataRegistry.TYX_COLUMN, meta, target, propertyKey);
     return meta;
   }
 

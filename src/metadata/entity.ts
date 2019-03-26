@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata, IDatabaseMetadata } from './database';
-import { Metadata } from './registry';
+import { MetadataRegistry } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { ITypeMetadata, TypeMetadata } from './type';
 import { VarKind } from './var';
@@ -70,13 +70,13 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
   }
 
   public static has(target: Class | Prototype): boolean {
-    return Reflect.hasOwnMetadata(Metadata.TYX_ENTITY, target)
-      || Reflect.hasOwnMetadata(Metadata.TYX_ENTITY, target.constructor);
+    return Reflect.hasOwnMetadata(MetadataRegistry.TYX_ENTITY, target)
+      || Reflect.hasOwnMetadata(MetadataRegistry.TYX_ENTITY, target.constructor);
   }
 
   public static get(target: Class | Prototype): EntityMetadata {
-    return Reflect.getOwnMetadata(Metadata.TYX_ENTITY, target)
-      || Reflect.getOwnMetadata(Metadata.TYX_ENTITY, target.constructor);
+    return Reflect.getOwnMetadata(MetadataRegistry.TYX_ENTITY, target)
+      || Reflect.getOwnMetadata(MetadataRegistry.TYX_ENTITY, target.constructor);
   }
 
   public static define(target: Class): EntityMetadata {
@@ -85,8 +85,8 @@ export class EntityMetadata extends TypeMetadata implements IEntityMetadata {
     let meta = this.get(target);
     if (meta) return meta;
     meta = new EntityMetadata(target);
-    Reflect.defineMetadata(Metadata.TYX_TYPE, meta, target);
-    Reflect.defineMetadata(Metadata.TYX_ENTITY, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_TYPE, meta, target);
+    Reflect.defineMetadata(MetadataRegistry.TYX_ENTITY, meta, target);
     return meta;
   }
 
