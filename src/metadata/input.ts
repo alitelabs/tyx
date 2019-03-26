@@ -2,7 +2,7 @@ import { Class, Context, ResolverArgs, ResolverInfo, ResolverQuery } from '../ty
 import { EnumMetadata } from './enum';
 import { InputType, IVarMetadata, VarKind, VarMetadata } from './var';
 
-export interface IInputMetadata extends IVarMetadata {
+export interface IArgMetadata extends IVarMetadata {
   index: number;
   name: string;
   design: Class;
@@ -10,7 +10,7 @@ export interface IInputMetadata extends IVarMetadata {
   build: IVarMetadata;
 }
 
-export class InputMetadata implements IInputMetadata {
+export class ArgMetadata implements IArgMetadata {
   public index: number = undefined;
   public name: string = undefined;
   public kind: VarKind = undefined;
@@ -20,9 +20,9 @@ export class InputMetadata implements IInputMetadata {
   public build: VarMetadata = undefined;
   public defined: boolean = false;
 
-  public static of(def: InputType): InputMetadata;
-  public static of(obj: IInputMetadata): InputMetadata;
-  public static of(defOrObj: IInputMetadata | InputType): InputMetadata {
+  public static of(def: InputType): ArgMetadata;
+  public static of(obj: IArgMetadata): ArgMetadata;
+  public static of(defOrObj: IArgMetadata | InputType): ArgMetadata {
     let obj = undefined;
     if (defOrObj === undefined) {
       obj = VarMetadata.of(undefined);
@@ -33,7 +33,7 @@ export class InputMetadata implements IInputMetadata {
     } else {
       throw new TypeError('Internal metadata error');
     }
-    return obj && Object.setPrototypeOf(obj, InputMetadata.prototype);
+    return obj && Object.setPrototypeOf(obj, ArgMetadata.prototype);
   }
 
   public resolve(

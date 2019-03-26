@@ -5,7 +5,7 @@ import { Field } from '../decorators/type';
 import { IApiMetadata } from '../metadata/api';
 import { IEventRouteMetadata } from '../metadata/event';
 import { IHttpBindingMetadata, IHttpRouteMetadata } from '../metadata/http';
-import { IInputMetadata } from '../metadata/input';
+import { IArgMetadata } from '../metadata/input';
 import { IMethodMetadata, MethodType } from '../metadata/method';
 import { IResultMetadata } from '../metadata/result';
 import { TypeSelect } from '../metadata/type';
@@ -35,7 +35,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() query: boolean;
   @Field() mutation: boolean;
   @Field() resolver: boolean;
-  @Field(list => [InputMetadataSchema]) inputs: IInputMetadata[];
+  @Field(list => [InputMetadataSchema]) args: IArgMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: TypeSelect;
 
@@ -49,7 +49,7 @@ export class MethodMetadataSchema implements IMethodMetadata {
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
     target: obj => Utils.label(obj.target),
     scope: obj => Utils.label(obj.scope),
-    inputs: (obj, args) => Lo.filter(Object.values(obj.inputs || {}), args),
+    args: (obj, args) => Lo.filter(Object.values(obj.args || {}), args),
     bindings: (obj, args) => Lo.filter(Object.values(obj.bindings || {}), args),
     http: (obj, args) => Lo.filter(Object.values(obj.http || {}), args),
     events: (obj, args) => Lo.filter(Object.values(obj.events || {}), args),

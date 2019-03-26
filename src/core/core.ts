@@ -1,18 +1,18 @@
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { Di } from '../import';
 import { Logger } from '../logger';
-import { Metadata } from '../metadata/registry';
-import { CoreSchema } from '../tools/schema';
+import { Registry } from '../metadata/registry';
+import { GraphQLTools } from '../tools/graphql';
 import { Class, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 import { CoreServer } from './server';
 
-export abstract class Core extends Metadata {
+export abstract class Core extends Registry {
   public static log = Logger.get('TYX', Core.name);
 
-  private static graphql: CoreSchema;
+  private static graphql: GraphQLTools;
 
   private static application: string;
   private static crudAllowed: boolean;
@@ -26,12 +26,12 @@ export abstract class Core extends Metadata {
 
   protected constructor() { super(); }
 
-  public static get metadata(): Metadata {
-    return Metadata.copy();
+  public static get metadata(): Registry {
+    return Registry.copy();
   }
 
-  public static get schema(): CoreSchema {
-    return (this.graphql = this.graphql || new CoreSchema(Metadata.validate(), this.crudAllowed));
+  public static get schema(): GraphQLTools {
+    return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.crudAllowed));
   }
 
   public static register(...args: Class[]) { }

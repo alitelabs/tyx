@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { FieldMetadata, IDesignMetadata } from './field';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 import { FieldType, VarKind, VarMetadata } from './var';
 
 export enum ColumnType {
@@ -432,7 +432,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
   public resolve(database: DatabaseMetadata, entity: EntityMetadata): void {
     this.entityMetadata = entity;
     const key = `${entity.name}.${this.propertyName}`;
-    Metadata.Column[key] = this;
+    Registry.ColumnMetadata[key] = this;
     database.columns.push(this);
   }
 }

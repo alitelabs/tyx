@@ -4,7 +4,7 @@ import { TypeOrm } from '../import';
 import { Logger } from '../logger';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { Configuration } from '../types/config';
 import { Class } from '../types/core';
 import { TypeOrmProvider } from './typeorm';
@@ -74,7 +74,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         },
         // timezone: "Z",
         logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.Entity).map(meta => meta.target),
+        entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
       };
     } else {
       this.options = {
@@ -87,7 +87,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         database: tokens[5],
         // timezone: "Z",
         logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Metadata.Entity).map(meta => meta.target),
+        entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
       };
     }
     if (!TypeOrm.getConnectionManager().has(this.alias)) {

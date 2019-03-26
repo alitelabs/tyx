@@ -4,7 +4,7 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IEnumMetadata } from '../metadata/enum';
 import { IDesignMetadata, IFieldMetadata } from '../metadata/field';
-import { IInputMetadata } from '../metadata/input';
+import { IArgMetadata } from '../metadata/input';
 import { IResultMetadata } from '../metadata/result';
 import { ITypeMetadata } from '../metadata/type';
 import { IVarMetadata, VarKind } from '../metadata/var';
@@ -23,7 +23,7 @@ export class VarMetadataSchema implements IVarMetadata {
 }
 
 @Schema()
-export class InputMetadataSchema implements IInputMetadata {
+export class InputMetadataSchema implements IArgMetadata {
   @Field(0) index: number;
   @Field() name: string;
   @Field(String) kind: VarKind;
@@ -33,7 +33,7 @@ export class InputMetadataSchema implements IInputMetadata {
   @Field(type => VarMetadataSchema) build: IVarMetadata;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
 
-  public static RESOLVERS: SchemaResolvers<IInputMetadata> = {
+  public static RESOLVERS: SchemaResolvers<IArgMetadata> = {
     design: obj => Utils.label(obj.design),
     ref: obj => Utils.label(obj.ref)
   };

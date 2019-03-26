@@ -1,4 +1,4 @@
-import { Metadata, MetadataRegistry } from "./registry";
+import { MetadataRegistry, Registry } from "./registry";
 import { IVarMetadata, VarKind } from "./var";
 
 export interface IEnumMetadata extends IVarMetadata {
@@ -42,8 +42,8 @@ export class EnumMetadata implements IEnumMetadata {
     if (!meta) {
       meta = new EnumMetadata(target, name);
       Reflect.defineMetadata(MetadataRegistry.TYX_ENUM, meta, target);
-      if (Metadata.Entity[name]) throw new TypeError(`Duplicate enum name: ${name}`);
-      Metadata.Enum[name] = meta;
+      if (Registry.EntityMetadata[name]) throw new TypeError(`Duplicate enum name: ${name}`);
+      Registry.EnumMetadata[name] = meta;
     } else if (name && name !== meta.name) {
       throw new TypeError(`Can not rename enum from: ${meta.name} to: ${name}`);
     }

@@ -2,7 +2,7 @@ import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { EnumMetadata } from '../metadata/enum';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { TypeMetadata, TypeSelect } from '../metadata/type';
 import { VarKind } from '../metadata/var';
@@ -58,12 +58,12 @@ function esc(name: string) {
   return RESERVED.includes(name) ? '__esc_' + name : name;
 }
 
-export class ThriftCodeGen {
+export class ThriftTools {
 
   protected crud: boolean = true;
 
   public static emit(name: string): Result {
-    return new ThriftCodeGen().emit(name);
+    return new ThriftTools().emit(name);
   }
 
   private constructor() { }
@@ -72,10 +72,10 @@ export class ThriftCodeGen {
 
     // tslint:disable:max-line-length
 
-    const registry = Metadata.copy();
-    const dbs = Object.values(registry.Database).sort((a, b) => a.name.localeCompare(b.name));
-    const apis = Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name));
-    const enums = Object.values(registry.Enum).sort((a, b) => a.name.localeCompare(b.name));
+    const registry = Registry.copy();
+    const dbs = Object.values(registry.DatabaseMetadata).sort((a, b) => a.name.localeCompare(b.name));
+    const apis = Object.values(registry.ApiMetadata).sort((a, b) => a.name.localeCompare(b.name));
+    const enums = Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name));
 
     let thrift = this.prolog() + '\n';
     let script = this.genClass(name, dbs, apis);
@@ -97,14 +97,14 @@ export class ThriftCodeGen {
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// INPUTS ///////\n\n';
-    for (const type of Object.values(registry.Input).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.InputMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
       patch += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// TYPES ////////\n\n';
-    for (const type of Object.values(registry.Type).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.TypeMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
       patch += res.patch || '';
@@ -119,7 +119,7 @@ export class ThriftCodeGen {
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// METADATA ////////\n\n';
-    for (const type of Object.values(registry.Registry).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.CoreMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
       patch += res.patch || '';
@@ -230,7 +230,7 @@ export class ThriftCodeGen {
   private genClass(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
       // tslint:disable:function-name
-      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Metadata, Post, Public, RequestObject, Service } from 'tyx';
+      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Post, Public, RequestObject, Service } from 'tyx';
       import ${GEN} = require('./${name.toLowerCase()}');
 
       ///////// SERVICE /////////
@@ -279,10 +279,10 @@ export class ThriftCodeGen {
       let reqArgs = '';
       let qlArgs = '';
       let params = '';
-      for (let i = 0; i < method.inputs.length; i++) {
-        const inb = method.inputs[i].build;
+      for (let i = 0; i < method.args.length; i++) {
+        const inb = method.args[i].build;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
-        const param = method.inputs[i].name;
+        const param = method.args[i].name;
         if (idlArgs) { idlArgs += ', '; jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
         params += param;
         idlArgs += `${i + 1}: ${inb.idl} ${esc(param)}`;
@@ -505,40 +505,37 @@ export class ThriftCodeGen {
       mutation: this.crud ? mutation : undefined,
       model,
       inputs,
-      // search,
-      // simple: model
-      // relations: {},
+      // search
     };
+    const id = `'${db.name}.${entity.name}'`;
     db.queries = {
       ...db.queries,
       [`${GET}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${entity.name}> {
-        return ctx.provider.get(Metadata.Entity['${entity.name}'], null, { ${keyNames} }, ctx);
+        return ctx.provider.get(${id}, null, { ${keyNames} }, ctx);
       }`,
       [`${SEARCH}${name}`]: `
       (query: ${GEN}.${ARGS}${name}QueryExpr, ctx?: Context): Promise<${GEN}.${entity.name}[]> {
-        return ctx.provider.search(Metadata.Entity['${entity.name}'], null, { query }, ctx);
+        return ctx.provider.search(${id}, null, { query }, ctx);
       }`,
     };
     db.mutations = this.crud ? {
       ...db.mutations,
       [`${CREATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}CreateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.create(Metadata.Entity['${entity.name}'], null, record, ctx);
+        return ctx.provider.create(${id}, null, record, ctx);
       }`,
       [`${UPDATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}UpdateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.update(Metadata.Entity['${entity.name}'], null, record, ctx);
+        return ctx.provider.update(${id}, null, record, ctx);
       }`,
       [`${REMOVE}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.remove(Metadata.Entity['${entity.name}'], null, { ${keyNames} }, ctx);
+        return ctx.provider.remove(${id}, null, { ${keyNames} }, ctx);
       }`,
     } : db.mutations;
     db.entities[name] = schema;
 
-    // let simple = model;
-    // const navigation: Record<string, Resolver> = {};
     for (const relation of entity.relations) {
       const property = relation.propertyName;
       const inverse = relation.inverseEntityMetadata.name;
@@ -550,24 +547,20 @@ export class ThriftCodeGen {
         const args = '';
         model += `,\n  ${++index}: optional ${inverse}${ENTITY} ${property}${args} (relation = "ManyToOne")`;
         // simple += `,\n  ${property}: ${inverse}${ENTITY}`;
-        // navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToOne(metadata, relation, obj, args, ctx, info);
       } else if (relation.relationType === RelationType.OneToOne) {
         rm.type = 'oneToOne';
         const args = '';
         model += `,\n  ${++index}: optional ${inverse}${ENTITY} ${property}${args} (relation = "OneToOne")`;
-        // navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToOne(metadata, relation, obj, args, ctx, info);
       } else if (relation.relationType === RelationType.OneToMany) {
         rm.type = 'oneToMany';
         // const temp = this.genEntity(db, relation.inverseEntityMetadata);
         const args = ''; // ` (${temp.search}\n  )`;
         model += `,\n  ${++index}: optional list<${inverse}${ENTITY}> ${property}${args} (relation = "OneToMany")`;
-        // navigation[property] = (obj, args, ctx, info) => ctx.provider.oneToMany(metadata, relation, obj, args, ctx, info);
       } else if (relation.relationType === RelationType.ManyToMany) {
         rm.type = 'manyToMany';
         // const temp = this.genEntity(db, relation.inverseEntityMetadata);
         const args = ''; //  ` (${temp.search}\n  )`;
         model += `,\n  ${++index}: optional list<${inverse}${ENTITY}> ${property}${args} (relation = "ManyToMany")`;
-        // navigation[property] = (obj, args, ctx, info) => ctx.provider.manyToMany(metadata, relation, obj, args, ctx, info);
       }
     }
     for (const col of entity.columns) {
@@ -577,11 +570,8 @@ export class ThriftCodeGen {
       model += `${cm ? '' : ','}\n  ${++index}: optional ${col.build.idl} ${pn} (transient)`;
     }
     model += `\n} (kind="Entity")`;
-    // simple += '\n}';
 
     schema.model = model;
-    // schema.simple = simple;
-    // schema.resolvers = navigation;
     // schema.schema = query + "\n" + mutation + "\n" + model + "\n" + inputs.join("\n");
 
     return schema;

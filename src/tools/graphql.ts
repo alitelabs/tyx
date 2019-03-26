@@ -7,7 +7,7 @@ import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { EnumMetadata } from '../metadata/enum';
 import { MethodMetadata } from '../metadata/method';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { RelationType } from '../metadata/relation';
 import { TypeMetadata } from '../metadata/type';
 import { VarKind, VarMetadata } from '../metadata/var';
@@ -17,7 +17,6 @@ import { Utils } from '../utils';
 
 import Reg = require('../schema/registry');
 import GraphQLJSON = require('graphql-type-json');
-import FS = require('fs');
 
 export { GraphQLSchema } from 'graphql';
 
@@ -124,9 +123,9 @@ interface EnumSchema {
   model: string;
 }
 
-export class CoreSchema {
+export class GraphQLTools {
 
-  private static log: Logger = Logger.get('TYX', CoreSchema.name);
+  private static log: Logger = Logger.get('TYX', GraphQLTools.name);
 
   private crud: boolean;
 
@@ -139,39 +138,39 @@ export class CoreSchema {
   protected apis: Record<string, ApiSchema> = {};
 
   constructor(crud?: boolean);
-  constructor(registry: Metadata | typeof Metadata);
-  constructor(registry: Metadata | typeof Metadata, crud: boolean);
-  constructor(registryOrCrud?: Metadata | typeof Metadata | boolean, maybeCrud?: boolean) {
-    const registry = typeof registryOrCrud !== 'boolean' && registryOrCrud || Reg && Metadata.validate();
+  constructor(registry: Registry | typeof Registry);
+  constructor(registry: Registry | typeof Registry, crud: boolean);
+  constructor(registryOrCrud?: Registry | typeof Registry | boolean, maybeCrud?: boolean) {
+    const registry = typeof registryOrCrud !== 'boolean' && registryOrCrud || Reg && Registry.validate();
     this.crud = typeof registryOrCrud === 'boolean' ? registryOrCrud : !!maybeCrud;
 
     // Enums
-    for (const type of Object.values(registry.Enum)) {
+    for (const type of Object.values(registry.EnumMetadata)) {
       this.enums[type.name] = this.genEnum(type);
     }
     // Metadata
-    for (const type of Object.values(registry.Registry)) {
+    for (const type of Object.values(registry.CoreMetadata)) {
       this.genType(type, this.metadata);
     }
     // Databases & Entities
-    for (const type of Object.values(registry.Database)) {
+    for (const type of Object.values(registry.DatabaseMetadata)) {
       this.genDatabase(type);
     }
     // Unbound entites as types
-    for (const type of Object.values(registry.Entity)) {
+    for (const type of Object.values(registry.EntityMetadata)) {
       if (this.entities[type.name]) continue;
       this.genType(type, this.types);
     }
     // Inputs
-    for (const type of Object.values(registry.Input)) {
+    for (const type of Object.values(registry.InputMetadata)) {
       this.genType(type, this.inputs);
     }
     // Results
-    for (const type of Object.values(registry.Type)) {
+    for (const type of Object.values(registry.TypeMetadata)) {
       this.genType(type, this.types);
     }
     // Api
-    for (const api of Object.values(registry.Api)) {
+    for (const api of Object.values(registry.ApiMetadata)) {
       this.genApi(api);
     }
   }
@@ -191,7 +190,7 @@ export class CoreSchema {
         const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
         err.message = err.message.replace('Error:', `Error: ${loc}`);
       }
-      CoreSchema.log.error(err);
+      GraphQLTools.log.error(err);
       throw err;
     }
   }
@@ -213,7 +212,7 @@ export class CoreSchema {
   }
 
   public static service(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
-    const schema = new CoreSchema(crud);
+    const schema = new GraphQLTools(crud);
     const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
@@ -250,11 +249,10 @@ export class CoreSchema {
   }
 
   public typeDefs(): string {
-    let schema = CoreSchema.prolog().trimRight();
+    let schema = GraphQLTools.prolog().trimRight();
     schema += `
       type Query {
-        Metadata: MetadataRegistry
-        Core: CoreInfo
+        Core: Core
       }
       type Mutation {
         ping(input: ANY): ANY
@@ -346,12 +344,11 @@ export class CoreSchema {
 
   public script(ts?: boolean) {
     const resolvers: Record<string, Record<string, string>> = {
-      Query: { Metadata: undefined },
+      Query: { Core: undefined },
       Mutation: { ping: undefined },
-      MetadataRegistry: {}
+      Core: {}
     };
-    resolvers.Query.Metadata = `ctx.metadata`;
-    resolvers.Query.Core = `ctx.container`;
+    resolvers.Query.Core = `ctx.metadata`;
     resolvers.Mutation.ping = `({ args, timestamp: new Date().toISOString(), version: process.versions })`;
     for (const schema of Object.values(this.databases)) {
       resolvers.Query = { ...resolvers.Query, [schema.name]: schema.root };
@@ -414,7 +411,7 @@ export class CoreSchema {
       entities: {},
       root: '{}',
       queries: {
-        Metadata: `ctx.metadata.Database['${metadata.name}']`,
+        Metadata: `ctx.metadata.DatabaseMetadata['${metadata.name}']`,
       },
       mutations: {},
     };
@@ -650,7 +647,7 @@ export class CoreSchema {
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) {
-        schema.resolvers[member.name] = `ctx.resolve('${metadata.name}.${member.name}', obj, args, ctx, info)`;
+        schema.resolvers[member.name] = `ctx.resolve('${struc.target.name}.${member.name}', obj, args, ctx, info)`;
       }
     }
     schema.model += '}';
@@ -671,12 +668,12 @@ export class CoreSchema {
       const name = method.extension ? method.name : `${metadata.target.name}_${method.name}`;
 
       let call = '';
-      for (let i = 0; i < method.inputs.length; i++) {
-        if (VarKind.isVoid(method.inputs[i].kind) || VarKind.isResolver(method.inputs[i].kind)) continue;
+      for (let i = 0; i < method.args.length; i++) {
+        if (VarKind.isVoid(method.args[i].kind) || VarKind.isResolver(method.args[i].kind)) continue;
         // TODO: Move to metadata
-        const name = method.inputs[i].name || `arg${i}`;
-        if (!method.inputs[i]) throw new TypeError(`Unbound input argmument [${method.api.name}.${method.name}:${i}] [${name}]`);
-        const inb = method.inputs[i].build;
+        const name = method.args[i].name || `arg${i}`;
+        if (!method.args[i]) throw new TypeError(`Unbound input argmument [${method.api.name}.${method.name}:${i}] [${name}]`);
+        const inb = method.args[i].build;
         call += (call ? ', ' : '') + `${name}: ${inb.gql}!`;
       }
       if (call) call = `(${call})`;
@@ -709,9 +706,5 @@ export class CoreSchema {
     }
     this.apis[api.name] = api;
     return api;
-  }
-
-  public write(file: string) {
-    FS.writeFileSync(file, this.typeDefs());
   }
 }

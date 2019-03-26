@@ -1,7 +1,7 @@
 import { Class, ClassRef, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadata, IApiMetadata } from './api';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 
 export interface IInjectMetadata {
   host: IServiceMetadata;
@@ -215,10 +215,10 @@ export class ServiceMetadata implements IServiceMetadata {
 
     this.inherit(base);
 
-    const prev = Metadata.Service[this.name];
+    const prev = Registry.ServiceMetadata[this.name];
     // TODO: Store by name, separate unique by alias
     if (prev && prev !== this) throw new TypeError(`Duplicate service name [${this.name}]`);
-    Metadata.Service[this.name] = this;
+    Registry.ServiceMetadata[this.name] = this;
 
     if (this.api) {
       for (const method in this.api.methods) {

@@ -4,7 +4,7 @@ import { Utils } from '../utils';
 import { IEventRouteMetadata } from './event';
 import { IHttpRouteMetadata } from './http';
 import { IMethodMetadata, MethodMetadata } from './method';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
 export interface IApiMetadata {
@@ -101,9 +101,9 @@ export class ApiMetadata implements IApiMetadata {
 
     this.inherit(base || sup);
 
-    const prev = Metadata.Api[this.name];
+    const prev = Registry.ApiMetadata[this.name];
     if (prev && prev !== this) throw new TypeError(`Duplicate API name [${this.name}]`);
-    Metadata.Api[this.name] = this;
+    Registry.ApiMetadata[this.name] = this;
     Object.values(this.methods).forEach(m => m.commit(this));
     return this;
   }

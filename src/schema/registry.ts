@@ -15,11 +15,11 @@ import { IDecorationMetadata, IDecoratorMetadata, MetadataRegistry } from '../me
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
 import { ITypeMetadata } from '../metadata/type';
-import { Class, SchemaResolvers } from '../types/core';
+import { Class, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { ColumnMetadataSchema } from './column';
-import { CoreInfoSchema } from './core';
+import { InstanceInfoSchema, ProcessInfoSchema, ServiceInfoSchema } from './core';
 import { DatabaseMetadataSchema } from './database';
 import { EntityMetadataSchema } from './entity';
 import { EventRouteMetadataSchema } from './event';
@@ -28,10 +28,7 @@ import { MethodMetadataSchema } from './method';
 import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
-import { EnumMetadataSchema, TypeMetadataSchema } from './type';
-
-// Keep
-CoreInfoSchema.name;
+import { EnumMetadataSchema, InputMetadataSchema, TypeMetadataSchema } from './type';
 
 @Schema()
 export class DecoratorMetadataSchema implements IDecoratorMetadata {
@@ -61,50 +58,74 @@ export class DecorationMetadataSchema implements IDecorationMetadata {
 
 // tslint:disable:variable-name
 @Schema()
-export class MetadataRegistrySchema implements MetadataRegistry {
+export class CoreSchema implements MetadataRegistry {
 
-  @Field(list => [TypeMetadataSchema]) Registry: Record<string, ITypeMetadata>;
-  @Field(list => [DecoratorMetadataSchema]) Decorator: Record<string, IDecoratorMetadata>;
-  @Field(list => [DecorationMetadataSchema]) Decoration: IDecorationMetadata[];
+  @Field(list => [TypeMetadataSchema]) CoreMetadata: Record<string, ITypeMetadata>;
+  @Field(list => [DecoratorMetadataSchema]) DecoratorMetadata: Record<string, IDecoratorMetadata>;
+  @Field(list => [DecorationMetadataSchema]) DecorationMetadata: IDecorationMetadata[];
 
-  @Field(list => [ApiMetadataSchema]) Api: Record<string, IApiMetadata>;
-  @Field(list => [ServiceMetadataSchema]) Service: Record<string, IServiceMetadata>;
-  @Field(list => [ProxyMetadataSchema]) Proxy: Record<string, IProxyMetadata>;
+  @Field(list => [ApiMetadataSchema]) ApiMetadata: Record<string, IApiMetadata>;
+  @Field(list => [ServiceMetadataSchema]) ServiceMetadata: Record<string, IServiceMetadata>;
+  @Field(list => [ProxyMetadataSchema]) ProxyMetadata: Record<string, IProxyMetadata>;
 
-  @Field(list => [DatabaseMetadataSchema]) Database: Record<string, IDatabaseMetadata>;
-  @Field(list => [EntityMetadataSchema]) Entity: Record<string, IEntityMetadata>;
-  @Field(list => [ColumnMetadataSchema]) Column: Record<string, IColumnMetadata>;
-  @Field(list => [RelationMetadataSchema]) Relation: Record<string, IRelationMetadata>;
+  @Field(list => [DatabaseMetadataSchema]) DatabaseMetadata: Record<string, IDatabaseMetadata>;
+  @Field(list => [EntityMetadataSchema]) EntityMetadata: Record<string, IEntityMetadata>;
+  @Field(list => [ColumnMetadataSchema]) ColumnMetadata: Record<string, IColumnMetadata>;
+  @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, IRelationMetadata>;
 
-  @Field(list => [EnumMetadataSchema]) Enum: Record<string, IEnumMetadata>;
-  @Field(list => [TypeMetadataSchema]) Input: Record<string, ITypeMetadata>;
-  @Field(list => [TypeMetadataSchema]) Type: Record<string, ITypeMetadata>;
+  @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, IEnumMetadata>;
+  @Field(list => [InputMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
+  @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, ITypeMetadata>;
 
-  @Field(list => [MethodMetadataSchema]) Method: Record<string, IMethodMetadata>;
+  @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, IMethodMetadata>;
   @Field(list => [MethodMetadataSchema]) ResolverMetadata: Record<string, IMethodMetadata>;
-  @Field(list => [HttpRouteMetadataSchema]) HttpRoute: Record<string, IHttpRouteMetadata>;
-  @Field(list => [EventRouteMetadataSchema]) EventRoute: Record<string, IEventRouteMetadata[]>;
+  @Field(list => [HttpRouteMetadataSchema]) HttpRouteMetadata: Record<string, IHttpRouteMetadata>;
+  @Field(list => [EventRouteMetadataSchema]) EventRouteMetadata: Record<string, IEventRouteMetadata[]>;
 
-  public static RESOLVERS: SchemaResolvers<MetadataRegistry> = {
-    Registry: (obj, args) => Lo.filter(Object.values(obj.Registry), args),
-    Decorator: (obj, args) => Lo.filter(Object.values(obj.Decorator), args),
-    Decoration: (obj, args) => {
+  // Additional runtime info
+
+  @Field(ref => ProcessInfoSchema) Process: ProcessInfoSchema;
+  @Field(list => [ServiceInfoSchema]) Global: ServiceInfoSchema[];
+  @Field(list => [ServiceInfoSchema]) Context: ServiceInfoSchema[];
+  @Field(list => [InstanceInfoSchema]) Pool: InstanceInfoSchema[];
+
+  public static RESOLVERS: SchemaResolvers<CoreSchema> = {
+    CoreMetadata: (obj, args) => Lo.filter(Object.values(obj.CoreMetadata), args),
+    DecoratorMetadata: (obj, args) => Lo.filter(Object.values(obj.DecoratorMetadata), args),
+    DecorationMetadata: (obj, args) => {
       if (args.target) args.target = `[class: ${args.target}]`;
-      const mapped = obj.Decoration.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
+      const mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
       return Lo.filter(mapped as any[], args);
     },
-    Api: (obj, args) => Lo.filter(Object.values(obj.Api), args),
-    Service: (obj, args) => Lo.filter(Object.values(obj.Service), args),
-    Proxy: (obj, args) => Lo.filter(Object.values(obj.Proxy), args),
-    Database: (obj, args) => Lo.filter(Object.values(obj.Database), args),
-    Entity: (obj, args) => Lo.filter(Object.values(obj.Entity), args),
-    Column: (obj, args) => Lo.filter(Object.values(obj.Column), args),
-    Relation: (obj, args) => Lo.filter(Object.values(obj.Relation), args),
-    Enum: (obj, args) => Lo.filter(Object.values(obj.Enum), args),
-    Input: (obj, args) => Lo.filter(Object.values(obj.Input), args),
-    Type: (obj, args) => Lo.filter(Object.values(obj.Type), args),
-    Method: (obj, args) => Lo.filter(Object.values(obj.Method), args),
-    HttpRoute: (obj, args) => Lo.filter(Object.values(obj.HttpRoute), args),
-    EventRoute: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRoute)), args),
+    ApiMetadata: (obj, args) => Lo.filter(Object.values(obj.ApiMetadata), args),
+    ServiceMetadata: (obj, args) => Lo.filter(Object.values(obj.ServiceMetadata), args),
+    ProxyMetadata: (obj, args) => Lo.filter(Object.values(obj.ProxyMetadata), args),
+    DatabaseMetadata: (obj, args) => Lo.filter(Object.values(obj.DatabaseMetadata), args),
+    EntityMetadata: (obj, args) => Lo.filter(Object.values(obj.EntityMetadata), args),
+    ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
+    RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
+    EnumMetadata: (obj, args) => Lo.filter(Object.values(obj.EnumMetadata), args),
+    InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
+    TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
+    MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
+    HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),
+    EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args),
+    // Runtime
+    Process: (obj, args, ctx) => ctx.container.processInfo(),
+    Global: (obj, args, ctx) => {
+      const info = ctx.container.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));
+      if (args.target) args.target = `[class: ${args.target}]`;
+      if (args.type) args.type = `[class: ${args.type}]`;
+      return Lo.filter(info, args);
+    },
+    Context: (obj, args, ctx) => {
+      const info = ctx.container.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
+      if (args.target) args.target = `[class: ${args.target}]`;
+      if (args.type) args.type = `[class: ${args.type}]`;
+      return Lo.filter(info, args);
+    },
+    Pool: (obj, args, ctx) => {
+      return (ctx.container.name === 'Core') ? ctx.container.instances() : undefined;
+    }
   };
 }

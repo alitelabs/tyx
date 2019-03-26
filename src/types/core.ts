@@ -5,7 +5,7 @@ import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
-import { Metadata, MetadataRegistry } from '../metadata/registry';
+import { MetadataRegistry, Registry } from '../metadata/registry';
 import { RelationMetadata } from '../metadata/relation';
 import { ServiceMetadata } from '../metadata/service';
 import { EventRequest, EventResult } from './event';
@@ -31,6 +31,7 @@ export interface Context {
   resolve?: ResolverFunction;
   execute?: ExecuteFunction;
   metadata?: MetadataRegistry;
+
   provider?: any; // TODO: Type
   results?: Record<string, any[]>;
 }
@@ -72,11 +73,13 @@ export const CoreContainer = 'container';
 
 export interface CoreContainer {
   state: ContainerState;
+  name: string;
 
-  metadata(): Metadata;
+  metadata(): Registry;
 
-  serviceInfo(): ServiceInfo[];
+  serviceInfo(core?: boolean): ServiceInfo[];
   processInfo(): ProcessInfo;
+  instances(): CoreContainer[];
 
   has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean;
   get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T;

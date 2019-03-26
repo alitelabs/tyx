@@ -1,11 +1,10 @@
 import { ApiError, BadRequest } from '../errors';
 import { HttpCode, HttpContentType, HttpHeader, HttpMultipart, HttpRequest, HttpResponse } from '../types/http';
+import { Utils } from '../utils';
 
 import Zlib = require('zlib');
-import Utils = require('../utils');
 
 export namespace HttpUtils {
-
   export function response(code: HttpCode, body: any, json?: boolean) {
     // tslint:disable-next-line:no-parameter-reassignment
     json = (json === undefined) ? true : json;

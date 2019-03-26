@@ -38,7 +38,7 @@ export class InstanceInfoSchema {
     return ctx.container;
   }
 
-  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, Context | any> = {
+  public static RESOLVERS: InfoSchemaResolvers<InstanceInfoSchema, Context | any> = {
     context: (obj, args) => {
       const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
@@ -111,33 +111,4 @@ export class ProcessInfoSchema implements ProcessInfo {
   };
 }
 
-@Schema()
-export class CoreInfoSchema {
-  @Field() name: string;
-  @Field(ref => ProcessInfoSchema) process: ProcessInfoSchema;
-  @Field(list => [ServiceInfoSchema]) global: ServiceInfoSchema[];
-  @Field(list => [ServiceInfoSchema]) context: ServiceInfoSchema[];
-  @Field(list => [InstanceInfoSchema]) pool: InstanceInfoSchema[];
-
-  // TODO: Statistics .....
-
-  // TODO: Move logic to instance and core
-  public static RESOLVERS: InfoSchemaResolvers<CoreInfoSchema, Context | any> = {
-    process: (obj, args) => obj.processInfo(),
-    global: (obj, args) => {
-      const info = obj.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));
-      if (args.target) args.target = `[class: ${args.target}]`;
-      if (args.type) args.type = `[class: ${args.type}]`;
-      return Lo.filter(info, args);
-    },
-    context: (obj, args) => {
-      const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
-      if (args.target) args.target = `[class: ${args.target}]`;
-      if (args.type) args.type = `[class: ${args.type}]`;
-      return Lo.filter(info, args);
-    },
-    pool: (obj, args) => {
-      return (obj.name === 'Core') ? obj.instances() : undefined;
-    }
-  };
-}
+// TODO: Statistics .....

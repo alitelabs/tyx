@@ -4,7 +4,7 @@ import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { FieldMetadata, IFieldMetadata } from './field';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 import { VarKind } from './var';
 
 /**
@@ -283,7 +283,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
     }
     // TODO: More validations and optional inverse relation
     const key = `${entity.name}.${this.propertyName}`;
-    Metadata.Relation[key] = this;
+    Registry.RelationMetadata[key] = this;
     database.relations.push(this);
   }
 }

@@ -112,13 +112,13 @@ function ResolverDecorator(
 
 export function GraphObject(): ParameterDecorator {
   return CoreDecorator.onParameter(GraphObject, {}, (target, propertyKey, parameterIndex) => {
-    MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Obj);
+    MethodMetadata.define(target, propertyKey as string).setArg(parameterIndex, Obj);
   });
 }
 
 export function ArgsObject(): ParameterDecorator {
   return CoreDecorator.onParameter(ArgsObject, {}, (target, propertyKey, parameterIndex) => {
-    MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Args);
+    MethodMetadata.define(target, propertyKey as string).setArg(parameterIndex, Args);
   });
 }
 
@@ -135,18 +135,18 @@ export function ArgParam(name: string, required: boolean): ParameterDecorator;
 export function ArgParam(requiredOrName?: boolean | string, maybeName?: boolean): ParameterDecorator {
   return CoreDecorator.onParameter(ArgParam, { requiredOrName, maybeName }, (target, propertyKey, parameterIndex) => {
     // TODO: Add type in decorator
-    MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Any);
+    MethodMetadata.define(target, propertyKey as string).setArg(parameterIndex, Any);
   });
 }
 
 export function CtxObject(): ParameterDecorator {
   return CoreDecorator.onParameter(CtxObject, {}, (target, propertyKey, parameterIndex) => {
-    MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Context);
+    MethodMetadata.define(target, propertyKey as string).setArg(parameterIndex, Context);
   });
 }
 
 export function InfoObject(): ParameterDecorator {
   return CoreDecorator.onParameter(InfoObject, {}, (target, propertyKey, parameterIndex) => {
-    MethodMetadata.define(target, propertyKey as string).setInput(parameterIndex, Info);
+    MethodMetadata.define(target, propertyKey as string).setArg(parameterIndex, Info);
   });
 }

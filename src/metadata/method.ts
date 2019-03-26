@@ -6,8 +6,8 @@ import * as Utils from '../utils/misc';
 import { ApiMetadata, IApiMetadata } from './api';
 import { EventRouteMetadata, IEventRouteMetadata } from './event';
 import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';
-import { IInputMetadata, InputMetadata } from './input';
-import { Metadata, MetadataRegistry } from './registry';
+import { ArgMetadata, IArgMetadata } from './input';
+import { MetadataRegistry, Registry } from './registry';
 import { IResultMetadata, ResultMetadata } from './result';
 import { ServiceMetadata } from './service';
 import { TypeSelect } from './type';
@@ -33,7 +33,7 @@ export interface IMethodMetadata {
   auth: string;
   roles: Roles;
 
-  inputs: IInputMetadata[];
+  args: IArgMetadata[];
   result: IResultMetadata;
   select: TypeSelect;
 
@@ -59,7 +59,7 @@ export class MethodMetadata implements IMethodMetadata {
   public auth: string = undefined;
   public roles: Roles = undefined;
 
-  public inputs: InputMetadata[] = [];
+  public args: ArgMetadata[] = [];
   public result: ResultMetadata = undefined;
   public select: TypeSelect = undefined;
 
@@ -100,7 +100,7 @@ export class MethodMetadata implements IMethodMetadata {
     this.type = this.type || over.type;
 
     // TODO: Merge inputs and result
-    this.inputs = this.inputs || over.inputs;
+    this.args = this.args || over.args;
     this.result = this.result || over.result;
     this.select = this.select || over.select;
 
@@ -152,11 +152,11 @@ export class MethodMetadata implements IMethodMetadata {
     for (let i = 0; i < params.length; i++) {
       const param = params[i];
       const name = names && names[i] || `arg${i}`;
-      const imeta = InputMetadata.of(param || [void 0]);
-      let input = meta.inputs[i];
+      const imeta = ArgMetadata.of(param || [void 0]);
+      let input = meta.args[i];
       if (!input) {
         input = imeta;
-        meta.inputs[i] = input;
+        meta.args[i] = input;
       }
       input.index = i;
       // input.kind = imeta.kind;
@@ -186,7 +186,7 @@ export class MethodMetadata implements IMethodMetadata {
     this.type = type;
     this.scope = host;
     this.select = select;
-    if (inputs) inputs.forEach((inp, index) => this.setInput(index, inp));
+    if (inputs) inputs.forEach((inp, index) => this.setArg(index, inp));
     this.setResult(result);
     return this;
   }
@@ -200,12 +200,12 @@ export class MethodMetadata implements IMethodMetadata {
     return this;
   }
 
-  public setInput(index: number, type: InputType): InputMetadata {
-    const over = InputMetadata.of(type);
-    let input = this.inputs[index];
+  public setArg(index: number, type: InputType): ArgMetadata {
+    const over = ArgMetadata.of(type);
+    let input = this.args[index];
     if (!input) {
       input = over;
-      this.inputs[index] = over;
+      this.args[index] = over;
     } else {
       // TODO: May be not overidde design type if non in decoration
       Object.assign(input, over);
@@ -298,7 +298,7 @@ export class MethodMetadata implements IMethodMetadata {
   public commit(api: ApiMetadata): this {
     this.api = api;
     const id = MethodMetadata.id(this.api.name, this.name);
-    Metadata.Method[id] = this;
+    Registry.MethodMetadata[id] = this;
     if (!api.owner && this.target === api.target) {
       const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
       this.mustBeEmpty(descriptor.value);
@@ -326,7 +326,7 @@ export class MethodMetadata implements IMethodMetadata {
     for (const [route, meta] of Object.entries(this.http || {})) {
       meta.api = this.api;
       meta.servicer = service;
-      const prev = Metadata.HttpRoute[route];
+      const prev = Registry.HttpRouteMetadata[route];
       if (prev && prev !== meta && prev !== meta.base) {
         throw new TypeError(`Duplicate HTTP route [${route}]`);
       }
@@ -334,12 +334,12 @@ export class MethodMetadata implements IMethodMetadata {
         // TODO: Logger, from method to method
         console.log(`Route takeover [${route}]: [${MethodMetadata.id(prev.api.name, prev.method.name)}] -> [${id}]`);
       }
-      Metadata.HttpRoute[route] = meta;
+      Registry.HttpRouteMetadata[route] = meta;
     }
     for (const [route, meta] of Object.entries(this.events || {})) {
       meta.api = this.api;
       meta.servicer = service;
-      const handlers = Metadata.EventRoute[route] = Metadata.EventRoute[route] || [];
+      const handlers = Registry.EventRouteMetadata[route] = Registry.EventRouteMetadata[route] || [];
       // TODO: handlers.includes(meta.over)
       const prevIndex = handlers.indexOf(meta.base);
       if (prevIndex !== -1) {
@@ -354,7 +354,7 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public core(): Function {
-    const fun = this.inputs.map(a => a.name);
+    const fun = this.args.map(a => a.name);
     fun.push(`return function ${this.name}(${fun.join(',')}) {
       return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
     }`);
@@ -364,7 +364,7 @@ export class MethodMetadata implements IMethodMetadata {
   }
 
   public local(container: CoreInstance): Function {
-    const fun = this.inputs.map(a => a.name);
+    const fun = this.args.map(a => a.name);
     fun.push(`return function ${this.name}(${fun.join(',')}) {
       return this.invoke('${this.api.name}', '${this.name}', ...arguments);
     }`);
@@ -380,7 +380,7 @@ export class MethodMetadata implements IMethodMetadata {
     info?: ResolverInfo,
   ): any[] {
     const params: any[] = [];
-    for (const input of this.inputs) {
+    for (const input of this.args) {
       params[input.index] = input.resolve(obj, args, ctx, info);
     }
     return params;

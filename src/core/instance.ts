@@ -5,7 +5,7 @@ import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { Configuration } from '../types/config';
 // tslint:disable-next-line:max-line-length
@@ -80,7 +80,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     // Prioritize services with initializer
-    for (const service of Object.values(Metadata.Service)) {
+    for (const service of Object.values(Registry.ServiceMetadata)) {
       if (!service.final || !service.initializer) continue;
       this.log.info('Initialize [%s]', service.name);
       this.container.set({ id: service.target, type: service.target });
@@ -94,7 +94,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     // Create private Api instances
-    for (const api of Object.values(Metadata.Api)) {
+    for (const api of Object.values(Registry.ApiMetadata)) {
       if (api.owner || !api.servicer) continue;
       const local = api.local(this);
       // TODO: Recoursive set for inherited api
@@ -150,14 +150,14 @@ export class CoreInstance implements CoreContainer {
   }
 
   // Used is CoreInfoSchema
-  protected instances(): CoreInstance[] {
+  public instances(): CoreInstance[] {
     return (Core as any).pool;
   }
 
   // --------------------------------------------------
 
-  public metadata(): Metadata {
-    return Metadata as any;
+  public metadata(): Registry {
+    return Registry as any;
   }
 
   public async execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
@@ -178,9 +178,9 @@ export class CoreInstance implements CoreContainer {
     info?: ResolverInfo,
   ): Promise<any> {
     const [target, member] = methodId.split('.');
-    const meta: any = Metadata.Registry[target];
-    if (meta && meta.RESOLVERS && meta.RESOLVERS[member]) {
-      return meta.RESOLVERS[member](obj, args, ctx, info);
+    const meta: any = Registry.CoreMetadata[target];
+    if (meta && meta.target.RESOLVERS && meta.target.RESOLVERS[member]) {
+      return meta.target.RESOLVERS[member](obj, args, ctx, info);
     }
     return this.graphRequest({
       type: 'graphql',
@@ -207,7 +207,7 @@ export class CoreInstance implements CoreContainer {
     let log = this.log;
     try {
       // log.debug('API Request [] %j', req);
-      const api = Metadata.Api[apiType];
+      const api = Registry.ApiMetadata[apiType];
       if (!api) throw new Forbidden(`Service not found ${apiType}`);
       const method = api.methods[apiMethod];
       if (!method) throw new Forbidden(`Method not found [${api.name}.${apiMethod}]`);
@@ -248,7 +248,7 @@ export class CoreInstance implements CoreContainer {
       HttpUtils.request(req);
 
       const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
-      const target = Metadata.HttpRoute[route];
+      const target = Registry.HttpRouteMetadata[route];
       if (!target) throw new Forbidden(`Route not found [${route}]`);
       if (!target.method.roles) throw new Forbidden(`Method [${target.api.name}.${target.method.name}] not available`);
 
@@ -306,7 +306,7 @@ export class CoreInstance implements CoreContainer {
       log.debug('GraphQL Request: %j', req);
 
       if (req.application !== this.application) throw new Forbidden(`Application not found [${req.application}]`);
-      const api = Metadata.Api[req.service];
+      const api = Registry.ApiMetadata[req.service];
       if (!api) throw new Forbidden(`Api not found [${req.service}]`);
       // if (!this.container.has(req.service)) throw new InternalServerError(`Service not found [${req.service}]`));
       const method = api.methods[req.method];
@@ -346,7 +346,7 @@ export class CoreInstance implements CoreContainer {
       log.debug('Remote Request: %j', req);
 
       if (req.application !== this.application) throw new Forbidden(`Application not found [${req.application}]`);
-      const api = Metadata.Api[req.service];
+      const api = Registry.ApiMetadata[req.service];
       if (!api) throw new Forbidden(`Service not found [${req.service}]`);
       // if (!this.container.has(req.service)) throw new InternalServerError(`Service not found [${req.service}]`));
       const method = api.methods[req.method];
@@ -385,10 +385,10 @@ export class CoreInstance implements CoreContainer {
 
       let route = EventRouteMetadata.route(req.source, req.resource);
       const alias = this.config.resources && this.config.resources[req.resource];
-      let targets = Metadata.EventRoute[route];
+      let targets = Registry.EventRouteMetadata[route];
       if (!targets) {
         route = EventRouteMetadata.route(req.source, alias);
-        targets = Metadata.EventRoute[route];
+        targets = Registry.EventRouteMetadata[route];
       }
       if (!targets) new Forbidden(`Event handler not found [${route}] [${req.object}]`);
 

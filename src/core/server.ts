@@ -5,7 +5,7 @@ import { InternalServerError } from '../errors/http';
 import { Express } from '../import/express';
 import { Koa } from '../import/koa';
 import { Logger } from '../logger';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { Utils } from '../utils';
 
@@ -57,7 +57,7 @@ export abstract class CoreServer {
   public static paths(basePath?: string): CoreServerPath[] {
     const used: Record<string, boolean> = {};
     const paths: CoreServerPath[] = [];
-    for (const meta of Object.values(Metadata.HttpRoute)) {
+    for (const meta of Object.values(Registry.HttpRouteMetadata)) {
       const httpMethod = meta.verb;
       const resource = meta.resource;
       // TODO: Regex

@@ -1,15 +1,15 @@
-import { CoreSchema } from './schema';
+import { GraphQLTools } from './graphql';
 
 const ENTITY = '';
 const GET = '';
 const SEARCH = '';
 
-export default function codegen(schema: CoreSchema | any, folder: string, extension?: string) {
+export default function codegen(schema: GraphQLTools | any, folder: string, extension?: string) {
   const ext = extension || 'gql';
   const fs = require('fs');
   fs.writeFileSync(
     `${folder}/schema/import.${ext}`,
-    CoreSchema.prolog().replace('scalar Date', '#scalar Date')
+    GraphQLTools.prolog().replace('scalar Date', '#scalar Date')
   );
   for (const target in schema.databases[0].entities) {
     const entry = schema.databases[0].entities[target];

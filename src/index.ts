@@ -74,7 +74,7 @@ export * from './orm/provider';
 
 // ---- tools/index.ts ---
 
-export * from './tools/schema';
+export * from './tools/graphql';
 export * from './tools/tag';
 export * from './tools/angular';
 export * from './tools/thrift';

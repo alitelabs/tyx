@@ -31,26 +31,26 @@ export interface IDecoratorMetadata {
 }
 
 export interface MetadataRegistry {
-  Registry: Record<string, ITypeMetadata>;
-  Decorator: Record<string, IDecoratorMetadata>;
-  Decoration: IDecorationMetadata[];
+  CoreMetadata: Record<string, ITypeMetadata>;
+  DecoratorMetadata: Record<string, IDecoratorMetadata>;
+  DecorationMetadata: IDecorationMetadata[];
 
-  Api: Record<string, IApiMetadata>;
-  Service: Record<string, IServiceMetadata>;
-  Proxy: Record<string, IProxyMetadata>;
+  ApiMetadata: Record<string, IApiMetadata>;
+  ServiceMetadata: Record<string, IServiceMetadata>;
+  ProxyMetadata: Record<string, IProxyMetadata>;
 
-  Database: Record<string, IDatabaseMetadata>;
-  Entity: Record<string, IEntityMetadata>;
-  Column: Record<string, IColumnMetadata>;
-  Relation: Record<string, IRelationMetadata>;
+  DatabaseMetadata: Record<string, IDatabaseMetadata>;
+  EntityMetadata: Record<string, IEntityMetadata>;
+  ColumnMetadata: Record<string, IColumnMetadata>;
+  RelationMetadata: Record<string, IRelationMetadata>;
 
-  Enum: Record<string, IEnumMetadata>;
-  Input: Record<string, ITypeMetadata>;
-  Type: Record<string, ITypeMetadata>;
+  EnumMetadata: Record<string, IEnumMetadata>;
+  InputMetadata: Record<string, ITypeMetadata>;
+  TypeMetadata: Record<string, ITypeMetadata>;
 
-  Method: Record<string, IMethodMetadata>;
-  HttpRoute: Record<string, IHttpRouteMetadata>;
-  EventRoute: Record<string, IEventRouteMetadata[]>;
+  MethodMetadata: Record<string, IMethodMetadata>;
+  HttpRouteMetadata: Record<string, IHttpRouteMetadata>;
+  EventRouteMetadata: Record<string, IEventRouteMetadata[]>;
 
   resolve?(target: string, obj: any, args: any, ctx: any, info: any): any;
 }
@@ -76,84 +76,84 @@ export namespace MetadataRegistry {
 }
 
 // tslint:disable:variable-name
-export abstract class Metadata implements MetadataRegistry {
+export abstract class Registry implements MetadataRegistry {
 
-  public static log: Logger = Logger.get('TYX', Metadata.name);
+  public static log: Logger = Logger.get('TYX', Registry.name);
   private static validated: boolean = false;
 
-  public static readonly Registry: Record<string, TypeMetadata> = {};
-  public static readonly Decorator: Record<string, IDecoratorMetadata> = {};
-  public static readonly Decoration: IDecorationMetadata[] = [];
+  public static readonly CoreMetadata: Record<string, TypeMetadata> = {};
+  public static readonly DecoratorMetadata: Record<string, IDecoratorMetadata> = {};
+  public static readonly DecorationMetadata: IDecorationMetadata[] = [];
 
-  public static readonly Api: Record<string, ApiMetadata> = {};
-  public static readonly Service: Record<string, ServiceMetadata> = {};
-  public static readonly Proxy: Record<string, ProxyMetadata> = {};
+  public static readonly ApiMetadata: Record<string, ApiMetadata> = {};
+  public static readonly ServiceMetadata: Record<string, ServiceMetadata> = {};
+  public static readonly ProxyMetadata: Record<string, ProxyMetadata> = {};
 
-  public static readonly Database: Record<string, DatabaseMetadata> = {};
-  public static readonly Entity: Record<string, EntityMetadata> = {};
-  public static readonly Column: Record<string, ColumnMetadata> = {};
-  public static readonly Relation: Record<string, RelationMetadata> = {};
+  public static readonly DatabaseMetadata: Record<string, DatabaseMetadata> = {};
+  public static readonly EntityMetadata: Record<string, EntityMetadata> = {};
+  public static readonly ColumnMetadata: Record<string, ColumnMetadata> = {};
+  public static readonly RelationMetadata: Record<string, RelationMetadata> = {};
 
-  public static readonly Enum: Record<string, EnumMetadata> = {};
-  public static readonly Input: Record<string, TypeMetadata> = {};
-  public static readonly Type: Record<string, TypeMetadata> = {};
+  public static readonly EnumMetadata: Record<string, EnumMetadata> = {};
+  public static readonly InputMetadata: Record<string, TypeMetadata> = {};
+  public static readonly TypeMetadata: Record<string, TypeMetadata> = {};
 
-  public static readonly Method: Record<string, MethodMetadata> = {};
-  public static readonly HttpRoute: Record<string, HttpRouteMetadata> = {};
-  public static readonly EventRoute: Record<string, EventRouteMetadata[]> = {};
+  public static readonly MethodMetadata: Record<string, MethodMetadata> = {};
+  public static readonly HttpRouteMetadata: Record<string, HttpRouteMetadata> = {};
+  public static readonly EventRouteMetadata: Record<string, EventRouteMetadata[]> = {};
 
   // ---
 
-  public abstract Registry: Record<string, TypeMetadata>;
-  public abstract Decorator: Record<string, IDecoratorMetadata>;
-  public abstract Decoration: IDecorationMetadata[];
+  public abstract CoreMetadata: Record<string, TypeMetadata>;
+  public abstract DecoratorMetadata: Record<string, IDecoratorMetadata>;
+  public abstract DecorationMetadata: IDecorationMetadata[];
 
-  public abstract Api: Record<string, ApiMetadata>;
-  public abstract Service: Record<string, ServiceMetadata>;
-  public abstract Proxy: Record<string, ProxyMetadata>;
+  public abstract ApiMetadata: Record<string, ApiMetadata>;
+  public abstract ServiceMetadata: Record<string, ServiceMetadata>;
+  public abstract ProxyMetadata: Record<string, ProxyMetadata>;
 
-  public abstract Database: Record<string, DatabaseMetadata>;
-  public abstract Entity: Record<string, EntityMetadata>;
-  public abstract Column: Record<string, ColumnMetadata>;
-  public abstract Relation: Record<string, RelationMetadata>;
+  public abstract DatabaseMetadata: Record<string, DatabaseMetadata>;
+  public abstract EntityMetadata: Record<string, EntityMetadata>;
+  public abstract ColumnMetadata: Record<string, ColumnMetadata>;
+  public abstract RelationMetadata: Record<string, RelationMetadata>;
 
-  public abstract Enum: Record<string, EnumMetadata>;
-  public abstract Input: Record<string, TypeMetadata>;
-  public abstract Type: Record<string, TypeMetadata>;
+  public abstract EnumMetadata: Record<string, EnumMetadata>;
+  public abstract InputMetadata: Record<string, TypeMetadata>;
+  public abstract TypeMetadata: Record<string, TypeMetadata>;
 
-  public abstract Method: Record<string, MethodMetadata>;
+  public abstract MethodMetadata: Record<string, MethodMetadata>;
   public abstract ResolverMetadata: Record<string, MethodMetadata>;
-  public abstract HttpRoute: Record<string, HttpRouteMetadata>;
-  public abstract EventRoute: Record<string, EventRouteMetadata[]>;
+  public abstract HttpRouteMetadata: Record<string, HttpRouteMetadata>;
+  public abstract EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 
   protected constructor() {
     throw TypeError('Abstract class');
   }
 
-  public static copy(): Metadata {
+  public static copy(): Registry {
     const reg: MetadataRegistry = {
-      Registry: this.Registry,
-      Decorator: this.Decorator,
-      Decoration: this.Decoration,
+      CoreMetadata: this.CoreMetadata,
+      DecoratorMetadata: this.DecoratorMetadata,
+      DecorationMetadata: this.DecorationMetadata,
 
-      Api: this.Api,
-      Service: this.Service,
-      Proxy: this.Proxy,
+      ApiMetadata: this.ApiMetadata,
+      ServiceMetadata: this.ServiceMetadata,
+      ProxyMetadata: this.ProxyMetadata,
 
-      Database: this.Database,
-      Entity: this.Entity,
-      Column: this.Column,
-      Relation: this.Relation,
+      DatabaseMetadata: this.DatabaseMetadata,
+      EntityMetadata: this.EntityMetadata,
+      ColumnMetadata: this.ColumnMetadata,
+      RelationMetadata: this.RelationMetadata,
 
-      Enum: this.Enum,
-      Input: this.Input,
-      Type: this.Type,
+      EnumMetadata: this.EnumMetadata,
+      InputMetadata: this.InputMetadata,
+      TypeMetadata: this.TypeMetadata,
 
-      Method: this.Method,
-      HttpRoute: this.HttpRoute,
-      EventRoute: this.EventRoute
+      MethodMetadata: this.MethodMetadata,
+      HttpRouteMetadata: this.HttpRouteMetadata,
+      EventRouteMetadata: this.EventRouteMetadata
     };
-    Object.setPrototypeOf(reg, Metadata.prototype);
+    Object.setPrototypeOf(reg, Registry.prototype);
     return reg as any;
   }
 
@@ -161,7 +161,7 @@ export abstract class Metadata implements MetadataRegistry {
     return this.validated;
   }
 
-  public static validate(force?: boolean): Metadata {
+  public static validate(force?: boolean): Registry {
     if (this.validated && !force) return this.copy();
 
     const metadata: Record<string, TypeMetadata> = {};
@@ -169,26 +169,26 @@ export abstract class Metadata implements MetadataRegistry {
     const inputs: Record<string, TypeMetadata> = {};
     const types: Record<string, TypeMetadata> = {};
     // Metadata
-    for (const type of Object.values(this.Registry)) {
+    for (const type of Object.values(this.CoreMetadata)) {
       this.build(type, VarKind.Metadata, metadata);
     }
     // Databases & Entities
-    for (const db of Object.values(this.Database)) {
+    for (const db of Object.values(this.DatabaseMetadata)) {
       for (const type of Object.values(db.entities)) {
         this.build(type, VarKind.Entity, entities);
       }
     }
     // Resolve unbound entites
-    for (const type of Object.values(this.Entity)) {
+    for (const type of Object.values(this.EntityMetadata)) {
       if (entities[type.name]) continue;
       this.log.warn(`Unbound entity type [${type.name}]`);
       this.build(type, VarKind.Entity, entities);
     }
     // API
-    for (const api of Object.values(this.Api)) {
+    for (const api of Object.values(this.ApiMetadata)) {
       for (const method of Object.values(api.methods)) {
         if (!method.query && !method.mutation && !method.extension) continue;
-        for (const input of method.inputs) {
+        for (const input of method.args) {
           input.build = this.build(input, VarKind.Input, inputs);
         }
         method.result.build = this.build(method.result, VarKind.Type, types);
@@ -196,11 +196,11 @@ export abstract class Metadata implements MetadataRegistry {
     }
     // TODO: Check for unused inputs and results
     // Inputs
-    for (const type of Object.values(this.Input)) {
+    for (const type of Object.values(this.InputMetadata)) {
       this.build(type, VarKind.Input, inputs);
     }
     // Results
-    for (const type of Object.values(this.Type)) {
+    for (const type of Object.values(this.TypeMetadata)) {
       this.build(type, VarKind.Type, types);
     }
 
@@ -432,9 +432,9 @@ export abstract class CoreDecorator {
       index,
       args
     };
-    Metadata.Decoration.push(traceInfo);
+    Registry.DecorationMetadata.push(traceInfo);
 
-    const decoratorInfo = Metadata.Decorator[name] = Metadata.Decorator[name] || { decorator: name, count: 0, targets: {} };
+    const decoratorInfo = Registry.DecoratorMetadata[name] = Registry.DecoratorMetadata[name] || { decorator: name, count: 0, targets: {} };
     decoratorInfo.count++;
     decoratorInfo.targets[target.name] = target;
 

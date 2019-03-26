@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { IServiceMetadata, ServiceMetadata } from './service';
 
@@ -63,7 +63,7 @@ export class DatabaseMetadata implements IDatabaseMetadata {
       this.entities.push(meta);
     }
     this.servicer = ServiceMetadata.define(this.target).commit(alias, null, true);
-    Metadata.Database[this.name] = this;
+    Registry.DatabaseMetadata[this.name] = this;
     this.entities.forEach(entity => entity.resolve(this));
     return this;
   }

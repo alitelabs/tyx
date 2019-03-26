@@ -1,14 +1,14 @@
 import { ApiMetadata } from '../metadata/api';
 import { EnumMetadata } from '../metadata/enum';
-import { Metadata } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { TypeMetadata, TypeSelect } from '../metadata/type';
 import { VarKind } from '../metadata/var';
 import { Utils } from '../utils';
 
-export class AngularCodeGen {
+export class AngularTools {
 
   public static emit(): string {
-    return new AngularCodeGen().emit();
+    return new AngularTools().emit();
   }
 
   private constructor() { }
@@ -16,27 +16,27 @@ export class AngularCodeGen {
   public emit(): string {
     let script = this.prolog() + '\n';
 
-    const registry = Metadata.copy();
+    const registry = Registry.copy();
     script += '///////// API /////////\n';
-    for (const api of Object.values(registry.Api).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const api of Object.values(registry.ApiMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const code = this.genApi(api);
       if (code) script += code + '\n\n';
     }
     script += '///////// ENUM ////////\n';
-    for (const type of Object.values(registry.Enum).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       script += this.genEnum(type) + '\n\n';
     }
     // const db = Object.values(this.schema.databases)[0];
     script += '/////// ENTITIES //////\n';
-    for (const type of Object.values(registry.Entity).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.EntityMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       script += this.genInterface(type) + '\n\n';
     }
     script += '//////// INPUTS ///////\n';
-    for (const type of Object.values(registry.Input).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.InputMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       script += this.genInterface(type) + '\n\n';
     }
     script += '//////// TYPES ////////\n';
-    for (const type of Object.values(registry.Type).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const type of Object.values(registry.TypeMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       script += this.genInterface(type) + '\n\n';
     }
     return script;
@@ -112,10 +112,10 @@ export class AngularCodeGen {
       let reqArgs = '';
       let qlArgs = '';
       let params = '';
-      for (let i = 0; i < method.inputs.length; i++) {
-        const inb = method.inputs[i].build;
+      for (let i = 0; i < method.args.length; i++) {
+        const inb = method.args[i].build;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
-        const param = method.inputs[i].name;
+        const param = method.args[i].name;
         if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
         params += param;
         jsArgs += `${param}: ${inb.js}`;

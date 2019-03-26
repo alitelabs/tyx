@@ -1,7 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { FieldMetadata, IFieldMetadata } from './field';
-import { Metadata, MetadataRegistry } from './registry';
+import { MetadataRegistry, Registry } from './registry';
 import { FieldType, IVarMetadata, VarKind, VarMetadata } from './var';
 
 export type TypeSelect<T = any> = {
@@ -40,7 +40,7 @@ export namespace TypeSelect {
       }
       script += `${i++ ? ',' : ''}\n  ${name} ${def}`;
     }
-    script += `\n`;
+    script += `\n}`;
     return script;
   }
 }
@@ -135,24 +135,24 @@ export class TypeMetadata implements ITypeMetadata {
     let prev: TypeMetadata;
     switch (type) {
       case VarKind.Metadata:
-        prev = Metadata.Registry[this.target.name];
+        prev = Registry.CoreMetadata[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate metadata class ${this.target.name}`);
-        Metadata.Registry[this.target.name] = this;
+        Registry.CoreMetadata[this.target.name] = this;
         break;
       case VarKind.Input:
-        prev = Metadata.Input[this.target.name];
+        prev = Registry.InputMetadata[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate input class ${this.target.name}`);
-        Metadata.Input[this.target.name] = this;
+        Registry.InputMetadata[this.target.name] = this as any;
         break;
       case VarKind.Type:
-        prev = Metadata.Type[this.target.name];
+        prev = Registry.TypeMetadata[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate type class ${this.target.name}`);
-        Metadata.Type[this.target.name] = this;
+        Registry.TypeMetadata[this.target.name] = this;
         break;
       case VarKind.Entity:
-        prev = Metadata.Entity[this.target.name];
+        prev = Registry.EntityMetadata[this.target.name];
         if (prev && prev !== this) throw new TypeError(`Duplicate entity class ${this.target.name}`);
-        Metadata.Entity[this.target.name] = this as any;
+        Registry.EntityMetadata[this.target.name] = this as any;
         break;
       default:
         throw new TypeError(`Not Implemented: ${type}`);
