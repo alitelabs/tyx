@@ -20,7 +20,7 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(item => VarMetadataSchema) item: IVarMetadata;
-  @Field(ref => VarResolutionSchema) build: IVarResolution;
+  @Field(ref => VarResolutionSchema) res: IVarResolution;
 
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;

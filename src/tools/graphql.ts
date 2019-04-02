@@ -409,7 +409,7 @@ export class GraphQLTools {
       model: `type ${typeName} {\n  Metadata: ${typeName}Metadata\n}`,
       query: `type Query {\n  ${typeName}: ${typeName}\n}`,
       entities: {},
-      root: '{}',
+      root: 'ctx.provider',
       queries: {
         Metadata: `ctx.metadata.DatabaseMetadata['${metadata.name}']`,
       },
@@ -441,7 +441,7 @@ export class GraphQLTools {
     for (const col of metadata.columns) {
       if (col.isTransient) continue;
       const pn = col.propertyName;
-      let dt = col.build.gql;
+      let dt = col.res.gql;
       let nl = col.mandatory ? '!' : '';
       if (pn.endsWith('Id')) dt = VarKind.ID;
       model += `${cm ? '' : ','}\n  ${pn}: ${dt}${nl}`;
@@ -571,7 +571,7 @@ export class GraphQLTools {
       if (!col.isTransient) continue;
       const pn = col.propertyName;
       const nl = col.mandatory ? '!' : '';
-      model += `${cm ? '' : ','}\n  ${pn}: ${col.build.gql}${nl} @transient`;
+      model += `${cm ? '' : ','}\n  ${pn}: ${col.res.gql}${nl} @transient`;
     }
     model += '\n}';
     simple += '\n}';
@@ -607,7 +607,7 @@ export class GraphQLTools {
 
     const struc = metadata as TypeMetadata;
     if (reg[struc.name]) return reg[struc.name];
-    if (this.entities[struc.build.gql]) return this.entities[struc.build.gql];
+    if (this.entities[struc.res.gql]) return this.entities[struc.res.gql];
 
     if (!VarKind.isStruc(struc.kind) || !struc.members) {
       throw new TypeError(`Empty type difinition ${struc.target}`);
@@ -625,7 +625,7 @@ export class GraphQLTools {
     reg[struc.name] = schema;
     schema.params = '';
     for (const field of Object.values(struc.members)) {
-      const type = field.build;
+      const type = field.res;
       if (VarKind.isStruc(type.kind) || VarKind.isArray(type.kind)) continue;
       if (field.kind === VarKind.Object) continue;
       schema.params += (schema.params ? ',\n    ' : '    ') + `${field.name}: ${field.kind}`;
@@ -635,7 +635,7 @@ export class GraphQLTools {
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
       : `type ${struc.name} @${scope.toString().toLowerCase()} {\n`;
     for (const member of Object.values(struc.members)) {
-      const type = member.build;
+      const type = member.res;
       const doc = VarKind.isVoid(member.kind) ? '# ' : '';
       if (VarKind.isMetadata(struc.kind) && VarKind.isArray(type.kind)) {
         const sch = !VarKind.isScalar(type.item.kind) && reg[type.item.gql];
@@ -664,7 +664,7 @@ export class GraphQLTools {
     };
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation && !method.extension) continue;
-      const result = method.result.build;
+      const result = method.result.res;
       const name = method.extension ? method.name : `${metadata.target.name}_${method.name}`;
 
       let call = '';
@@ -673,7 +673,7 @@ export class GraphQLTools {
         // TODO: Move to metadata
         const name = method.args[i].name || `arg${i}`;
         if (!method.args[i]) throw new TypeError(`Unbound input argmument [${method.api.name}.${method.name}:${i}] [${name}]`);
-        const inb = method.args[i].build;
+        const inb = method.args[i].res;
         call += (call ? ', ' : '') + `${name}: ${inb.gql}!`;
       }
       if (call) call = `(${call})`;

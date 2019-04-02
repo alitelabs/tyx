@@ -14,7 +14,7 @@ export class EnumMetadata implements IEnumMetadata {
   public ref: Function;
   public options: string[];
   public item?: never;
-  public build: VarResolution;
+  public res: VarResolution;
 
   constructor(target: Object, name: string) {
     // super(VarKind.Enum, name);

@@ -6,7 +6,7 @@ export interface IResultMetadata extends IVarMetadata {
   design: Class;
   promise: boolean;
   defined: boolean;
-  build: IVarResolution;
+  res: IVarResolution;
 }
 
 export class ResultMetadata implements IResultMetadata {
@@ -15,7 +15,7 @@ export class ResultMetadata implements IResultMetadata {
   public promise: boolean = undefined;
   public ref?: Class = undefined;
   public item?: VarMetadata = undefined;
-  public build: VarResolution = undefined;
+  public res: VarResolution = undefined;
   public defined: boolean = false;
 
   public static of(def: ResultType): ResultMetadata;

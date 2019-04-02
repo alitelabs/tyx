@@ -102,7 +102,6 @@ export class CoreInstance implements CoreContainer {
     }
 
     this.graphql = this.get(GraphQL);
-    this.graphql.initialize();
 
     this.istate = ContainerState.Ready;
     return this;

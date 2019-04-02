@@ -189,9 +189,9 @@ export abstract class Registry implements MetadataRegistry {
       for (const method of Object.values(api.methods)) {
         if (!method.query && !method.mutation && !method.extension) continue;
         for (const input of method.args) {
-          input.build = this.build(input, VarKind.Input, inputs);
+          input.res = this.build(input, VarKind.Input, inputs);
         }
-        method.result.build = this.build(method.result, VarKind.Type, types);
+        method.result.res = this.build(method.result, VarKind.Type, types);
       }
     }
     // TODO: Check for unused inputs and results
@@ -212,55 +212,17 @@ export abstract class Registry implements MetadataRegistry {
 
   protected static build(target: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarResolution {
     if (VarKind.isEnum(target.kind)) {
-      const e = target as EnumMetadata;
-      return VarResolution.on({
-        kind: e.kind,
-        target,
-        gql: e.name,
-        js: e.name,
-        idl: e.name
-      });
+      return VarResolution.of(target);
     }
     if (VarKind.isScalar(target.kind)) {
-      return VarResolution.on({
-        kind: target.kind,
-        target,
-        gql: target.kind,
-        js: VarKind.toJS(target.kind),
-        idl: VarKind.toIDL(target.kind)
-      });
+      return VarResolution.of(target);
     }
     if (VarKind.isResolver(target.kind)) {
-      return VarResolution.on({
-        kind: target.kind,
-        target,
-        gql: target.kind,
-        js: VarKind.toJS(target.kind),
-        idl: VarKind.toIDL(target.kind)
-      });
+      return VarResolution.of(target);
     }
     if (VarKind.isArray(target.kind)) {
       const item = this.build(target.item, scope, reg);
-      if (item) {
-        return VarResolution.on({
-          kind: VarKind.Array,
-          target,
-          item,
-          gql: `[${item.gql}]`,
-          js: `${item.js}[]`,
-          idl: `list<${item.idl}>`
-        });
-        // tslint:disable-next-line:no-else-after-return
-      } else {
-        return VarResolution.on({
-          kind: VarKind.Array,
-          target,
-          item,
-          gql: `[${VarKind.Object}]`,
-          js: `any[]`,
-          idl: `${item.idl}`
-        });
-      }
+      return VarResolution.of(target, item);
     }
     if (VarKind.isRef(target.kind)) {
       let type: VarResolution = undefined;
@@ -284,13 +246,7 @@ export abstract class Registry implements MetadataRegistry {
         } else if (meta) {
           type = this.build(meta, scope, reg);
         } else {
-          type = VarResolution.on({
-            kind: VarKind.Object,
-            target: null,
-            gql: VarKind.Object,
-            js: 'any',
-            idl: '?ANY?'
-          });
+          type = VarResolution.of(null);
         }
       } else {
         throw Error('Internal registry error');
@@ -308,7 +264,7 @@ export abstract class Registry implements MetadataRegistry {
       throw new TypeError('Internal metadata error');
     }
     const link = struc.target && struc.name;
-    if (link && reg[link]) return reg[link].build;
+    if (link && reg[link]) return reg[link].res;
     if (!struc.members || !Object.values(struc.members).length) {
       throw new TypeError(`Empty type difinition ${struc.target}`);
     }
@@ -323,18 +279,12 @@ export abstract class Registry implements MetadataRegistry {
       throw new TypeError(`Type type can not reference [${target.kind}]`);
     }
     // Resolve structure
-    struc.build = VarResolution.on({
-      kind: struc.kind,
-      target,
-      gql: struc.name,
-      js: struc.name,
-      idl: struc.name
-    });
+    struc.res = VarResolution.of(struc);
     reg[struc.name] = struc;
     for (const member of Object.values(struc.members)) {
-      member.build = this.build(member, scope, reg);
+      member.res = this.build(member, scope, reg);
     }
-    return struc.build;
+    return struc.res;
   }
 
   // public stringify(ident?: number) {

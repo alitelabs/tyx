@@ -91,7 +91,7 @@ export class AngularTools {
   private genInterface(struc: TypeMetadata): string {
     let script = `export interface ${struc.name} {`;
     for (const field of Object.values(struc.members)) {
-      const type = field.build;
+      const type = field.res;
       const opt = true; // GraphKind.isEntity(struc.kind) ? !field.required : true;
       script += `\n  ${field.name}${opt ? '?' : ''}: ${type.js};`;
     }
@@ -106,14 +106,14 @@ export class AngularTools {
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation) continue;
       count++;
-      const result = method.result.build;
+      const result = method.result.res;
       const action = method.mutation ? 'mutate' : 'query';
       let jsArgs = '';
       let reqArgs = '';
       let qlArgs = '';
       let params = '';
       for (let i = 0; i < method.args.length; i++) {
-        const inb = method.args[i].build;
+        const inb = method.args[i].res;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
         const param = method.args[i].name;
         if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }

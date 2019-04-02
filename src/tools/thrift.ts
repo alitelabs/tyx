@@ -143,7 +143,15 @@ export class ThriftTools {
   private prolog(): string {
     return Utils.indent(`
       typedef string ID
-
+      typedef string String
+      typedef double Float
+      typedef bool Boolean
+      typedef i16 Small
+      typedef i32 Int
+      typedef i64 Long
+      struct Timestamp {
+        1: Long ms
+      }
       union Json {
         1: double N;
         2: string S;
@@ -151,11 +159,6 @@ export class ThriftTools {
         4: list<Json> L;
         5: map<string, Json> M;
       }
-
-      struct Timestamp {
-        1: i64 ms
-      }
-
       // TODO: CoreException
     `).trimLeft();
   }
@@ -174,19 +177,25 @@ export class ThriftTools {
   private genStruct(meta: TypeMetadata): Result {
     let thrift = `struct ${meta.name} {`;
     let select = `struct ${meta.name}Selector {`;
+    let filter = `struct ${meta.name}Filter {`;
     let enmap = '';
     let demap = '';
     const replace: any = {};
     let index = 0;
+    let fix = 0;
     for (const field of Object.values(meta.members)) {
-      const type = field.build;
+      const type = field.res;
       const opt = true; // GraphKind.isEntity(struc.kind) ? !field.required : true;
       thrift += `${index ? ',' : ''}\n  ${index + 1}: ${opt ? 'optional' : ''} ${type.idl} ${esc(field.name)}`;
       // TODO: build contains target type
-      let st = 'i16';
+      let st = 'Small';
       if (VarKind.isStruc(type.kind)) st = `${type.idl}Selector`;
-      if (VarKind.isArray(type.kind) && !VarKind.isScalar(type.item.kind)) st = `${type.idl.substring(5, type.idl.length - 1)}Selector`;
+      if (VarKind.isArray(type.kind) && !VarKind.isScalar(type.item.kind)) st = `${type.item.target.name}Selector`;
       select += `${index ? ',' : ''}\n  ${index + 1}: optional ${st} ${esc(field.name)}`;
+      if (VarKind.isScalar(type.kind)) {
+        filter += `${fix ? ',' : ''}\n  ${index + 1}: optional ${type.idl} ${esc(field.name)}`;
+        fix++;
+      }
       index++;
       if (!VarKind.isEnum(type.kind)) continue;
       enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${type.idl}[obj.${field.name} as any];`;
@@ -194,9 +203,11 @@ export class ThriftTools {
       replace[`output.writeI32(obj.${field.name});`] = `output.writeI32(obj.${field.name} as number);`;
       replace[`: ${type.idl}`] = `: (${type.idl} | string)`;
     }
-    thrift += `\n} (kind = "${meta.kind}")\n`;
-    select += `\n} (kind = "selector")`;
+    thrift += `\n} (kind = "${meta.kind}")\n\n`;
+    select += `\n} (kind = "Selector")\n\n`;
+    filter += `\n} (kind = "Filter")`;
     thrift += select;
+    thrift += filter;
     const patch = `
     {
       const codec = { ...${meta.name}Codec };
@@ -250,7 +261,7 @@ export class ThriftTools {
   private genClass(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
       // tslint:disable:function-name
-      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Post, Public, RequestObject, Service, TypeSelect  } from 'tyx';
+      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Post, Public, RequestObject, Service } from 'tyx';
       import ${GEN} = require('./${name.toLowerCase()}');
 
       ///////// SERVICE /////////
@@ -264,7 +275,7 @@ export class ThriftTools {
           const service = req.pathParameters['service'];
           let result: any = undefined;
           switch (service) {\n`;
-    script += `            case REGISTRY: result = await REGISTRY_HANDLER.execute(req, ctx); break;\n`;
+    script += `            case CORE: result = await CORE_HANDLER.execute(req, ctx); break;\n`;
     for (const db of dbs) {
       const snake = Utils.snakeCase(db.name, true);
       script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
@@ -294,14 +305,14 @@ export class ThriftTools {
     for (const method of Object.values(metadata.methods)) {
       if (!method.query && !method.mutation) continue;
 
-      const result = method.result.build;
+      const result = method.result.res;
       let idlArgs = '';
       let jsArgs = '';
       let reqArgs = '';
       let qlArgs = '';
       let params = '';
       for (let i = 0; i < method.args.length; i++) {
-        const inb = method.args[i].build;
+        const inb = method.args[i].res;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
         const param = method.args[i].name;
         if (idlArgs) { idlArgs += ', '; jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
@@ -352,7 +363,7 @@ export class ThriftTools {
 
       count++;
     }
-    thrift += `\n} (path="${kebab}", servicer = "${metadata.servicer.name}")`;
+    thrift += `\n} (path="${kebab}", target = "${metadata.servicer.name}")`;
     handler += '\n};\n';
     handler += Utils.indent(`
     const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
@@ -441,13 +452,13 @@ export class ThriftTools {
       if (col.isTransient) continue;
       index++;
       const pn = col.propertyName;
-      let dt = col.build.idl;
+      let dt = col.res.idl;
       let nl = col.mandatory ? 'required' : 'optional';
       if (pn.endsWith('Id')) dt = VarKind.ID;
       model += `${cm ? '' : ','}\n  ${index}: ${nl} ${dt} ${pn}`;
       if (col.isPrimary) {
         keys += `${cm ? '' : ', '}${++keyIx}: ${nl} ${dt} ${pn}`;
-        keyJs += `${cm ? '' : ', '}${pn}: ${col.build.js}`;
+        keyJs += `${cm ? '' : ', '}${pn}: ${col.res.js}`;
         keyNames += `${cm ? '' : ', '}${pn}`;
       }
       partial += `${cm ? '' : ','}\n  ${index}: optional ${dt} ${pn}`;
@@ -457,7 +468,7 @@ export class ThriftTools {
       order += `${cm ? '' : ','}\n  ${index}: optional i16 ${pn}`;
       update += `${cm ? '' : ','}\n  ${index}: ${col.isPrimary ? 'required' : 'optional'} ${dt} ${pn}`;
 
-      const type = col.build;
+      const type = col.res;
       let st = 'i16';
       if (VarKind.isStruc(type.kind)) st = `${type.idl}Selector`;
       if (VarKind.isArray(type.kind) && !VarKind.isScalar(type.item.kind)) st = `${type.idl.substring(5, type.idl.length - 1)}Selector`;
@@ -591,7 +602,7 @@ export class ThriftTools {
       if (!col.isTransient) continue;
       const pn = col.propertyName;
       // const nl = col.required ? '!' : '';
-      model += `${cm ? '' : ','}\n  ${++index}: optional ${col.build.idl} ${pn} (transient)`;
+      model += `${cm ? '' : ','}\n  ${++index}: optional ${col.res.idl} ${pn} (transient)`;
     }
     model += `\n} (kind="Entity")`;
 
@@ -602,7 +613,7 @@ export class ThriftTools {
   }
 
   public genCore(core: TypeMetadata): Result {
-    const name = 'Registry';
+    const name = 'Core';
 
     let thrift = `service ${name} {\n`;
     const kebab = Utils.kebapCase(name);
@@ -614,15 +625,14 @@ export class ThriftTools {
 
     let ix = 0;
     for (const reg of Object.values(core.members)) {
-      const type = reg.build;
-      // TODO: build contains target type
-      let st = type.idl;
-      if (VarKind.isStruc(type.kind)) st = type.idl;
-      if (VarKind.isArray(type.kind) && !VarKind.isScalar(type.item.kind)) st = type.idl.substring(5, type.idl.length - 1);
+      const type = reg.res;
+      const target = VarKind.isArray(type.kind)
+        ? reg.res.item.target as TypeMetadata
+        : reg.res.target as TypeMetadata;
 
-      thrift += `${ix ? ',\n' : ''}  ${reg.build.idl} get${reg.name}(\n`;
-      thrift += `    1: optional Json filter,\n`;
-      thrift += `    2: optional ${st}Selector selector\n`;
+      thrift += `${ix ? ',\n' : ''}  ${reg.res.idl} get${reg.name}(\n`;
+      thrift += `    1: optional ${target.name}Filter filter,\n`;
+      thrift += `    2: optional ${target.name}Selector selector\n`;
       thrift += `  )`;
 
       const gql = Utils.snakeCase(name + reg.name, true) + '_GQL';
@@ -631,11 +641,8 @@ export class ThriftTools {
       let jsArgs = '';
       let reqArgs = '';
       let qlArgs = '';
-      const target = VarKind.isArray(reg.build.kind)
-        ? reg.build.item.target as TypeMetadata
-        : reg.build.target as TypeMetadata;
       for (const field of Object.values(target.members)) {
-        const inb = field.build;
+        const inb = field.res;
         if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
         const param = field.name;
         if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
@@ -644,6 +651,10 @@ export class ThriftTools {
         reqArgs += `$${param}: ${inb.gql}!`;
         qlArgs += `${param}: $${param}`;
       }
+      if (reqArgs) reqArgs = `(${reqArgs})`;
+      if (qlArgs) qlArgs = `(${qlArgs})`;
+      if (jsArgs) jsArgs += ', ';
+      jsArgs += 'ctx?';
 
       query += `const ${gql} = gql\`\n`;
       query += `  query request${reqArgs} {\n`;
@@ -660,7 +671,7 @@ export class ThriftTools {
       query += `\n    # variables: { ${params} }`;
       query += `\n  }\`;\n\n`;
 
-      handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(filter: any, select: TypeSelect, ctx?: Context) {\n`;
+      handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(filter: ${GEN}.${target.name}Filter, select: ${GEN}.${target.name}Selector, ctx?: Context) {\n`;
       handler += `    const res = await ctx.execute(${gql}, {});\n`;
       handler += `    return res;\n`;
       handler += `  }`;
@@ -680,9 +691,9 @@ export class ThriftTools {
   }
 
   private genClient(apis: ApiMetadata[], name: string) {
-    let vars = `      private varRegistry: Registry.Client;\n`;
-    let gets = `      public get Registry() { this.renew(); return this.varRegistry; }\n`;
-    let sets = `        this.varRegistry = this.client(Registry.Client);\n`;
+    let vars = `      private varCore: Core.Client;\n`;
+    let gets = `      public get Core() { this.renew(); return this.varCore; }\n`;
+    let sets = `        this.varCore = this.client(Core.Client);\n`;
     for (const api of apis) {
       vars += `      private var${api.name}: ${api.name}.Client;\n`;
       gets += `      public get ${api.name}() { this.renew(); return this.var${api.name}; }\n`;

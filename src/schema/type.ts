@@ -24,7 +24,7 @@ export class VarResolutionSchema implements IVarResolution {
 export class VarMetadataSchema implements IVarMetadata {
   @Field(String) kind: VarKind;
   @Field(String) ref?: Class;
-  @Field(type => VarResolutionSchema) build?: IVarResolution;
+  @Field(type => VarResolutionSchema) res?: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
     ref: obj => Utils.label(obj.ref),
@@ -40,7 +40,7 @@ export class ArgMetadataSchema implements IArgMetadata {
   @Field(String) ref?: Class;
   @Field() defined: boolean;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
-  @Field(type => VarResolutionSchema) build: IVarResolution;
+  @Field(type => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IArgMetadata> = {
     design: obj => Utils.label(obj.design),
@@ -56,7 +56,7 @@ export class ResultMetadataSchema implements IResultMetadata {
   @Field(String) ref?: Class;
   @Field() defined: boolean;
   @Field(type => VarMetadataSchema) item?: IVarMetadata;
-  @Field(type => VarResolutionSchema) build: IVarResolution;
+  @Field(type => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IResultMetadata> = {
     design: obj => Utils.label(obj.design),
@@ -84,7 +84,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   @Field(Object) design: IDesignMetadata;
   @Field(String) ref?: Class;
   @Field(ref => VarMetadataSchema) item?: IVarMetadata;
-  @Field(ref => VarResolutionSchema) build: IVarResolution;
+  @Field(ref => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IFieldMetadata> = {
     ref: obj => Utils.label(obj.ref),

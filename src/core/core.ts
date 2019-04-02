@@ -38,10 +38,10 @@ export abstract class Core extends Registry {
   public static init(application?: string, register?: Class[], isCrud?: boolean): void;
   public static init(application?: string, args?: Class[] | boolean, isCrud?: boolean): void {
     if (this.instance) return;
+    Core.validate();
     try {
       if (args === true) CoreGraphQL.makePublic();
       this.crudAllowed = !!isCrud;
-      this.schema.executable();
       this.application = this.application || application || 'Core';
       this.instance = new CoreInstance(this.application, Core.name);
       this.instance.initialize();
@@ -120,20 +120,22 @@ export abstract class Core extends Registry {
       import: null,
       parent: null,
       modules: [],
-      uses: []
+      uses: [],
+      imports: []
     };
     packages['.'] = rootPkg;
 
-    for (const mod of cache) {
+    function resolve(mod: NodeModule) {
+      if (modules[mod.filename]) return modules[mod.filename];
       let name = (mod === rootItem) ? mod.id : Utils.relative(mod.filename, rootItem.filename);
       const parent = mod.parent && modules[mod.parent.filename];
       const level = parent && (parent.level + 1) || 0;
       const size = Utils.fsize(mod.filename);
       scriptSize += size;
-      const item: ModuleInfo = { id: mod.id, name, size, package: undefined, file: mod.filename, level, parent };
-      modules[mod.filename] = item;
+      const info: ModuleInfo = { id: mod.id, name, size, package: undefined, file: mod.filename, level, parent };
+      modules[mod.filename] = info;
       if (mod === rootItem) {
-        root = item;
+        root = info;
         rootPkg.import = root;
       }
 
@@ -145,23 +147,41 @@ export abstract class Core extends Registry {
         const pkg: PackageInfo = packages[pack] || {
           name: pack,
           // from: parent && parent.package && parent.package.name,
-          level: item.level,
+          level: info.level,
           size: 0,
-          parent: parent && parent.package,
-          import: parent,
+          parent: info.parent && info.parent.package,
+          import: info.parent,
           modules: [],
+          imports: [],
           uses: []
         };
-        item.package = pkg;
-        pkg.size += item.size;
-        pkg.modules.push(item);
-        pkg.level = Math.min(pkg.level, item.level);
+        info.package = pkg;
+        pkg.size += info.size;
+        pkg.modules.push(info);
+        pkg.level = Math.min(pkg.level, info.level);
         packages[pack] = pkg;
       } else {
-        item.package = rootPkg;
-        rootPkg.size += item.size;
-        rootPkg.modules.push(item);
+        info.package = rootPkg;
+        rootPkg.size += info.size;
+        rootPkg.modules.push(info);
       }
+
+      for (const item of mod.children) {
+        const ch = resolve(item);
+        if (ch.package === info.package) continue;
+        if (!ch.package.uses.includes(info.package)) {
+          ch.package.uses.push(info.package);
+        }
+        if (!info.package.imports.includes(ch.package)) {
+          info.package.imports.push(ch.package);
+        }
+      }
+
+      return info;
+    }
+
+    for (const mod of cache) {
+      resolve(mod);
     }
 
     return {

@@ -19,7 +19,7 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field() name: string;
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
-  @Field(ref => VarResolutionSchema) build: IVarResolution;
+  @Field(ref => VarResolutionSchema) res: IVarResolution;
 
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;

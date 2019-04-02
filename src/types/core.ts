@@ -128,6 +128,7 @@ export interface PackageInfo {
   parent: PackageInfo;
   import: ModuleInfo;
   modules: ModuleInfo[];
+  imports: PackageInfo[];
   uses: PackageInfo[];
 }
 

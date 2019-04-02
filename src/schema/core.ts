@@ -56,10 +56,12 @@ export class PackageInfoSchema implements PackageInfo {
   @Field(ref => PackageInfoSchema) parent: PackageInfo;
   @Field(ref => ModuleInfoSchema) import: ModuleInfo;
   @Field(list => [ModuleInfoSchema]) modules: ModuleInfo[];
+  @Field(list => [PackageInfoSchema]) imports: PackageInfo[];
   @Field(list => [PackageInfoSchema]) uses: PackageInfo[];
 
   public static RESOLVERS: SchemaResolvers<PackageInfoSchema> = {
     modules: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.modules)), args),
+    imports: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.imports)), args),
     uses: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.uses)), args),
   };
 }

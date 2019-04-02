@@ -105,14 +105,15 @@ export namespace VarKind {
   export function toIDL(type: VarKind | string): string {
     switch (type) {
       case VarKind.ID:
+        return 'ID';
       case VarKind.String:
-        return 'string';
+        return 'String';
       case VarKind.Int:
-        return 'i64';
+        return 'Int';
       case VarKind.Float:
-        return 'double';
+        return 'Float';
       case VarKind.Boolean:
-        return 'bool';
+        return 'Boolean';
       case VarKind.Date:
       case VarKind.DateTime:
       case VarKind.Timestamp:
@@ -121,7 +122,7 @@ export namespace VarKind {
       case VarKind.ANY:
         return 'Json';
       case VarKind.Void:
-        return 'void';
+        return '#Void';
       case VarKind.Obj:
       case VarKind.Args:
       case VarKind.Ctx:
@@ -262,7 +263,7 @@ export interface IVarMetadata {
   name?: string;
   ref?: Class;
   item?: IVarMetadata;
-  build?: IVarResolution;
+  res?: IVarResolution;
 }
 
 export interface IVarResolution {
@@ -279,13 +280,56 @@ export abstract class VarResolution implements IVarResolution {
   public kind: VarKind = undefined;
   public target: VarMetadata = undefined;
   public item?: VarResolution = undefined;
-  // Names
-  public gql: string = undefined;
-  public js: string = undefined;
-  public idl: string = undefined;
 
-  public static on(meta: IVarResolution) {
-    return meta && Object.setPrototypeOf(meta, VarResolution.prototype);
+  public static of(target: VarMetadata, item?: VarResolution): VarResolution {
+    const res: any = {
+      kind: target && target.kind || VarKind.Object,
+      target,
+      item
+    };
+    Object.setPrototypeOf(res, VarResolution.prototype);
+    return res;
+  }
+
+  // Names
+  public get gql(): string {
+    switch (this.kind) {
+      case VarKind.Enum:
+      case VarKind.Type:
+      case VarKind.Input:
+      case VarKind.Metadata:
+      case VarKind.Entity:
+        return this.target.name;
+      case VarKind.Array:
+        return this.item && `[${this.item.gql}]` || `[${VarKind.Object}]`;
+      default: return this.kind;
+    }
+  }
+  public get js(): string {
+    switch (this.kind) {
+      case VarKind.Enum:
+      case VarKind.Type:
+      case VarKind.Input:
+      case VarKind.Metadata:
+      case VarKind.Entity:
+        return this.target.name;
+      case VarKind.Array:
+        return this.item && `${this.item.js}[]` || `any[]`;
+      default: return VarKind.toJS(this.kind);
+    }
+  }
+  public get idl(): string {
+    switch (this.kind) {
+      case VarKind.Enum:
+      case VarKind.Type:
+      case VarKind.Input:
+      case VarKind.Metadata:
+      case VarKind.Entity:
+        return this.target.name;
+      case VarKind.Array:
+        return this.item && `list<${this.item.idl}>` || `list<Json>`;
+      default: return VarKind.toIDL(this.kind);
+    }
   }
 }
 
@@ -294,7 +338,7 @@ export abstract class VarMetadata implements IVarMetadata {
   public name?: string;
   public ref?: Class;
   public item?: VarMetadata;
-  public build?: VarResolution;
+  public res?: VarResolution;
 
   public static readonly DESIGN_TYPES: any[] = [String, Number, Boolean, Date];
 

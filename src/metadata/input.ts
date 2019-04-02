@@ -7,7 +7,7 @@ export interface IArgMetadata extends IVarMetadata {
   name: string;
   design: Class;
   defined: boolean;
-  build: IVarResolution;
+  res: IVarResolution;
 }
 
 export class ArgMetadata implements IArgMetadata {
@@ -17,7 +17,7 @@ export class ArgMetadata implements IArgMetadata {
   public design: Class = undefined;
   public ref?: Class = undefined;
   public item?: VarMetadata = undefined;
-  public build: VarResolution = undefined;
+  public res: VarResolution = undefined;
   public defined: boolean = false;
 
   public static of(def: InputType): ArgMetadata;

@@ -25,7 +25,7 @@ export namespace TypeSelect {
   function visit(meta: VarResolution, select: TypeSelect, limit: number, level: number): string {
     if (level >= limit) return null;
     if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (VarKind.isRef(meta.kind)) return visit(meta.target.build, select, limit, level);
+    if (VarKind.isRef(meta.kind)) return visit(meta.target.res, select, limit, level);
     if (VarKind.isArray(meta.kind)) return visit(meta.item, select, limit, level);
     // script += ` # [ANY]\n`;
     // #  NONE
@@ -35,12 +35,12 @@ export namespace TypeSelect {
     for (const member of Object.values(type.members)) {
       if (VarKind.isVoid(member.kind)) continue;
       let name = member.name;
-      let def = `# ${member.build.js}`;
-      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
+      let def = `# ${member.res.js}`;
+      if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.res.kind)) {
         def += ' ...';
         if (select instanceof Object && select[member.name]) {
           const sub = visit(
-            member.build,
+            member.res,
             (select as any)[member.name],
             limit,
             level + 1
@@ -48,7 +48,7 @@ export namespace TypeSelect {
           def = sub || def;
           if (!sub) name = '# ' + name;
         } else if (limit) {
-          const sub = visit(member.build, select, limit, level + 1);
+          const sub = visit(member.res, select, limit, level + 1);
           def = sub || def;
           if (!sub) name = '# ' + name;
         } else {
@@ -66,7 +66,7 @@ export interface ITypeMetadata extends IVarMetadata {
   name: string;
   target: Class;
   members: Record<string, IFieldMetadata>;
-  build?: IVarResolution;
+  res?: IVarResolution;
   ref?: never;
 }
 
@@ -75,7 +75,7 @@ export class TypeMetadata implements ITypeMetadata {
   public name: string;
   public target: Class = undefined;
   public members: Record<string, FieldMetadata> = undefined;
-  public build?: VarResolution;
+  public res?: VarResolution;
   public ref?: never;
 
   constructor(target: Class) {

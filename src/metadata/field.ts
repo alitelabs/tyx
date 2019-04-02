@@ -11,7 +11,7 @@ export interface IFieldMetadata extends IVarMetadata {
   name: string;
   mandatory: boolean;
   design: IDesignMetadata;
-  build: IVarResolution;
+  res: IVarResolution;
 }
 
 export abstract class FieldMetadata implements IFieldMetadata {
@@ -21,7 +21,7 @@ export abstract class FieldMetadata implements IFieldMetadata {
   public ref?: Class = undefined;
   public item?: VarMetadata = undefined;
   public design: IDesignMetadata = undefined;
-  public build: VarResolution = undefined;
+  public res: VarResolution = undefined;
 
   public static on(obj: IFieldMetadata): FieldMetadata {
     return obj && Object.setPrototypeOf(obj, FieldMetadata.prototype);
