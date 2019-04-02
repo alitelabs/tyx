@@ -6,21 +6,21 @@ import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/field';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
-import { IVarMetadata, VarKind } from '../metadata/var';
+import { IVarMetadata, IVarResolution, VarKind } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
 import { EntityMetadataSchema } from './entity';
-import { VarMetadataSchema } from './type';
+import { VarMetadataSchema, VarResolutionSchema } from './type';
 
 @Schema()
 export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(String) kind: VarKind;
   @Field() name: string;
   @Field() mandatory: boolean;
-  @Field(item => VarMetadataSchema) item: IVarMetadata;
   @Field(Object) design: IDesignMetadata;
-  @Field(ref => VarMetadataSchema) build: IVarMetadata;
+  @Field(item => VarMetadataSchema) item: IVarMetadata;
+  @Field(ref => VarResolutionSchema) build: IVarResolution;
 
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;

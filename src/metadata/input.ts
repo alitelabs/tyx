@@ -1,13 +1,13 @@
 import { Class, Context, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { EnumMetadata } from './enum';
-import { InputType, IVarMetadata, VarKind, VarMetadata } from './var';
+import { InputType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution } from './var';
 
 export interface IArgMetadata extends IVarMetadata {
   index: number;
   name: string;
   design: Class;
   defined: boolean;
-  build: IVarMetadata;
+  build: IVarResolution;
 }
 
 export class ArgMetadata implements IArgMetadata {
@@ -15,9 +15,9 @@ export class ArgMetadata implements IArgMetadata {
   public name: string = undefined;
   public kind: VarKind = undefined;
   public design: Class = undefined;
-  public item?: VarMetadata = undefined;
   public ref?: Class = undefined;
-  public build: VarMetadata = undefined;
+  public item?: VarMetadata = undefined;
+  public build: VarResolution = undefined;
   public defined: boolean = false;
 
   public static of(def: InputType): ArgMetadata;

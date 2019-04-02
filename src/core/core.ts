@@ -26,10 +26,6 @@ export abstract class Core extends Registry {
 
   protected constructor() { super(); }
 
-  public static get metadata(): Registry {
-    return Registry.copy();
-  }
-
   public static get schema(): GraphQLTools {
     return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.crudAllowed));
   }
@@ -167,8 +163,6 @@ export abstract class Core extends Registry {
         rootPkg.modules.push(item);
       }
     }
-
-    process.uptime;
 
     return {
       name: this.name,

@@ -242,6 +242,8 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
       case RelationType.OneToMany:
       case RelationType.ManyToMany:
         this.kind = VarKind.Array;
+        // TODO: ---- Which one
+        this.ref = typeFunction;
         this.item = { kind: VarKind.Ref, ref: typeFunction };
         break;
       default:

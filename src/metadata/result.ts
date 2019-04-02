@@ -1,21 +1,21 @@
 import { Class } from '../types/core';
 import { EnumMetadata } from './enum';
-import { IVarMetadata, ResultType, VarKind, VarMetadata } from './var';
+import { IVarMetadata, IVarResolution, ResultType, VarKind, VarMetadata, VarResolution } from './var';
 
 export interface IResultMetadata extends IVarMetadata {
   design: Class;
   promise: boolean;
   defined: boolean;
-  build: IVarMetadata;
+  build: IVarResolution;
 }
 
 export class ResultMetadata implements IResultMetadata {
   public kind: VarKind = VarKind.Type;
   public design: Class = undefined;
   public promise: boolean = undefined;
-  public item?: VarMetadata = undefined;
   public ref?: Class = undefined;
-  public build: VarMetadata = undefined;
+  public item?: VarMetadata = undefined;
+  public build: VarResolution = undefined;
   public defined: boolean = false;
 
   public static of(def: ResultType): ResultMetadata;

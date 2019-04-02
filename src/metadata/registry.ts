@@ -12,7 +12,7 @@ import { IProxyMetadata, ProxyMetadata } from './proxy';
 import { IRelationMetadata, RelationMetadata } from './relation';
 import { IServiceMetadata, ServiceMetadata } from './service';
 import { ITypeMetadata, TypeMetadata } from './type';
-import { VarKind, VarMetadata } from './var';
+import { VarKind, VarMetadata, VarResolution } from './var';
 
 export interface IDecorationMetadata {
   decorator: string;
@@ -210,43 +210,51 @@ export abstract class Registry implements MetadataRegistry {
     return this.copy();
   }
 
-  protected static build(metadata: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarMetadata {
-    if (VarKind.isEnum(metadata.kind)) {
-      const e = metadata as EnumMetadata;
-      metadata.gql = e.name;
-      metadata.js = e.name;
-      metadata.idl = e.name;
-      return metadata;
-    }
-    if (VarKind.isScalar(metadata.kind)) {
-      return VarMetadata.on({
-        kind: metadata.kind,
-        gql: metadata.kind,
-        js: VarKind.toJS(metadata.kind),
-        idl: VarKind.toIDL(metadata.kind)
+  protected static build(target: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarResolution {
+    if (VarKind.isEnum(target.kind)) {
+      const e = target as EnumMetadata;
+      return VarResolution.on({
+        kind: e.kind,
+        target,
+        gql: e.name,
+        js: e.name,
+        idl: e.name
       });
     }
-    if (VarKind.isResolver(metadata.kind)) {
-      return VarMetadata.on({
-        kind: metadata.kind,
-        gql: metadata.kind,
-        js: VarKind.toJS(metadata.kind),
-        idl: VarKind.toIDL(metadata.kind)
+    if (VarKind.isScalar(target.kind)) {
+      return VarResolution.on({
+        kind: target.kind,
+        target,
+        gql: target.kind,
+        js: VarKind.toJS(target.kind),
+        idl: VarKind.toIDL(target.kind)
       });
     }
-    if (VarKind.isArray(metadata.kind)) {
-      const item = this.build(metadata.item, scope, reg);
+    if (VarKind.isResolver(target.kind)) {
+      return VarResolution.on({
+        kind: target.kind,
+        target,
+        gql: target.kind,
+        js: VarKind.toJS(target.kind),
+        idl: VarKind.toIDL(target.kind)
+      });
+    }
+    if (VarKind.isArray(target.kind)) {
+      const item = this.build(target.item, scope, reg);
       if (item) {
-        return VarMetadata.on({
+        return VarResolution.on({
           kind: VarKind.Array,
-          item, gql: `[${item.gql}]`,
+          target,
+          item,
+          gql: `[${item.gql}]`,
           js: `${item.js}[]`,
           idl: `list<${item.idl}>`
         });
         // tslint:disable-next-line:no-else-after-return
       } else {
-        return VarMetadata.on({
+        return VarResolution.on({
           kind: VarKind.Array,
+          target,
           item,
           gql: `[${VarKind.Object}]`,
           js: `any[]`,
@@ -254,12 +262,12 @@ export abstract class Registry implements MetadataRegistry {
         });
       }
     }
-    if (VarKind.isRef(metadata.kind)) {
-      let type: VarMetadata = undefined;
-      const target: any = metadata.ref();
-      const ref = VarMetadata.of(target);
-      if (VarKind.isEnum(target && target.kind)) {
-        type = this.build(target, scope, reg);
+    if (VarKind.isRef(target.kind)) {
+      let type: VarResolution = undefined;
+      const tg: any = target.ref();
+      const ref = VarMetadata.of(tg);
+      if (VarKind.isEnum(tg && tg.kind)) {
+        type = this.build(tg, scope, reg);
       } else if (VarKind.isScalar(ref.kind)) {
         type = this.build(ref, scope, reg);
       } else if (VarKind.isArray(ref.kind)) {
@@ -276,8 +284,9 @@ export abstract class Registry implements MetadataRegistry {
         } else if (meta) {
           type = this.build(meta, scope, reg);
         } else {
-          type = VarMetadata.on({
+          type = VarResolution.on({
             kind: VarKind.Object,
+            target: null,
             gql: VarKind.Object,
             js: 'any',
             idl: '?ANY?'
@@ -294,35 +303,38 @@ export abstract class Registry implements MetadataRegistry {
     //     return target.target.name;
     // }
 
-    const struc = metadata as TypeMetadata;
+    const struc = target as TypeMetadata;
     if (!VarKind.isStruc(struc.kind)) {
       throw new TypeError('Internal metadata error');
     }
     const link = struc.target && struc.name;
-    if (link && reg[link]) return reg[link];
+    if (link && reg[link]) return reg[link].build;
     if (!struc.members || !Object.values(struc.members).length) {
       throw new TypeError(`Empty type difinition ${struc.target}`);
     }
 
-    if (scope === VarKind.Metadata && !VarKind.isMetadata(metadata.kind)) {
-      throw new TypeError(`Metadata type can not reference [${metadata.kind}]`);
+    if (scope === VarKind.Metadata && !VarKind.isMetadata(target.kind)) {
+      throw new TypeError(`Metadata type can not reference [${target.kind}]`);
     }
-    if (scope === VarKind.Input && !VarKind.isInput(metadata.kind)) {
-      throw new TypeError(`Input type can not reference [${metadata.kind}]`);
+    if (scope === VarKind.Input && !VarKind.isInput(target.kind)) {
+      throw new TypeError(`Input type can not reference [${target.kind}]`);
     }
-    if (scope === VarKind.Type && !VarKind.isType(metadata.kind) && !VarKind.isEntity(metadata.kind)) {
-      throw new TypeError(`Type type can not reference [${metadata.kind}]`);
+    if (scope === VarKind.Type && !VarKind.isType(target.kind) && !VarKind.isEntity(target.kind)) {
+      throw new TypeError(`Type type can not reference [${target.kind}]`);
     }
-
     // Resolve structure
-    struc.gql = struc.name;
-    struc.js = struc.name;
-    struc.idl = struc.name;
+    struc.build = VarResolution.on({
+      kind: struc.kind,
+      target,
+      gql: struc.name,
+      js: struc.name,
+      idl: struc.name
+    });
     reg[struc.name] = struc;
     for (const member of Object.values(struc.members)) {
       member.build = this.build(member, scope, reg);
     }
-    return struc;
+    return struc.build;
   }
 
   // public stringify(ident?: number) {

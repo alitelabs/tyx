@@ -9,14 +9,13 @@ import { IArgMetadata } from '../metadata/input';
 import { IMethodMetadata, MethodType } from '../metadata/method';
 import { IResultMetadata } from '../metadata/result';
 import { TypeSelect } from '../metadata/type';
-import { } from '../metadata/var';
 import { Class, ClassRef, SchemaResolvers } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { EventRouteMetadataSchema } from './event';
 import { HttpBindingMetadataSchema, HttpRouteMetadataSchema } from './http';
-import { InputMetadataSchema, ResultMetadataSchema } from './type';
+import { ArgMetadataSchema as ArgMetadataSchema, ResultMetadataSchema } from './type';
 
 @Schema()
 export class MethodMetadataSchema implements IMethodMetadata {
@@ -35,7 +34,8 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() query: boolean;
   @Field() mutation: boolean;
   @Field() resolver: boolean;
-  @Field(list => [InputMetadataSchema]) args: IArgMetadata[];
+
+  @Field(list => [ArgMetadataSchema]) args: IArgMetadata[];
   @Field(ref => ResultMetadataSchema) result: IResultMetadata;
   @Field(Object) select: TypeSelect;
 

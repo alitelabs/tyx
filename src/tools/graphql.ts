@@ -607,7 +607,7 @@ export class GraphQLTools {
 
     const struc = metadata as TypeMetadata;
     if (reg[struc.name]) return reg[struc.name];
-    if (this.entities[struc.gql]) return this.entities[struc.gql];
+    if (this.entities[struc.build.gql]) return this.entities[struc.build.gql];
 
     if (!VarKind.isStruc(struc.kind) || !struc.members) {
       throw new TypeError(`Empty type difinition ${struc.target}`);

@@ -14,7 +14,7 @@ import { IProxyMetadata } from '../metadata/proxy';
 import { IDecorationMetadata, IDecoratorMetadata, MetadataRegistry } from '../metadata/registry';
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
-import { ITypeMetadata } from '../metadata/type';
+import { ITypeMetadata, TypeMetadata } from '../metadata/type';
 import { Class, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
@@ -28,7 +28,7 @@ import { MethodMetadataSchema } from './method';
 import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
-import { EnumMetadataSchema, InputMetadataSchema, TypeMetadataSchema } from './type';
+import { ArgMetadataSchema, EnumMetadataSchema, TypeMetadataSchema } from './type';
 
 @Schema()
 export class DecoratorMetadataSchema implements IDecoratorMetadata {
@@ -74,7 +74,7 @@ export class CoreSchema implements MetadataRegistry {
   @Field(list => [RelationMetadataSchema]) RelationMetadata: Record<string, IRelationMetadata>;
 
   @Field(list => [EnumMetadataSchema]) EnumMetadata: Record<string, IEnumMetadata>;
-  @Field(list => [InputMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
+  @Field(list => [ArgMetadataSchema]) InputMetadata: Record<string, ITypeMetadata>;
   @Field(list => [TypeMetadataSchema]) TypeMetadata: Record<string, ITypeMetadata>;
 
   @Field(list => [MethodMetadataSchema]) MethodMetadata: Record<string, IMethodMetadata>;
@@ -88,6 +88,8 @@ export class CoreSchema implements MetadataRegistry {
   @Field(list => [ServiceInfoSchema]) Global: ServiceInfoSchema[];
   @Field(list => [ServiceInfoSchema]) Context: ServiceInfoSchema[];
   @Field(list => [InstanceInfoSchema]) Pool: InstanceInfoSchema[];
+
+  public static get metadata() { return TypeMetadata.get(CoreSchema); }
 
   public static RESOLVERS: SchemaResolvers<CoreSchema> = {
     CoreMetadata: (obj, args) => Lo.filter(Object.values(obj.CoreMetadata), args),

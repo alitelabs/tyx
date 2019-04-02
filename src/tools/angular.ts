@@ -137,21 +137,16 @@ export class AngularTools {
         script += `      query: gql\`query request${reqArgs} {\n`;
       }
       script += `        result: ${method.api.name}_${method.name}${qlArgs}`;
-      if (VarKind.isStruc(result.kind)) {
-        const x = (VarKind.isType(result.kind)) ? 0 : 0;
-        const select = TypeSelect.emit(result, method.select, 0, 1 + x);
-        script += ' ' + Utils.indent(select, '  '.repeat(4));
-      } else if (VarKind.isArray(result.kind)) {
-        const x = (VarKind.isType(result.item.kind)) ? 0 : 0;
-        const select = TypeSelect.emit(result.item, method.select, 0, 1 + x);
-        script += ' ' + Utils.indent(select, '  '.repeat(4));
+      if (VarKind.isStruc(result.kind) || VarKind.isArray(result.kind)) {
+        const select = TypeSelect.emit(result, method.select);
+        script += ' ' + Utils.indent(select, 4 * 2).trimLeft();
       } else {
         script += ` # : ANY`;
       }
       script += `\n      }\``;
       if (qlArgs) script += `,\n      variables: { ${params} }`;
       if (method.mutation) {
-        script += `    }).pipe(map(res => fetch(res)), catchError(err => erorr(err)));\n`;
+        script += `\n    }).pipe(map(res => fetch(res)), catchError(err => erorr(err)));\n`;
       } else {
         script += `,\n      fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'\n`;
         script += `    }).pipe(map(res => result(res)), catchError(err => erorr(err)));\n`;

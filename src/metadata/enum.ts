@@ -1,12 +1,11 @@
 import { MetadataRegistry, Registry } from "./registry";
-import { IVarMetadata, VarKind } from "./var";
+import { IVarMetadata, VarKind, VarResolution } from "./var";
 
 export interface IEnumMetadata extends IVarMetadata {
   name: string;
   ref: Function;
   options: string[];
   item?: never;
-  build?: never;
 }
 
 export class EnumMetadata implements IEnumMetadata {
@@ -15,7 +14,7 @@ export class EnumMetadata implements IEnumMetadata {
   public ref: Function;
   public options: string[];
   public item?: never;
-  public build?: never;
+  public build: VarResolution;
 
   constructor(target: Object, name: string) {
     // super(VarKind.Enum, name);

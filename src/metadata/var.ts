@@ -259,24 +259,42 @@ export namespace VarKind {
 
 export interface IVarMetadata {
   kind: VarKind;
-  item?: IVarMetadata;
+  name?: string;
   ref?: Class;
-  build?: IVarMetadata;
+  item?: IVarMetadata;
+  build?: IVarResolution;
+}
+
+export interface IVarResolution {
+  kind: VarKind;
+  target: IVarMetadata;
+  item?: IVarResolution;
   // Names
-  gql?: string;
-  js?: string;
-  idl?: string;
+  gql: string;
+  js: string;
+  idl: string;
+}
+
+export abstract class VarResolution implements IVarResolution {
+  public kind: VarKind = undefined;
+  public target: VarMetadata = undefined;
+  public item?: VarResolution = undefined;
+  // Names
+  public gql: string = undefined;
+  public js: string = undefined;
+  public idl: string = undefined;
+
+  public static on(meta: IVarResolution) {
+    return meta && Object.setPrototypeOf(meta, VarResolution.prototype);
+  }
 }
 
 export abstract class VarMetadata implements IVarMetadata {
-  public name?: string;
   public kind: VarKind;
-  public item?: VarMetadata;
+  public name?: string;
   public ref?: Class;
-  public build?: VarMetadata;
-  public gql?: string;
-  public js?: string;
-  public idl?: string;
+  public item?: VarMetadata;
+  public build?: VarResolution;
 
   public static readonly DESIGN_TYPES: any[] = [String, Number, Boolean, Date];
 

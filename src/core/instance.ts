@@ -169,7 +169,7 @@ export class CoreInstance implements CoreContainer {
 
   // TODO: Why just wrapper for graph request?
   public async resolve(
-    methodId: string,
+    memberId: string,
     obj: any,
     args: ResolverQuery & ResolverArgs,
     // TODO: Why new context is generated?
@@ -177,7 +177,7 @@ export class CoreInstance implements CoreContainer {
     // TODO: Why not passed to methods
     info?: ResolverInfo,
   ): Promise<any> {
-    const [target, member] = methodId.split('.');
+    const [target, member] = memberId.split('.');
     const meta: any = Registry.CoreMetadata[target];
     if (meta && meta.target.RESOLVERS && meta.target.RESOLVERS[member]) {
       return meta.target.RESOLVERS[member](obj, args, ctx, info);

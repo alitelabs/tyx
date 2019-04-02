@@ -82,11 +82,11 @@
     "@types/koa-router": "^7.0.40",
     "@types/lodash": "^4.14.123",
     "@types/ms": "^0.7.30",
-    "@types/node": "^10.14.3",
+    "@types/node": "^10.14.4",
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "aws-sdk": "^2.427.0",
+    "aws-sdk": "^2.428.0",
     "aws-serverless-express": "^3.3.5",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
@@ -101,7 +101,7 @@
     "ts-node": "^8.0.3",
     "tslint": "^5.14.0",
     "tslint-config-airbnb": "^5.11.1",
-    "typeorm": "^0.2.15",
+    "typeorm": "^0.2.16",
     "typescript": "^3.3.4000"
   },
   "prettier": {

@@ -1,7 +1,7 @@
 import { Class, Prototype } from '../types/core';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
-import { FieldMetadata, IDesignMetadata } from './field';
+import { FieldMetadata, IDesignMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
 import { FieldType, VarKind, VarMetadata } from './var';
 
@@ -233,7 +233,7 @@ export interface ColumnOptions {
   // transformer?: ValueTransformer;
 }
 
-export interface IColumnMetadata extends FieldMetadata {
+export interface IColumnMetadata extends IFieldMetadata {
   /**
    * Target class where column decorator is used.
    * This may not be always equal to entity metadata (for example embeds or inheritance cases).

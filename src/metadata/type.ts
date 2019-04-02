@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { FieldMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
-import { FieldType, IVarMetadata, VarKind, VarMetadata } from './var';
+import { FieldType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution } from './var';
 
 export type TypeSelect<T = any> = {
   // tslint:disable-next-line:prefer-array-literal
@@ -14,14 +14,22 @@ export type TypeSelect<T = any> = {
 };
 
 export namespace TypeSelect {
-  export function emit(meta: VarMetadata, select: TypeSelect | any, level: number, depth: number): string {
-    if (level >= depth) return null;
+
+  export function emit(meta: VarResolution, select: number): string;
+  export function emit(meta: VarResolution, select: TypeSelect | number): string;
+  export function emit(meta: VarResolution, select: TypeSelect | number): string {
+    if (typeof select === 'number') return visit(meta, undefined, select, 0);
+    return visit(meta, select, undefined, 0);
+  }
+
+  function visit(meta: VarResolution, select: TypeSelect, limit: number, level: number): string {
+    if (level >= limit) return null;
     if (VarKind.isScalar(meta.kind)) return `# ${meta.js}`;
-    if (VarKind.isRef(meta.kind)) return emit(meta.build, select, level, depth);
-    if (VarKind.isArray(meta.kind)) return emit(meta.item, select, level, depth);
+    if (VarKind.isRef(meta.kind)) return visit(meta.target.build, select, limit, level);
+    if (VarKind.isArray(meta.kind)) return visit(meta.item, select, limit, level);
     // script += ` # [ANY]\n`;
     // #  NONE
-    const type = meta as TypeMetadata;
+    const type = meta.target as TypeMetadata;
     let script = `{`;
     let i = 0;
     for (const member of Object.values(type.members)) {
@@ -31,14 +39,23 @@ export namespace TypeSelect {
       if (!VarKind.isScalar(member.kind) && !VarKind.isEnum(member.build.kind)) {
         def += ' ...';
         if (select instanceof Object && select[member.name]) {
-          const sub = emit(member.build, select && select[member.name], level + 1, depth + 1);
+          const sub = visit(
+            member.build,
+            (select as any)[member.name],
+            limit,
+            level + 1
+          );
+          def = sub || def;
+          if (!sub) name = '# ' + name;
+        } else if (limit) {
+          const sub = visit(member.build, select, limit, level + 1);
           def = sub || def;
           if (!sub) name = '# ' + name;
         } else {
           name = '# ' + name;
         }
       }
-      script += `${i++ ? ',' : ''}\n  ${name} ${def}`;
+      script += `${i++ ? ',' : ''}\n  ${name} ${Utils.indent(def, (level + 1) * 2).trimLeft()}`;
     }
     script += `\n}`;
     return script;
@@ -49,9 +66,8 @@ export interface ITypeMetadata extends IVarMetadata {
   name: string;
   target: Class;
   members: Record<string, IFieldMetadata>;
+  build?: IVarResolution;
   ref?: never;
-  item?: never;
-  build?: never;
 }
 
 export class TypeMetadata implements ITypeMetadata {
@@ -59,13 +75,8 @@ export class TypeMetadata implements ITypeMetadata {
   public name: string;
   public target: Class = undefined;
   public members: Record<string, FieldMetadata> = undefined;
+  public build?: VarResolution;
   public ref?: never;
-  public item?: never;
-  public build?: never;
-
-  public gql?: string;
-  public js?: string;
-  public idl?: string;
 
   constructor(target: Class) {
     // super(undefined, target.name);

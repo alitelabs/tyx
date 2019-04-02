@@ -3,11 +3,11 @@ import { Field } from '../decorators/type';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/field';
-import { IVarMetadata, VarKind } from '../metadata/var';
+import { IVarResolution, VarKind } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
-import { VarMetadataSchema } from './type';
+import { VarResolutionSchema } from './type';
 
 // @Enum(ColumnType)
 export class ColumnTypeSchema {
@@ -19,7 +19,7 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field() name: string;
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
-  @Field(ref => VarMetadataSchema) build: IVarMetadata;
+  @Field(ref => VarResolutionSchema) build: IVarResolution;
 
   @Field(String) target: Class;
   @Field(ref => EntityMetadataSchema) entityMetadata: IEntityMetadata;
