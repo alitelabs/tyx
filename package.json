@@ -53,7 +53,7 @@
     "lodash": "^4.17.11",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.13",
-    "tsutils": "^3.9.1",
+    "tsutils": "^3.10.0",
     "typedi": "^0.8.0",
     "uuid": "^3.3.2",
     "wtfnode": "^0.8.0"
@@ -86,7 +86,7 @@
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "aws-sdk": "^2.433.0",
+    "aws-sdk": "^2.434.0",
     "aws-serverless-express": "^3.3.6",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
