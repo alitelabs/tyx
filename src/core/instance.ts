@@ -52,7 +52,7 @@ export class CoreInstance implements CoreContainer {
     if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
     if (!Di.Container.has(Configuration)) {
-      this.log.info('Using core configuration service');
+      this.log.debug('Using core Configuration service');
       this.container.set({ id: Configuration, type: CoreConfiguration });
     }
     this.config = this.container.get(Configuration);
@@ -63,7 +63,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     if (!Di.Container.has(Security)) {
-      this.log.info('Using core security service');
+      this.log.debug('Using core Security service');
       this.container.set({ id: Security, type: CoreSecurity });
     }
     this.security = this.container.get(Security);
@@ -74,7 +74,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     if (!Di.Container.has(GraphQL)) {
-      this.log.info('Using core GraphQL service');
+      this.log.debug('Using core GraphQL service');
       // TODO: CoreGraphQL.finalize()
       this.container.set({ id: GraphQL, type: CoreGraphQL });
     }

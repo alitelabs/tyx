@@ -83,7 +83,14 @@ export class ThriftTools {
     let patch = this.genPatch();
     let replace: any = {};
 
+    thrift += '///////// Core /////////\n\n';
+    script += '///////// Core /////////\n\n';
+    const core = this.genCore(CoreSchema.metadata);
+    thrift += core.thrift;
+    script += core.script;
+
     thrift += '///////// API /////////\n\n';
+    script += '///////// API /////////\n\n';
     for (const api of apis) {
       const res = this.genApi(api);
       thrift += res.thrift + '\n\n';
@@ -120,10 +127,6 @@ export class ThriftTools {
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// METADATA ////////\n\n';
-
-    const core = this.genCore(CoreSchema.metadata);
-    thrift += core.thrift;
-    script += core.script;
 
     const schemas = Object.values(registry.CoreMetadata).sort((a, b) => a.name.localeCompare(b.name));
     for (const type of schemas) {
@@ -643,7 +646,7 @@ export class ThriftTools {
       let qlArgs = '';
       for (const field of Object.values(target.members)) {
         const inb = field.res;
-        if (VarKind.isVoid(inb.kind) || VarKind.isResolver(inb.kind)) continue;
+        if (!VarKind.isScalar(inb.kind)) continue;
         const param = field.name;
         if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
         params += param;
@@ -672,7 +675,7 @@ export class ThriftTools {
       query += `\n  }\`;\n\n`;
 
       handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(filter: ${GEN}.${target.name}Filter, select: ${GEN}.${target.name}Selector, ctx?: Context) {\n`;
-      handler += `    const res = await ctx.execute(${gql}, {});\n`;
+      handler += `    const res = await ctx.execute(${gql}, filter);\n`;
       handler += `    return res;\n`;
       handler += `  }`;
 

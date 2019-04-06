@@ -86,7 +86,7 @@
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "aws-sdk": "^2.434.0",
+    "aws-sdk": "^2.437.0",
     "aws-serverless-express": "^3.3.6",
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
@@ -102,7 +102,7 @@
     "tslint": "^5.15.0",
     "tslint-config-airbnb": "^5.11.1",
     "typeorm": "^0.2.16",
-    "typescript": "^3.4.1"
+    "typescript": "^3.4.2"
   },
   "prettier": {
     "singleQuote": true,
