@@ -125,21 +125,22 @@ export abstract class Core extends Registry {
     };
     packages['.'] = rootPkg;
 
-    function resolve(mod: NodeModule) {
-      if (modules[mod.filename]) return modules[mod.filename];
-      let name = (mod === rootItem) ? mod.id : Utils.relative(mod.filename, rootItem.filename);
-      const parent = mod.parent && modules[mod.parent.filename];
+    function resolve(mod: NodeModule & { i?: string }) {
+      const id = mod.id || mod.i;
+      if (modules[mod.filename]) return modules[id];
+      let name = (mod === rootItem) ? id : Utils.relative(id, rootItem.id);
+      const parent = mod.parent && modules[mod.parent.id];
       const level = parent && (parent.level + 1) || 0;
-      const size = Utils.fsize(mod.filename);
+      const size = Utils.fsize(mode.filename || id);
       scriptSize += size;
-      const info: ModuleInfo = { id: mod.id, name, size, package: undefined, file: mod.filename, level, parent };
+      const info: ModuleInfo = { id, name, size, package: undefined, file: mod.filename || id, level, parent };
       modules[mod.filename] = info;
       if (mod === rootItem) {
         root = info;
         rootPkg.import = root;
       }
 
-      const ix = name.indexOf('node_modules/');
+      const ix = name && name.indexOf('node_modules/');
       if (ix >= 0) {
         name = name.substring(ix + 13);
         const parts = name.split('/');
@@ -166,7 +167,7 @@ export abstract class Core extends Registry {
         rootPkg.modules.push(info);
       }
 
-      for (const item of mod.children) {
+      for (const item of mod.children || []) {
         const ch = resolve(item);
         if (ch.package === info.package) continue;
         if (!ch.package.uses.includes(info.package)) {
