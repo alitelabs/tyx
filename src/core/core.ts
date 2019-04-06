@@ -127,14 +127,15 @@ export abstract class Core extends Registry {
 
     function resolve(mod: NodeModule & { i?: string }) {
       const id = mod.id || mod.i;
-      if (modules[mod.filename]) return modules[id];
+      const file = mod.filename || id;
+      if (modules[id]) return modules[id];
       let name = (mod === rootItem) ? id : Utils.relative(id, rootItem.id);
       const parent = mod.parent && modules[mod.parent.id];
       const level = parent && (parent.level + 1) || 0;
-      const size = Utils.fsize(mod.filename || id);
+      const size = Utils.fsize(file);
       scriptSize += size;
-      const info: ModuleInfo = { id, name, size, package: undefined, file: mod.filename || id, level, parent };
-      modules[mod.filename] = info;
+      const info: ModuleInfo = { id, name, size, package: undefined, file, level, parent };
+      modules[id] = info;
       if (mod === rootItem) {
         root = info;
         rootPkg.import = root;
