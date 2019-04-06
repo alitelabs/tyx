@@ -3,7 +3,7 @@ import { Di } from '../import';
 import { Logger } from '../logger';
 import { Registry } from '../metadata/registry';
 import { GraphQLTools } from '../tools/graphql';
-import { Class, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
+import { Class, CommonModule, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
@@ -109,7 +109,9 @@ export abstract class Core extends Registry {
     const cache: NodeModule[] = Object.values(require.cache);
     const packages: Record<string, PackageInfo> = {};
     const modules: Record<string, ModuleInfo> = {};
-    const rootItem = cache[0];
+    const rootItem: CommonModule = cache[0];
+    const rootFile = rootItem.filename || rootItem.id || rootItem.i;
+
     let scriptSize = 0;
     let root: ModuleInfo;
 
@@ -125,11 +127,11 @@ export abstract class Core extends Registry {
     };
     packages['.'] = rootPkg;
 
-    function resolve(mod: NodeModule & { i?: string }) {
+    function resolve(mod: CommonModule) {
       const id = mod.id || mod.i;
       const file = mod.filename || id;
       if (modules[id]) return modules[id];
-      let name = (mod === rootItem) ? id : Utils.relative(id, rootItem.id);
+      let name = (mod === rootItem) ? id : Utils.relative(file, rootFile);
       const parent = mod.parent && modules[mod.parent.id];
       const level = parent && (parent.level + 1) || 0;
       const size = Utils.fsize(file);

@@ -132,6 +132,8 @@ export interface PackageInfo {
   uses: PackageInfo[];
 }
 
+export type CommonModule = NodeModule & { i?: string };
+
 export interface ModuleInfo {
   id: string;
   name: string;
