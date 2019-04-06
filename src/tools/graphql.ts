@@ -211,6 +211,39 @@ export class GraphQLTools {
     `;
   }
 
+  public static wrapper(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
+    const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
+    let script = '';
+    script += Utils.indent(`
+      import { Auth, Context, CoreGraphQL, HttpRequest, HttpResponse, Override, Service } from 'tyx';
+    `).trimRight() + '\n';
+    script += Utils.indent(`
+      @Service(true)
+      export class ${name}GraphQL extends CoreGraphQL {
+
+        public constructor() {
+          super();
+        }
+
+        @Override()
+        @Auth({ ${auth} })
+        public async graphql(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+          return super.graphql(ctx, req);
+        }
+
+        public async playground(ctx: Context, req: HttpRequest): Promise<string> {
+          return super.playground(ctx, req, PLAYGROUND_TABS);
+        }
+      }
+    `) + '\n';
+    // script += `export const DIRECTIVES: any = {};\n\n`;
+    script += '// tslint:disable:object-literal-key-quotes\n';
+    script += `export const PLAYGROUND_TABS: any = `;
+    script += tabs ? JSON.stringify(tabs, null, 2) : 'undefined';
+    script += ';\n';
+    return script;
+  }
+
   public static service(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
     const schema = new GraphQLTools(crud);
     const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
