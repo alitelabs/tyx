@@ -1,7 +1,7 @@
 import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
 import { Di } from '../import';
 import { Logger } from '../logger';
-import { Registry } from '../metadata/registry';
+import { MetadataRegistry, Registry } from '../metadata/registry';
 import { GraphQLTools } from '../tools/graphql';
 import { Class, CommonModule, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
@@ -30,7 +30,7 @@ export abstract class Core extends Registry {
     return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.crudAllowed));
   }
 
-  public static register(...args: Class[]) { }
+  public static register(...args: Class[]): void { }
 
   // TODO: options object
   // Move database out
@@ -55,7 +55,7 @@ export abstract class Core extends Registry {
     }
   }
 
-  public static start(port: number, basePath?: string, extraArgs?: any) {
+  public static start(port: number, basePath?: string, extraArgs?: any): void {
     return CoreServer.start(port, basePath, extraArgs);
   }
 
@@ -245,8 +245,24 @@ export abstract class Core extends Registry {
   }
 }
 
+export interface CoreInterface extends MetadataRegistry {
+  schema: GraphQLTools;
+  register(...args: Class[]): void;
+  init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
+  init(application?: string, register?: Class[], isCrud?: boolean): void;
+  start(port: number, basePath?: string, extraArgs?: any): void;
+  get(): Promise<CoreInstance>;
+  get<T>(api: ObjectType<T> | string): Promise<T>;
+  activate(): Promise<CoreInstance>;
+  invoke(api: string, method: string, ...args: any[]): Promise<any>;
+  lambda(): LambdaHandler;
+  serviceInfo(): ServiceInfo[];
+  processInfo(level?: number): ProcessInfo;
+  moduleInfo(): { root: ModuleInfo, modules: ModuleInfo[], packages: PackageInfo[], scriptSize: number };
+}
+
 declare global {
   // tslint:disable-next-line:variable-name
-  const Core: Core;
+  const Core: CoreInterface;
 }
 (global as any).Core = Core;

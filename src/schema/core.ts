@@ -109,13 +109,10 @@ export class ProcessInfoSchema implements ProcessInfo {
   @Field() packageCount: number;
   @Field() scriptSize: number;
   @Field(ref => ModuleInfoSchema) entry: ModuleInfo;
-  @Field(list => [PackageInfoSchema]) packages: PackageInfo[];
-  @Field(list => [ModuleInfoSchema]) modules: ModuleInfo[];
+  packages: PackageInfo[];
+  modules: ModuleInfo[];
 
-  public static RESOLVERS: SchemaResolvers<ProcessInfo> = {
-    packages: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.packages)), args),
-    modules: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.modules)), args),
-  };
+  public static RESOLVERS: SchemaResolvers<ProcessInfo> = {};
 }
 
 // TODO: Statistics .....

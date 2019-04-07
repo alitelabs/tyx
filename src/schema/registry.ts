@@ -19,7 +19,7 @@ import { Class, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { ColumnMetadataSchema } from './column';
-import { InstanceInfoSchema, ProcessInfoSchema, ServiceInfoSchema } from './core';
+import { InstanceInfoSchema, ModuleInfoSchema, PackageInfoSchema, ProcessInfoSchema, ServiceInfoSchema } from './core';
 import { DatabaseMetadataSchema } from './database';
 import { EntityMetadataSchema } from './entity';
 import { EventRouteMetadataSchema } from './event';
@@ -85,6 +85,8 @@ export class CoreSchema implements MetadataRegistry {
   // Additional runtime info
 
   @Field(ref => ProcessInfoSchema) Process: ProcessInfoSchema;
+  @Field(list => [PackageInfoSchema]) Packages: PackageInfoSchema[];
+  @Field(list => [ModuleInfoSchema]) Modules: ModuleInfoSchema[];
   @Field(list => [ServiceInfoSchema]) Global: ServiceInfoSchema[];
   @Field(list => [ServiceInfoSchema]) Context: ServiceInfoSchema[];
   @Field(list => [InstanceInfoSchema]) Pool: InstanceInfoSchema[];
@@ -114,6 +116,8 @@ export class CoreSchema implements MetadataRegistry {
     EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args),
     // Runtime
     Process: (obj, args, ctx) => ctx.container.processInfo(),
+    Packages: (obj, args, ctx) => Lo.filter(ctx.container.processInfo().packages, args),
+    Modules: (obj, args, ctx) => Lo.filter(ctx.container.processInfo().modules, args),
     Global: (obj, args, ctx) => {
       const info = ctx.container.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
