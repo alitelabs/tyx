@@ -106,6 +106,33 @@ export abstract class Core extends Registry {
   }
 
   public static processInfo(level?: number): ProcessInfo {
+    const info = this.moduleInfo();
+    return {
+      name: this.name,
+      state: this.instance ? 'Init' : 'New',
+      timestamp: new Date(),
+      versions: process.versions,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      node: {
+        pid: process.pid,
+        arch: process.arch,
+        platform: process.platform,
+        release: process.release
+      },
+      loadTime: this.loadTime,
+      initTime: this.initTime,
+
+      entry: info.root,
+      packageCount: info.packages.length,
+      moduleCount: info.modules.length,
+      scriptSize: info.scriptSize,
+      packages: info.packages.filter((m: any) => level === undefined || m.level <= level),
+      modules: info.modules.filter((m: any) => level === undefined || m.level <= level)
+    };
+  }
+
+  public static moduleInfo(): { root: ModuleInfo, modules: ModuleInfo[], packages: PackageInfo[], scriptSize: number } {
     const cache: NodeModule[] = Object.values(require.cache);
     const packages: Record<string, PackageInfo> = {};
     const modules: Record<string, ModuleInfo> = {};
@@ -117,13 +144,19 @@ export abstract class Core extends Registry {
 
     const rootPkg: PackageInfo = {
       name: '.',
+      // TODO: Find versions
+      version: null,
+      description: null,
       level: 0,
       size: 0,
       import: null,
       parent: null,
+      moduleCount: 0,
       modules: [],
       uses: [],
-      imports: []
+      imports: [],
+      path: null,
+      json: null
     };
     packages['.'] = rootPkg;
 
@@ -148,11 +181,23 @@ export abstract class Core extends Registry {
         name = name.substring(ix + 13);
         const parts = name.split('/');
         const pack = parts[0] + (parts[0].startsWith('@') ? '/' + parts[1] : '');
+        const path = file.substring(0, file.indexOf('node_modules/') + 13) + pack + '/package.json';
+        let json: any;
+        try {
+          json = require(path);
+        } catch (e) {
+          json = { varsion: null };
+        }
         const pkg: PackageInfo = packages[pack] || {
           name: pack,
+          version: json && json.version || null,
+          description: json && json.description || null,
+          path,
+          json,
           // from: parent && parent.package && parent.package.name,
           level: info.level,
           size: 0,
+          moduleCount: 0,
           parent: info.parent && info.parent.package,
           import: info.parent,
           modules: [],
@@ -162,12 +207,17 @@ export abstract class Core extends Registry {
         info.package = pkg;
         pkg.size += info.size;
         pkg.modules.push(info);
+        pkg.moduleCount++;
         pkg.level = Math.min(pkg.level, info.level);
         packages[pack] = pkg;
       } else {
         info.package = rootPkg;
         rootPkg.size += info.size;
+        if (!rootPkg.moduleCount) {
+          rootPkg.path = file;
+        }
         rootPkg.modules.push(info);
+        rootPkg.moduleCount++;
       }
 
       for (const item of mod.children || []) {
@@ -184,31 +234,13 @@ export abstract class Core extends Registry {
       return info;
     }
 
-    for (const mod of cache) {
-      resolve(mod);
-    }
+    for (const mod of cache) resolve(mod);
 
     return {
-      name: this.name,
-      state: this.instance ? 'Init' : 'New',
-      timestamp: new Date(),
-      versions: process.versions,
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      node: {
-        pid: process.pid,
-        arch: process.arch,
-        platform: process.platform,
-        release: process.release
-      },
-      loadTime: this.loadTime,
-      initTime: this.initTime,
       root,
-      packageCount: Object.keys(packages).length,
-      moduleCount: Object.keys(modules).length,
-      scriptSize,
-      packages: Object.values(packages).filter((m: any) => level === undefined || m.level <= level),
-      modules: Object.values(modules).filter((m: any) => level === undefined || m.level <= level)
+      packages: Object.values(packages),
+      modules: Object.values(modules),
+      scriptSize
     };
   }
 }

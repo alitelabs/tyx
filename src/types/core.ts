@@ -113,7 +113,7 @@ export interface ProcessInfo {
   // Package and modules size
   memory: MemoryInfo;
   node: any;
-  root: ModuleInfo;
+  entry: ModuleInfo;
   moduleCount: number;
   packageCount: number;
   scriptSize: number;
@@ -123,13 +123,18 @@ export interface ProcessInfo {
 
 export interface PackageInfo {
   name: string;
+  version: string;
+  description: string;
   level: number;
   size: number;
   parent: PackageInfo;
   import: ModuleInfo;
+  moduleCount: number;
   modules: ModuleInfo[];
   imports: PackageInfo[];
   uses: PackageInfo[];
+  path: string;
+  json: any;
 }
 
 export type CommonModule = NodeModule & { i?: string };

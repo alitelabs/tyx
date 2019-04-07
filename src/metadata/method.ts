@@ -2,7 +2,7 @@ import { CoreInstance } from '../core/instance';
 import { Class, ClassRef, Context, Prototype, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
-import * as Utils from '../utils/misc';
+import * as Utils from '../utils/js';
 import { ApiMetadata, IApiMetadata } from './api';
 import { EventRouteMetadata, IEventRouteMetadata } from './event';
 import { HttpBinder, HttpBindingMetadata, HttpBindingType, HttpRouteMetadata, IHttpBindingMetadata, IHttpRouteMetadata } from './http';

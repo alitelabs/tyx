@@ -51,8 +51,13 @@ export class InstanceInfoSchema {
 @Schema()
 export class PackageInfoSchema implements PackageInfo {
   @Field() name: string;
+  @Field() version: string;
+  @Field() description: string;
   @Field() size: number;
+  @Field() path: string;
+  @Field(Any) json: any;
   @Field() level: number;
+  @Field() moduleCount: number;
   @Field(ref => PackageInfoSchema) parent: PackageInfo;
   @Field(ref => ModuleInfoSchema) import: ModuleInfo;
   @Field(list => [ModuleInfoSchema]) modules: ModuleInfo[];
@@ -103,7 +108,7 @@ export class ProcessInfoSchema implements ProcessInfo {
   @Field() moduleCount: number;
   @Field() packageCount: number;
   @Field() scriptSize: number;
-  @Field(ref => ModuleInfoSchema) root: ModuleInfo;
+  @Field(ref => ModuleInfoSchema) entry: ModuleInfo;
   @Field(list => [PackageInfoSchema]) packages: PackageInfo[];
   @Field(list => [ModuleInfoSchema]) modules: ModuleInfo[];
 

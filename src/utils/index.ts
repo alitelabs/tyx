@@ -4,6 +4,7 @@ import thrift = require('./thrift');
 import text = require('./text');
 import time = require('./time');
 import file = require('./file');
+import js = require('./js');
 
 // tslint:disable-next-line:variable-name
 export const Utils = {
@@ -11,5 +12,6 @@ export const Utils = {
   ...thrift,
   ...text,
   ...time,
-  ...file
+  ...file,
+  ...js
 };
