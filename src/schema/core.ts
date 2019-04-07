@@ -4,7 +4,6 @@ import { Any } from '../metadata/var';
 // tslint:disable-next-line:max-line-length
 import { Class, Context, InfoSchemaResolvers, MemoryInfo, ModuleInfo, PackageInfo, ProcessInfo, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
-import Lo = require('lodash');
 
 @Schema()
 export class ServiceInfoSchema {
@@ -43,7 +42,7 @@ export class InstanceInfoSchema {
       const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Lo.filter(info, args);
+      return Utils.filter(info, args);
     }
   };
 }
@@ -65,9 +64,9 @@ export class PackageInfoSchema implements PackageInfo {
   @Field(list => [PackageInfoSchema]) uses: PackageInfo[];
 
   public static RESOLVERS: SchemaResolvers<PackageInfoSchema> = {
-    modules: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.modules)), args),
-    imports: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.imports)), args),
-    uses: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.uses)), args),
+    modules: (obj, args) => Utils.filter(obj.modules, args),
+    imports: (obj, args) => Utils.filter(obj.imports, args),
+    uses: (obj, args) => Utils.filter(obj.uses, args),
   };
 }
 

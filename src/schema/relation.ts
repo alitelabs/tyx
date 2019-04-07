@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IColumnMetadata } from '../metadata/column';
@@ -32,6 +30,6 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
 
   public static RESOLVERS: SchemaResolvers<IRelationMetadata> = {
     target: obj => Utils.label(obj.target),
-    joinColumns: (obj, args) => Lo.filter(obj.joinColumns, args),
+    joinColumns: (obj, args) => Utils.filter(obj.joinColumns, args),
   };
 }

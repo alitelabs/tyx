@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IEnumMetadata } from '../metadata/enum';
@@ -101,6 +99,6 @@ export class TypeMetadataSchema implements ITypeMetadata {
 
   public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
     target: obj => Utils.label(obj.target),
-    members: (obj, args) => Lo.filter(Object.values(obj.members), args),
+    members: (obj, args) => Utils.filter(obj.members, args),
   };
 }

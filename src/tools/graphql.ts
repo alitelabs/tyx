@@ -47,6 +47,7 @@ directive @input on INPUT_OBJECT
 directive @type on OBJECT
 directive @entity on OBJECT
 directive @record on INPUT_OBJECT
+directive @filter on INPUT_OBJECT
 directive @expression on INPUT_OBJECT
 directive @auth(api: String, method: String, roles: JSON) on FIELD_DEFINITION
 directive @crud(auth: JSON) on FIELD_DEFINITION
@@ -93,7 +94,7 @@ interface TypeSchema {
   name: string;
   model: string;
   params: string;
-
+  filter: string;
   resolvers: Record<string, string>;
 }
 
@@ -358,6 +359,14 @@ export class GraphQLTools {
       + Object.values(this.metadata)
         .sort((a, b) => a.name.localeCompare(b.name))
         .map(m => m.model).join('\n')
+      + `\n`;
+
+    // Metadata
+    schema += `# -- Metadata Filters --\n`
+      + Object.values(this.metadata)
+        .filter(m => m.filter)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(m => m.filter).join('\n')
       + `\n`;
 
     return Utils.indent(schema).trimLeft();
@@ -653,16 +662,19 @@ export class GraphQLTools {
 
       model: undefined,
       params: undefined,
+      filter: undefined,
       resolvers: {},
     };
     reg[struc.name] = schema;
+
     schema.params = '';
     for (const field of Object.values(struc.members)) {
       const type = field.res;
       if (VarKind.isStruc(type.kind) || VarKind.isArray(type.kind)) continue;
       if (field.kind === VarKind.Object) continue;
-      schema.params += (schema.params ? ',\n    ' : '    ') + `${field.name}: ${field.kind}`;
+      schema.params += (schema.params ? ',\n  ' : '  ') + `${field.name}: ${field.kind}`;
     }
+
     const scope = metadata.kind;
     schema.model = (scope === VarKind.Input)
       ? `input ${struc.name} @${scope.toString().toLowerCase()} {\n`
@@ -672,7 +684,7 @@ export class GraphQLTools {
       const doc = VarKind.isVoid(member.kind) ? '# ' : '';
       if (VarKind.isMetadata(struc.kind) && VarKind.isArray(type.kind)) {
         const sch = !VarKind.isScalar(type.item.kind) && reg[type.item.gql];
-        const args = (sch && sch.params) ? `(\n${reg[type.item.gql].params}\n  )` : '';
+        const args = (sch && sch.params) ? `(eq: ${type.item.gql}Filter, like: ${type.item.gql}Filter)` : '';
         schema.model += `  ${doc}${member.name}${args}: ${type.gql}\n`;
       } else {
         const nl = member.mandatory ? '!' : '';
@@ -684,6 +696,11 @@ export class GraphQLTools {
       }
     }
     schema.model += '}';
+    if (schema.params) {
+      schema.filter = `input ${struc.name}Filter @filter {\n`;
+      schema.filter += schema.params;
+      schema.filter += '\n}';
+    }
     return schema;
   }
 

@@ -7,8 +7,9 @@ export type ThriftJson = {
 };
 
 export function isTson(val: any) {
+  if (Array.isArray(val)) return true;
   const keys = val && Object.keys(val);
-  return keys && (keys.length === 0 || keys.length === 1 && ['N', 'B', 'S', 'M', 'L'].includes(keys[0]));
+  return keys && (keys.length === 1 && ['N', 'B', 'S', 'M', 'L'].includes(keys[0]));
 }
 isTson.code = function () {
   return isTson.toString().replace('(val)', '(val: any)');
@@ -22,7 +23,7 @@ export function marshal(val: any): ThriftJson {
   if (typeof val === 'string') return { S: val };
   if (Array.isArray(val)) return { L: val.map(i => marshal(i)) };
   const map = new Map();
-  Object.entries(val).forEach(i => map.set(i[0], marshal(i[0])));
+  Object.entries(val).forEach(i => map.set(i[0], marshal(i[1])));
   return { M: map };
 }
 marshal.code = function (): string {
@@ -48,5 +49,5 @@ unmarshal.code = function (pkg?: string) {
     .toString()
     .replace('(json)', `(json: ${pkg || ''}IJson): any`)
     .replace('const obj =', 'const obj: any =')
-    .replace('\n    return', ' return');
+    .replace('\n    return', '\n return');
 };

@@ -5,6 +5,7 @@ import text = require('./text');
 import time = require('./time');
 import file = require('./file');
 import js = require('./js');
+import lodash = require('./lodash');
 
 // tslint:disable-next-line:variable-name
 export const Utils = {
@@ -13,5 +14,6 @@ export const Utils = {
   ...text,
   ...time,
   ...file,
-  ...js
+  ...js,
+  ...lodash
 };

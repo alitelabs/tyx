@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IColumnMetadata } from '../metadata/column';
@@ -28,9 +26,9 @@ export class EntityMetadataSchema implements IEntityMetadata {
 
   public static RESOLVERS: SchemaResolvers<IEntityMetadata> = {
     target: obj => Utils.label(obj.target),
-    members: (obj, args) => Lo.filter(Object.values(obj.members), args),
-    columns: (obj, args) => Lo.filter(obj.columns, args),
-    primaryColumns: (obj, args) => Lo.filter(obj.primaryColumns, args),
-    relations: (obj, args) => Lo.filter(obj.relations, args),
+    members: (obj, args) => Utils.filter(obj.members, args),
+    columns: (obj, args) => Utils.filter(obj.columns, args),
+    primaryColumns: (obj, args) => Utils.filter(obj.primaryColumns, args),
+    relations: (obj, args) => Utils.filter(obj.relations, args),
   };
 }

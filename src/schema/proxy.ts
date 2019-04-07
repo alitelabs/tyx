@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IApiMetadata } from '../metadata/api';
@@ -35,8 +33,8 @@ export class ProxyMetadataSchema implements IProxyMetadata {
 
   public static RESOLVERS: SchemaResolvers<IProxyMetadata> = {
     target: obj => Utils.label(obj.target),
-    dependencies: (obj, args) => Lo.filter(Object.values(obj.dependencies), args),
-    handlers: (obj, args) => Lo.filter(Object.values(obj.handlers), args),
+    dependencies: (obj, args) => Utils.filter(obj.dependencies, args),
+    handlers: (obj, args) => Utils.filter(obj.handlers, args),
     source: obj => obj.target.toString(),
   };
 }

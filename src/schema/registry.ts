@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IApiMetadata } from '../metadata/api';
@@ -94,41 +92,42 @@ export class CoreSchema implements MetadataRegistry {
   public static get metadata() { return TypeMetadata.get(CoreSchema); }
 
   public static RESOLVERS: SchemaResolvers<CoreSchema> = {
-    CoreMetadata: (obj, args) => Lo.filter(Object.values(obj.CoreMetadata), args),
-    DecoratorMetadata: (obj, args) => Lo.filter(Object.values(obj.DecoratorMetadata), args),
+    CoreMetadata: (obj, args) => Utils.filter(obj.CoreMetadata, args),
+    DecoratorMetadata: (obj, args) => Utils.filter(obj.DecoratorMetadata, args),
     DecorationMetadata: (obj, args) => {
       if (args.target) args.target = `[class: ${args.target}]`;
       const mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
-      return Lo.filter(mapped as any[], args);
+      return Utils.filter(mapped as any[], args);
     },
-    ApiMetadata: (obj, args) => Lo.filter(Object.values(obj.ApiMetadata), args),
-    ServiceMetadata: (obj, args) => Lo.filter(Object.values(obj.ServiceMetadata), args),
-    ProxyMetadata: (obj, args) => Lo.filter(Object.values(obj.ProxyMetadata), args),
-    DatabaseMetadata: (obj, args) => Lo.filter(Object.values(obj.DatabaseMetadata), args),
-    EntityMetadata: (obj, args) => Lo.filter(Object.values(obj.EntityMetadata), args),
-    ColumnMetadata: (obj, args) => Lo.filter(Object.values(obj.ColumnMetadata), args),
-    RelationMetadata: (obj, args) => Lo.filter(Object.values(obj.RelationMetadata), args),
-    EnumMetadata: (obj, args) => Lo.filter(Object.values(obj.EnumMetadata), args),
-    InputMetadata: (obj, args) => Lo.filter(Object.values(obj.InputMetadata), args),
-    TypeMetadata: (obj, args) => Lo.filter(Object.values(obj.TypeMetadata), args),
-    MethodMetadata: (obj, args) => Lo.filter(Object.values(obj.MethodMetadata), args),
-    HttpRouteMetadata: (obj, args) => Lo.filter(Object.values(obj.HttpRouteMetadata), args),
-    EventRouteMetadata: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.EventRouteMetadata)), args),
+    ApiMetadata: (obj, args) => Utils.filter(obj.ApiMetadata, args),
+    ServiceMetadata: (obj, args) => Utils.filter(obj.ServiceMetadata, args),
+    ProxyMetadata: (obj, args) => Utils.filter(obj.ProxyMetadata, args),
+    DatabaseMetadata: (obj, args) => Utils.filter(obj.DatabaseMetadata, args),
+    EntityMetadata: (obj, args) => Utils.filter(obj.EntityMetadata, args),
+    ColumnMetadata: (obj, args) => Utils.filter(obj.ColumnMetadata, args),
+    RelationMetadata: (obj, args) => Utils.filter(obj.RelationMetadata, args),
+    EnumMetadata: (obj, args) => Utils.filter(obj.EnumMetadata, args),
+    InputMetadata: (obj, args) => Utils.filter(obj.InputMetadata, args),
+    TypeMetadata: (obj, args) => Utils.filter(obj.TypeMetadata, args),
+    MethodMetadata: (obj, args) => Utils.filter(obj.MethodMetadata, args),
+    HttpRouteMetadata: (obj, args) => Utils.filter(obj.HttpRouteMetadata, args),
+    EventRouteMetadata: (obj, args) => Utils.filter(obj.EventRouteMetadata, args),
     // Runtime
     Process: (obj, args, ctx) => ctx.container.processInfo(),
-    Packages: (obj, args, ctx) => Lo.filter(ctx.container.processInfo().packages, args),
-    Modules: (obj, args, ctx) => Lo.filter(ctx.container.processInfo().modules, args),
+    Packages: (obj, args, ctx) => Utils.filter(ctx.container.processInfo().packages, args),
+    Modules: (obj, args, ctx) => Utils.filter(ctx.container.processInfo().modules, args),
     Global: (obj, args, ctx) => {
       const info = ctx.container.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));
+      // TODO: Move to Utils.filter ....
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Lo.filter(info, args);
+      return Utils.filter(info, args);
     },
     Context: (obj, args, ctx) => {
       const info = ctx.container.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Lo.filter(info, args);
+      return Utils.filter(info, args);
     },
     Pool: (obj, args, ctx) => {
       return (ctx.container.name === 'Core') ? ctx.container.instances() : undefined;

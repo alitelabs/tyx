@@ -211,19 +211,19 @@ export class ThriftTools {
     filter += `\n} (kind = "Filter")`;
     thrift += select;
     thrift += filter;
-    const patch = `
+    const patch = (enmap.trim() || demap.trim()) ? Utils.indent(`
     {
       const codec = { ...${meta.name}Codec };
       ${meta.name}Codec.encode = (obj: I${meta.name}Args, output: thrift.TProtocol) => {
-        ${Utils.indent(enmap.trim(), 8) || '// NOP'}
+        ${Utils.indent(enmap.trim(), 8).trimLeft() || '// NOP'}
         codec.encode(obj, output);
       }
       ${meta.name}Codec.decode = (input: thrift.TProtocol): I${meta.name} => {
         const obj = codec.decode(input);
-        ${Utils.indent(demap.trim(), 8) || '// NOP'}
+        ${Utils.indent(demap.trim(), 8).trimLeft() || '// NOP'}
         return obj;
       }
-    }\n`;
+    }\n`) : '';
     return { thrift, script: undefined, patch, replace };
   }
 
@@ -618,6 +618,8 @@ export class ThriftTools {
   public genCore(core: TypeMetadata): Result {
     const name = 'Core';
 
+    let queries = '';
+
     let thrift = `service ${name} {\n`;
     const kebab = Utils.kebapCase(name);
     const snake = Utils.snakeCase(name, true);
@@ -634,35 +636,40 @@ export class ThriftTools {
         : reg.res.target as TypeMetadata;
 
       thrift += `${ix ? ',\n' : ''}  ${reg.res.idl} get${reg.name}(\n`;
-      thrift += `    1: optional ${target.name}Filter filter,\n`;
-      thrift += `    2: optional ${target.name}Selector selector\n`;
+      thrift += `    1: optional ${reg.name}Query query,\n`;
       thrift += `  )`;
+
+      queries += `struct ${reg.name}Query {\n`;
+      if (VarKind.isArray(type.kind)) {
+        queries += `    1: optional ${target.name}Filter eq,\n`;
+        queries += `    2: optional ${target.name}Filter like,\n`;
+      }
+      queries += `    3: optional ${target.name}Selector selector\n`;
+      queries += '} (kind = "Query")\n';
 
       const gql = Utils.snakeCase(name + reg.name, true) + '_GQL';
 
       let params = '';
-      let jsArgs = '';
+      if (VarKind.isArray(type.kind)) {
+        for (const field of Object.values(target.members)) {
+          const inb = field.res;
+          if (!VarKind.isScalar(inb.kind)) continue;
+          const param = field.name;
+          if (params) params += ', ';
+          params += param;
+        }
+      }
       let reqArgs = '';
       let qlArgs = '';
-      for (const field of Object.values(target.members)) {
-        const inb = field.res;
-        if (!VarKind.isScalar(inb.kind)) continue;
-        const param = field.name;
-        if (jsArgs) { jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
-        params += param;
-        jsArgs += `${param}: ${inb.js}`;
-        reqArgs += `$${param}: ${inb.gql}!`;
-        qlArgs += `${param}: $${param}`;
+      if (params) {
+        reqArgs = `($eq: ${target.name}Filter, $like: ${target.name}Filter)`;
+        qlArgs = `(eq: $eq, like: $like)`;
       }
-      if (reqArgs) reqArgs = `(${reqArgs})`;
-      if (qlArgs) qlArgs = `(${qlArgs})`;
-      if (jsArgs) jsArgs += ', ';
-      jsArgs += 'ctx?';
 
       query += `const ${gql} = gql\`\n`;
       query += `  query request${reqArgs} {\n`;
       query += `    result: ${name} {\n`;
-      query += `      ${reg.name}${qlArgs} `;
+      query += `      select: ${reg.name}${qlArgs} `;
       if (VarKind.isStruc(type.kind) || VarKind.isArray(type.kind)) {
         const select = TypeSelect.emit(type, 2);
         query += Utils.indent(select, 3 * 2).trimLeft();
@@ -674,15 +681,16 @@ export class ThriftTools {
       query += `\n    # variables: { ${params} }`;
       query += `\n  }\`;\n\n`;
 
-      handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(filter: ${GEN}.${target.name}Filter, select: ${GEN}.${target.name}Selector, ctx?: Context) {\n`;
-      handler += `    const res = await ctx.execute(${gql}, filter);\n`;
-      handler += `    return res;\n`;
+      handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(query: ${GEN}.${reg.name}Query, ctx?: Context) {\n`;
+      handler += `    // if (query.select) ...\n`;
+      handler += `    const res = await ctx.execute(${gql}, ${params ? 'query' : '{}'});\n`;
+      handler += `    return res.select;\n`;
       handler += `  }`;
 
       ix++;
     }
 
-    thrift += `\n} (path="${kebab}")\n\n`;
+    thrift = queries + '\n' + thrift + `\n} (path="${kebab}")\n\n`;
     handler += '\n};\n';
     handler += Utils.indent(`
     const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${name}.Processor>({
@@ -706,6 +714,13 @@ export class ThriftTools {
     import { createHttpClient, ICreateHttpClientOptions } from '@creditkarma/thrift-client';
     import { IClientConstructor, ThriftClient } from '@creditkarma/thrift-server-core';
 
+    export interface ${name}ThriftClientOptions {
+      hostName: string;
+      path?: string;
+      port?: number;
+      token?: string;
+    }
+
     export class ${name}ThriftClient {
       public renewal: number;
       public options: ICreateHttpClientOptions;
@@ -714,13 +729,13 @@ export class ThriftTools {
 
       ${gets.trim()}
 
-      constructor(hostName: string, path: string, port?: number) {
+      constructor(options: ${name}ThriftClientOptions) {
         this.options = {
-          hostName,
-          port: port || 445,
-          path,
+          hostName: options.hostName,
+          port: options.port || 445,
+          path: options.path,
           requestOptions: {
-            headers: { Authorization: undefined }
+            headers: { Authorization: options.token }
           }
         };
         this.renew();
@@ -735,7 +750,7 @@ export class ThriftTools {
       private client<T extends ThriftClient<C>, C = any>(type: IClientConstructor<T, C>) {
         const options = { ...this.options, requestOptions: { headers: { ...this.options.requestOptions.headers } } };
         options.path += type.annotations['path'] || type.serviceName || type.name;
-        options.requestOptions.headers.Authorization = 'TODO-GET-FUNCTION';
+        // options.requestOptions.headers.Authorization = 'TODO-GET-FUNCTION';
         return createHttpClient(type, options);
       }
     }

@@ -1,5 +1,3 @@
-// tslint:disable-next-line:import-name
-import Lo = require('lodash');
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { IApiMetadata } from '../metadata/api';
@@ -33,10 +31,10 @@ export class ApiMetadataSchema implements IApiMetadata {
 
   public static RESOLVERS: SchemaResolvers<IApiMetadata> = {
     target: obj => Utils.label(obj.target),
-    services: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.services)), args),
-    methods: (obj, args) => Lo.filter(Object.values(obj.methods), args),
-    routes: (obj, args) => Lo.filter(Object.values(obj.routes), args),
-    events: (obj, args) => Lo.filter(Lo.concat([], ...Object.values(obj.events)), args),
+    services: (obj, args) => Utils.filter(obj.services, args),
+    methods: (obj, args) => Utils.filter(obj.methods, args),
+    routes: (obj, args) => Utils.filter(obj.routes, args),
+    events: (obj, args) => Utils.filter(obj.events, args),
     source: obj => obj.target.toString(),
   };
 }
