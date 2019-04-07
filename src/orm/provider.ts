@@ -114,7 +114,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   @Release()
   protected async release() {
     if (this.connection && !process.env.IS_OFFLINE) {
-      await this.connection.close();
+      if (this.connection.isConnected) await this.connection.close();
       this.log.info('Connection closed');
     }
   }

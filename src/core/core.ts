@@ -110,7 +110,7 @@ export abstract class Core extends Registry {
     const packages: Record<string, PackageInfo> = {};
     const modules: Record<string, ModuleInfo> = {};
     const rootItem: CommonModule = cache[0];
-    const rootFile = rootItem.filename || rootItem.id || rootItem.i;
+    const rootFile = String(rootItem.filename || rootItem.id || rootItem.i);
 
     let scriptSize = 0;
     let root: ModuleInfo;
@@ -128,8 +128,8 @@ export abstract class Core extends Registry {
     packages['.'] = rootPkg;
 
     function resolve(mod: CommonModule) {
-      const id = mod.id || mod.i;
-      const file = mod.filename || id;
+      const id = String(mod.id || mod.i);
+      const file = String(mod.filename || id);
       if (modules[id]) return modules[id];
       let name = (mod === rootItem) ? id : Utils.relative(file, rootFile);
       const parent = mod.parent && modules[mod.parent.id];
