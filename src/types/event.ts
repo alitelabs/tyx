@@ -1,5 +1,15 @@
 import { Request } from './core';
 
+export interface PingRequest extends Request {
+  type: 'ping';
+  source: 'warmer';
+  action: 'ping';
+  service: 'GraphQL';
+  method: 'process';
+  event: any;
+  context: any;
+}
+
 export interface EventRequest extends Request {
   source: string;
   action: string;

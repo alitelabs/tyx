@@ -185,8 +185,8 @@ export abstract class LambdaAdapter {
   }
 
   public static async handler(event: LambdaEvent, context: LambdaContext): Promise<any> {
-    this.log.debug('Lambda Event: %j', event);
-    this.log.debug('Lambda Context: %j', context);
+    this.log.debug('Event: %j', event);
+    this.log.debug('Context: %j', context);
 
     if (event.httpMethod) {
       this.log.debug('HTTP event detected');
@@ -197,8 +197,14 @@ export abstract class LambdaAdapter {
         this.log.error(err);
         return HttpUtils.error(err);
       }
-    }
-    if ((event.type === 'remote' || event.type === 'internal') && event.service && event.method) {
+    } else if (event.type === 'ping') {
+      try {
+        const res = await this.ping(event, context);
+        return res;
+      } catch (err) {
+        this.log.error(err);
+      }
+    } else if ((event.type === 'remote' || event.type === 'internal') && event.service && event.method) {
       this.log.debug('Remote event detected');
       try {
         return await this.remote(event, context);
@@ -243,6 +249,20 @@ export abstract class LambdaAdapter {
     }
   }
 
+  private static async ping(event: LambdaApiEvent, context: LambdaContext): Promise<any> {
+    const core = await Core.get();
+    return core.ping({
+      requestId: context.awsRequestId,
+      type: 'ping',
+      source: 'warmer',
+      action: 'ping',
+      service: 'GraphQL',
+      method: 'process',
+      event,
+      context
+    });
+  }
+
   private static async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
     let resource = event.resource;
     const prefix = process.env.PREFIX || ('/' + process.env.STAGE);
@@ -255,7 +275,6 @@ export abstract class LambdaAdapter {
         && event.requestContext.identity
         && event.requestContext.identity.sourceIp) || '255.255.255.255',
 
-      application: undefined,
       service: undefined,
       method: undefined,
 
@@ -293,7 +312,6 @@ export abstract class LambdaAdapter {
         reqs[group] = {
           type: 'event',
           source: 'aws:s3',
-          application: undefined,
           service: undefined,
           method: undefined,
           requestId,
@@ -338,7 +356,6 @@ export abstract class LambdaAdapter {
         reqs.set(group, {
           type: 'event',
           source: 'aws:sqs',
-          application: undefined,
           service: undefined,
           method: undefined,
           requestId,
@@ -370,7 +387,6 @@ export abstract class LambdaAdapter {
     const req: EventRequest = {
       type: 'event',
       source: 'aws:cloudwatch',
-      application: undefined,
       service: undefined,
       method: undefined,
       requestId,
@@ -404,7 +420,6 @@ export abstract class LambdaAdapter {
         reqs[group] = {
           type: 'event',
           source: 'aws:dynamodb',
-          application: undefined,
           service: undefined,
           method: undefined,
           requestId,

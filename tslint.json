@@ -5,6 +5,7 @@
     "no-increment-decrement": false,
     "import-name": false,
     "trailing-comma": false,
+    "no-else-after-return": false,
     "prefer-template": [
       false
     ],

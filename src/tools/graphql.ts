@@ -14,6 +14,7 @@ import { VarKind, VarMetadata } from '../metadata/var';
 import { Class } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
+import { gql } from './tag';
 
 import Reg = require('../schema/registry');
 import GraphQLJSON = require('graphql-type-json');
@@ -212,11 +213,22 @@ export class GraphQLTools {
     `;
   }
 
+  public static schema(crud?: boolean): string {
+    const schema = new GraphQLTools(crud);
+    return schema.typeDefs();
+  }
+
+  public static document(crud?: boolean): string {
+    const schema = new GraphQLTools(crud);
+    const doc = gql(schema.typeDefs());
+    return JSON.stringify(doc, null, 2);
+  }
+
   public static wrapper(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
     const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
-      import { Auth, Context, CoreGraphQL, HttpRequest, HttpResponse, Override, Service } from 'tyx';
+      import { Context, CoreGraphQL, Resolver, HttpRequest, Service } from 'tyx';
     `).trimRight() + '\n';
     script += Utils.indent(`
       @Service(true)
@@ -226,11 +238,11 @@ export class GraphQLTools {
           super();
         }
 
-        @Override()
-        @Auth({ ${auth} })
-        public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
-          return super.process(ctx, req);
-        }
+        // @Override()
+        // @Auth({ ${auth} })
+        // public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+        //   return super.process(ctx, req);
+        // }
 
         public async playground(ctx: Context, req: HttpRequest): Promise<string> {
           return super.playground(ctx, req, PLAYGROUND_TABS);
@@ -251,21 +263,22 @@ export class GraphQLTools {
     let script = '';
     script += Utils.indent(`
       import { DocumentNode } from 'graphql';
-      import { Auth, Context, CoreGraphQL, gql, HttpRequest, HttpResponse, Override, Resolver, Service } from 'tyx';
+      import { Context, CoreGraphQL, gql, Resolver, HttpRequest, Service } from 'tyx';
+      import TYPE_DEFS = require('./schema.json');
     `).trimRight() + '\n';
     script += Utils.indent(`
       @Service(true)
       export class ${name}GraphQL extends CoreGraphQL {
 
         public constructor() {
-          super(TYPE_DEFS, RESOLVERS);
+          super(TYPE_DEFS as any, RESOLVERS);
         }
 
-        @Override()
-        @Auth({ ${auth} })
-        public async graphql(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
-          return super.graphql(ctx, req);
-        }
+        // @Override()
+        // @Auth({ ${auth} })
+        // public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+        //   return super.process(ctx, req);
+        // }
 
         public async playground(ctx: Context, req: HttpRequest): Promise<string> {
           return super.playground(ctx, req, PLAYGROUND_TABS);
@@ -273,12 +286,12 @@ export class GraphQLTools {
       }
     `) + '\n';
     // script += `export const DIRECTIVES: any = {};\n\n`;
-    script += `export const TYPE_DEFS: DocumentNode = gql\`\n${Utils.indent(schema.typeDefs(), '  ')}\`;\n\n`;
     script += `export const RESOLVERS: Record<string, Record<string, Resolver>> = ${Utils.indent(schema.script(true), '')};\n\n`;
     script += '// tslint:disable:object-literal-key-quotes\n';
     script += `export const PLAYGROUND_TABS: any = `;
     script += tabs ? JSON.stringify(tabs, null, 2) : 'undefined';
-    script += ';\n';
+    script += ';\n\n';
+    script += `export const TYPE_DEFS_2: DocumentNode = gql\`\n${Utils.indent(schema.typeDefs(), '  ')}\`;\n`;
     return script;
   }
 

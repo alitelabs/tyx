@@ -91,8 +91,18 @@ export class ThriftTools {
     thrift += core.thrift;
     script += core.script;
 
+    // const db = Object.values(this.schema.databases)[0];
+    thrift += '/////// DATABASE //////\n\n';
+    script += '/////// DATABASE //////\n\n';
+    for (const type of dbs) {
+      const res = this.genDatabase(type);
+      thrift += res.thrift + '\n\n';
+      script += res.script + '\n';
+      replace = { ...replace, ...res.replace };
+    }
+
     thrift += '///////// API /////////\n\n';
-    script += '///////// API /////////\n\n';
+    script += '///////// API /////////\n';
     for (const api of apis) {
       const res = this.genApi(api);
       thrift += res.thrift + '\n\n';
@@ -120,16 +130,8 @@ export class ThriftTools {
       patch += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
-    // const db = Object.values(this.schema.databases)[0];
-    thrift += '/////// DATABASE //////\n\n';
-    for (const type of dbs) {
-      const res = this.genDatabase(type);
-      thrift += res.thrift + '\n\n';
-      script += res.script + '\n';
-      replace = { ...replace, ...res.replace };
-    }
-    thrift += '//////// METADATA ////////\n\n';
 
+    thrift += '//////// METADATA ////////\n\n';
     const schemas = Object.values(registry.CoreMetadata).sort((a, b) => a.name.localeCompare(b.name));
     for (const type of schemas) {
       if (type === CoreSchema.metadata) continue;
@@ -266,7 +268,7 @@ export class ThriftTools {
   private genService(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
       import { Context, CoreThrift, gql, Service } from 'tyx';
-      import ${GEN} = require('./${name.toLowerCase()}');
+      import ${GEN} = require('./server');
 
       ///////// SERVICE /////////
 
@@ -290,6 +292,7 @@ export class ThriftTools {
 
         // @Override()
       }
+
     `;
     return Utils.indent(script).trimLeft();
   }
@@ -299,7 +302,7 @@ export class ThriftTools {
     const snake = Utils.snakeCase(metadata.name, true);
     const proxy = snake + '_PROXY';
     let thrift = `service ${metadata.name} {`;
-    let query = `const ${snake} = '${kebab}';\n\n`;
+    let query = `\n// ${metadata.name}\n\nconst ${snake} = '${kebab}';\n\n`;
     let handler = `const ${proxy}: ${GEN}.${metadata.name}.IHandler<Context> = {\n`;
     let count = 0;
     for (const method of Object.values(metadata.methods)) {
@@ -364,7 +367,7 @@ export class ThriftTools {
       count++;
     }
     thrift += `\n} (path="${kebab}", target = "${metadata.servicer.name}")`;
-    handler += '\n};\n';
+    handler += '\n};';
     return { thrift, script: query + handler };
   }
 

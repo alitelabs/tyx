@@ -54,11 +54,11 @@ export class Context {
 }
 
 export interface Request {
-  type: 'remote' | 'internal' | 'http' | 'event' | 'graphql';
-  application: string;
+  type: 'remote' | 'internal' | 'http' | 'event' | 'graphql' | 'ping';
+  requestId: string;
+  // application: string;
   service: string;
   method: string;
-  requestId: string;
 }
 
 export enum ContainerState {

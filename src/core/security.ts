@@ -4,7 +4,7 @@ import { Logger } from '../logger';
 import { MethodMetadata } from '../metadata/method';
 import { Configuration } from '../types/config';
 import { Context, CoreContainer } from '../types/core';
-import { EventRequest } from '../types/event';
+import { EventRequest, PingRequest } from '../types/event';
 import { GraphRequest } from '../types/graphql';
 import { HttpRequest } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
@@ -118,7 +118,7 @@ export class CoreSecurity implements Security {
     return new Context({ container, requestId: req.requestId, sourceIp: null, method, auth });
   }
 
-  public async eventAuth(container: CoreContainer, method: MethodMetadata, req: EventRequest): Promise<Context> {
+  public async eventAuth(container: CoreContainer, method: MethodMetadata, req: EventRequest | PingRequest): Promise<Context> {
     if (!method.roles.Internal) {
       throw new Forbidden(`Internal events not allowed for method [${method.name}]`);
     }

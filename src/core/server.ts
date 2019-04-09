@@ -157,7 +157,6 @@ export abstract class CoreServer {
       requestId: Utils.uuid(),
       sourceIp: req.ip || '255.255.255.255',
 
-      application: undefined,
       service: undefined,
       method: undefined,
 
@@ -202,7 +201,6 @@ export abstract class CoreServer {
       requestId: Utils.uuid(),
       sourceIp: ctx.ip || '255.255.255.255',
 
-      application: undefined,
       service: undefined,
       method: undefined,
 

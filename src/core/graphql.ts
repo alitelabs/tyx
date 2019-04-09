@@ -9,6 +9,8 @@ import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorat
 import { CoreService, Initialize, Inject } from '../decorators/service';
 import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
+import { ApiMetadata } from '../metadata/api';
+import { MethodMetadata } from '../metadata/method';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../tools/voyager';
 import { Configuration } from '../types/config';
 import { Context } from '../types/core';
@@ -31,6 +33,10 @@ export class CoreGraphQL implements GraphQL {
       'process',
       Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'process')
     );
+  }
+
+  public static get process(): MethodMetadata {
+    return ApiMetadata.get(CoreGraphQL).methods['process'];
   }
 
   // @Logger()

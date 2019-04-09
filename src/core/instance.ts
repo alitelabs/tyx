@@ -7,10 +7,11 @@ import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
 import { Registry } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
+import { gql } from '../tools/tag';
 import { Configuration } from '../types/config';
 // tslint:disable-next-line:max-line-length
 import { Class, ContainerState, Context, CoreContainer, ProcessInfo, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
-import { EventRequest, EventResult } from '../types/event';
+import { EventRequest, EventResult, PingRequest } from '../types/event';
 import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
@@ -208,6 +209,26 @@ export class CoreInstance implements CoreContainer {
     return this.apiRequest(apiType, apiMethod, args, true);
   }
 
+  public async ping(req: PingRequest): Promise<ProcessInfo> {
+    const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
+    const res = await this.execute(ctx, gql`{
+      Core {
+        Process {
+          name,
+          timestamp,
+          uptime,
+          memory {
+            rss,
+            heapTotal,
+            heapUsed,
+            external
+          }
+        }
+      }
+    }`);
+    return res.data.Core.Process;
+  }
+
   // TODO: Execute within same container
   public async apiRequest(apiType: string, apiMethod: string, args?: any[], reenter?: boolean): Promise<any> {
     if (!reenter && this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
@@ -259,7 +280,6 @@ export class CoreInstance implements CoreContainer {
       if (!target) throw new Forbidden(`Route not found [${route}]`);
       if (!target.method.roles) throw new Forbidden(`Method [${target.api.name}.${target.method.name}] not available`);
 
-      req.application = this.application;
       req.service = target.api.name;
       req.method = target.method.name;
 
@@ -414,7 +434,6 @@ export class CoreInstance implements CoreContainer {
         if (!Utils.wildcardMatch(target.actionFilter, req.action)
           || !Utils.wildcardMatch(target.objectFilter, req.object)) continue;
 
-        req.application = this.application;
         req.service = target.api.name;
         req.method = target.method.name;
 
