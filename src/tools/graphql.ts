@@ -228,8 +228,8 @@ export class GraphQLTools {
 
         @Override()
         @Auth({ ${auth} })
-        public async graphql(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
-          return super.graphql(ctx, req);
+        public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+          return super.process(ctx, req);
         }
 
         public async playground(ctx: Context, req: HttpRequest): Promise<string> {

@@ -28,8 +28,8 @@ export class CoreGraphQL implements GraphQL {
   public static init(roles: Roles) {
     Auth(roles)(
       CoreGraphQL.prototype,
-      'graphql',
-      Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'graphql')
+      'process',
+      Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'process')
     );
   }
 
