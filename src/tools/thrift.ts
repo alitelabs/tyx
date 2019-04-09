@@ -275,6 +275,7 @@ export class ThriftTools {
         @Post('/thrift/{service}')
         @ContentType(HttpResponse)
         public async process(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
+          req.buffer = req.buffer || Buffer.from(req.body, req.isBase64Encoded ? 'base64' : 'binary');
           const service = req.pathParameters['service'];
           let result: any = undefined;
           switch (service) {\n`;
@@ -287,9 +288,14 @@ export class ThriftTools {
       const snake = Utils.snakeCase(api.name, true);
       script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
     }
-    script += `            default: throw new Forbidden(\`Unknwon service [\${service}]\`);
+    script += `            default: throw new Forbidden(\`Unknown service [\${service}]\`);
           }
-          return { statusCode: 200, body: result };
+          return {
+            statusCode: 200,
+            contentType: 'application/octet-stream',
+            body: result.toString('base64'),
+            isBase64Encoded: true
+          } as any;
         }
       }
 
@@ -714,16 +720,17 @@ export class ThriftTools {
     import { createHttpClient, ICreateHttpClientOptions } from '@creditkarma/thrift-client';
     import { IClientConstructor, ThriftClient } from '@creditkarma/thrift-server-core';
 
-    export interface ${name}ThriftClientOptions {
+    export interface ${name}ThriftClientOptions extends ICreateHttpClientOptions {
       hostName: string;
-      path?: string;
-      port?: number;
+      port: number;
+      path: string;
+      https: boolean;
       token?: string;
     }
 
     export class ${name}ThriftClient {
       public renewal: number;
-      public options: ICreateHttpClientOptions;
+      public options: ${name}ThriftClientOptions;
 
       ${vars.trim()}
 
@@ -731,9 +738,7 @@ export class ThriftTools {
 
       constructor(options: ${name}ThriftClientOptions) {
         this.options = {
-          hostName: options.hostName,
-          port: options.port || 445,
-          path: options.path,
+          ...options,
           requestOptions: {
             headers: { Authorization: options.token }
           }

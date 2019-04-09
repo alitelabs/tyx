@@ -184,7 +184,7 @@ export abstract class LambdaAdapter {
     };
   }
 
-  public static async handler(event: LambdaEvent, context: LambdaContext) {
+  public static async handler(event: LambdaEvent, context: LambdaContext): Promise<any> {
     this.log.debug('Lambda Event: %j', event);
     this.log.debug('Lambda Context: %j', context);
 

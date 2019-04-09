@@ -5,7 +5,7 @@ import { Utils } from '../utils';
 import Zlib = require('zlib');
 
 export namespace HttpUtils {
-  export function response(code: HttpCode, body: any, json?: boolean) {
+  export function response(code: HttpCode, body: any, json?: boolean): HttpResponse {
     // tslint:disable-next-line:no-parameter-reassignment
     json = (json === undefined) ? true : json;
     // tslint:disable-next-line:no-parameter-reassignment
@@ -29,6 +29,7 @@ export namespace HttpUtils {
     const res = response(arg.statusCode, arg.body, true);
     Object.assign(res.headers, arg.headers || {});
     if (arg.contentType) res.headers['Content-Type'] = arg.contentType;
+    res.isBase64Encoded = arg.isBase64Encoded;
     return res;
   }
 

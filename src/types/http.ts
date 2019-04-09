@@ -37,6 +37,7 @@ export interface HttpMultipart {
   headers: Record<string, HttpHeader>;
   contentType: HttpContentType;
   body: string;
+  isBase64Encoded?: boolean;
 }
 
 // tslint:disable-next-line:variable-name
@@ -47,4 +48,5 @@ export interface HttpResponse {
   contentType?: string;
   headers?: Record<string, string>;
   body: any;
+  isBase64Encoded?: boolean;
 }
