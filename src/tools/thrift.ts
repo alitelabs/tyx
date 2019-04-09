@@ -740,7 +740,10 @@ export class ThriftTools {
         this.options = {
           ...options,
           requestOptions: {
-            headers: { Authorization: options.token }
+            headers: {
+              Accept: 'application/octet-stream',
+              Authorization: options.token
+            }
           }
         };
         this.renew();
