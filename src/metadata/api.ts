@@ -1,5 +1,9 @@
 import { CoreInstance } from '../core/instance';
+import { Configuration } from '../types/config';
 import { Class, Prototype } from '../types/core';
+import { GraphQL } from '../types/graphql';
+import { Security } from '../types/security';
+import { Thrift } from '../types/thrift';
 import { Utils } from '../utils';
 import { IEventRouteMetadata } from './event';
 import { IHttpRouteMetadata } from './http';
@@ -60,6 +64,10 @@ export class ApiMetadata implements IApiMetadata {
     meta = new ApiMetadata(target);
     Reflect.defineMetadata(MetadataRegistry.TYX_API, meta, target);
     return meta;
+  }
+
+  public isCore() {
+    return [Configuration, Security, GraphQL, Thrift].includes(this.alias);
   }
 
   public addMethod(meta: MethodMetadata) {

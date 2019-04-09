@@ -12,6 +12,7 @@ export * from './types/security';
 export * from './types/event';
 export * from './types/proxy';
 export * from './types/graphql';
+export * from './types/thrift';
 
 // ---- metadata/index.ts ---
 

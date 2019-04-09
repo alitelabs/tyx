@@ -4,7 +4,7 @@ import { createPlaygroundOptions, defaultPlaygroundOptions, gql, GraphQLOptions,
 import { GraphiQLData } from 'apollo-server-module-graphiql';
 import { DocumentNode, execute, GraphQLSchema } from 'graphql';
 import { ILogger, IResolvers, makeExecutableSchema, SchemaDirectiveVisitor } from 'graphql-tools';
-import { Public } from '../decorators/auth';
+import { Auth } from '../decorators/auth';
 import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
 import { CoreService, Initialize, Inject } from '../decorators/service';
 import { BadRequest, InternalServerError } from '../errors';
@@ -14,6 +14,7 @@ import { Configuration } from '../types/config';
 import { Context } from '../types/core';
 import { GraphQL } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
+import { Roles } from '../types/security';
 import { Core } from './core';
 
 // tslint:disable-next-line:variable-name
@@ -24,8 +25,8 @@ export { PlaygroundRenderPageOptions, PlaygroundConfig };
 @CoreService(GraphQL)
 export class CoreGraphQL implements GraphQL {
 
-  public static makePublic() {
-    Public()(
+  public static init(roles: Roles) {
+    Auth(roles)(
       CoreGraphQL.prototype,
       'graphql',
       Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'graphql')
@@ -98,11 +99,11 @@ export class CoreGraphQL implements GraphQL {
   // TODO: Move this to httpRequest of CoreInstance
   @Get('/graphql')
   @Get('/graphiql')
-  @Post('/graphql')
   @Get('/graphql/{authorization}')
+  @Post('/graphql')
   @Post('/graphql/{authorization}')
   @ContentType(HttpResponse)
-  public async graphql(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+  public async process(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
     if (req.httpMethod !== 'GET') {
       return this.request(ctx, req);
     }

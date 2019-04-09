@@ -15,12 +15,14 @@ import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
+import { Thrift } from '../types/thrift';
 import { Utils } from '../utils';
 import { CoreConfiguration } from './config';
 import { Core } from './core';
 import { CoreGraphQL } from './graphql';
 import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
+import { CoreThrift } from './thrift';
 
 export class CoreInstance implements CoreContainer {
 
@@ -77,6 +79,12 @@ export class CoreInstance implements CoreContainer {
       this.log.debug('Using core GraphQL service');
       // TODO: CoreGraphQL.finalize()
       this.container.set({ id: GraphQL, type: CoreGraphQL });
+    }
+
+    if (!Di.Container.has(Thrift)) {
+      this.log.debug('Using core Thrift service');
+      // TODO: CoreGraphQL.finalize()
+      this.container.set({ id: Thrift, type: CoreThrift });
     }
 
     // Prioritize services with initializer

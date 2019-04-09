@@ -1,21 +1,73 @@
 // tslint:disable-next-line:max-line-length
-import { getProtocol, getTransport, IProtocolConstructor, IThriftProcessor, IThriftServerOptions, ITransportConstructor, process, readThriftMethod } from '@creditkarma/thrift-server-core';
+import { getProtocol, getTransport, IProtocolConstructor, IThriftProcessor, ITransportConstructor, process, readThriftMethod } from '@creditkarma/thrift-server-core';
+import { Auth } from '../decorators/auth';
+import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorators/http';
+import { CoreService } from '../decorators/service';
+import { Forbidden } from '../errors/http';
+import { Logger } from '../logger';
+import { ThriftTools } from '../tools/thrift';
 import { Context } from '../types/core';
-import { HttpRequest } from '../types/http';
-// import rawBody = require('raw-body');
+import { HttpRequest, HttpResponse } from '../types/http';
+import { Roles } from '../types/security';
+import { ICoreThriftHandlerOptions, Thrift, ThriftContext } from '../types/thrift';
 
-export interface ThriftContext extends Context {
-  thrift?: {
-    requestMethod: string
-    processor: IThriftProcessor<ThriftContext>
-    transport: string
-    protocol: string
-  };
+@CoreService(Thrift)
+export class CoreThrift implements Thrift {
+
+  public static init(roles: Roles) {
+    Auth(roles)(
+      CoreThrift.prototype,
+      'definition',
+      Object.getOwnPropertyDescriptor(CoreThrift.prototype, 'definition')
+    );
+    Auth(roles)(
+      CoreThrift.prototype,
+      'process',
+      Object.getOwnPropertyDescriptor(CoreThrift.prototype, 'process')
+    );
+  }
+
+  // @Logger()
+  protected log = Logger.get(this);
+  private readonly handlers: Record<string, CoreThriftHandler<any>> = {};
+
+  protected constructor(handlers: Record<string, IThriftProcessor<ThriftContext>>) {
+    for (const serviceName in handlers) {
+      const handler = handlers[serviceName];
+      this.handlers[serviceName] = new CoreThriftHandler<any>({ serviceName, handler });
+    }
+    Object.freeze(this.handlers);
+  }
+
+  public initialize() { }
+
+  @Get('/thrift')
+  @ContentType(HttpResponse)
+  public async definition(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+    const result = ThriftTools.emit(Core.config.application);
+    return {
+      statusCode: 200,
+      contentType: 'application/thrift-idl',
+      body: result.thrift
+    };
+  }
+
+  @Post('/thrift/{service}')
+  @ContentType(HttpResponse)
+  public async process(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
+    req.buffer = req.buffer || Buffer.from(req.body, req.isBase64Encoded ? 'base64' : 'binary');
+    const service = req.pathParameters['service'];
+    const handler = this.handlers[service];
+    if (!handler) throw new Forbidden(`Unknown service [${service}]`);
+    const result: Buffer = await handler.execute(req, ctx);
+    return {
+      statusCode: 200,
+      contentType: 'application/octet-stream',
+      body: result.toString('base64'),
+      isBase64Encoded: true
+    };
+  }
 }
-
-export type ICoreThriftHandlerOptions<
-  TProcessor extends IThriftProcessor<ThriftContext>
-  > = IThriftServerOptions<ThriftContext, TProcessor>;
 
 // tslint:disable-next-line:function-name
 export class CoreThriftHandler<TProcessor extends IThriftProcessor<ThriftContext>> {

@@ -4,18 +4,45 @@ import { Logger } from '../logger';
 import { MetadataRegistry, Registry } from '../metadata/registry';
 import { GraphQLTools } from '../tools/graphql';
 import { Class, CommonModule, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
+import { Roles } from '../types/security';
 import { Utils } from '../utils';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 import { CoreServer } from './server';
+import { CoreThrift } from './thrift';
+
+export interface CoreInterface extends MetadataRegistry {
+  config: CoreOptions;
+  init(options?: CoreOptions): void;
+  start(port: number, basePath?: string, extraArgs?: any): void;
+  get(): Promise<CoreInstance>;
+  get<T>(api: ObjectType<T> | string): Promise<T>;
+  activate(): Promise<CoreInstance>;
+  invoke(api: string, method: string, ...args: any[]): Promise<any>;
+  lambda(): LambdaHandler;
+  serviceInfo(): ServiceInfo[];
+  processInfo(level?: number): ProcessInfo;
+  moduleInfo(): { root: ModuleInfo, modules: ModuleInfo[], packages: PackageInfo[], scriptSize: number };
+}
+
+export interface CoreOptions {
+  application?: string;
+  roles?: Roles;
+  register?: Class[];
+  crudAllowed?: boolean;
+}
 
 export abstract class Core extends Registry {
   public static log = Logger.get('TYX', Core.name);
 
-  private static graphql: GraphQLTools;
+  public static readonly config: CoreOptions = {
+    application: 'Core',
+    roles: { Public: true },
+    register: [],
+    crudAllowed: true
+  };
 
-  private static application: string;
-  private static crudAllowed: boolean;
+  private static graphql: GraphQLTools;
   private static instance: CoreInstance;
 
   private static pool: CoreInstance[];
@@ -27,23 +54,28 @@ export abstract class Core extends Registry {
   protected constructor() { super(); }
 
   public static get schema(): GraphQLTools {
-    return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.crudAllowed));
+    return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.config.crudAllowed));
   }
 
-  public static register(...args: Class[]): void { }
-
-  // TODO: options object
-  // Move database out
-  public static init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
-  public static init(application?: string, register?: Class[], isCrud?: boolean): void;
-  public static init(application?: string, args?: Class[] | boolean, isCrud?: boolean): void {
+  public static init(options?: CoreOptions): void {
     if (this.instance) return;
+
+    this.config.application = this.config.application || options.application;
+    this.config.roles = this.config.roles || options.roles;
+    this.config.register = this.config.register || options.register;
+    this.config.crudAllowed = options.crudAllowed !== undefined ? !!options.crudAllowed : this.config.crudAllowed;
+
+    Object.freeze(this.config);
+    Object.freeze(this.config.register);
+
     Core.validate();
+
+    // TODO: Freeze registry metadata
+
     try {
-      if (args === true) CoreGraphQL.makePublic();
-      this.crudAllowed = !!isCrud;
-      this.application = this.application || application || 'Core';
-      this.instance = new CoreInstance(this.application, Core.name);
+      CoreGraphQL.init(this.config.roles);
+      CoreThrift.init(this.config.roles);
+      this.instance = new CoreInstance(this.config.application, Core.name);
       this.instance.initialize();
       this.pool = [this.instance];
     } catch (err) {
@@ -71,7 +103,7 @@ export abstract class Core extends Registry {
     let instance = this.pool.find(x => x.state === ContainerState.Ready);
     try {
       if (!instance) {
-        instance = new CoreInstance(this.application, Core.name, this.counter++);
+        instance = new CoreInstance(this.config.application, Core.name, this.counter++);
         // console.log('Create ->', instance.name);
         await instance.initialize();
         instance.reserve();
@@ -243,22 +275,6 @@ export abstract class Core extends Registry {
       scriptSize
     };
   }
-}
-
-export interface CoreInterface extends MetadataRegistry {
-  schema: GraphQLTools;
-  register(...args: Class[]): void;
-  init(application?: string, isPublic?: boolean, isCrud?: boolean): void;
-  init(application?: string, register?: Class[], isCrud?: boolean): void;
-  start(port: number, basePath?: string, extraArgs?: any): void;
-  get(): Promise<CoreInstance>;
-  get<T>(api: ObjectType<T> | string): Promise<T>;
-  activate(): Promise<CoreInstance>;
-  invoke(api: string, method: string, ...args: any[]): Promise<any>;
-  lambda(): LambdaHandler;
-  serviceInfo(): ServiceInfo[];
-  processInfo(level?: number): ProcessInfo;
-  moduleInfo(): { root: ModuleInfo, modules: ModuleInfo[], packages: PackageInfo[], scriptSize: number };
 }
 
 declare global {

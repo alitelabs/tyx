@@ -75,11 +75,13 @@ export class ThriftTools {
 
     const registry = Registry.copy();
     const dbs = Object.values(registry.DatabaseMetadata).sort((a, b) => a.name.localeCompare(b.name));
-    const apis = Object.values(registry.ApiMetadata).sort((a, b) => a.name.localeCompare(b.name));
+    const apis = Object.values(registry.ApiMetadata)
+      .filter(a => !a.isCore())
+      .sort((a, b) => a.name.localeCompare(b.name));
     const enums = Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name));
 
     let thrift = this.prolog() + '\n';
-    let script = this.genClass(name, dbs, apis);
+    let script = this.genService(name, dbs, apis);
     let patch = this.genPatch();
     let replace: any = {};
 
@@ -261,44 +263,33 @@ export class ThriftTools {
     `);
   }
 
-  private genClass(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
+  private genService(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
-      // tslint:disable:function-name
-      import { ContentType, Context, ContextObject, CoreThriftHandler, Forbidden, gql, HttpRequest, HttpResponse, Post, Public, RequestObject, Service } from 'tyx';
+      import { Context, CoreThrift, gql, Service } from 'tyx';
       import ${GEN} = require('./${name.toLowerCase()}');
 
       ///////// SERVICE /////////
 
       @Service(true)
-      export class ${name}ThriftService {
-        @Public()
-        @Post('/thrift/{service}')
-        @ContentType(HttpResponse)
-        public async process(@RequestObject() req: HttpRequest, @ContextObject() ctx: Context): Promise<HttpResponse> {
-          req.buffer = req.buffer || Buffer.from(req.body, req.isBase64Encoded ? 'base64' : 'binary');
-          const service = req.pathParameters['service'];
-          let result: any = undefined;
-          switch (service) {\n`;
-    script += `            case CORE: result = await CORE_HANDLER.execute(req, ctx); break;\n`;
+      export class ${name}ThriftService extends CoreThrift {
+        public constructor() {
+          super({
+            [CORE]: new ${GEN}.Core.Processor(CORE_PROXY)`;
+
     for (const db of dbs) {
       const snake = Utils.snakeCase(db.name, true);
-      script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
+      script += `,\n            [${snake}]: new ${GEN}.${db.name}.Processor(${snake}_PROXY)`;
     }
     for (const api of apis) {
       const snake = Utils.snakeCase(api.name, true);
-      script += `            case ${snake}: result = await ${snake}_HANDLER.execute(req, ctx); break;\n`;
+      script += `,\n            [${snake}]: new ${GEN}.${api.name}.Processor(${snake}_PROXY)`;
     }
-    script += `            default: throw new Forbidden(\`Unknown service [\${service}]\`);
-          }
-          return {
-            statusCode: 200,
-            contentType: 'application/octet-stream',
-            body: result.toString('base64'),
-            isBase64Encoded: true
-          } as any;
+    script += `
+          });
         }
-      }
 
+        // @Override()
+      }
     `;
     return Utils.indent(script).trimLeft();
   }
@@ -374,11 +365,6 @@ export class ThriftTools {
     }
     thrift += `\n} (path="${kebab}", target = "${metadata.servicer.name}")`;
     handler += '\n};\n';
-    handler += Utils.indent(`
-    const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
-      serviceName: ${snake},
-      handler: new ${GEN}.${metadata.name}.Processor(${proxy}),
-    });\n`);
     return { thrift, script: query + handler };
   }
 
@@ -416,7 +402,7 @@ export class ThriftTools {
     const snake = Utils.snakeCase(metadata.name, true);
     const kebab = Utils.kebapCase(metadata.name);
 
-    let script = `const ${snake} = '${kebab}';\n`;
+    let script = `const ${snake} = '${kebab}';\n\n`;
     script += `const ${snake}_PROXY: ${GEN}.${metadata.name}.IHandler<any> = {\n`;
     for (let [name, body] of Object.entries(db.queries)) {
       body = Utils.indent(body, '  ').trimLeft();
@@ -428,12 +414,6 @@ export class ThriftTools {
     }
 
     script += '};\n';
-
-    script += Utils.indent(`
-    const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${metadata.name}.Processor>({
-      serviceName: ${snake},
-      handler: new ${GEN}.${metadata.name}.Processor(${snake}_PROXY),
-    });`);
 
     return { thrift, script };
   }
@@ -698,11 +678,6 @@ export class ThriftTools {
 
     thrift = queries + '\n' + thrift + `\n} (path="${kebab}")\n\n`;
     handler += '\n};\n';
-    handler += Utils.indent(`
-    const ${snake}_HANDLER = new CoreThriftHandler<${GEN}.${name}.Processor>({
-      serviceName: ${snake},
-      handler: new ${GEN}.${name}.Processor(${proxy}),
-    });\n`);
 
     return { thrift, script: query + handler };
   }
