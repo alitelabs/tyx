@@ -25,6 +25,24 @@ import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
 import { CoreThrift } from './thrift';
 
+const PING_QUERY = gql`{
+  Core {
+    Process {
+      name,
+      timestamp,
+      initTime,
+      loadTime,
+      uptime,
+      memory {
+        rss,
+        heapTotal,
+        heapUsed,
+        external
+      }
+    }
+  }
+}`;
+
 export class CoreInstance implements CoreContainer {
 
   public application: string;
@@ -172,7 +190,7 @@ export class CoreInstance implements CoreContainer {
   public async execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
   public async execute(ctx: Context, oper: DocumentNode | string, variables?: Record<string, any>): Promise<any> {
     const data = await this.graphql.execute(ctx, oper as any, variables);
-    return data.result;
+    return data.result || data;
   }
 
   // TODO: Why just wrapper for graph request?
@@ -211,22 +229,9 @@ export class CoreInstance implements CoreContainer {
 
   public async ping(req: PingRequest): Promise<ProcessInfo> {
     const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
-    const res = await this.execute(ctx, gql`{
-      Core {
-        Process {
-          name,
-          timestamp,
-          uptime,
-          memory {
-            rss,
-            heapTotal,
-            heapUsed,
-            external
-          }
-        }
-      }
-    }`);
-    return res.data.Core.Process;
+    const data = await this.graphql.execute(ctx, PING_QUERY);
+    this.log.info('PING: %j', data);
+    return data.Core.Process;
   }
 
   // TODO: Execute within same container
