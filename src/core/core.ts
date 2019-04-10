@@ -1,4 +1,6 @@
-import { LambdaAdapter, LambdaHandler } from '../aws/adapter';
+import os = require('os');
+import { LambdaAdapter } from '../aws/adapter';
+import { LambdaHandler } from '../aws/types';
 import { Di } from '../import';
 import { Logger } from '../logger';
 import { MetadataRegistry, Registry } from '../metadata/registry';
@@ -27,16 +29,25 @@ export interface CoreInterface extends MetadataRegistry {
 
 export interface CoreOptions {
   application?: string;
+  container?: string;
+  version?: string;
+  identity?: string;
   roles?: Roles;
   register?: Class[];
   crudAllowed?: boolean;
 }
 
+const LOAD_TIME = Math.round(process.uptime() * 1000);
+const CREATED = new Date(Date.now() - Math.round(LOAD_TIME));
+
 export abstract class Core extends Registry {
-  public static log = Logger.get('TYX', Core.name);
+  public static readonly log = Logger.get('TYX', Core.name);
 
   public static readonly config: CoreOptions = {
     application: 'Core',
+    container: LambdaAdapter.functionName,
+    version: LambdaAdapter.functionVersion,
+    identity: LambdaAdapter.identity,
     roles: { Public: true },
     register: [],
     crudAllowed: true
@@ -47,8 +58,11 @@ export abstract class Core extends Registry {
 
   private static pool: CoreInstance[];
   private static counter: number = 0;
+  private static serial: number = 0;
+  private static cpuUsage = process.cpuUsage();
 
-  public static loadTime: number = Math.round(process.uptime() * 1000);
+  public static readonly loadTime = LOAD_TIME;
+  public static readonly created = CREATED;
   public static initTime: number;
 
   protected constructor() { super(); }
@@ -60,9 +74,9 @@ export abstract class Core extends Registry {
   public static init(options?: CoreOptions): void {
     if (this.instance) return;
 
-    this.config.application = this.config.application || options.application;
-    this.config.roles = this.config.roles || options.roles;
-    this.config.register = this.config.register || options.register;
+    this.config.application = options.application || this.config.application;
+    this.config.roles = options.roles || this.config.roles;
+    this.config.register = options.register || this.config.register;
     this.config.crudAllowed = options.crudAllowed !== undefined ? !!options.crudAllowed : this.config.crudAllowed;
 
     Object.freeze(this.config);
@@ -139,26 +153,52 @@ export abstract class Core extends Registry {
 
   public static processInfo(level?: number): ProcessInfo {
     const info = this.moduleInfo();
+    const mem = process.memoryUsage();
+    const total = process.cpuUsage();
+    const usage = this.cpuUsage = process.cpuUsage(this.cpuUsage);
+    const cpus = os.cpus().map(c => ({ model: c.model, speed: c.speed, ...c.times }));
+    const networks = Object.entries(os.networkInterfaces())
+      .map(([k, v]): [string, any] => ([k, v.filter(i => !i.internal && i.family !== 'IPv6')]))
+      .filter(([k, v]) => v.length)
+      .map(([k, v]) => ({ name: k, ...v[0] }));
     return {
-      name: this.name,
-      state: this.instance ? 'Init' : 'New',
+      application: this.config.application,
+      container: this.config.container,
+      version: this.config.version,
+      identity: this.config.identity,
+
+      created: this.created,
+      state: this.serial ? 'warm' : 'cold',
+      loadTime: this.loadTime,
+      initTime: this.initTime,
+
       timestamp: new Date(),
-      versions: process.versions,
+      serial: this.serial++,
       uptime: process.uptime(),
-      memory: process.memoryUsage(),
+
+      memory: mem.rss,
+      heapTotal: mem.heapTotal,
+      heapUsed: mem.heapUsed,
+      external: mem.external,
+      cpuUser: usage.user,
+      cpuSystem: usage.system,
+      cpuUserTotal: total.user,
+      cpuSystemTotal: total.system,
+      packageCount: info.packages.length,
+      moduleCount: info.modules.length,
+      scriptSize: info.scriptSize,
+
       node: {
         pid: process.pid,
         arch: process.arch,
         platform: process.platform,
-        release: process.release
+        release: process.release,
+        versions: process.versions
       },
-      loadTime: this.loadTime,
-      initTime: this.initTime,
+      cpus,
+      networks,
 
       entry: info.root,
-      packageCount: info.packages.length,
-      moduleCount: info.modules.length,
-      scriptSize: info.scriptSize,
       packages: info.packages.filter((m: any) => level === undefined || m.level <= level),
       modules: info.modules.filter((m: any) => level === undefined || m.level <= level)
     };

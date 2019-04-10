@@ -1,7 +1,7 @@
 import { Request } from './core';
 
 export interface RemoteRequest extends Request {
-  application: string;
+  application?: string;
   token: string;
   args: any[];
 }

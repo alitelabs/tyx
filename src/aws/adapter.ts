@@ -3,211 +3,77 @@ import { HttpUtils } from '../core/http';
 import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
 import { LogLevel } from '../types/config';
-import { EventRecord, EventRequest, EventResult } from '../types/event';
+import { EventRequest, EventResult } from '../types/event';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
-import { RemoteRequest } from '../types/proxy';
 import { Utils } from '../utils';
 import { LambdaError } from './error';
-
-export type UUID = string;
-
-export interface RemoteEvent extends RemoteRequest {
-  // Any additional params ...
-}
-
-export interface LambdaS3Event {
-  Records: LambdaS3Record[];
-}
-
-export interface LambdaSQSEvent {
-  Records: LambdaSQSRecord[];
-}
-
-export interface LambdaEventRecord extends EventRecord {
-  eventSource: 'aws:s3' | 'aws:dynamodb' | 'aws:sqs';
-  eventVersion: string;
-  eventName: string; // TODO: Enum
-  awsRegion: string;
-}
-
-export interface LambdaSQSRecord extends LambdaEventRecord {
-  eventSource: 'aws:sqs';
-  body: string;
-  eventSourceARN: string;
-  messageId: string;
-}
-
-export interface LambdaS3Record extends LambdaEventRecord {
-  eventSource: 'aws:s3';
-  eventTime: string;
-  userIdentity?: {
-    principalId: string;
-    [key: string]: string;
-  };
-  requestParameters?: {
-    sourceIPAddress: string;
-    [key: string]: string;
-  };
-  responseElements: Record<string, string>;
-  // {
-  // "x-amz-request-id": "977AC95B5E343C51",
-  // "x-amz-id-2": "ECIEtKyeUlJpLZskSCbflZJZdPz1XGVu6mOb9knu50TFHlL/FcRSkn5g76IYWrpG874IR0rCTmA="
-  // }
-  s3: {
-    s3SchemaVersion: '1.0' | string,
-    configurationId: string,
-    bucket: {
-      name: string;
-      ownerIdentity: {
-        principalId: string;
-      },
-      arn: string;
-    };
-    object: {
-      key: string,
-      size: number,
-      eTag: string,
-      sequencer: string,
-    };
-  };
-}
-
-export interface LambdaDynamoEvent {
-  Records: LambdaDynamoRecord[];
-}
-
-export interface LambdaDynamoRecord extends LambdaEventRecord {
-  eventID: string;
-  eventSource: 'aws:dynamodb';
-  eventSourceARN: string;
-  eventName: 'INSERT' | 'MODIFY' | 'REMOVE';
-  // TODO: object keyword supported in typescript ????
-  dynamodb: {
-    ApproximateCreationDateTime: number,
-    Keys: Record<string, object>;
-    SequenceNumber: string;
-    SizeBytes: number,
-    StreamViewType: 'KEYS_ONLY' | 'NEW_IMAGE' | 'OLD_IMAGE' | 'NEW_AND_OLD_IMAGES';
-    NewImage?: Record<string, object>;
-    OldImage?: Record<string, object>;
-  };
-}
-
-export interface LambdaScheduleEvent {
-  type: 'schedule';
-  action: string;
-  [prop: string]: string;
-}
-
-export interface LambdaApiEvent {
-  resource: string;
-  path: string;
-  httpMethod: string;
-  headers: {
-    [header: string]: string;
-  };
-  pathParameters: {
-    [param: string]: string;
-  };
-  queryStringParameters: {
-    [param: string]: string;
-  };
-  body: string | null;
-  isBase64Encoded: boolean;
-
-  stageVariables?: {
-    [variable: string]: string;
-  };
-  requestContext?: {
-    accountId: string;
-    resourceId: string;
-    stage: string;
-    requestId: UUID;
-    identity: {
-      sourceIp: string;
-      userAgent: string;
-      cognitoIdentityId: any;
-      cognitoIdentityPoolId: any;
-      cognitoAuthenticationType: any;
-      cognitoAuthenticationProvider: any;
-      accountId: any;
-      caller: any;
-      apiKey: any;
-      accessKey: any;
-      userArn: any;
-      user: any;
-    };
-  };
-}
-
-export interface LambdaContext {
-  functionName: string;
-  functionVersion: string;
-  invokeid: UUID;
-  awsRequestId: UUID;
-
-  callbackWaitsForEmptyEventLoop: boolean;
-  logGroupName: string;
-  logStreamName: string;
-  memoryLimitInMB: string;
-  invokedFunctionArn: string;
-
-  succeed?: (object: any) => void;
-  fail?: (error: any) => void;
-  done?: (error: any, result: any) => void;
-}
-
-export interface LambdaCallback {
-  (err: LambdaError, response?: HttpResponse | Object): void;
-}
-
-export type LambdaEvent = RemoteEvent & LambdaApiEvent & LambdaS3Event & LambdaSQSEvent & LambdaDynamoEvent & LambdaScheduleEvent;
-
-export interface LambdaHandler {
-  (
-    event: LambdaEvent,
-    context: LambdaContext,
-    callback: LambdaCallback,
-  ): boolean | void;
-}
+// tslint:disable-next-line:max-line-length
+import { LambdaApiEvent as LambdaHttpEvent, LambdaContext, LambdaDynamoEvent, LambdaEvent, LambdaHandler, LambdaS3Event, LambdaScheduleEvent, LambdaSQSEvent, PingEvent, RemoteEvent } from './types';
+import uuid = require('uuid');
 
 export abstract class LambdaAdapter {
 
   private static log = Logger.get('TYX', LambdaAdapter);
 
+  public static get functionName() {
+    return process.env.AWS_LAMBDA_FUNCTION_NAME || '<script>';
+  }
+
+  public static get functionVersion() {
+    return process.env.AWS_LAMBDA_FUNCTION_VERSION || '$VER';
+  }
+
+  public static get logStream() {
+    return (process.env.AWS_LAMBDA_LOG_STREAM_NAME || '<console>');
+  }
+
+  public static get identity() {
+    let id = process.env.AWS_LAMBDA_LOG_STREAM_NAME || uuid();
+    id = id.substring(id.indexOf(']') + 1);
+    if (id.length === 32) {
+      id = id.substr(0, 8) + '-' +
+        id.substr(8, 4) + '-' +
+        id.substr(12, 4) + '-' +
+        id.substr(16, 4) + '-' +
+        id.substring(20);
+    }
+    return id;
+  }
+
   public static export(): LambdaHandler {
     LogLevel.set(process.env.LOG_LEVEL as any);
     return (event, context, callback) => {
-      this.handler(event, context)
+      this.handler(event, context as any)
         .then(res => callback(null, res))
         .catch(err => callback(new LambdaError(err), null));
     };
   }
 
-  public static async handler(event: LambdaEvent, context: LambdaContext): Promise<any> {
+  public static async handler(event: Partial<LambdaEvent>, context: LambdaContext): Promise<any> {
     this.log.debug('Event: %j', event);
     this.log.debug('Context: %j', context);
 
-    if (event.httpMethod) {
+    if (!event || !Object.keys(event).length || event.type === 'ping') {
+      try {
+        const res = await this.ping(event as PingEvent, context);
+        return res;
+      } catch (err) {
+        this.log.error(err);
+        return err;
+      }
+    } else if (event.httpMethod) {
       this.log.debug('HTTP event detected');
       try {
-        const res = await this.http(event, context);
+        const res = await this.http(event as LambdaHttpEvent, context);
         return HttpUtils.prepare(res);
       } catch (err) {
         this.log.error(err);
         return HttpUtils.error(err);
       }
-    } else if (event.type === 'ping') {
-      try {
-        const res = await this.ping(event, context);
-        return res;
-      } catch (err) {
-        this.log.error(err);
-      }
     } else if ((event.type === 'remote' || event.type === 'internal') && event.service && event.method) {
       this.log.debug('Remote event detected');
       try {
-        return await this.remote(event, context);
+        return await this.remote(event as RemoteEvent, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
@@ -215,7 +81,7 @@ export abstract class LambdaAdapter {
     } else if (event.type === 'schedule' && event.action) {
       this.log.debug('Schedule event detected');
       try {
-        return await this.schedule(event, context);
+        return await this.schedule(event as LambdaScheduleEvent, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
@@ -223,7 +89,7 @@ export abstract class LambdaAdapter {
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:sqs') {
       this.log.debug('SQS event detected');
       try {
-        return await this.sqs(event, context);
+        return await this.sqs(event as LambdaSQSEvent, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
@@ -231,7 +97,7 @@ export abstract class LambdaAdapter {
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:s3') {
       this.log.debug('S3 event detected');
       try {
-        return await this.s3(event, context);
+        return await this.s3(event as LambdaS3Event, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
@@ -239,7 +105,7 @@ export abstract class LambdaAdapter {
     } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:dynamodb') {
       this.log.debug('DynamoDB event detected');
       try {
-        return await this.dynamo(event, context);
+        return await this.dynamo(event as LambdaDynamoEvent, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
@@ -249,7 +115,7 @@ export abstract class LambdaAdapter {
     }
   }
 
-  private static async ping(event: LambdaApiEvent, context: LambdaContext): Promise<any> {
+  private static async ping(event: PingEvent, context: LambdaContext): Promise<any> {
     const core = await Core.get();
     return core.ping({
       requestId: context.awsRequestId,
@@ -263,7 +129,7 @@ export abstract class LambdaAdapter {
     });
   }
 
-  private static async http(event: LambdaApiEvent, context: LambdaContext): Promise<HttpResponse> {
+  private static async http(event: LambdaHttpEvent, context: LambdaContext): Promise<HttpResponse> {
     let resource = event.resource;
     const prefix = process.env.PREFIX || ('/' + process.env.STAGE);
     if (event.resource && prefix && resource.startsWith(prefix)) resource = resource.replace(prefix, '');

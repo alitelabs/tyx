@@ -7,7 +7,6 @@ import { EventRouteMetadata } from '../metadata/event';
 import { HttpRouteMetadata } from '../metadata/http';
 import { Registry } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
-import { gql } from '../tools/tag';
 import { Configuration } from '../types/config';
 // tslint:disable-next-line:max-line-length
 import { Class, ContainerState, Context, CoreContainer, ProcessInfo, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
@@ -25,36 +24,19 @@ import { HttpUtils } from './http';
 import { CoreSecurity } from './security';
 import { CoreThrift } from './thrift';
 
-const PING_QUERY = gql`{
-  Core {
-    Process {
-      name,
-      timestamp,
-      initTime,
-      loadTime,
-      uptime,
-      memory {
-        rss,
-        heapTotal,
-        heapUsed,
-        external
-      }
-    }
-  }
-}`;
-
 export class CoreInstance implements CoreContainer {
 
   public application: string;
   public name: string;
   public log: Logger;
 
-  private container: Di.ContainerInstance;
-  private config: Configuration;
-  private security: Security;
-  private graphql: GraphQL;
-  private istate: ContainerState;
+  protected container: Di.ContainerInstance;
+  protected config: Configuration;
+  protected security: Security;
+  protected graphql: GraphQL;
+  protected thrift: Thrift;
 
+  private istate: ContainerState;
   private services: object[] = [];
 
   constructor(application: string, name: string, index?: number) {
@@ -96,13 +78,13 @@ export class CoreInstance implements CoreContainer {
 
     if (!Di.Container.has(GraphQL)) {
       this.log.debug('Using core GraphQL service');
-      // TODO: CoreGraphQL.finalize()
+      CoreGraphQL.finalize();
       this.container.set({ id: GraphQL, type: CoreGraphQL });
     }
 
     if (!Di.Container.has(Thrift)) {
       this.log.debug('Using core Thrift service');
-      // TODO: CoreGraphQL.finalize()
+      CoreThrift.finalize();
       this.container.set({ id: Thrift, type: CoreThrift });
     }
 
@@ -129,6 +111,7 @@ export class CoreInstance implements CoreContainer {
     }
 
     this.graphql = this.get(GraphQL);
+    this.thrift = this.get(Thrift);
 
     this.istate = ContainerState.Ready;
     return this;
@@ -229,8 +212,8 @@ export class CoreInstance implements CoreContainer {
 
   public async ping(req: PingRequest): Promise<ProcessInfo> {
     const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
-    const data = await this.graphql.execute(ctx, PING_QUERY);
-    this.log.info('PING: %j', data);
+    const data = await this.graphql.execute(ctx, ProcessInfo);
+    this.log.debug('PING: %j', data);
     return data.Core.Process;
   }
 

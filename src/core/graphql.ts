@@ -11,6 +11,7 @@ import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { MethodMetadata } from '../metadata/method';
+import { ServiceMetadata } from '../metadata/service';
 import { DisplayOptions, MiddlewareOptions, renderVoyagerPage } from '../tools/voyager';
 import { Configuration } from '../types/config';
 import { Context } from '../types/core';
@@ -33,6 +34,10 @@ export class CoreGraphQL implements GraphQL {
       'process',
       Object.getOwnPropertyDescriptor(CoreGraphQL.prototype, 'process')
     );
+  }
+
+  public static finalize() {
+    ServiceMetadata.get(this).final = true;
   }
 
   public static get process(): MethodMetadata {

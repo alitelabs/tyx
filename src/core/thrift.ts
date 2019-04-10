@@ -5,6 +5,7 @@ import { ContentType, ContextObject, Get, Post, RequestObject } from '../decorat
 import { CoreService } from '../decorators/service';
 import { Forbidden } from '../errors/http';
 import { Logger } from '../logger';
+import { ServiceMetadata } from '../metadata/service';
 import { ThriftTools } from '../tools/thrift';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
@@ -25,6 +26,10 @@ export class CoreThrift implements Thrift {
       'process',
       Object.getOwnPropertyDescriptor(CoreThrift.prototype, 'process')
     );
+  }
+
+  public static finalize() {
+    ServiceMetadata.get(this).final = true;
   }
 
   // @Logger()

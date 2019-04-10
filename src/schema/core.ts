@@ -2,7 +2,7 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 import { Any } from '../metadata/var';
 // tslint:disable-next-line:max-line-length
-import { Class, Context, InfoSchemaResolvers, MemoryInfo, ModuleInfo, PackageInfo, ProcessInfo, SchemaResolvers, ServiceInfo } from '../types/core';
+import { Class, Context, CpuInfo, InfoSchemaResolvers, ModuleInfo, NetworkInfo, PackageInfo, ProcessInfo, SchemaResolvers, ServiceInfo } from '../types/core';
 import { Utils } from '../utils';
 
 @Schema()
@@ -23,8 +23,7 @@ export class ServiceInfoSchema {
     this.transient = !!s.transient;
   }
 
-  public static RESOLVERS: InfoSchemaResolvers<ServiceInfoSchema> = {
-  };
+  public static RESOLVERS: InfoSchemaResolvers<ServiceInfoSchema> = {};
 }
 
 @Schema()
@@ -45,6 +44,30 @@ export class InstanceInfoSchema {
       return Utils.filter(info, args);
     }
   };
+}
+
+@Schema()
+export class CpuInfoSchema implements CpuInfo {
+  @Field() model: string;
+  @Field() speed: number;
+  @Field() user: number;
+  @Field() nice: number;
+  @Field() sys: number;
+  @Field() idle: number;
+  @Field() irq: number;
+  public static RESOLVERS: InfoSchemaResolvers<CpuInfoSchema> = {};
+}
+
+@Schema()
+export class NetworkInfoSchema implements NetworkInfo {
+  @Field() name: string;
+  @Field() address: string;
+  @Field() netmask: string;
+  @Field() family: string;
+  @Field() mac: string;
+  @Field() internal: boolean;
+  @Field() cidr: string;
+  public static RESOLVERS: InfoSchemaResolvers<NetworkInfoSchema> = {};
 }
 
 @Schema()
@@ -82,35 +105,42 @@ export class ModuleInfoSchema implements ModuleInfo {
 }
 
 @Schema()
-export class MemoryInfoSchema implements MemoryInfo {
-  @Field() rss: number;
+export class ProcessInfoSchema implements ProcessInfo {
+  // Function
+  @Field() application: string;
+  @Field() container: string;
+  @Field() version: string;
+  @Field() identity: string;
+  // Stats
+  @Field() created: Date;
+  @Field() loadTime: number;
+  @Field() initTime: number;
+  // Runtime
+  @Field() timestamp: Date;
+  @Field() state: string;
+  @Field() serial: number;
+  @Field() uptime: number;
+  // Usage
+  @Field() memory: number;
   @Field() heapTotal: number;
   @Field() heapUsed: number;
   @Field() external: number;
-}
-
-@Schema()
-export class ProcessInfoSchema implements ProcessInfo {
-  @Field() name: string;
-  @Field() state: string;
-  @Field() timestamp: Date;
-  @Field(Any) versions: any;
-  @Field() uptime: number;
-  @Field() loadTime: number;
-  @Field() initTime: number;
-  @Field(ref => MemoryInfoSchema) memory: MemoryInfo;
-  @Field(Any) node: any;
-  // TODO: Statistics, mem usage, uptime etc
-  // Package and modules size
-
-  // Startup time based on process uptime
+  @Field() cpuUser: number;
+  @Field() cpuSystem: number;
+  @Field() cpuUserTotal: number;
+  @Field() cpuSystemTotal: number;
   @Field() moduleCount: number;
   @Field() packageCount: number;
   @Field() scriptSize: number;
+  // Instance
+  // @Field() instance: string;
+  @Field(Any) node: any;
+  @Field(list => [CpuInfoSchema]) cpus: CpuInfo[];
+  @Field(list => [NetworkInfoSchema]) networks: NetworkInfo[];
+  // Package and code size
   @Field(ref => ModuleInfoSchema) entry: ModuleInfo;
   packages: PackageInfo[];
   modules: ModuleInfo[];
-
   public static RESOLVERS: SchemaResolvers<ProcessInfo> = {};
 }
 

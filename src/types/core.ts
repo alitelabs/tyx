@@ -101,24 +101,121 @@ export interface MemoryInfo {
   external: number;
 }
 
+// Fake gql
+function gql(txt: any): string { return txt[0]; }
+
+// tslint:disable-next-line:variable-name
+export const ProcessInfo: string = gql`{
+  Core {
+    Process {
+      # Function
+      application,
+      container,
+      version,
+      identity,
+      # Stats
+      created,
+      state,
+      loadTime,
+      initTime,
+      # Runtime
+      timestamp,
+      serial,
+      uptime,
+      # Memory
+      memory,
+      heapTotal,
+      heapUsed,
+      external,
+      cpuUser,
+      cpuSystem,
+      cpuUserTotal,
+      cpuSystemTotal,
+      # Codebase
+      moduleCount,
+      packageCount,
+      scriptSize,
+      # Misc
+      cpus {
+        model,
+        speed,
+        user,
+        nice,
+        sys,
+        idle,
+        irq
+      },
+      networks {
+        name,
+        address,
+        netmask,
+        family,
+        mac,
+        cidr,
+        # internal
+      },
+      node
+    }
+  }
+}`;
+
 export interface ProcessInfo {
-  name: string;
+  // Function
+  application: string;
+  container: string;
+  version: string;
+  identity: string;
+  // Stats
+  created: Date;
   state: string;
-  timestamp: Date;
-  versions: any;
-  uptime: number;
   loadTime: number;
   initTime: number;
-  // TODO: Statistics, mem usage, uptime etc
-  // Package and modules size
-  memory: MemoryInfo;
-  node: any;
-  entry: ModuleInfo;
+  // Runtime
+  timestamp: Date;
+  serial: number;
+  uptime: number;
+  // Usage
+  memory: number;
+  heapTotal: number;
+  heapUsed: number;
+  external: number;
+  cpuUser: number;
+  cpuSystem: number;
+  cpuUserTotal: number;
+  cpuSystemTotal: number;
   moduleCount: number;
   packageCount: number;
   scriptSize: number;
+  // Instance
+  // instance: string;
+  node: any;
+  cpus: CpuInfo[];
+  networks: NetworkInfo[];
+  // Package and code size
+  entry: ModuleInfo;
   packages: PackageInfo[];
   modules: ModuleInfo[];
+  // TODO: Statistics of service use
+}
+
+export interface CpuInfo {
+  model: string;
+  speed: number;
+  user: number;
+  nice: number;
+  sys: number;
+  idle: number;
+  irq: number;
+}
+
+export interface NetworkInfo {
+  name: string;
+  address: string;
+  netmask: string;
+  family: string;
+  mac: string;
+  internal: boolean;
+  cidr: string;
 }
 
 export interface PackageInfo {

@@ -1,8 +1,6 @@
 import 'reflect-metadata';
 
 export {
-  LambdaAdapter,
-
   RemoteEvent,
   LambdaApiEvent,
   LambdaS3Event,
@@ -14,6 +12,10 @@ export {
   LambdaContext,
   LambdaCallback,
   LambdaHandler,
+} from './types';
+
+export {
+  LambdaAdapter,
 } from './adapter';
 
 export {
