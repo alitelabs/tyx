@@ -1,7 +1,7 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.1.104",
+  "version": "0.1.105",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
