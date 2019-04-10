@@ -59,12 +59,12 @@ function esc(name: string) {
   return RESERVED.includes(name) ? '__esc_' + name : name;
 }
 
-export class ThriftTools {
+export class ThriftToolkit {
 
   protected crud: boolean = true;
 
   public static emit(name: string): Result {
-    return new ThriftTools().emit(name);
+    return new ThriftToolkit().emit(name);
   }
 
   private constructor() { }
@@ -366,7 +366,7 @@ export class ThriftTools {
 
       count++;
     }
-    thrift += `\n} (path="${kebab}", target = "${metadata.servicer.name}")`;
+    thrift += `\n} (path="${kebab}", target = "${metadata.servicer && metadata.servicer.name}")`;
     handler += '\n};';
     return { thrift, script: query + handler };
   }

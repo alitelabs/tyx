@@ -6,7 +6,7 @@ import { CoreService } from '../decorators/service';
 import { Forbidden } from '../errors/http';
 import { Logger } from '../logger';
 import { ServiceMetadata } from '../metadata/service';
-import { ThriftTools } from '../tools/thrift';
+import { ThriftToolkit } from '../tools/thrift';
 import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { Roles } from '../types/security';
@@ -49,7 +49,7 @@ export class CoreThrift implements Thrift {
   @Get('/thrift')
   @ContentType(HttpResponse)
   public async definition(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
-    const result = ThriftTools.emit(Core.config.application);
+    const result = ThriftToolkit.emit(Core.config.application);
     return {
       statusCode: 200,
       contentType: 'application/thrift-idl',

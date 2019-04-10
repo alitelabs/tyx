@@ -5,10 +5,10 @@ import { TypeMetadata, TypeSelect } from '../metadata/type';
 import { VarKind } from '../metadata/var';
 import { Utils } from '../utils';
 
-export class AngularTools {
+export class AngularToolkit {
 
   public static emit(): string {
-    return new AngularTools().emit();
+    return new AngularToolkit().emit();
   }
 
   private constructor() { }

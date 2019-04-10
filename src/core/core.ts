@@ -4,7 +4,7 @@ import { LambdaHandler } from '../aws/types';
 import { Di } from '../import';
 import { Logger } from '../logger';
 import { MetadataRegistry, Registry } from '../metadata/registry';
-import { GraphQLTools } from '../tools/graphql';
+import { GraphQLToolkit } from '../tools/graphql';
 import { Class, CommonModule, ContainerState, ModuleInfo, ObjectType, PackageInfo, ProcessInfo, ServiceInfo } from '../types/core';
 import { Roles } from '../types/security';
 import { Utils } from '../utils';
@@ -53,7 +53,7 @@ export abstract class Core extends Registry {
     crudAllowed: true
   };
 
-  private static graphql: GraphQLTools;
+  private static graphql: GraphQLToolkit;
   private static instance: CoreInstance;
 
   private static pool: CoreInstance[];
@@ -67,8 +67,8 @@ export abstract class Core extends Registry {
 
   protected constructor() { super(); }
 
-  public static get schema(): GraphQLTools {
-    return (this.graphql = this.graphql || new GraphQLTools(Core.validate(), this.config.crudAllowed));
+  public static get schema(): GraphQLToolkit {
+    return (this.graphql = this.graphql || new GraphQLToolkit(Core.validate(), this.config.crudAllowed));
   }
 
   public static init(options?: CoreOptions): void {

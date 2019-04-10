@@ -125,9 +125,9 @@ interface EnumSchema {
   model: string;
 }
 
-export class GraphQLTools {
+export class GraphQLToolkit {
 
-  private static log: Logger = Logger.get('TYX', GraphQLTools.name);
+  private static log: Logger = Logger.get('TYX', GraphQLToolkit.name);
 
   private crud: boolean;
 
@@ -192,7 +192,7 @@ export class GraphQLTools {
         const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
         err.message = err.message.replace('Error:', `Error: ${loc}`);
       }
-      GraphQLTools.log.error(err);
+      GraphQLToolkit.log.error(err);
       throw err;
     }
   }
@@ -214,12 +214,12 @@ export class GraphQLTools {
   }
 
   public static schema(crud?: boolean): string {
-    const schema = new GraphQLTools(crud);
+    const schema = new GraphQLToolkit(crud);
     return schema.typeDefs();
   }
 
   public static document(crud?: boolean): string {
-    const schema = new GraphQLTools(crud);
+    const schema = new GraphQLToolkit(crud);
     const doc = gql(schema.typeDefs());
     return JSON.stringify(doc, null, 2);
   }
@@ -258,7 +258,7 @@ export class GraphQLTools {
   }
 
   public static service(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
-    const schema = new GraphQLTools(crud);
+    const schema = new GraphQLToolkit(crud);
     const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
@@ -296,7 +296,7 @@ export class GraphQLTools {
   }
 
   public typeDefs(): string {
-    let schema = GraphQLTools.prolog().trimRight();
+    let schema = GraphQLToolkit.prolog().trimRight();
     schema += `
       type Query {
         Core: Core
