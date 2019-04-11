@@ -102,7 +102,7 @@
     "tslint": "^5.15.0",
     "tslint-config-airbnb": "^5.11.1",
     "typeorm": "^0.2.16",
-    "typescript": "^3.4.2"
+    "typescript": "^3.4.3"
   },
   "prettier": {
     "singleQuote": true,
