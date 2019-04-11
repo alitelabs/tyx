@@ -257,25 +257,24 @@ export class GraphQLToolkit {
     return script;
   }
 
-  public static service(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
+  public static service(name: string, crud?: boolean, tabs?: any): string {
     const schema = new GraphQLToolkit(crud);
-    const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
+    // const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
-      import { DocumentNode } from 'graphql';
-      import { Context, CoreGraphQL, gql, Resolver, HttpRequest, Service } from 'tyx';
-      import TYPE_DEFS = require('./schema.json');
+      import { Context, CoreGraphQL, DocumentNode, gql, Resolver, HttpRequest, Service } from 'tyx';
+      // import TYPE_DEFS = require('./schema.json');
     `).trimRight() + '\n';
     script += Utils.indent(`
       @Service(true)
       export class ${name}GraphQL extends CoreGraphQL {
 
         public constructor() {
-          super(TYPE_DEFS as any, RESOLVERS);
+          super(TYPE_DEFS, RESOLVERS);
         }
 
         // @Override()
-        // @Auth({ ${auth} })
+        // @Auth({ {auth} })
         // public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
         //   return super.process(ctx, req);
         // }
@@ -291,7 +290,7 @@ export class GraphQLToolkit {
     script += `export const PLAYGROUND_TABS: any = `;
     script += tabs ? JSON.stringify(tabs, null, 2) : 'undefined';
     script += ';\n\n';
-    script += `export const TYPE_DEFS_2: DocumentNode = gql\`\n${Utils.indent(schema.typeDefs(), '  ')}\`;\n`;
+    script += `export const TYPE_DEFS: DocumentNode = gql\`\n${Utils.indent(schema.typeDefs(), '  ')}\`;\n`;
     return script;
   }
 

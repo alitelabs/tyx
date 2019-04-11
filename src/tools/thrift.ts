@@ -63,13 +63,13 @@ function esc(name: string) {
 
 export class ThriftToolkit {
 
-  protected crud: boolean = true;
+  protected crud: boolean = false;
 
-  public static emit(name: string): ThriftToolkitResult {
-    return new ThriftToolkit().emit(name);
+  public static emit(name: string, crud?: boolean): ThriftToolkitResult {
+    return new ThriftToolkit(crud).emit(name);
   }
 
-  private constructor() { }
+  private constructor(crud?: boolean) { this.crud = !!crud; }
 
   public emit(name: string): ThriftToolkitResult {
 
