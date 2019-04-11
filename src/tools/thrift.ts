@@ -386,8 +386,8 @@ export class ThriftToolkit {
     thrift += `service ${schema.metadata.target.name} {\n`;
     for (const entity of Object.values(schema.entities)) {
       thrift += `  // -- ${entity.name}\n`;
-      entity.query.forEach(line => thrift += `  ` + line);
-      entity.mutation.forEach(line => thrift += `  ` + line);
+      if (entity.query) entity.query.forEach(line => thrift += `  ` + line);
+      if (entity.mutation) entity.mutation.forEach(line => thrift += `  ` + line);
     }
     thrift += `} (kind="Database")\n`;
     for (const entity of Object.values(schema.entities)) {
