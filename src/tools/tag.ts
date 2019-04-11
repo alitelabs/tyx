@@ -1,3 +1,7 @@
-import { gql } from 'apollo-server-core';
-// export type GqlTag = (literals: any, ...placeholders: any[]) => DocumentNode;
-export { gql };
+import { gql as tag } from 'apollo-server-core';
+import { DocumentNode } from 'graphql';
+export { DocumentNode };
+
+export function gql(literals: any, ...args: any[]): DocumentNode {
+  return tag(literals, ...args);
+}

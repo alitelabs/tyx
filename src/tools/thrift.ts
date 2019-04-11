@@ -36,9 +36,11 @@ interface EntitySchema {
   // resolvers: Record<string, Resolver>;
 }
 
-interface Result {
+interface ThriftToolkitResult {
   thrift: string;
-  script: string;
+  service: string;
+  proxy: string;
+  client: string;
   patch?: string;
   replace?: Record<string, string>;
 }
@@ -51,7 +53,7 @@ const CREATE = 'create';
 const UPDATE = 'update';
 const REMOVE = 'remove';
 
-const GEN = 'srv';
+const GEN = 'gen';
 
 const RESERVED = ['required', 'optional', 'service', 'enum', 'extends', 'exception', 'struct', 'throws', 'string', 'bool', 'list', 'set'];
 
@@ -63,13 +65,13 @@ export class ThriftToolkit {
 
   protected crud: boolean = true;
 
-  public static emit(name: string): Result {
+  public static emit(name: string): ThriftToolkitResult {
     return new ThriftToolkit().emit(name);
   }
 
   private constructor() { }
 
-  public emit(name: string): Result {
+  public emit(name: string): ThriftToolkitResult {
 
     // tslint:disable:max-line-length
 
@@ -81,32 +83,32 @@ export class ThriftToolkit {
     const enums = Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name));
 
     let thrift = this.prolog() + '\n';
-    let script = this.genService(name, dbs, apis);
+    let proxy = `import { Context, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
     let patch = this.genPatch();
     let replace: any = {};
 
-    thrift += '///////// Core /////////\n\n';
-    script += '///////// Core /////////\n\n';
+    thrift += '///////// CORE /////////\n\n';
+    proxy += '\n///////// CORE /////////\n\n';
     const core = this.genCore(CoreSchema.metadata);
     thrift += core.thrift;
-    script += core.script;
+    proxy += core.service;
 
     // const db = Object.values(this.schema.databases)[0];
     thrift += '/////// DATABASE //////\n\n';
-    script += '/////// DATABASE //////\n\n';
+    proxy += '\n/////// DATABASE //////\n\n';
     for (const type of dbs) {
       const res = this.genDatabase(type);
       thrift += res.thrift + '\n\n';
-      script += res.script + '\n';
+      proxy += res.service;
       replace = { ...replace, ...res.replace };
     }
 
     thrift += '///////// API /////////\n\n';
-    script += '///////// API /////////\n';
+    proxy += '\n///////// API /////////\n';
     for (const api of apis) {
       const res = this.genApi(api);
       thrift += res.thrift + '\n\n';
-      script += res.script + '\n';
+      proxy += '\n' + res.service;
       replace = { ...replace, ...res.replace };
     }
     thrift += '///////// ENUM ////////\n\n';
@@ -141,10 +143,10 @@ export class ThriftToolkit {
       replace = { ...replace, ...res.replace };
     }
 
-    patch += '\n//////// CLIENT ////////\n';
-    patch += this.genClient(apis, name);
+    const service = this.genService(name, dbs, apis);
+    const client = this.genClient(apis, name);
 
-    return { thrift, script, patch, replace };
+    return { thrift, service, proxy, client, patch, replace };
   }
 
   private prolog(): string {
@@ -170,7 +172,7 @@ export class ThriftToolkit {
     `).trimLeft();
   }
 
-  private genEnum(meta: EnumMetadata): Result {
+  private genEnum(meta: EnumMetadata): Partial<ThriftToolkitResult> {
     let thrift = `enum ${meta.name} {`;
     let i = 0;
     for (const key of meta.options) {
@@ -178,10 +180,10 @@ export class ThriftToolkit {
     }
     thrift += '\n}';
     // const patch = `  {\n  // ${meta.name}\n  }\n`;
-    return { script: undefined, thrift };
+    return { thrift };
   }
 
-  private genStruct(meta: TypeMetadata): Result {
+  private genStruct(meta: TypeMetadata): Partial<ThriftToolkitResult> {
     let thrift = `struct ${meta.name} {`;
     let select = `struct ${meta.name}Selector {`;
     let filter = `struct ${meta.name}Filter {`;
@@ -228,7 +230,7 @@ export class ThriftToolkit {
         return obj;
       }
     }\n`) : '';
-    return { thrift, script: undefined, patch, replace };
+    return { thrift, patch, replace };
   }
 
   // TODO: Patch return types in script
@@ -267,45 +269,41 @@ export class ThriftToolkit {
 
   private genService(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {
     let script = `
-      import { Context, CoreThrift, gql, Service } from 'tyx';
-      import ${GEN} = require('./server');
-
-      ///////// SERVICE /////////
+      import { CoreThrift, Service } from 'tyx';
+      import * as ${GEN} from '../thrift/proxy';
 
       @Service(true)
       export class ${name}ThriftService extends CoreThrift {
         public constructor() {
           super({
-            [CORE]: new ${GEN}.Core.Processor(CORE_PROXY)`;
+            [${GEN}.CoreProxy.PATH]: ${GEN}.CoreProxy.processor()`;
 
     for (const db of dbs) {
-      const snake = Utils.snakeCase(db.name, true);
-      script += `,\n            [${snake}]: new ${GEN}.${db.name}.Processor(${snake}_PROXY)`;
+      script += `,\n            [${GEN}.${db.name}Proxy.PATH]: ${GEN}.${db.name}Proxy.processor()`;
     }
     for (const api of apis) {
-      const snake = Utils.snakeCase(api.name, true);
-      script += `,\n            [${snake}]: new ${GEN}.${api.name}.Processor(${snake}_PROXY)`;
+      script += `,\n            [${GEN}.${api.name}Proxy.PATH]: ${GEN}.${api.name}Proxy.processor()`;
     }
     script += `
           });
         }
-
         // @Override()
       }
-
     `;
     return Utils.indent(script).trimLeft();
   }
 
-  private genApi(metadata: ApiMetadata): Result {
-    const kebab = Utils.kebapCase(metadata.name);
-    const snake = Utils.snakeCase(metadata.name, true);
-    const proxy = snake + '_PROXY';
-    let thrift = `service ${metadata.name} {`;
-    let query = `\n// ${metadata.name}\n\nconst ${snake} = '${kebab}';\n\n`;
-    let handler = `const ${proxy}: ${GEN}.${metadata.name}.IHandler<Context> = {\n`;
+  private genApi(api: ApiMetadata): Partial<ThriftToolkitResult> {
+    const kebab = Utils.kebapCase(api.name);
+    let thrift = `service ${api.name} {`;
+    let query = `// --- GQL ---\n`;
+    let script = `export class ${api.name}Proxy implements ${GEN}.${api.name}.IHandler<Context> {\n`;
+    script += `  public static readonly PATH = '${kebab}';\n`;
+    script += `  public static processor() { return new ${GEN}.${api.name}.Processor(new ${api.name}Proxy()); }\n`;
+    script += `  constructor (protected ctx?: Context) { }\n`;
+
     let count = 0;
-    for (const method of Object.values(metadata.methods)) {
+    for (const method of Object.values(api.methods)) {
       if (!method.query && !method.mutation) continue;
 
       const result = method.result.res;
@@ -321,14 +319,14 @@ export class ThriftToolkit {
         if (idlArgs) { idlArgs += ', '; jsArgs += ', '; reqArgs += ', '; qlArgs += ', '; params += ', '; }
         params += param;
         idlArgs += `${i + 1}: ${inb.idl} ${esc(param)}`;
-        jsArgs += `${param}`; // `: ${VarKind.isScalar(inb.kind) ? '' : `${GEN}.`}${inb.js}`;
+        jsArgs += `${param}: ${VarKind.isScalar(inb.kind) ? '' : `${GEN}.I`}${inb.js}`;
         reqArgs += `$${param}: ${inb.gql}!`;
         qlArgs += `${param}: $${param}`;
       }
       if (reqArgs) reqArgs = `(${reqArgs})`;
       if (qlArgs) qlArgs = `(${qlArgs})`;
       if (jsArgs) jsArgs += ', ';
-      jsArgs += 'ctx?';
+      jsArgs += 'ctx?: Context';
 
       if (count) thrift += ',';
       // if (method.mutation) {
@@ -337,8 +335,8 @@ export class ThriftToolkit {
       //   script += `\n  ${result.idl} ${method.name}(${idlArgs}${idlArgs ? ', ' : ''}refresh: bool)`;
       // }
 
-      const gql = Utils.snakeCase(metadata.name + '_' + method.name, true) + '_GQL';
-      query += `const ${gql} = gql\`\n`;
+      const gql = Utils.snakeCase(method.name, true) + '_GQL';
+      query += `public static readonly ${gql}: DocumentNode = gql\`\n`;
       if (method.mutation) {
         query += `  mutation request${reqArgs} {\n`;
       } else {
@@ -352,73 +350,76 @@ export class ThriftToolkit {
         query += `# : ${result.kind}`;
       }
       if (qlArgs) query += `\n    # variables: { ${params} }`;
-      query += `\n}\`;\n\n`;
+      query += `\n}\`;\n`;
       // if (method.query) {
       //   query += `,\n    // fetchPolicy: NO_CACHE ? 'no-cache' : refresh ? 'network-only' : 'cache-first'`;
       // }
       // query += `\n};\n\n`;
 
-      handler += `${count ? ',\n' : ''}  async ${esc(method.name)}(${jsArgs}) {\n`;
+      script += `  public async ${esc(method.name)}(${jsArgs}) {\n`;
       // `: Promise<${VarKind.isScalar(result.kind) ? '' : `${GEN}.`}${result.js}> {\n`;
-      handler += `    const res = await ctx.execute(${gql}, { ${params} });\n`;
-      handler += `    return res;\n`;
-      handler += `  }`;
+      script += `    const res = await (ctx || this.ctx).execute(${api.name}Proxy.${gql}, { ${params} });\n`;
+      script += `    return res;\n`;
+      script += `  }\n`;
 
       count++;
     }
-    thrift += `\n} (path="${kebab}", target = "${metadata.servicer && metadata.servicer.name}")`;
-    handler += '\n};';
-    return { thrift, script: query + handler };
+    thrift += `\n} (path="${kebab}", target = "${api.servicer && api.servicer.name}")`;
+    script += Utils.indent(query, 2);
+    script += '}\n';
+    return { thrift, service: script };
   }
 
-  private genDatabase(metadata: DatabaseMetadata): Result {
-    const db: DatabaseSchema = {
-      metadata,
-      name: metadata.name,
-      alias: metadata.alias,
+  private genDatabase(db: DatabaseMetadata): Partial<ThriftToolkitResult> {
+    const schema: DatabaseSchema = {
+      metadata: db,
+      name: db.name,
+      alias: db.alias,
       entities: {},
       queries: {},
       mutations: {}
     };
 
-    for (const entity of metadata.entities) this.genEntity(db, entity);
+    for (const entity of db.entities) this.genEntity(schema, entity);
 
-    let thrift = `# -- Database: ${metadata.name} --\n`;
-    thrift += `service ${db.metadata.target.name} {\n`;
-    for (const entity of Object.values(db.entities)) {
+    let thrift = `# -- Database: ${db.name} --\n`;
+    thrift += `service ${schema.metadata.target.name} {\n`;
+    for (const entity of Object.values(schema.entities)) {
       thrift += `  // -- ${entity.name}\n`;
       entity.query.forEach(line => thrift += `  ` + line);
       entity.mutation.forEach(line => thrift += `  ` + line);
     }
     thrift += `} (kind="Database")\n`;
-    for (const entity of Object.values(db.entities)) {
+    for (const entity of Object.values(schema.entities)) {
       thrift += `\n# -- Entity: ${entity.name} --\n`;
       thrift += entity.model;
       thrift += "\n";
     }
-    for (const entity of Object.values(db.entities)) {
+    for (const entity of Object.values(schema.entities)) {
       thrift += `\n# -- Entity: ${entity.name} --\n`;
       thrift += entity.inputs.join('\n');
       thrift += "\n";
     }
 
-    const snake = Utils.snakeCase(metadata.name, true);
-    const kebab = Utils.kebapCase(metadata.name);
+    const kebab = Utils.kebapCase(db.name);
 
-    let script = `const ${snake} = '${kebab}';\n\n`;
-    script += `const ${snake}_PROXY: ${GEN}.${metadata.name}.IHandler<any> = {\n`;
-    for (let [name, body] of Object.entries(db.queries)) {
+    let script = `export class ${db.name}Proxy implements ${GEN}.${db.name}.IHandler<Context> {\n`;
+    script += `  public static readonly PATH = '${kebab}';\n`;
+    script += `  public static processor() { return new ${GEN}.${db.name}.Processor(new ${db.name}Proxy()); }\n`;
+    script += `  constructor (protected ctx?: Context) { }\n`;
+
+    for (let [name, body] of Object.entries(schema.queries)) {
       body = Utils.indent(body, '  ').trimLeft();
-      script += `  ${name}${body},\n`;
+      script += `  public ${name}${body}\n`;
     }
-    for (let [name, body] of Object.entries(db.mutations)) {
+    for (let [name, body] of Object.entries(schema.mutations)) {
       body = Utils.indent(body, '  ').trimLeft();
-      script += `  ${name}${body},\n`;
+      script += `  public ${name}${body}\n`;
     }
 
-    script += '};\n';
+    script += '}\n';
 
-    return { thrift, script };
+    return { thrift, service: script };
   }
 
   private genEntity(db: DatabaseSchema, entity: EntityMetadata): EntitySchema {
@@ -539,26 +540,26 @@ export class ThriftToolkit {
       ...db.queries,
       [`${GET}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${entity.name}> {
-        return ctx.provider.get(${id}, null, { ${keyNames} }, ctx);
+        return (ctx || this.ctx).provider.get(${id}, null, { ${keyNames} }, ctx);
       }`,
       [`${SEARCH}${name}`]: `
       (query: ${GEN}.${ARGS}${name}QueryExpr, ctx?: Context): Promise<${GEN}.${entity.name}[]> {
-        return ctx.provider.search(${id}, null, { query }, ctx);
+        return (ctx || this.ctx).provider.search(${id}, null, { query }, ctx);
       }`,
     };
     db.mutations = this.crud ? {
       ...db.mutations,
       [`${CREATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}CreateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.create(${id}, null, record, ctx);
+        return (ctx || this.ctx).provider.create(${id}, null, record, ctx);
       }`,
       [`${UPDATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}UpdateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.update(${id}, null, record, ctx);
+        return (ctx || this.ctx).provider.update(${id}, null, record, ctx);
       }`,
       [`${REMOVE}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return ctx.provider.remove(${id}, null, { ${keyNames} }, ctx);
+        return (ctx || this.ctx).provider.remove(${id}, null, { ${keyNames} }, ctx);
       }`,
     } : db.mutations;
     db.entities[name] = schema;
@@ -604,18 +605,19 @@ export class ThriftToolkit {
     return schema;
   }
 
-  public genCore(core: TypeMetadata): Result {
+  public genCore(core: TypeMetadata): Partial<ThriftToolkitResult> {
     const name = 'Core';
 
     let queries = '';
 
     let thrift = `service ${name} {\n`;
     const kebab = Utils.kebapCase(name);
-    const snake = Utils.snakeCase(name, true);
-    const proxy = snake + '_PROXY';
 
-    let query = `const ${snake} = '${kebab}';\n\n`;
-    let handler = `const ${proxy}: ${GEN}.${name}.IHandler<Context> = {\n`;
+    let query = `// --- GQL ---\n`;
+    let script = `export class ${name}Proxy implements ${GEN}.${name}.IHandler<Context> {\n`;
+    script += `  public static readonly PATH = '${kebab}';\n`;
+    script += `  public static processor() { return new ${GEN}.${name}.Processor(new ${name}Proxy()); }\n`;
+    script += `  constructor (protected ctx?: Context) { }\n`;
 
     let ix = 0;
     for (const reg of Object.values(core.members)) {
@@ -636,7 +638,7 @@ export class ThriftToolkit {
       queries += `    3: optional ${target.name}Selector selector\n`;
       queries += '} (kind = "Query")\n';
 
-      const gql = Utils.snakeCase(name + reg.name, true) + '_GQL';
+      const gql = Utils.snakeCase(reg.name, true) + '_GQL';
 
       let params = '';
       if (VarKind.isArray(type.kind)) {
@@ -655,7 +657,7 @@ export class ThriftToolkit {
         qlArgs = `(eq: $eq, like: $like)`;
       }
 
-      query += `const ${gql} = gql\`\n`;
+      query += `public static readonly ${gql}: DocumentNode = gql\`\n`;
       query += `  query request${reqArgs} {\n`;
       query += `    result: ${name} {\n`;
       query += `      select: ${reg.name}${qlArgs} `;
@@ -668,35 +670,37 @@ export class ThriftToolkit {
       // if (qlArgs)
       query += `\n    }`;
       query += `\n    # variables: { ${params} }`;
-      query += `\n  }\`;\n\n`;
+      query += `\n  }\n\`;\n`;
 
-      handler += `${ix ? ',\n' : ''}  async get${esc(reg.name)}(query: ${GEN}.${reg.name}Query, ctx?: Context) {\n`;
-      handler += `    // if (query.select) ...\n`;
-      handler += `    const res = await ctx.execute(${gql}, ${params ? 'query' : '{}'});\n`;
-      handler += `    return res.select;\n`;
-      handler += `  }`;
+      script += `  public async get${esc(reg.name)}(query: ${GEN}.${reg.name}Query, ctx?: Context) {\n`;
+      script += `    // if (query.select) ...\n`;
+      script += `    const res = await (ctx || this.ctx).execute(${name}Proxy.${gql}, ${params ? 'query' : '{}'});\n`;
+      script += `    return res.select;\n`;
+      script += `  }\n`;
 
       ix++;
     }
 
     thrift = queries + '\n' + thrift + `\n} (path="${kebab}")\n\n`;
-    handler += '\n};\n';
+    script += Utils.indent(query, 2);
+    script += '\n}\n';
 
-    return { thrift, script: query + handler };
+    return { thrift, service: script };
   }
 
   private genClient(apis: ApiMetadata[], name: string) {
-    let vars = `      private varCore: Core.Client;\n`;
+    let vars = `      private varCore: ${GEN}.Core.Client;\n`;
     let gets = `      public get Core() { this.renew(); return this.varCore; }\n`;
-    let sets = `        this.varCore = this.client(Core.Client);\n`;
+    let sets = `        this.varCore = this.client(${GEN}.Core.Client);\n`;
     for (const api of apis) {
-      vars += `      private var${api.name}: ${api.name}.Client;\n`;
+      vars += `      private var${api.name}: ${GEN}.${api.name}.Client;\n`;
       gets += `      public get ${api.name}() { this.renew(); return this.var${api.name}; }\n`;
-      sets += `        this.var${api.name} = this.client(${api.name}.Client);\n`;
+      sets += `        this.var${api.name} = this.client(${GEN}.${api.name}.Client);\n`;
     }
     const script = `
     import { createHttpClient, ICreateHttpClientOptions } from '@creditkarma/thrift-client';
     import { IClientConstructor, ThriftClient } from '@creditkarma/thrift-server-core';
+    import * as ${GEN} from './protocol';
 
     export interface ${name}ThriftClientOptions extends ICreateHttpClientOptions {
       hostName: string;
@@ -707,8 +711,8 @@ export class ThriftToolkit {
     }
 
     export class ${name}ThriftClient {
-      public renewal: number;
       public options: ${name}ThriftClientOptions;
+      public renewal: number;
 
       ${vars.trim()}
 
