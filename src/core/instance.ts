@@ -37,7 +37,6 @@ export class CoreInstance implements CoreContainer {
   protected thrift: Thrift;
 
   private istate: ContainerState;
-  private services: object[] = [];
 
   constructor(application: string, name: string, index?: number) {
     this.application = application;
@@ -470,18 +469,19 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async activate(ctx: Context): Promise<Context> {
+    const done: any[] = [];
     const services: ServiceInfo[] = (this.container as any).services;
     for (let i = 0; i < services.length; i++) {
       const service = services[i];
       if (!service || !service.value) continue;
       const meta = ServiceMetadata.get(service.type || service.value);
       if (!meta || !meta.activator) continue;
+      // Avoid double activation of the same value under different ids
+      if (done.includes(service.value)) continue;
+      done.push(service.value);
       try {
-        // TODO: Optimeze with map ...
-        if (this.services.includes(service.value)) continue;
         const handler = service.value[meta.activator.method] as Function;
         await handler.call(service.value, ctx);
-        this.services.push(service.value);
       } catch (e) {
         this.log.error('Failed to activate service: [%s]', meta.name);
         this.log.error(e);
@@ -493,12 +493,16 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async release(ctx: Context): Promise<void> {
+    const done: any[] = [];
     const services: ServiceInfo[] = (this.container as any).services;
     for (let i = 0; i < services.length; i++) {
       const service = services[services.length - i - 1];
       if (!service || !service.value) continue;
       const meta = ServiceMetadata.get(service.type || service.value);
       if (!meta || !meta.releasor) continue;
+      // Avoid double release of the same value under different ids
+      if (done.includes(service)) continue;
+      done.push(service);
       try {
         const handler = service.value[meta.releasor.method] as Function;
         await handler.call(service.value, ctx);
@@ -508,6 +512,5 @@ export class CoreInstance implements CoreContainer {
         // TODO: Error state for container
       }
     }
-    this.services = [];
   }
 }
