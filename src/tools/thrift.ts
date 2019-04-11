@@ -151,6 +151,8 @@ export class ThriftToolkit {
 
   private prolog(): string {
     return Utils.indent(`
+      namespace java gen
+
       typedef string ID
       typedef string String
       typedef double Float
@@ -207,10 +209,10 @@ export class ThriftToolkit {
       }
       index++;
       if (!VarKind.isEnum(type.kind)) continue;
-      enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${type.idl}[obj.${field.name} as any];`;
-      demap += `\nif (obj && typeof obj.${field.name} === 'number') obj.${field.name} = ${type.idl}[obj.${field.name}];`;
+      enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name} as any];`;
+      demap += `\nif (obj && typeof obj.${field.name} === 'number') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name}];`;
       replace[`output.writeI32(obj.${field.name});`] = `output.writeI32(obj.${field.name} as number);`;
-      replace[`: ${type.idl}`] = `: (${type.idl} | string)`;
+      replace[`: __NAMESPACE__.${type.idl}`] = `: (__NAMESPACE__.${type.idl} | string)`;
     }
     thrift += `\n} (kind = "${meta.kind}")\n\n`;
     select += `\n} (kind = "Selector")\n\n`;
@@ -219,12 +221,12 @@ export class ThriftToolkit {
     thrift += filter;
     const patch = (enmap.trim() || demap.trim()) ? Utils.indent(`
     {
-      const codec = { ...${meta.name}Codec };
-      ${meta.name}Codec.encode = (obj: I${meta.name}Args, output: thrift.TProtocol) => {
+      const codec = { ...${GEN}.${meta.name}Codec };
+      ${GEN}.${meta.name}Codec.encode = (obj: ${GEN}.I${meta.name}Args, output: thrift.TProtocol) => {
         ${Utils.indent(enmap.trim(), 8).trimLeft() || '// NOP'}
         codec.encode(obj, output);
       }
-      ${meta.name}Codec.decode = (input: thrift.TProtocol): I${meta.name} => {
+      ${GEN}.${meta.name}Codec.decode = (input: thrift.TProtocol): ${GEN}.I${meta.name} => {
         const obj = codec.decode(input);
         ${Utils.indent(demap.trim(), 8).trimLeft() || '// NOP'}
         return obj;
@@ -236,14 +238,18 @@ export class ThriftToolkit {
   // TODO: Patch return types in script
   private genPatch() {
     return Utils.indent(`
+      import * as thrift from "@creditkarma/thrift-server-core";
+      import * as ${GEN} from './gen';
+      export * from './gen';
+
       /// Patch to support javascript Date and Json
       {
-        const codec = { ...TimestampCodec };
-        TimestampCodec.encode = (args: ITimestampArgs, output: thrift.TProtocol) => {
+        const codec = { ...${GEN}.TimestampCodec };
+        ${GEN}.TimestampCodec.encode = (args: ${GEN}.ITimestampArgs, output: thrift.TProtocol) => {
           if (args instanceof Date) args = { ms: args.getTime() };
           codec.encode(args, output);
         };
-        TimestampCodec.decode = (input: thrift.TProtocol): ITimestamp => {
+        ${GEN}.TimestampCodec.decode = (input: thrift.TProtocol): ${GEN}.ITimestamp => {
           const val = codec.decode(input);
           if (!val || val.ms === void 0) return val;
           const obj: any = new Date(+val.ms.toString());
@@ -252,17 +258,17 @@ export class ThriftToolkit {
         };
       }
       {
-        const codec = { ...JsonCodec };
-        JsonCodec.encode = (args: IJsonArgs, output: thrift.TProtocol) => {
+        const codec = { ...${GEN}.JsonCodec };
+        ${GEN}.JsonCodec.encode = (args: ${GEN}.IJsonArgs, output: thrift.TProtocol) => {
           const tson = isTson(args) ? args : marshal(args);
           codec.encode(tson, output);
         };
-        JsonCodec.decode = (input: thrift.TProtocol): IJson => {
+        ${GEN}.JsonCodec.decode = (input: thrift.TProtocol): ${GEN}.IJson => {
           return unmarshal(codec.decode(input));
         };
         ${Utils.indent(Utils.isTson.code(), 8).trimLeft()}
-        ${Utils.indent(Utils.marshal.code(), 8).trimLeft()}
-        ${Utils.indent(Utils.unmarshal.code(), 8).trimLeft()}
+        ${Utils.indent(Utils.marshal.code(GEN), 8).trimLeft()}
+        ${Utils.indent(Utils.unmarshal.code(GEN), 8).trimLeft()}
       }
     `);
   }

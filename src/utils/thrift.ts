@@ -47,7 +47,7 @@ export function unmarshal(json: ThriftJson): any {
 unmarshal.code = function (pkg?: string) {
   return unmarshal
     .toString()
-    .replace('(json)', `(json: ${pkg || ''}IJson): any`)
+    .replace('(json)', `(json: ${pkg ? pkg + '.' : ''}IJson): any`)
     .replace('const obj =', 'const obj: any =')
     .replace('\n    return', '\n return');
 };
