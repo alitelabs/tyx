@@ -26,7 +26,7 @@ export function marshal(val: any): ThriftJson {
   Object.entries(val).forEach(i => map.set(i[0], marshal(i[1])));
   return { M: map };
 }
-marshal.code = function (): string {
+marshal.code = function (pkg?: string): string {
   return marshal
     .toString()
     .replace('(val)', '(val: any): any')
