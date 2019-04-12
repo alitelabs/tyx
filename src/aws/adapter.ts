@@ -49,6 +49,7 @@ export abstract class LambdaAdapter {
   }
 
   public static async handler(event: Partial<LambdaEvent>, context: LambdaContext): Promise<any> {
+    context.callbackWaitsForEmptyEventLoop = !!process.env.LAMBDA_WAIT_FOR_EMPTY_EVENT_LOOP;
     this.log.debug('Event: %j', event);
     this.log.debug('Context: %j', context);
 

@@ -6,7 +6,7 @@ import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { Registry } from '../metadata/registry';
 import { Configuration } from '../types/config';
-import { Class } from '../types/core';
+import { Class, ObjectType } from '../types/core';
 import { TypeOrmProvider } from './typeorm';
 
 @CoreService()
@@ -29,6 +29,10 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   public getMetadata(entity: string | Function): EntityMetadata {
     return this.connection.getMetadata(entity) as any;
+  }
+
+  public getRepository<T>(type: ObjectType<T>) {
+    return this.manager.getRepository<T>(type);
   }
 
   // TODO: Connection string in Configuration service
@@ -113,7 +117,10 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   @Release()
   protected async release() {
-    if (!this.connection || !this.connection.isConnected || process.env.IS_OFFLINE) return;
+    if (!this.connection
+      || !this.connection.isConnected
+      || process.env.IS_OFFLINE
+      || !process.env.LAMBDA_WAIT_FOR_EMPTY_EVENT_LOOP) return;
     await this.connection.close();
     this.log.info('Connection closed');
   }
