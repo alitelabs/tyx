@@ -4,7 +4,7 @@ import { IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/field';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
-import { IVarMetadata, IVarResolution, VarKind } from '../metadata/var';
+import { IVarMetadata, IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
@@ -15,6 +15,7 @@ import { VarMetadataSchema, VarResolutionSchema } from './type';
 export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(String) kind: VarKind;
   @Field() name: string;
+  @Field(String) role: VarRole;
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(item => VarMetadataSchema) item: IVarMetadata;

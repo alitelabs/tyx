@@ -5,7 +5,7 @@ import { IDesignMetadata, IFieldMetadata } from '../metadata/field';
 import { IArgMetadata } from '../metadata/input';
 import { IResultMetadata } from '../metadata/result';
 import { ITypeMetadata } from '../metadata/type';
-import { IVarMetadata, IVarResolution, VarKind } from '../metadata/var';
+import { IVarMetadata, IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 
@@ -78,6 +78,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
 export class FieldMetadataSchema implements IFieldMetadata {
   @Field(String) kind: VarKind;
   @Field() name: string;
+  @Field(String) role: VarRole;
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(String) ref?: Class;

@@ -1,5 +1,5 @@
 import { Class } from '../types/core';
-import { IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution } from './var';
+import { IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution, VarRole } from './var';
 
 export type IDesignMetadata = {
   name?: string;
@@ -8,6 +8,7 @@ export type IDesignMetadata = {
 };
 
 export interface IFieldMetadata extends IVarMetadata {
+  role: VarRole;
   name: string;
   mandatory: boolean;
   design: IDesignMetadata;
@@ -17,6 +18,7 @@ export interface IFieldMetadata extends IVarMetadata {
 export abstract class FieldMetadata implements IFieldMetadata {
   public kind: VarKind = undefined;
   public name: string = undefined;
+  public role: VarRole = undefined;
   public mandatory: boolean = undefined;
   public ref?: Class = undefined;
   public item?: VarMetadata = undefined;

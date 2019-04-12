@@ -27,19 +27,28 @@ export type Passtrough =
   | (new () => Ctx)
   | (new () => Info);
 
-export type LiteralRef<T = LiteralType> = (type?: any) => (LiteralType | [LiteralType]);
+export type LiteralRef = (type?: any) => (LiteralType | [LiteralType]);
 export type PasstroughRef<T = Passtrough> = (type?: any) => (Passtrough | [Passtrough]);
 export type EnumRef = (ref?: any) => IEnumMetadata;
+export type AtomicType = LiteralType | LiteralRef | EnumMetadata | EnumRef;
 
-export type InputType<T = any> = LiteralType | LiteralRef<T> | TypeRef<T> | EnumMetadata | EnumRef | Passtrough | PasstroughRef<T>;
-export type ResultType<T = any> = LiteralType | [LiteralType] | LiteralRef<T> | TypeRef<T> | EnumMetadata | EnumRef;
-export type FieldType<T = any> = LiteralType | [LiteralType] | LiteralRef<T> | TypeRef<T> | EnumMetadata | EnumRef;
+export type InputType<T = any> = AtomicType | TypeRef<T> | Passtrough | PasstroughRef<T>;
+export type ResultType<T = any> = AtomicType | [LiteralType] | TypeRef<T>;
+export type FieldType<T = any> = AtomicType | [LiteralType] | TypeRef<T>;
 
 // tslint:disable-next-line:max-line-length
-export type VarType<T = any> = LiteralType | [LiteralType] | LiteralRef<T> | TypeRef<T> | EnumMetadata | EnumRef | Passtrough | PasstroughRef<T>;
+export type VarType<T = any> = LiteralType | [LiteralType] | LiteralRef | TypeRef<T> | EnumMetadata | EnumRef | Passtrough | PasstroughRef<T>;
 
 // export type InputType<T = any> = VarType<T> | EnumRef;
 // export type ResultType<T = any> = VarType<T>;
+
+export enum VarRole {
+  Field = 'Field',
+  Column = 'Column',
+  Serial = 'Serial',
+  Value = 'Value',
+  Tag = 'Tag'
+}
 
 export enum VarKind {
   ID = 'ID',

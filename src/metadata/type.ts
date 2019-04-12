@@ -2,7 +2,7 @@ import { Class, Prototype } from '../types/core';
 import { Utils } from '../utils';
 import { FieldMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
-import { FieldType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution } from './var';
+import { FieldType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution, VarRole } from './var';
 
 export type TypeSelect<T = any> = {
   // tslint:disable-next-line:prefer-array-literal
@@ -105,7 +105,7 @@ export class TypeMetadata implements ITypeMetadata {
     return meta;
   }
 
-  public addField(propertyKey: string, type?: FieldType, required?: boolean): this {
+  public addField(role: VarRole, propertyKey: string, type?: FieldType, required?: boolean): this {
     this.members = this.members || {};
     if (this.members[propertyKey]) throw new TypeError(`Duplicate field decoration on [${propertyKey}]`);
     const design = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, this.target.prototype, propertyKey);
@@ -126,6 +126,7 @@ export class TypeMetadata implements ITypeMetadata {
       }
     }
     meta = FieldMetadata.on(meta);
+    meta.role = role;
     meta.name = propertyKey;
     meta.mandatory = !!required;
     meta.design = design && { type: design.name, target: design };

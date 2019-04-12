@@ -3,7 +3,7 @@ import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { FieldMetadata, IDesignMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
-import { FieldType, VarKind, VarMetadata } from './var';
+import { FieldType, VarKind, VarMetadata, VarRole } from './var';
 
 export enum ColumnType {
   Int = 'int',
@@ -347,6 +347,7 @@ export class ColumnMetadata extends FieldMetadata implements IColumnMetadata {
     super();
     const state: IColumnMetadata = {
       kind,
+      role: VarRole.Column,
       target,
       design,
       ref,

@@ -3,7 +3,7 @@ import { Field } from '../decorators/type';
 import { ColumnType, IColumnMetadata } from '../metadata/column';
 import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/field';
-import { IVarResolution, VarKind } from '../metadata/var';
+import { IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
@@ -17,6 +17,7 @@ export class ColumnTypeSchema {
 export class ColumnMetadataSchema implements IColumnMetadata {
   @Field(String) kind: VarKind;
   @Field() name: string;
+  @Field(String) role: VarRole;
   @Field() mandatory: boolean;
   @Field(Object) design: IDesignMetadata;
   @Field(ref => VarResolutionSchema) res: IVarResolution;
