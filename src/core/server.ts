@@ -29,7 +29,7 @@ export abstract class CoreServer {
 
   private static server: Server;
 
-  public static start(port: number, basePath?: string, extraArgs?: any): void {
+  public static start(port: number, basePath?: string, extraArgs?: any): Server {
     process.env.IS_OFFLINE = 'true';
     Core.init();
     const paths = CoreServer.paths(basePath);
@@ -41,12 +41,14 @@ export abstract class CoreServer {
       this.server = createServer(app);
     } else {
       this.log.error('🛑  Neither koa or express installed.');
-      return;
+      return undefined;
     }
     this.server.listen(port || 5000);
     this.log.info('👌  Server initialized.');
     paths.forEach(p => this.log.info(`${p.httpMethod} http://localhost:${port}${p.path}`));
     this.log.info('🚀  Server started at %s ...', port);
+
+    return this.server;
   }
 
   public static stop() {

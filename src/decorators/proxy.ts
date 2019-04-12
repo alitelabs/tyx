@@ -6,6 +6,6 @@ import { CoreDecorator } from '../metadata/registry';
 export function Proxy(service?: string, application?: string, functionName?: string): ClassDecorator {
   return CoreDecorator.onClass(Proxy, { service, application, functionName }, (target) => {
     const meta = ProxyMetadata.define(target).submit(service, application, functionName);
-    return Di.Service(meta.target)(target);
+    return meta.inline ? Di.Service(meta.alias)(target) : Di.Service()(target);
   });
 }

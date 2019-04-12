@@ -1,4 +1,5 @@
 import os = require('os');
+import { Server } from 'http';
 import { LambdaAdapter } from '../aws/adapter';
 import { LambdaHandler } from '../aws/types';
 import { Di } from '../import';
@@ -101,8 +102,12 @@ export abstract class Core extends Registry {
     }
   }
 
-  public static start(port: number, basePath?: string, extraArgs?: any): void {
+  public static start(port: number, basePath?: string, extraArgs?: any): Server {
     return CoreServer.start(port, basePath, extraArgs);
+  }
+
+  public static stop(): void {
+    return CoreServer.stop();
   }
 
   public static async get(): Promise<CoreInstance>;

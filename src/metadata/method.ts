@@ -301,6 +301,7 @@ export class MethodMetadata implements IMethodMetadata {
     Registry.MethodMetadata[id] = this;
     if (!api.owner && this.target === api.target) {
       const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
+      // TODO: Resolve non-async init method problem
       this.mustBeEmpty(descriptor.value);
       // descriptor.writable = false;
       // descriptor.configurable = false;
