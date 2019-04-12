@@ -72,7 +72,7 @@ export function HeaderParam(path: string): ParameterDecorator {
 // export function CookieParam(param: string) {}
 
 export function Body(): ParameterDecorator {
-  return HttpBinding(Body, HttpBindingType.Body, undefined, (ctx, req) => req.json);
+  return HttpBinding(Body, HttpBindingType.Body, undefined, (ctx, req) => req.json || {});
 }
 
 export function ContextObject(): ParameterDecorator {
