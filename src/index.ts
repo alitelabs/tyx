@@ -56,7 +56,6 @@ export * from './decorators/exception';
 
 export * from './errors';
 export * from './logger';
-export * from './utils';
 
 // ---- core/index.ts ----
 
@@ -84,3 +83,5 @@ export * from './tools/thrift';
 
 export * from './aws';
 export * from './import';
+
+export * from 'exer';

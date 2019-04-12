@@ -1,9 +1,9 @@
+import { Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { EnumMetadata } from '../metadata/enum';
 import { Registry } from '../metadata/registry';
 import { TypeMetadata, TypeSelect } from '../metadata/type';
 import { VarKind } from '../metadata/var';
-import { Utils } from '../utils';
 
 export class AngularToolkit {
 

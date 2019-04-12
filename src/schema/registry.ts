@@ -14,14 +14,15 @@ import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
 import { ITypeMetadata, TypeMetadata } from '../metadata/type';
 import { Class, SchemaResolvers, ServiceInfo } from '../types/core';
-import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { ColumnMetadataSchema } from './column';
-import { InstanceInfoSchema, ModuleInfoSchema, PackageInfoSchema, ProcessInfoSchema, ServiceInfoSchema } from './core';
+import { InstanceInfoSchema, ServiceInfoSchema } from './core';
 import { DatabaseMetadataSchema } from './database';
 import { EntityMetadataSchema } from './entity';
 import { EventRouteMetadataSchema } from './event';
 import { HttpRouteMetadataSchema } from './http';
+import { ModuleInfoSchema, PackageInfoSchema, ProcessInfoSchema } from './info';
+import { Lodash } from './lodash';
 import { MethodMetadataSchema } from './method';
 import { ProxyMetadataSchema } from './proxy';
 import { RelationMetadataSchema } from './relation';
@@ -35,7 +36,7 @@ export class DecoratorMetadataSchema implements IDecoratorMetadata {
   @Field([String]) targets: Record<string, Class>;
 
   public static RESOLVERS: SchemaResolvers<IDecoratorMetadata> = {
-    targets: obj => Object.values(obj.targets).map(t => Utils.label(t)),
+    targets: obj => Object.values(obj.targets).map(t => Lodash.label(t)),
   };
 }
 
@@ -50,7 +51,7 @@ export class DecorationMetadataSchema implements IDecorationMetadata {
   @Field(Object) args: Record<string, any>;
 
   public static RESOLVERS: SchemaResolvers<IDecorationMetadata> = {
-    target: obj => Utils.label(obj.target),
+    target: obj => Lodash.label(obj.target),
   };
 }
 
@@ -92,42 +93,42 @@ export class CoreSchema implements MetadataRegistry {
   public static get metadata() { return TypeMetadata.get(CoreSchema); }
 
   public static RESOLVERS: SchemaResolvers<CoreSchema> = {
-    CoreMetadata: (obj, args) => Utils.filter(obj.CoreMetadata, args),
-    DecoratorMetadata: (obj, args) => Utils.filter(obj.DecoratorMetadata, args),
+    CoreMetadata: (obj, args) => Lodash.filter(obj.CoreMetadata, args),
+    DecoratorMetadata: (obj, args) => Lodash.filter(obj.DecoratorMetadata, args),
     DecorationMetadata: (obj, args) => {
       if (args.target) args.target = `[class: ${args.target}]`;
       const mapped = obj.DecorationMetadata.map(meta => ({ ...meta, target: `[class: ${meta.target.name}]` }));
-      return Utils.filter(mapped as any[], args);
+      return Lodash.filter(mapped as any[], args);
     },
-    ApiMetadata: (obj, args) => Utils.filter(obj.ApiMetadata, args),
-    ServiceMetadata: (obj, args) => Utils.filter(obj.ServiceMetadata, args),
-    ProxyMetadata: (obj, args) => Utils.filter(obj.ProxyMetadata, args),
-    DatabaseMetadata: (obj, args) => Utils.filter(obj.DatabaseMetadata, args),
-    EntityMetadata: (obj, args) => Utils.filter(obj.EntityMetadata, args),
-    ColumnMetadata: (obj, args) => Utils.filter(obj.ColumnMetadata, args),
-    RelationMetadata: (obj, args) => Utils.filter(obj.RelationMetadata, args),
-    EnumMetadata: (obj, args) => Utils.filter(obj.EnumMetadata, args),
-    InputMetadata: (obj, args) => Utils.filter(obj.InputMetadata, args),
-    TypeMetadata: (obj, args) => Utils.filter(obj.TypeMetadata, args),
-    MethodMetadata: (obj, args) => Utils.filter(obj.MethodMetadata, args),
-    HttpRouteMetadata: (obj, args) => Utils.filter(obj.HttpRouteMetadata, args),
-    EventRouteMetadata: (obj, args) => Utils.filter(obj.EventRouteMetadata, args),
+    ApiMetadata: (obj, args) => Lodash.filter(obj.ApiMetadata, args),
+    ServiceMetadata: (obj, args) => Lodash.filter(obj.ServiceMetadata, args),
+    ProxyMetadata: (obj, args) => Lodash.filter(obj.ProxyMetadata, args),
+    DatabaseMetadata: (obj, args) => Lodash.filter(obj.DatabaseMetadata, args),
+    EntityMetadata: (obj, args) => Lodash.filter(obj.EntityMetadata, args),
+    ColumnMetadata: (obj, args) => Lodash.filter(obj.ColumnMetadata, args),
+    RelationMetadata: (obj, args) => Lodash.filter(obj.RelationMetadata, args),
+    EnumMetadata: (obj, args) => Lodash.filter(obj.EnumMetadata, args),
+    InputMetadata: (obj, args) => Lodash.filter(obj.InputMetadata, args),
+    TypeMetadata: (obj, args) => Lodash.filter(obj.TypeMetadata, args),
+    MethodMetadata: (obj, args) => Lodash.filter(obj.MethodMetadata, args),
+    HttpRouteMetadata: (obj, args) => Lodash.filter(obj.HttpRouteMetadata, args),
+    EventRouteMetadata: (obj, args) => Lodash.filter(obj.EventRouteMetadata, args),
     // Runtime
     Process: (obj, args, ctx) => ctx.container.processInfo(),
-    Packages: (obj, args, ctx) => Utils.filter(ctx.container.processInfo().packages, args),
-    Modules: (obj, args, ctx) => Utils.filter(ctx.container.processInfo().modules, args),
+    Packages: (obj, args, ctx) => Lodash.filter(ctx.container.processInfo().packages, args),
+    Modules: (obj, args, ctx) => Lodash.filter(ctx.container.processInfo().modules, args),
     Global: (obj, args, ctx) => {
       const info = ctx.container.serviceInfo(true).map((s: ServiceInfo) => new ServiceInfoSchema(s));
-      // TODO: Move to Utils.filter ....
+      // TODO: Move to Lodash.filter ....
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Utils.filter(info, args);
+      return Lodash.filter(info, args);
     },
     Context: (obj, args, ctx) => {
       const info = ctx.container.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Utils.filter(info, args);
+      return Lodash.filter(info, args);
     },
     Pool: (obj, args, ctx) => {
       return (ctx.container.name === 'Core') ? ctx.container.instances() : undefined;

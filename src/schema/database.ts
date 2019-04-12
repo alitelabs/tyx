@@ -6,9 +6,9 @@ import { IEntityMetadata } from '../metadata/entity';
 import { IRelationMetadata } from '../metadata/relation';
 import { IServiceMetadata } from '../metadata/service';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
 import { EntityMetadataSchema } from './entity';
+import { Lodash } from './lodash';
 import { RelationMetadataSchema } from './relation';
 import { ServiceMetadataSchema } from './service';
 
@@ -24,10 +24,10 @@ export class DatabaseMetadataSchema implements IDatabaseMetadata {
   @Field(list => [RelationMetadataSchema]) relations: IRelationMetadata<any>[];
 
   public static RESOLVERS: SchemaResolvers<IDatabaseMetadata> = {
-    target: obj => Utils.label(obj.target),
+    target: obj => Lodash.label(obj.target),
     targets: obj => obj.targets && obj.targets.map(t => `[class: ${t.name}]`),
-    entities: (obj, args) => Utils.filter(obj.entities, args),
-    columns: (obj, args) => Utils.filter(obj.columns, args),
-    relations: (obj, args) => Utils.filter(obj.relations, args),
+    entities: (obj, args) => Lodash.filter(obj.entities, args),
+    columns: (obj, args) => Lodash.filter(obj.columns, args),
+    relations: (obj, args) => Lodash.filter(obj.relations, args),
   };
 }

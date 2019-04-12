@@ -1,3 +1,4 @@
+import { Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -7,7 +8,7 @@ import { RelationType } from '../metadata/relation';
 import { TypeMetadata, TypeSelect } from '../metadata/type';
 import { VarKind } from '../metadata/var';
 import { CoreSchema } from '../schema/registry';
-import { Utils } from '../utils';
+import { Tson } from './tson';
 
 interface DatabaseSchema {
   metadata: DatabaseMetadata;
@@ -266,9 +267,9 @@ export class ThriftToolkit {
         ${GEN}.JsonCodec.decode = (input: thrift.TProtocol): ${GEN}.IJson => {
           return unmarshal(codec.decode(input));
         };
-        ${Utils.indent(Utils.isTson.code(), 8).trimLeft()}
-        ${Utils.indent(Utils.marshal.code(GEN), 8).trimLeft()}
-        ${Utils.indent(Utils.unmarshal.code(GEN), 8).trimLeft()}
+        ${Utils.indent(Tson.isTson.code(), 8).trimLeft()}
+        ${Utils.indent(Tson.marshal.code(GEN), 8).trimLeft()}
+        ${Utils.indent(Tson.unmarshal.code(GEN), 8).trimLeft()}
       }
     `);
   }

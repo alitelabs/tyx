@@ -1,3 +1,4 @@
+import { Utils } from 'exer';
 import { createServer, Server } from 'http';
 import { Core } from '../core/core';
 import { HttpUtils } from '../core/http';
@@ -7,7 +8,6 @@ import { Koa } from '../import/koa';
 import { Logger } from '../logger';
 import { Registry } from '../metadata/registry';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
-import { Utils } from '../utils';
 
 export interface CoreServerPath {
   httpMethod: string;

@@ -1,5 +1,5 @@
+import { Utils } from 'exer';
 import { Class, ClassRef, Prototype } from '../types/core';
-import { Utils } from '../utils';
 import { ApiMetadata, IApiMetadata } from './api';
 import { MetadataRegistry, Registry } from './registry';
 

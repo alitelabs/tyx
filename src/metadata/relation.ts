@@ -1,11 +1,11 @@
+import { Utils } from 'exer';
 import { Class, ObjectType, Prototype } from '../types/core';
-import { Utils } from '../utils';
 import { ColumnMetadata, IColumnMetadata } from './column';
 import { DatabaseMetadata } from './database';
 import { EntityMetadata, IEntityMetadata } from './entity';
 import { FieldMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
-import { VarKind } from './var';
+import { VarKind, VarRole } from './var';
 
 /**
  * All types that relation can be.
@@ -250,6 +250,7 @@ export class RelationMetadata<T = any> extends FieldMetadata implements IRelatio
         throw new TypeError('Internal metadata error');
     }
 
+    this.role = VarRole.Relation;
     this.mandatory = !!(options && !options.nullable);
     const design = Reflect.getMetadata(MetadataRegistry.DESIGN_TYPE, this.target.prototype, this.propertyName);
     this.design = design && { type: design.name, target: design };

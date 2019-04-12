@@ -1,3 +1,4 @@
+import { Utils } from 'exer';
 import { CoreService, Inject } from '../decorators/service';
 import { BadRequest, Forbidden, Unauthorized } from '../errors';
 import { Logger } from '../logger';
@@ -9,7 +10,6 @@ import { GraphRequest } from '../types/graphql';
 import { HttpRequest } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { AuthInfo, IssueRequest, Security, WebToken } from '../types/security';
-import { Utils } from '../utils';
 
 import JWT = require('jsonwebtoken');
 import MS = require('ms');

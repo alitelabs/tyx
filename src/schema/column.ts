@@ -5,8 +5,8 @@ import { IEntityMetadata } from '../metadata/entity';
 import { IDesignMetadata } from '../metadata/field';
 import { IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { EntityMetadataSchema } from './entity';
+import { Lodash } from './lodash';
 import { VarResolutionSchema } from './type';
 
 // @Enum(ColumnType)
@@ -43,6 +43,6 @@ export class ColumnMetadataSchema implements IColumnMetadata {
   @Field() generateStrategy: 'increment' | 'uuid';
 
   public static RESOLVERS: SchemaResolvers<IColumnMetadata> = {
-    target: obj => Utils.label(obj.target),
+    target: obj => Lodash.label(obj.target),
   };
 }

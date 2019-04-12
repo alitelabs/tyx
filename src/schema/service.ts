@@ -3,8 +3,8 @@ import { Field } from '../decorators/type';
 import { IApiMetadata } from '../metadata/api';
 import { IHandlerMetadata, IInjectMetadata, IServiceMetadata } from '../metadata/service';
 import { Class, ClassRef, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
+import { Lodash } from './lodash';
 
 @Schema()
 export class ServiceMetadataSchema implements IServiceMetadata {
@@ -27,9 +27,9 @@ export class ServiceMetadataSchema implements IServiceMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IServiceMetadata> = {
-    target: obj => Utils.label(obj.target),
-    dependencies: (obj, args) => Utils.filter(obj.dependencies, args),
-    handlers: (obj, args) => Utils.filter(obj.handlers, args),
+    target: obj => Lodash.label(obj.target),
+    dependencies: (obj, args) => Lodash.filter(obj.dependencies, args),
+    handlers: (obj, args) => Lodash.filter(obj.handlers, args),
     source: obj => obj.target.toString(),
   };
 }
@@ -45,8 +45,8 @@ export class InjectMetadataSchema implements IInjectMetadata {
   @Field(0) index?: number;
 
   public static RESOLVERS: SchemaResolvers<IInjectMetadata> = {
-    target: obj => Utils.label(obj.target),
-    ref: obj => Utils.label(obj.ref)
+    target: obj => Lodash.label(obj.target),
+    ref: obj => Lodash.label(obj.ref)
   };
 }
 

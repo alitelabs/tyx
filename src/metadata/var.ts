@@ -45,6 +45,7 @@ export type VarType<T = any> = LiteralType | [LiteralType] | LiteralRef | TypeRe
 export enum VarRole {
   Field = 'Field',
   Column = 'Column',
+  Relation = 'Relation',
   Serial = 'Serial',
   Value = 'Value',
   Tag = 'Tag'

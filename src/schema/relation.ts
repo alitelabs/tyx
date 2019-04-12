@@ -6,9 +6,9 @@ import { IDesignMetadata } from '../metadata/field';
 import { IRelationMetadata, RelationType } from '../metadata/relation';
 import { IVarMetadata, IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { ColumnMetadataSchema } from './column';
 import { EntityMetadataSchema } from './entity';
+import { Lodash } from './lodash';
 import { VarMetadataSchema, VarResolutionSchema } from './type';
 
 @Schema()
@@ -30,7 +30,7 @@ export class RelationMetadataSchema implements IRelationMetadata<any> {
   @Field(list => [ColumnMetadataSchema]) joinColumns: IColumnMetadata[];
 
   public static RESOLVERS: SchemaResolvers<IRelationMetadata> = {
-    target: obj => Utils.label(obj.target),
-    joinColumns: (obj, args) => Utils.filter(obj.joinColumns, args),
+    target: obj => Lodash.label(obj.target),
+    joinColumns: (obj, args) => Lodash.filter(obj.joinColumns, args),
   };
 }

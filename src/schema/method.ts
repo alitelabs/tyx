@@ -9,10 +9,10 @@ import { IResultMetadata } from '../metadata/result';
 import { TypeSelect } from '../metadata/type';
 import { Class, ClassRef, SchemaResolvers } from '../types/core';
 import { Roles } from '../types/security';
-import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
 import { EventRouteMetadataSchema } from './event';
 import { HttpBindingMetadataSchema, HttpRouteMetadataSchema } from './http';
+import { Lodash } from './lodash';
 import { ArgMetadataSchema as ArgMetadataSchema, ResultMetadataSchema } from './type';
 
 @Schema()
@@ -45,12 +45,12 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
-    target: obj => Utils.label(obj.target),
-    scope: obj => Utils.label(obj.scope),
-    args: (obj, args) => Utils.filter(obj.args, args),
-    bindings: (obj, args) => Utils.filter(obj.bindings, args),
-    http: (obj, args) => Utils.filter(obj.http, args),
-    events: (obj, args) => Utils.filter(obj.events, args),
+    target: obj => Lodash.label(obj.target),
+    scope: obj => Lodash.label(obj.scope),
+    args: (obj, args) => Lodash.filter(obj.args, args),
+    bindings: (obj, args) => Lodash.filter(obj.bindings, args),
+    http: (obj, args) => Lodash.filter(obj.http, args),
+    events: (obj, args) => Lodash.filter(obj.events, args),
     source: obj => obj.target.prototype[obj.name].toString(),
   };
 }

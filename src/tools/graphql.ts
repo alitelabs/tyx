@@ -1,3 +1,4 @@
+import { Utils } from 'exer';
 import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
@@ -13,7 +14,6 @@ import { TypeMetadata } from '../metadata/type';
 import { VarKind, VarMetadata } from '../metadata/var';
 import { Class } from '../types/core';
 import { Roles } from '../types/security';
-import { Utils } from '../utils';
 import { gql } from './tag';
 
 import Reg = require('../schema/registry');
@@ -741,7 +741,7 @@ export class GraphQLToolkit {
       if (call) call = `(${call})`;
       call += `: ${result.gql}`;
 
-      const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${Utils.scalar(method.roles)})`;
+      const dir = ` @auth(api: "${method.api.name}", method: "${method.name}", roles: ${Utils.literal(method.roles)})`;
       const host: Class = method.scope && method.scope();
       const meth: MethodSchema = {
         metadata: method,

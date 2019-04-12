@@ -6,9 +6,9 @@ import { IHttpRouteMetadata } from '../metadata/http';
 import { IMethodMetadata } from '../metadata/method';
 import { IServiceMetadata } from '../metadata/service';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { EventRouteMetadataSchema } from './event';
 import { HttpRouteMetadataSchema } from './http';
+import { Lodash } from './lodash';
 import { MethodMetadataSchema } from './method';
 import { ServiceMetadataSchema } from './service';
 
@@ -30,11 +30,11 @@ export class ApiMetadataSchema implements IApiMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IApiMetadata> = {
-    target: obj => Utils.label(obj.target),
-    services: (obj, args) => Utils.filter(obj.services, args),
-    methods: (obj, args) => Utils.filter(obj.methods, args),
-    routes: (obj, args) => Utils.filter(obj.routes, args),
-    events: (obj, args) => Utils.filter(obj.events, args),
+    target: obj => Lodash.label(obj.target),
+    services: (obj, args) => Lodash.filter(obj.services, args),
+    methods: (obj, args) => Lodash.filter(obj.methods, args),
+    routes: (obj, args) => Lodash.filter(obj.routes, args),
+    events: (obj, args) => Lodash.filter(obj.events, args),
     source: obj => obj.target.toString(),
   };
 }

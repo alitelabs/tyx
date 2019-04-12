@@ -1,6 +1,6 @@
+import { Utils } from 'exer';
 import { ApiError, BadRequest } from '../errors';
 import { HttpCode, HttpContentType, HttpHeader, HttpMultipart, HttpRequest, HttpResponse } from '../types/http';
-import { Utils } from '../utils';
 
 import Zlib = require('zlib');
 

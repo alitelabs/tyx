@@ -1,6 +1,6 @@
+import { Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { ServiceMetadata } from '../metadata/service';
-import { Utils } from '../utils';
 import { ConsoleLogger } from './console';
 
 export interface Logger {

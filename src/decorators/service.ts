@@ -1,8 +1,8 @@
+import { Utils } from 'exer';
 import { Di } from '../import';
 import { CoreDecorator } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { Class, ClassRef, NameRef } from '../types/core';
-import { Utils } from '../utils';
 
 // tslint:disable:function-name
 

@@ -7,7 +7,7 @@ import { IResultMetadata } from '../metadata/result';
 import { ITypeMetadata } from '../metadata/type';
 import { IVarMetadata, IVarResolution, VarKind, VarRole } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
+import { Lodash } from './lodash';
 
 @Schema()
 export class VarResolutionSchema implements IVarResolution {
@@ -25,7 +25,7 @@ export class VarMetadataSchema implements IVarMetadata {
   @Field(type => VarResolutionSchema) res?: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IVarMetadata> = {
-    ref: obj => Utils.label(obj.ref),
+    ref: obj => Lodash.label(obj.ref),
   };
 }
 
@@ -41,8 +41,8 @@ export class ArgMetadataSchema implements IArgMetadata {
   @Field(type => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IArgMetadata> = {
-    design: obj => Utils.label(obj.design),
-    ref: obj => Utils.label(obj.ref)
+    design: obj => Lodash.label(obj.design),
+    ref: obj => Lodash.label(obj.ref)
   };
 }
 
@@ -57,8 +57,8 @@ export class ResultMetadataSchema implements IResultMetadata {
   @Field(type => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IResultMetadata> = {
-    design: obj => Utils.label(obj.design),
-    ref: obj => Utils.label(obj.ref),
+    design: obj => Lodash.label(obj.design),
+    ref: obj => Lodash.label(obj.ref),
   };
 }
 
@@ -70,7 +70,7 @@ export class EnumMetadataSchema implements IEnumMetadata {
   @Field([String]) options: string[];
 
   public static RESOLVERS: SchemaResolvers<IEnumMetadata> = {
-    ref: obj => Utils.label(obj.ref),
+    ref: obj => Lodash.label(obj.ref),
   };
 }
 
@@ -86,7 +86,7 @@ export class FieldMetadataSchema implements IFieldMetadata {
   @Field(ref => VarResolutionSchema) res: IVarResolution;
 
   public static RESOLVERS: SchemaResolvers<IFieldMetadata> = {
-    ref: obj => Utils.label(obj.ref),
+    ref: obj => Lodash.label(obj.ref),
   };
 }
 
@@ -99,7 +99,7 @@ export class TypeMetadataSchema implements ITypeMetadata {
   @Field(list => [FieldMetadataSchema]) members: Record<string, IFieldMetadata>;
 
   public static RESOLVERS: SchemaResolvers<ITypeMetadata> = {
-    target: obj => Utils.label(obj.target),
-    members: (obj, args) => Utils.filter(obj.members, args),
+    target: obj => Lodash.label(obj.target),
+    members: (obj, args) => Lodash.filter(obj.members, args),
   };
 }

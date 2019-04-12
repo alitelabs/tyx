@@ -1,5 +1,5 @@
+import { Utils } from 'exer';
 import { Class, Prototype } from '../types/core';
-import { Utils } from '../utils';
 import { FieldMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
 import { FieldType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution, VarRole } from './var';

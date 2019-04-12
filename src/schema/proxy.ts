@@ -4,8 +4,8 @@ import { IApiMetadata } from '../metadata/api';
 import { IProxyMetadata } from '../metadata/proxy';
 import { IHandlerMetadata, IInjectMetadata, IServiceMetadata } from '../metadata/service';
 import { Class, SchemaResolvers } from '../types/core';
-import { Utils } from '../utils';
 import { ApiMetadataSchema } from './api';
+import { Lodash } from './lodash';
 import { HandlerMetadataSchema, InjectMetadataSchema, ServiceMetadataSchema } from './service';
 
 @Schema()
@@ -32,9 +32,9 @@ export class ProxyMetadataSchema implements IProxyMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IProxyMetadata> = {
-    target: obj => Utils.label(obj.target),
-    dependencies: (obj, args) => Utils.filter(obj.dependencies, args),
-    handlers: (obj, args) => Utils.filter(obj.handlers, args),
+    target: obj => Lodash.label(obj.target),
+    dependencies: (obj, args) => Lodash.filter(obj.dependencies, args),
+    handlers: (obj, args) => Lodash.filter(obj.handlers, args),
     source: obj => obj.target.toString(),
   };
 }

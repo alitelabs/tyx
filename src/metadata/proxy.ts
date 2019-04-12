@@ -1,5 +1,5 @@
+import { Utils } from 'exer';
 import { Class, Prototype } from '../types/core';
-import { Utils } from '../utils';
 import { MetadataRegistry } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
 

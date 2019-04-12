@@ -1,6 +1,6 @@
+import { Utils } from 'exer';
 import { CoreService } from '../decorators/service';
 import { Configuration, LogLevel } from '../types/config';
-import { Utils } from '../utils';
 
 const REMOTE_STAGE_PREFIX = 'REMOTE_STAGE_';
 const REMOTE_SECRET_PREFIX = 'REMOTE_SECRET_';

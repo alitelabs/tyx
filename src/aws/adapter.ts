@@ -1,3 +1,4 @@
+import { Utils } from 'exer';
 import { Core } from '../core/core';
 import { HttpUtils } from '../core/http';
 import { BadRequest, InternalServerError } from '../errors';
@@ -5,11 +6,9 @@ import { Logger } from '../logger';
 import { LogLevel } from '../types/config';
 import { EventRequest, EventResult } from '../types/event';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
-import { Utils } from '../utils';
 import { LambdaError } from './error';
 // tslint:disable-next-line:max-line-length
 import { LambdaApiEvent as LambdaHttpEvent, LambdaContext, LambdaDynamoEvent, LambdaEvent, LambdaHandler, LambdaS3Event, LambdaScheduleEvent, LambdaSQSEvent, PingEvent, RemoteEvent } from './types';
-import uuid = require('uuid');
 
 export abstract class LambdaAdapter {
 
@@ -28,7 +27,7 @@ export abstract class LambdaAdapter {
   }
 
   public static get identity() {
-    let id = process.env.AWS_LAMBDA_LOG_STREAM_NAME || uuid();
+    let id = process.env.AWS_LAMBDA_LOG_STREAM_NAME || Utils.uuid();
     id = id.substring(id.indexOf(']') + 1);
     if (id.length === 32) {
       id = id.substr(0, 8) + '-' +

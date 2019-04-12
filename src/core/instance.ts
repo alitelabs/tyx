@@ -1,3 +1,4 @@
+import { ProcessInfo, ProcessInfoQuery, Utils } from 'exer';
 import { DocumentNode } from 'graphql';
 import { Forbidden, InternalServerError } from '../errors/http';
 import { Di } from '../import';
@@ -9,14 +10,13 @@ import { Registry } from '../metadata/registry';
 import { ServiceMetadata } from '../metadata/service';
 import { Configuration } from '../types/config';
 // tslint:disable-next-line:max-line-length
-import { Class, ContainerState, Context, CoreContainer, ProcessInfo, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
+import { Class, ContainerState, Context, CoreContainer, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult, PingRequest } from '../types/event';
 import { GraphQL, GraphRequest } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
 import { Thrift } from '../types/thrift';
-import { Utils } from '../utils';
 import { CoreConfiguration } from './config';
 import { Core } from './core';
 import { CoreGraphQL } from './graphql';
@@ -211,7 +211,7 @@ export class CoreInstance implements CoreContainer {
 
   public async ping(req: PingRequest): Promise<ProcessInfo> {
     const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
-    const data = await this.graphql.execute(ctx, ProcessInfo);
+    const data = await this.graphql.execute(ctx, ProcessInfoQuery);
     this.log.debug('PING: %j', data);
     return data.Core.Process;
   }
