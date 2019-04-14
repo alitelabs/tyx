@@ -4,7 +4,7 @@ import { LambdaAdapter } from '../aws/adapter';
 import { LambdaHandler } from '../aws/types';
 import { Di } from '../import';
 import { Logger } from '../logger';
-import { MetadataRegistry, Registry } from '../metadata/registry';
+import { Registry } from '../metadata/registry';
 import { GraphQLToolkit } from '../tools/graphql';
 import { Class, ContainerState, ObjectType, ServiceInfo } from '../types/core';
 import { Roles } from '../types/security';
@@ -13,18 +13,19 @@ import { CoreInstance } from './instance';
 import { CoreServer } from './server';
 import { CoreThrift } from './thrift';
 
-export interface CoreInterface extends MetadataRegistry {
-  config: CoreOptions;
-  init(options?: CoreOptions): void;
-  start(port: number, basePath?: string, extraArgs?: any): void;
-  get(): Promise<CoreInstance>;
-  get<T>(api: ObjectType<T> | string): Promise<T>;
-  activate(): Promise<CoreInstance>;
-  invoke(api: string, method: string, ...args: any[]): Promise<any>;
-  lambda(): LambdaHandler;
-  serviceInfo(): ServiceInfo[];
-  processInfo(level?: number): ProcessInfo;
-}
+// TODO: https://stackoverflow.com/questions/13955157/how-to-define-static-property-in-typescript-interface
+// export interface CoreInterface extends MetadataRegistry {
+//   config: CoreOptions;
+//   init(options?: CoreOptions): void;
+//   start(port: number, basePath?: string, extraArgs?: any): void;
+//   get(): Promise<CoreInstance>;
+//   get<T>(api: ObjectType<T> | string): Promise<T>;
+//   activate(): Promise<CoreInstance>;
+//   invoke(api: string, method: string, ...args: any[]): Promise<any>;
+//   lambda(): LambdaHandler;
+//   serviceInfo(): ServiceInfo[];
+//   processInfo(level?: number): ProcessInfo;
+// }
 
 export interface CoreOptions {
   application?: string;
@@ -164,8 +165,8 @@ export abstract class Core extends Registry {
   }
 }
 
-declare global {
-  // tslint:disable-next-line:variable-name
-  const Core: CoreInterface;
-}
-(global as any).Core = Core;
+// declare global {
+//   // tslint:disable-next-line:variable-name
+//   const Core: CoreInterface;
+// }
+// (global as any).Core = Core;
