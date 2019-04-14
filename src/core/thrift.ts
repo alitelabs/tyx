@@ -11,6 +11,7 @@ import { Context } from '../types/core';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { Roles } from '../types/security';
 import { ICoreThriftHandlerOptions, Thrift, ThriftContext } from '../types/thrift';
+import { Core } from './core';
 
 @CoreService(Thrift)
 export class CoreThrift implements Thrift {
