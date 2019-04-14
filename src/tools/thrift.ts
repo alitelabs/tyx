@@ -111,7 +111,7 @@ export class ThriftToolkit {
     fs.writeFileSync(`${opts.output}/client.ts`, result.client);
     if (typeof opts.service === 'string') {
       fs.writeFileSync(opts.service, result.service);
-    } else if (opts.service !== false) {
+    } else if (opts.service || opts.service === undefined) {
       fs.writeFileSync(`${opts.output}/service.ts`, result.service);
     }
 
