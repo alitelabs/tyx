@@ -49,7 +49,7 @@ export class CoreThrift implements Thrift {
   @Get('/thrift')
   @ContentType(HttpResponse)
   public async definition(@ContextObject() ctx: Context, @RequestObject() req: HttpRequest): Promise<HttpResponse> {
-    const result = ThriftToolkit.emit(Core.config.application);
+    const result = await ThriftToolkit.emit({ name: Core.config.application });
     return {
       statusCode: 200,
       contentType: 'application/thrift-idl',

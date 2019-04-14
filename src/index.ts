@@ -78,6 +78,7 @@ export * from './tools/graphql';
 export * from './tools/tag';
 export * from './tools/angular';
 export * from './tools/thrift';
+export * from './tools/tson';
 
 // --- TODO ---
 

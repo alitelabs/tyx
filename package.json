@@ -75,6 +75,7 @@
     "express": "^4.16.4"
   },
   "devDependencies": {
+    "@creditkarma/thrift-typescript": "^3.4.2",
     "@types/aws-lambda": "^8.10.24",
     "@types/aws-serverless-express": "^3.3.0",
     "@types/body-parser": "^1.17.0",

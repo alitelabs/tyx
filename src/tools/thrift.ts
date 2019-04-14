@@ -1,4 +1,4 @@
-import { Utils } from 'exer';
+import { Debug, Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -43,7 +43,7 @@ interface ThriftToolkitResult {
   proxy: string;
   client: string;
   patch?: string;
-  replace?: Record<string, string>;
+  replace?: Record<string, RegExp>;
 }
 
 const ENTITY = '';
@@ -62,12 +62,61 @@ function esc(name: string) {
   return RESERVED.includes(name) ? '__esc_' + name : name;
 }
 
+export interface ThriftToolkitOptions {
+  name?: string;
+  output?: string;
+  service?: string | boolean;
+  crud?: boolean;
+}
+
 export class ThriftToolkit {
 
   protected crud: boolean = false;
 
-  public static emit(name: string, crud?: boolean): ThriftToolkitResult {
-    return new ThriftToolkit(crud).emit(name);
+  public static async emit(opts: ThriftToolkitOptions = {}): Promise<ThriftToolkitResult> {
+    const log = Debug('thrift', true);
+    log.time('thrift', 'Generate Thrift IDL ...');
+    opts.name = opts.name || 'App';
+    const result = new ThriftToolkit(opts.crud).emit(opts.name || 'App');
+    log.timeEnd('thrift', 'Thrift IDL generated.');
+    if (!opts.output) return result;
+
+    log.time('thrift', 'Generate Thrift service ...');
+    const fs = require('fs');
+    fs.writeFileSync(`${opts.output}/${opts.name.toLowerCase()}.thrift`, result.thrift);
+    // fs.writeFileSync(`${opts.output}/${opts.name.toLowerCase()}.replace.json`, JSON.stringify(result.replace, null, 2));
+
+    // tslint:disable-next-line:no-eval
+    const gg: any = module || global || {};
+    const karma = gg.require('@creditkarma/thrift-typescript');
+    await karma.generate({
+      rootDir: '.',
+      sourceDir: opts.output,
+      outDir: opts.output,
+      target: 'thrift-server',
+      files: [`${opts.name.toLowerCase()}.thrift`]
+    });
+
+    const files = fs.readdirSync(`${opts.output}/gen/`);
+    for (const fn of files) {
+      const path = `${opts.output}/gen/` + fn;
+      log.debug('Patch:', fn);
+      let code = fs.readFileSync(path).toString();
+      for (const [sub, reg] of Object.entries(result.replace)) code = code.replace(reg, sub);
+      fs.writeFileSync(path, code);
+    }
+
+    fs.writeFileSync(`${opts.output}/protocol.ts`, result.patch);
+    fs.writeFileSync(`${opts.output}/proxy.ts`, result.proxy);
+    fs.writeFileSync(`${opts.output}/client.ts`, result.client);
+    if (typeof opts.service === 'string') {
+      fs.writeFileSync(opts.service, result.service);
+    } else if (opts.service !== false) {
+      fs.writeFileSync(`${opts.output}/service.ts`, result.service);
+    }
+
+    log.timeEnd('thrift', 'Thrift service generated.');
+    return result;
   }
 
   private constructor(crud?: boolean) { this.crud = !!crud; }
@@ -85,8 +134,10 @@ export class ThriftToolkit {
 
     let thrift = this.prolog() + '\n';
     let proxy = `import { Context, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
-    let patch = this.genPatch();
-    let replace: any = {};
+
+    const patch = this.genPatch();
+    let proto = patch.patch;
+    let replace = patch.replace;
 
     thrift += '///////// CORE /////////\n\n';
     proxy += '\n///////// CORE /////////\n\n';
@@ -116,21 +167,21 @@ export class ThriftToolkit {
     for (const type of enums) {
       const res = this.genEnum(type);
       thrift += res.thrift + '\n\n';
-      patch += res.patch || '';
+      proto += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// INPUTS ///////\n\n';
     for (const type of Object.values(registry.InputMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
-      patch += res.patch || '';
+      proto += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
     thrift += '//////// TYPES ////////\n\n';
     for (const type of Object.values(registry.TypeMetadata).sort((a, b) => a.name.localeCompare(b.name))) {
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
-      patch += res.patch || '';
+      proto += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
 
@@ -140,14 +191,14 @@ export class ThriftToolkit {
       if (type === CoreSchema.metadata) continue;
       const res = this.genStruct(type);
       thrift += res.thrift + '\n\n';
-      patch += res.patch || '';
+      proto += res.patch || '';
       replace = { ...replace, ...res.replace };
     }
 
     const service = this.genService(name, dbs, apis);
     const client = this.genClient(apis, name);
 
-    return { thrift, service, proxy, client, patch, replace };
+    return { thrift, service, proxy, client, patch: proto, replace };
   }
 
   private prolog(): string {
@@ -162,14 +213,17 @@ export class ThriftToolkit {
       typedef i32 Int
       typedef i64 Long
       struct Timestamp {
-        1: Long ms
+        1: Long t
       }
-      union Json {
-        1: double N;
-        2: string S;
-        3: bool B;
-        4: list<Json> L;
-        5: map<string, Json> M;
+      union Tson {
+        1: bool u
+        2: double n;
+        3: bool b;
+        4: string s;
+        5: double t;
+        6: string r;
+        7: list<Tson> l;
+        8: map<string, Tson> m;
       }
       // TODO: CoreException
     `).trimLeft();
@@ -209,11 +263,21 @@ export class ThriftToolkit {
         fix++;
       }
       index++;
-      if (!VarKind.isEnum(type.kind)) continue;
-      enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name} as any];`;
-      demap += `\nif (obj && typeof obj.${field.name} === 'number') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name}];`;
-      replace[`output.writeI32(obj.${field.name});`] = `output.writeI32(obj.${field.name} as number);`;
-      replace[`: __NAMESPACE__.${type.idl}`] = `: (__NAMESPACE__.${type.idl} | string)`;
+      if (VarKind.isEnum(type.kind)) {
+        enmap += `\nif (obj && typeof obj.${field.name} === 'string') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name} as any];`;
+        demap += `\nif (obj && typeof obj.${field.name} === 'number') obj.${field.name} = ${GEN}.${type.idl}[obj.${field.name}];`;
+        replace[`output.writeI32(obj.${field.name} as number);`] = new RegExp(`output\\.writeI32\\(obj\\.${field.name}\\);`, 'g');
+        replace[`: (__NAMESPACE__.${type.idl} | string)`] = new RegExp(`: __NAMESPACE__\\.${type.idl}`, 'g');
+      }
+      if (VarKind.isTson(type.kind)) {
+        replace[`: (__NAMESPACE__.I${type.idl}Args | any)`] = new RegExp(`: __NAMESPACE__\\.I${type.idl}Args`, 'g');
+        replace[`: (__NAMESPACE__.I${type.idl} | any)`] = new RegExp(`: __NAMESPACE__\\.I${type.idl}`, 'g');
+      }
+      if (VarKind.isTimestamp(type.kind)) {
+        replace[`__NAMESPACE__.TimestampCodec.encode(obj.${field.name} as any`] = new RegExp(`__NAMESPACE__\\.TimestampCodec\\.encode\\(obj\\.${field.name}`);
+        replace[`: (__NAMESPACE__.I${type.idl}Args | Date)`] = new RegExp(`: __NAMESPACE__\\.I${type.idl}Args`, 'g');
+        replace[`: (__NAMESPACE__.I${type.idl} | Date)`] = new RegExp(`: __NAMESPACE__\\.I${type.idl}`, 'g');
+      }
     }
     thrift += `\n} (kind = "${meta.kind}")\n\n`;
     select += `\n} (kind = "Selector")\n\n`;
@@ -236,42 +300,58 @@ export class ThriftToolkit {
     return { thrift, patch, replace };
   }
 
-  // TODO: Patch return types in script
-  private genPatch() {
-    return Utils.indent(`
+  // TODO: Patch Tson, Timestamp constructors !!!!
+  private genPatch(): Partial<ThriftToolkitResult> {
+    const patch = Utils.indent(`
       import * as thrift from "@creditkarma/thrift-server-core";
       import * as ${GEN} from './gen';
       export * from './gen';
 
-      /// Patch to support javascript Date and Json
+      /// Patch to support Date
       {
         const codec = { ...${GEN}.TimestampCodec };
-        ${GEN}.TimestampCodec.encode = (args: ${GEN}.ITimestampArgs, output: thrift.TProtocol) => {
-          if (args instanceof Date) args = { ms: args.getTime() };
+        ${GEN}.TimestampCodec.encode = (args: ${GEN}.ITimestampArgs | Date, output: thrift.TProtocol) => {
+          if (args instanceof Date) args = { t: args.getTime() };
           codec.encode(args, output);
         };
-        ${GEN}.TimestampCodec.decode = (input: thrift.TProtocol): ${GEN}.ITimestamp => {
+        ${GEN}.TimestampCodec.decode = (input: thrift.TProtocol): ${GEN}.ITimestamp | Date | any => {
           const val = codec.decode(input);
-          if (!val || val.ms === void 0) return val;
-          const obj: any = new Date(+val.ms.toString());
-          obj.ms = val.ms;
+          if (!val || val.t === void 0) return val;
+          const obj: any = new Date(+val.t.toString());
+          obj.t = val.t;
           return obj;
         };
       }
+      /// Patch to support Json econding as Tson
       {
-        const codec = { ...${GEN}.JsonCodec };
-        ${GEN}.JsonCodec.encode = (args: ${GEN}.IJsonArgs, output: thrift.TProtocol) => {
-          const tson = isTson(args) ? args : marshal(args);
-          codec.encode(tson, output);
+        const codec = { ...${GEN}.TsonCodec };
+        ${GEN}.TsonCodec.encode = (args: ${GEN}.ITsonArgs, output: thrift.TProtocol) => {
+          codec.encode(marshal(args), output);
         };
-        ${GEN}.JsonCodec.decode = (input: thrift.TProtocol): ${GEN}.IJson => {
+        ${GEN}.TsonCodec.decode = (input: thrift.TProtocol): ${GEN}.ITson | any => {
           return unmarshal(codec.decode(input));
         };
-        ${Utils.indent(Tson.isTson.code(), 8).trimLeft()}
-        ${Utils.indent(Tson.marshal.code(GEN), 8).trimLeft()}
-        ${Utils.indent(Tson.unmarshal.code(GEN), 8).trimLeft()}
+        ${Utils.indent(Tson.code(GEN), 8).trim()}
+        (${GEN}.TsonCodec as any).marshal = marshal;
+        (${GEN}.TsonCodec as any).unmarshal = unmarshal;
       }
     `);
+
+    const replace: Record<string, RegExp> = {};
+
+    replace[`constructor(argz?: ITsonArgs | any) {
+        super();
+        const args = (TsonCodec as any).marshal ?  (TsonCodec as any).marshal(argz) : argz || {};`]
+      = new RegExp(`constructor\\(args: ITsonArgs = \\{\\}\\) {\n        super\\(\\);`);
+
+    replace[`constructor(argz?: ITimestampArgs | Date) {
+        super();
+        const args = argz instanceof Date ? { t: argz.getTime() } : argz || {};`]
+      = new RegExp(`constructor\\(args: ITimestampArgs = \\{\\}\\) {\n        super\\(\\);`);
+
+    replace[`__NAMESPACE__.TimestampCodec.encode(<any> `] = new RegExp('__NAMESPACE__\\.TimestampCodec\\.encode\\(', 'g');
+
+    return { patch, replace };
   }
 
   private genService(name: string, dbs: DatabaseMetadata[], apis: ApiMetadata[]): string {

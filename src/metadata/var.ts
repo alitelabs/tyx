@@ -130,7 +130,7 @@ export namespace VarKind {
         return 'Timestamp';
       case VarKind.Object:
       case VarKind.ANY:
-        return 'Json';
+        return 'Tson';
       case VarKind.Void:
         return '#Void';
       case VarKind.Obj:
@@ -232,6 +232,12 @@ export namespace VarKind {
   }
   export function isType(type: VarKind | string) {
     return type === VarKind.Type;
+  }
+  export function isTson(type: VarKind | string) {
+    return type === VarKind.ANY || type === VarKind.Object;
+  }
+  export function isTimestamp(type: VarKind | string) {
+    return type === VarKind.Date || type === VarKind.DateTime || type === VarKind.Timestamp;
   }
 
   export function isResolver(type: VarKind | string) {

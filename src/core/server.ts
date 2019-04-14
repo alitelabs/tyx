@@ -139,6 +139,7 @@ export abstract class CoreServer {
     return app;
   }
 
+  // TODO: Test it
   public static async expressMiddleware(resource: string, req: Express.Request, res: Express.Response): Promise<void> {
     this.log.info('%s: %s', req.method, req.url);
     let buffer: Buffer;
@@ -234,6 +235,10 @@ export abstract class CoreServer {
       ctx.set(header, result.headers[header]);
     }
     ctx.status = result.statusCode;
-    ctx.body = result.body;
+    if (result.isBase64Encoded) {
+      ctx.body = Buffer.from(result.body, 'base64');
+    } else {
+      ctx.body = result.body;
+    }
   }
 }
