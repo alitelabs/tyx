@@ -32,7 +32,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   }
 
   public getRepository<T>(type: ObjectType<T>) {
-    return this.manager.getRepository<T>(type);
+    return this.connection.getRepository<T>(type);
   }
 
   // TODO: Connection string in Configuration service

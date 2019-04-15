@@ -69,6 +69,7 @@ export * from './core/server';
 
 // ---- orm/index.ts ----
 
+export * from './orm/types';
 export * from './orm/typeorm';
 export * from './orm/provider';
 

@@ -1,0 +1,94 @@
+
+Design: 
+  ☐ Application concept ???
+  ☐ Unified field / http param declarations
+  ☐ Support for @Arg() -> multiple input args, GraphQL
+  ☐ Support abstract services
+  ☐ Convention (ctx, req) or (req, ctx) !!! ==> (obj?, ...args, ctx?, info?)
+  ☐ !! Final solution for @Extension
+  ✔ Core.init(+config: object) instead of individual params @done(19-04-15 14:20)
+  ✔ Move Database connections out of core in providers @done(19-04-15 06:55)
+  ✔ Make typeorm an peer dependecy @done(19-04-15 06:55)
+  ☐ Fallback code for proxy if no local service
+  ✔ Save tyx.context in CoreInstance, as thread local variable @done(19-04-15 14:20)
+  ✔ Remove design from method @done(19-04-15 06:55)
+  ☐ Complete Utils.reload() -> Core.reload()
+  ☐ Support Service&Type, resolve service fields, e.g. Configuration ...
+  ☐ Allow @Type to extend @Input and the oposite, when required to declare the same struc twice
+
+Security:
+  ☐ Secure configuration store in AWS @created(19-04-15 14:21)
+  ☐ Action / Claim based security
+  
+Core:
+  ☐ Avoid recursive creation of instances, if call stack in context?? @created(19-04-15 12:52)
+  ☐ Static services = Conifiguration @created(19-04-15 12:43)
+  ☐ Static state in Di (GraphQL.executable) @created(19-04-15 14:22)
+  ☐ CoreOptions.poolSize to initialize core @created(19-04-15 14:18)
+  ☐ Object.freeze metadata after init @created(19-04-15 14:18)
+
+Code Generators:
+  ☐ GraphQLToolkit.emit() files ... @created(19-04-15 12:46) @high 
+
+Logger:
+  ☐ Logger injection
+  ☐ User logger from exer @created(19-04-15 14:23)
+  ☐ Wording of all TypeError
+  ☐ Exception response, configurable to have stack trace
+
+Container:
+  ✔ Publish API only if there is a service implementation @done(19-04-15 06:55)
+  ✔ Use Api class in inject (proxy) instead of alias @done(19-04-15 06:55)
+  ✔ Use Api class as global proxy @done(19-04-15 06:56)
+  ☐ Api Service suffix removal
+  ✔ Initialize services on instance creation @done(19-04-15 06:56)
+
+Runtime:
+  ☐ Error handling and logging, too many throw this.log.error(...)
+  ☐ Error on activate() and release()
+  ✔ Integrate wtfnode in error log @done(19-04-15 06:57)
+  ☐ Optimize apiRequest, for local Api proxy instances
+  ☐ Add Logger.debug log ... startup ...
+  ☐ Debug log as separate npm package
+  ☐ Solve Context circular refernce problem, for logging
+  ☐ Lambda proxy behaviour on 501, exception in general
+
+Metadata:
+  ☐ Repository validation, no uncommited Api, Service ....
+  ✔ Core as array of all instances, @done(19-04-15 06:57)
+  ☐ Core info add configuration, replace process.env.XX in code with static methods
+  ☐ Core info statistics ... (method invokes, time, code size, num instances)
+  ✔ Remove adapter functions from http and event decorators @done(19-04-15 06:57)
+  ✔ Metdata.decorate to return a decorator function @done(19-04-15 06:58)
+  ✔ Api methods throw undefined @done(19-04-15 06:58)
+
+Inheritance:
+  ✔ Inline API inheritance @done(19-04-15 06:58)
+  ✔ Service inheritance @done(19-04-15 06:58)
+  ✔ Inheritance of HTTP bindings @done(19-04-15 06:58)
+  ✔ Validate Service has handlers for all Api methods @done(19-04-15 06:58)
+  ✔ Explicit @Override @done(19-04-15 06:58)
+
+Other:
+  ☐ TypeOrm always drop keys, anything wrong with tyx decorator wrappers?
+  ☐ Startup time impact of GraphQL
+  ☐ Performance https://www.smashingmagazine.com/2018/06/nodejs-tools-techniques-performance-servers/
+  ☐ Do test with Core.init()
+  ✔ [x] What is wrong with Playground ??? @done(19-04-15 07:01)
+  ✔ [x] Make it work with Serverless offline API Gateway ! @done(19-04-15 07:01)
+  ☐ Why GraphQL does not return syntax error details
+  ☐ Upgrade to new Lambda request types ...
+  ☐ Extend CoreInfo schema with statistics ...
+
+2018:
+  ✔ Rename Query nodes, sufix: Expr, Record @done(19-04-15 07:02)
+  ✔ Version upgrade of graphiql tools @done(19-04-15 07:02)
+  ✔ Api method required args @done(19-04-15 07:02)
+  ☐ On Core.init send roles map for GraphQL (options object)
+  ☐ Database connect timeout, no error?
+  ✔ Proxies available as service @done(19-04-15 07:02)
+  ☐ ManyToMany resolver
+  ☐ Optional reverse side in relations
+  ☐ Move configuration into encrypted store
+
+ 

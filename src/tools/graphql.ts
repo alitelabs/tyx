@@ -2,6 +2,7 @@ import { Utils } from 'exer';
 import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
+import { Core } from '../core/core';
 import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
@@ -225,7 +226,7 @@ export class GraphQLToolkit {
   }
 
   public static wrapper(name: string, roles?: Roles, crud?: boolean, tabs?: any): string {
-    const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
+    // const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
       import { Context, CoreGraphQL, Resolver, HttpRequest, Service } from 'tyx';
@@ -233,17 +234,9 @@ export class GraphQLToolkit {
     script += Utils.indent(`
       @Service(true)
       export class ${name}GraphQL extends CoreGraphQL {
-
         public constructor() {
           super();
         }
-
-        // @Override()
-        // @Auth({ ${auth} })
-        // public async process(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
-        //   return super.process(ctx, req);
-        // }
-
         public async playground(ctx: Context, req: HttpRequest): Promise<string> {
           return super.playground(ctx, req, PLAYGROUND_TABS);
         }
@@ -262,7 +255,7 @@ export class GraphQLToolkit {
     // const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
-      import { Context, CoreGraphQL, DocumentNode, gql, Resolver, HttpRequest, Service } from 'tyx';
+      import { Context, Core, CoreGraphQL, DocumentNode, gql, Resolver, HttpRequest, Service } from 'tyx';
       // import TYPE_DEFS = require('./schema.json');
     `).trimRight() + '\n';
     script += Utils.indent(`
@@ -387,8 +380,8 @@ export class GraphQLToolkit {
   public resolvers() {
     const script = this.script();
     // tslint:disable-next-line:no-function-constructor-with-string-args
-    const factory = new Function(`return ${script}`);
-    const map = factory.call(null);
+    const factory = new Function('Core', `return ${script}`);
+    const map = factory.call(null, Core);
     return map;
   }
 
@@ -402,7 +395,7 @@ export class GraphQLToolkit {
       Mutation: { ping: undefined },
       Core: {}
     };
-    resolvers.Query.Core = `ctx.metadata`;
+    resolvers.Query.Core = `Core`;
     resolvers.Mutation.ping = `({ args, timestamp: new Date().toISOString(), version: process.versions })`;
     for (const schema of Object.values(this.databases)) {
       resolvers.Query = { ...resolvers.Query, [schema.name]: schema.root };
@@ -463,9 +456,9 @@ export class GraphQLToolkit {
       model: `type ${typeName} {\n  Metadata: ${typeName}Metadata\n}`,
       query: `type Query {\n  ${typeName}: ${typeName}\n}`,
       entities: {},
-      root: 'ctx.provider',
+      root: `({})`,
       queries: {
-        Metadata: `ctx.metadata.DatabaseMetadata['${metadata.name}']`,
+        Metadata: `Core.DatabaseMetadata['${metadata.name}']`,
       },
       mutations: {},
     };
@@ -576,14 +569,14 @@ export class GraphQLToolkit {
     };
     db.queries = {
       ...db.queries,
-      [`${GET}${name}`]: `ctx.provider.get('${db.name}.${metadata.name}', obj, args, ctx, info)`,
-      [`${SEARCH}${name}s`]: `ctx.provider.search('${db.name}.${metadata.name}', obj, args, ctx, info)`
+      [`${GET}${name}`]: `Core.findResolve('${db.name}.${metadata.name}', obj, args, ctx, info)`,
+      [`${SEARCH}${name}s`]: `Core.searchResolve('${db.name}.${metadata.name}', obj, args, ctx, info)`
     };
     db.mutations = this.crud ? {
       ...db.mutations,
-      [`${db.name}_${CREATE}${name}`]: `ctx.provider.create('${db.name}.${metadata.name}', obj, args.record, ctx, info)`,
-      [`${db.name}_${UPDATE}${name}`]: `ctx.provider.update('${db.name}.${metadata.name}', obj, args.record, ctx, info)`,
-      [`${db.name}_${REMOVE}${name}`]: `ctx.provider.remove('${db.name}.${metadata.name}', obj, args, ctx, info)`,
+      [`${db.name}_${CREATE}${name}`]: `Core.createResolve('${db.name}.${metadata.name}', obj, args.record, ctx, info)`,
+      [`${db.name}_${UPDATE}${name}`]: `Core.updateResolve('${db.name}.${metadata.name}', obj, args.record, ctx, info)`,
+      [`${db.name}_${REMOVE}${name}`]: `Core.removeResolve('${db.name}.${metadata.name}', obj, args, ctx, info)`,
     } : db.mutations;
     db.entities[name] = schema;
     this.entities[name] = schema;
@@ -601,24 +594,24 @@ export class GraphQLToolkit {
         const args = '';
         model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: ManyToOne)`;
         simple += `,\n  ${property}: ${inverse}${ENTITY}`;
-        navigation[property] = `ctx.provider.manyToOne('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
+        navigation[property] = `Core.manyToOneResolve('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
       } else if (relation.relationType === RelationType.OneToOne) {
         rm.type = 'oneToOne';
         const args = '';
         model += `,\n  ${property}${args}: ${inverse}${ENTITY} @relation(type: OneToOne)`;
-        navigation[property] = `ctx.provider.oneToOne('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
+        navigation[property] = `Core.oneToOneResolve('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
       } else if (relation.relationType === RelationType.OneToMany) {
         rm.type = 'oneToMany';
         const temp = this.genEntity(db, relation.inverseEntityMetadata);
         const args = ` (${temp.search}\n  )`;
         model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: OneToMany)`;
-        navigation[property] = `ctx.provider.oneToMany('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
+        navigation[property] = `Core.oneToManyResolve('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
       } else if (relation.relationType === RelationType.ManyToMany) {
         rm.type = 'manyToMany';
         const temp = this.genEntity(db, relation.inverseEntityMetadata);
         const args = ` (${temp.search}\n  )`;
         model += `,\n  ${property}${args}: [${inverse}${ENTITY}] @relation(type: ManyToMany)`;
-        navigation[property] = `ctx.provider.manyToMany('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
+        navigation[property] = `Core.manyToManyResolve('${db.name}.${metadata.name}', '${relation.name}', obj, args, ctx, info)`;
       }
     }
     for (const col of metadata.columns) {
@@ -704,7 +697,7 @@ export class GraphQLToolkit {
       }
       const resolvers = (struc.target as any).RESOLVERS;
       if (resolvers && resolvers[member.name]) {
-        schema.resolvers[member.name] = `ctx.resolve('${struc.target.name}.${member.name}', obj, args, ctx, info)`;
+        schema.resolvers[member.name] = `Core.resolve('${struc.target.name}.${member.name}', obj, args, ctx, info)`;
       }
     }
     schema.model += '}';
@@ -752,7 +745,7 @@ export class GraphQLToolkit {
         signature: call + dir,
         extension: undefined,
         // TODO: Move resolver functions to this.resolvers()
-        resolver: `ctx.resolve('${method.api.name}.${method.name}', obj, args, ctx, info)`
+        resolver: `Core.resolve('${method.api.name}.${method.name}', obj, args, ctx, info)`
       };
       if (method.mutation) {
         api.mutations = api.mutations || {};

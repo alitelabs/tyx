@@ -75,11 +75,12 @@ export namespace MetadataRegistry {
   export const TYX_RELATION = 'tyx:relation';
 }
 
+const validated = Symbol('validated');
+
 // tslint:disable:variable-name
 export abstract class Registry implements MetadataRegistry {
 
   public static log: Logger = Logger.get('TYX', Registry.name);
-  private static validated: boolean = false;
 
   public static readonly CoreMetadata: Record<string, TypeMetadata> = {};
   public static readonly DecoratorMetadata: Record<string, IDecoratorMetadata> = {};
@@ -104,27 +105,27 @@ export abstract class Registry implements MetadataRegistry {
 
   // ---
 
-  public abstract CoreMetadata: Record<string, TypeMetadata>;
-  public abstract DecoratorMetadata: Record<string, IDecoratorMetadata>;
-  public abstract DecorationMetadata: IDecorationMetadata[];
+  public CoreMetadata: Record<string, TypeMetadata>;
+  public DecoratorMetadata: Record<string, IDecoratorMetadata>;
+  public DecorationMetadata: IDecorationMetadata[];
 
-  public abstract ApiMetadata: Record<string, ApiMetadata>;
-  public abstract ServiceMetadata: Record<string, ServiceMetadata>;
-  public abstract ProxyMetadata: Record<string, ProxyMetadata>;
+  public ApiMetadata: Record<string, ApiMetadata>;
+  public ServiceMetadata: Record<string, ServiceMetadata>;
+  public ProxyMetadata: Record<string, ProxyMetadata>;
 
-  public abstract DatabaseMetadata: Record<string, DatabaseMetadata>;
-  public abstract EntityMetadata: Record<string, EntityMetadata>;
-  public abstract ColumnMetadata: Record<string, ColumnMetadata>;
-  public abstract RelationMetadata: Record<string, RelationMetadata>;
+  public DatabaseMetadata: Record<string, DatabaseMetadata>;
+  public EntityMetadata: Record<string, EntityMetadata>;
+  public ColumnMetadata: Record<string, ColumnMetadata>;
+  public RelationMetadata: Record<string, RelationMetadata>;
 
-  public abstract EnumMetadata: Record<string, EnumMetadata>;
-  public abstract InputMetadata: Record<string, TypeMetadata>;
-  public abstract TypeMetadata: Record<string, TypeMetadata>;
+  public EnumMetadata: Record<string, EnumMetadata>;
+  public InputMetadata: Record<string, TypeMetadata>;
+  public TypeMetadata: Record<string, TypeMetadata>;
 
-  public abstract MethodMetadata: Record<string, MethodMetadata>;
-  public abstract ResolverMetadata: Record<string, MethodMetadata>;
-  public abstract HttpRouteMetadata: Record<string, HttpRouteMetadata>;
-  public abstract EventRouteMetadata: Record<string, EventRouteMetadata[]>;
+  public MethodMetadata: Record<string, MethodMetadata>;
+  public ResolverMetadata: Record<string, MethodMetadata>;
+  public HttpRouteMetadata: Record<string, HttpRouteMetadata>;
+  public EventRouteMetadata: Record<string, EventRouteMetadata[]>;
 
   protected constructor() {
     throw TypeError('Abstract class');
@@ -158,11 +159,11 @@ export abstract class Registry implements MetadataRegistry {
   }
 
   public static isValidated(): boolean {
-    return this.validated;
+    return !!(this as any)[validated];
   }
 
   public static validate(force?: boolean): Registry {
-    if (this.validated && !force) return this.copy();
+    if (this.isValidated() && !force) return this.copy();
 
     const metadata: Record<string, TypeMetadata> = {};
     const entities: Record<string, TypeMetadata> = {};
@@ -206,11 +207,11 @@ export abstract class Registry implements MetadataRegistry {
 
     // TODO: Validate for no lose handler, methods, routes, events
 
-    this.validated = true;
+    (this as any)[validated] = true;
     return this.copy();
   }
 
-  protected static build(target: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarResolution {
+  public static build(target: VarMetadata, scope: VarKind, reg: Record<string, TypeMetadata>): VarResolution {
     if (VarKind.isEnum(target.kind)) {
       return VarResolution.of(target);
     }

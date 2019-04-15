@@ -3,8 +3,9 @@ import { TypeOrm } from '../import/typeorm';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
 import { RelationMetadata } from '../metadata/relation';
-import { Context, EntityResolver, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
+import { Context, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { QueryToolkit } from './query';
+import { EntityResolver } from './types';
 
 export interface IRecord {
   created: Date;

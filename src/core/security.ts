@@ -6,7 +6,6 @@ import { MethodMetadata } from '../metadata/method';
 import { Configuration } from '../types/config';
 import { Context, CoreContainer } from '../types/core';
 import { EventRequest, PingRequest } from '../types/event';
-import { GraphRequest } from '../types/graphql';
 import { HttpRequest } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { AuthInfo, IssueRequest, Security, WebToken } from '../types/security';
@@ -32,8 +31,15 @@ export class CoreSecurity implements Security {
     return this.userAuth(container, method, token, req.requestId, req.sourceIp);
   }
 
-  public async graphAuth(container: CoreContainer, method: MethodMetadata, req: GraphRequest): Promise<Context> {
-    return this.userAuth(container, method, req.token, req.requestId, req.sourceIp);
+  public async graphAuth(container: CoreContainer, method: MethodMetadata, ctx: Context): Promise<Context> {
+    const auth = this.authorize(method, ctx.auth);
+    return new Context({
+      container,
+      requestId: ctx.requestId,
+      sourceIp: ctx.sourceIp,
+      method,
+      auth
+    });
   }
 
   private async userAuth(
@@ -47,7 +53,7 @@ export class CoreSecurity implements Security {
 
     if (!method.roles.Public && !(method.roles.Local && localhost)) {
       if (!token) throw new Unauthorized('Missing authorization token');
-      let auth = await this.verify(requestId, token, method, sourceIp);
+      let auth = this.verify(token, method, sourceIp);
       auth = this.renew(auth);
       return new Context({ container, requestId, sourceIp, method, auth });
     }
@@ -73,7 +79,7 @@ export class CoreSecurity implements Security {
         expires: new Date(Date.now() + 60000),
         token,
         renewed: false,
-      },
+      }
     });
 
     if (method.roles.Local) {
@@ -82,7 +88,7 @@ export class CoreSecurity implements Security {
       ctx.auth.role = 'Debug';
       if (token) {
         // try {
-        ctx.auth = await this.verify(requestId, token, method, sourceIp);
+        ctx.auth = await this.verify(token, method, sourceIp);
         ctx.auth = this.renew(ctx.auth);
         // } catch (err) {
         //   this.log.debug('Ignore invalid token on debug permission', err);
@@ -98,12 +104,13 @@ export class CoreSecurity implements Security {
     if (ctx instanceof Context) {
       org = ctx;
     }
+    // TODO: Make ctx mandatory
     return new Context({
       container,
       requestId: org && org.requestId || Utils.uuid(),
       sourceIp: org && org.sourceIp || null,
       method,
-      auth: org && org.auth || null
+      auth: org.auth || null
     });
   }
 
@@ -111,7 +118,7 @@ export class CoreSecurity implements Security {
     if (!method.roles.Remote && !method.roles.Internal) {
       throw new Forbidden(`Remote requests not allowed for method [${method.name}]`);
     }
-    const auth = await this.verify(req.requestId, req.token, method, null);
+    const auth = await this.verify(req.token, method, null);
     if (auth.remote && !method.roles.Remote) {
       throw new Unauthorized(`Internal request allowed only for method [${method.name}]`);
     }
@@ -171,7 +178,7 @@ export class CoreSecurity implements Security {
     return token;
   }
 
-  protected async verify(requestId: string, token: string, permission: MethodMetadata, ipAddress: string): Promise<AuthInfo> {
+  protected verify(token: string, method: MethodMetadata, sourceIp?: string): AuthInfo {
     let jwt: WebToken;
     let secret: string;
     try {
@@ -189,26 +196,7 @@ export class CoreSecurity implements Security {
         throw new BadRequest('Token: ' + e.message, e);
       }
     }
-
-    if (jwt.aud !== this.config.appId) {
-      throw new Unauthorized(`Invalid audience: ${jwt.aud}`);
-    }
-
-    if (jwt.role !== 'Application' && this.config.httpStrictIpCheck === 'true' && ipAddress && jwt.ipaddr !== ipAddress) {
-      throw new Unauthorized(`Invalid request IP address: ${jwt.ipaddr}`);
-    }
-
-    if (jwt.role !== 'Application' && !permission.roles[jwt.role]) {
-      throw new Unauthorized(`Role [${jwt.role}] not authorized to access method [${permission.name}]`);
-    }
-
-    const expiry = new Date(jwt.iss).getTime() + MS(this.timeout(jwt.sub, jwt.iss, jwt.aud));
-    // Check age of application token
-    if (expiry < Date.now()) {
-      throw new Unauthorized(`Token: expired [${new Date(expiry).toISOString()}]`);
-    }
-
-    return {
+    const auth: AuthInfo = {
       tokenId: jwt.jti,
       subject: jwt.sub,
       issuer: jwt.iss,
@@ -220,12 +208,35 @@ export class CoreSecurity implements Security {
       email: jwt.email,
       name: jwt.name,
       ipAddress: jwt.ipaddr,
-      serial: new Date(jwt.ist * 1000),
+      serial: new Date((jwt.ist || jwt.iat) * 1000),
       issued: new Date(jwt.iat * 1000),
       expires: new Date(jwt.exp * 1000),
       token,
       renewed: false,
     };
+    if (method) this.authorize(method, auth, sourceIp);
+    return auth;
+  }
+
+  protected authorize(method: MethodMetadata, auth: AuthInfo, sourceIp?: string): AuthInfo {
+    if (auth.audience !== this.config.appId) {
+      throw new Unauthorized(`Invalid audience: ${auth.audience}`);
+    }
+    if (auth.role !== 'Application' && this.config.httpStrictIpCheck === 'true' && sourceIp && auth.ipAddress !== sourceIp) {
+      throw new Unauthorized(`Invalid request IP address: ${auth.ipAddress}`);
+    }
+    if (auth.role !== 'Application' && !method.roles[auth.role]) {
+      throw new Unauthorized(`Role [${auth.role}] not authorized to access method [${method.name}]`);
+    }
+    const expiry = new Date(
+      new Date(auth.issued).getTime()
+      + MS(this.timeout(auth.subject, auth.issuer, auth.audience))
+    );
+    // Check age of application token
+    if (expiry.getTime() < Date.now() || auth.expires.getTime() < Date.now()) {
+      throw new Unauthorized(`Token: expired [${expiry.toISOString()}]`);
+    }
+    return auth;
   }
 
   protected renew(auth: AuthInfo): AuthInfo {

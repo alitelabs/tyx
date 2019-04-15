@@ -1,7 +1,7 @@
 import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 // tslint:disable-next-line:max-line-length
-import { Class, Context, InfoSchemaResolvers, ServiceInfo } from '../types/core';
+import { Class, ContainerState, Context, InfoSchemaResolvers, ServiceInfo } from '../types/core';
 import { Lodash } from './lodash';
 
 @Schema()
@@ -29,14 +29,17 @@ export class ServiceInfoSchema {
 export class InstanceInfoSchema {
   @Field() name: string;
   @Field() state: string;
-  @Field(list => [ServiceInfoSchema]) context: ServiceInfoSchema[];
+  @Field(list => [ServiceInfoSchema]) entries: ServiceInfoSchema[];
 
   public static get(ctx: Context) {
     return ctx.container;
   }
 
   public static RESOLVERS: InfoSchemaResolvers<InstanceInfoSchema, Context | any> = {
-    context: (obj, args) => {
+    state: (obj, args) => {
+      return ContainerState[obj.state];
+    },
+    entries: (obj, args) => {
       const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;

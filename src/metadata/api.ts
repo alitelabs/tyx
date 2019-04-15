@@ -1,7 +1,6 @@
 import { Utils } from 'exer';
-import { CoreInstance } from '../core/instance';
 import { Configuration } from '../types/config';
-import { Class, Prototype } from '../types/core';
+import { Class, CoreStatic, Prototype } from '../types/core';
 import { GraphQL } from '../types/graphql';
 import { Security } from '../types/security';
 import { Thrift } from '../types/thrift';
@@ -141,13 +140,11 @@ export class ApiMetadata implements IApiMetadata {
     return this;
   }
 
-  public local(container: CoreInstance) {
-    if (this.owner) return undefined;
-    const obj: any = new (this.target as any)();
+  public activate(core: CoreStatic): void {
+    if (this.owner || !this.servicer) return;
     for (const method of Object.values(this.methods)) {
-      const value = method.local(container);
-      Object.defineProperty(obj, method.name, { configurable: false, writable: false, value });
+      method.activate(core);
     }
-    return obj;
+    // TODO: Recoursive set for inherited api
   }
 }

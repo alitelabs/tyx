@@ -12,7 +12,7 @@ import { Configuration } from '../types/config';
 // tslint:disable-next-line:max-line-length
 import { Class, ContainerState, Context, CoreContainer, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
 import { EventRequest, EventResult, PingRequest } from '../types/event';
-import { GraphQL, GraphRequest } from '../types/graphql';
+import { GraphQL } from '../types/graphql';
 import { HttpRequest, HttpResponse } from '../types/http';
 import { RemoteRequest } from '../types/proxy';
 import { Security } from '../types/security';
@@ -36,7 +36,9 @@ export class CoreInstance implements CoreContainer {
   protected graphql: GraphQL;
   protected thrift: Thrift;
 
+  private active: ServiceInfo[];
   private istate: ContainerState;
+  private context: Context;
 
   constructor(application: string, name: string, index?: number) {
     this.application = application;
@@ -53,6 +55,7 @@ export class CoreInstance implements CoreContainer {
   public initialize(): this {
     if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
+    // TODO: Why config and security are .get() before graph and thrift??
     if (!Di.Container.has(Configuration)) {
       this.log.debug('Using core Configuration service');
       this.container.set({ id: Configuration, type: CoreConfiguration });
@@ -99,14 +102,6 @@ export class CoreInstance implements CoreContainer {
         this.container.set({ id: service.name, type: service.target, value: inst });
       }
       inst[service.initializer.method]();
-    }
-
-    // Create private Api instances
-    for (const api of Object.values(Registry.ApiMetadata)) {
-      if (api.owner || !api.servicer) continue;
-      const local = api.local(this);
-      // TODO: Recoursive set for inherited api
-      if (local) this.container.set(api.target, local);
     }
 
     this.graphql = this.get(GraphQL);
@@ -159,7 +154,7 @@ export class CoreInstance implements CoreContainer {
 
   // Used is CoreInfoSchema
   public instances(): CoreInstance[] {
-    return (Core as any).pool;
+    return Core.poolInfo();
   }
 
   // --------------------------------------------------
@@ -175,40 +170,6 @@ export class CoreInstance implements CoreContainer {
     return data.result || data;
   }
 
-  // TODO: Why just wrapper for graph request?
-  public async resolve(
-    memberId: string,
-    obj: any,
-    args: ResolverQuery & ResolverArgs,
-    // TODO: Why new context is generated?
-    ctx?: Context,
-    // TODO: Why not passed to methods
-    info?: ResolverInfo,
-  ): Promise<any> {
-    const [target, member] = memberId.split('.');
-    const meta: any = Registry.CoreMetadata[target];
-    if (meta && meta.target.RESOLVERS && meta.target.RESOLVERS[member]) {
-      return meta.target.RESOLVERS[member](obj, args, ctx, info);
-    }
-    return this.graphRequest({
-      type: 'graphql',
-      requestId: ctx.requestId,
-      sourceIp: ctx.sourceIp,
-      application: this.application,
-      service: target,
-      method: member,
-      obj,
-      args,
-      info,
-      token: ctx.auth.token,
-      reenter: true
-    });
-  }
-
-  public async invoke(apiType: string, apiMethod: string, ...args: any[]): Promise<any> {
-    return this.apiRequest(apiType, apiMethod, args, true);
-  }
-
   public async ping(req: PingRequest): Promise<ProcessInfo> {
     const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
     const data = await this.graphql.execute(ctx, ProcessInfoQuery);
@@ -216,9 +177,8 @@ export class CoreInstance implements CoreContainer {
     return data.Core.Process;
   }
 
-  // TODO: Execute within same container
-  public async apiRequest(apiType: string, apiMethod: string, args?: any[], reenter?: boolean): Promise<any> {
-    if (!reenter && this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
+  public async invoke(apiType: string, apiMethod: string, ...args: any[]): Promise<any> {
+    if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
     let log = this.log;
     try {
       // log.debug('API Request [] %j', req);
@@ -228,8 +188,7 @@ export class CoreInstance implements CoreContainer {
       if (!method) throw new Forbidden(`Method not found [${api.name}.${apiMethod}]`);
 
       this.istate = ContainerState.Busy;
-      // TODO: Reenter context
-      const ctx = await this.security.apiAuth(this, method, args[0]);
+      const ctx = await this.security.apiAuth(this, method, this.context);
 
       log = Logger.get(api.servicer);
       const startTime = log.time();
@@ -243,13 +202,69 @@ export class CoreInstance implements CoreContainer {
         return result;
       } finally {
         log.timeEnd(startTime, `${method.name}`);
-        if (!reenter) await this.release(ctx);
+        await this.release(ctx);
       }
     } catch (err) {
       log.error(err);
       throw err;
     } finally {
-      if (!reenter) this.istate = ContainerState.Ready;
+      this.istate = ContainerState.Ready;
+    }
+  }
+
+  public async resolve(
+    memberId: string,
+    obj: any,
+    args: ResolverQuery & ResolverArgs,
+    ctx: Context,
+    // TODO: Why not passed to methods
+    info?: ResolverInfo
+  ): Promise<any> {
+    const [target, member] = memberId.split('.');
+    const reqq = {
+      type: 'graphql',
+      requestId: ctx.requestId,
+      sourceIp: ctx.sourceIp,
+      application: this.application,
+      service: target,
+      method: member,
+      args
+    };
+
+    if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
+    let log = this.log;
+    try {
+      log.debug('GraphQL Request: %j', reqq);
+
+      const api = Registry.ApiMetadata[target];
+      if (!api) throw new Forbidden(`Api not found [${target}]`);
+      const method = api.methods[member];
+      if (!method) throw new Forbidden(`Method [${memberId}] not found `);
+      if (!method.roles) throw new Forbidden(`Method [${memberId}] not available`);
+
+      this.istate = ContainerState.Busy;
+      // tslint:disable-next-line:no-parameter-reassignment
+      ctx = await this.security.graphAuth(this, method, ctx);
+
+      log = Logger.get(api.servicer);
+      const startTime = log.time();
+      const service = this.get(api.servicer);
+      if (!service) throw new InternalServerError(`Service not resolved [${service}]`);
+      await this.activate(ctx);
+      try {
+        const handler: Function = service[method.name];
+        const argv = method.resolve(obj, args, ctx, info);
+        const result = await handler.call(service, ...argv);
+        return result;
+      } finally {
+        log.timeEnd(startTime, `${method.name}`);
+        await this.release(ctx);
+      }
+    } catch (err) {
+      log.error(err);
+      throw err;
+    } finally {
+      this.istate = ContainerState.Ready;
     }
   }
 
@@ -308,48 +323,6 @@ export class CoreInstance implements CoreContainer {
       throw InternalServerError.wrap(err);
     } finally {
       this.istate = ContainerState.Ready;
-    }
-  }
-
-  public async graphRequest(req: GraphRequest): Promise<any> {
-    const reenter = req.reenter;
-
-    if (!reenter && this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
-    let log = this.log;
-    try {
-      log.debug('GraphQL Request: %j', req);
-
-      if (req.application !== this.application) throw new Forbidden(`Application not found [${req.application}]`);
-      const api = Registry.ApiMetadata[req.service];
-      if (!api) throw new Forbidden(`Api not found [${req.service}]`);
-      // if (!this.container.has(req.service)) throw new InternalServerError(`Service not found [${req.service}]`));
-      const method = api.methods[req.method];
-      if (!method) throw new Forbidden(`Method [${req.service}.${req.method}] not found `);
-      if (!method.roles) throw new Forbidden(`Method [${req.service}.${req.method}] not available`);
-
-      this.istate = ContainerState.Busy;
-      // TODO: Keep context if present for reenter
-      const ctx = await this.security.graphAuth(this, method, req);
-
-      log = Logger.get(api.servicer);
-      const startTime = log.time();
-      const service = this.get(api.servicer);
-      if (!service) throw new InternalServerError(`Service not resolved [${req.service}]`);
-      await this.activate(ctx);
-      try {
-        const handler: Function = service[method.name];
-        const args = method.resolve(req.obj, req.args, ctx as any, req.info);
-        const result = await handler.call(service, ...args);
-        return result;
-      } finally {
-        log.timeEnd(startTime, `${method.name}`);
-        if (!reenter) await this.release(ctx);
-      }
-    } catch (err) {
-      log.error(err);
-      throw err;
-    } finally {
-      if (!reenter) this.istate = ContainerState.Ready;
     }
   }
 
@@ -469,7 +442,10 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async activate(ctx: Context): Promise<Context> {
-    const done: any[] = [];
+    // TODO: Error message
+    if (this.context && this.context !== ctx) throw new InternalServerError('Invalid container state, context bound');
+    this.context = ctx;
+    const active = this.active = this.active || [];
     const services: ServiceInfo[] = (this.container as any).services;
     for (let i = 0; i < services.length; i++) {
       const service = services[i];
@@ -477,8 +453,8 @@ export class CoreInstance implements CoreContainer {
       const meta = ServiceMetadata.get(service.type || service.value);
       if (!meta || !meta.activator) continue;
       // Avoid double activation of the same value under different ids
-      if (done.includes(service.value)) continue;
-      done.push(service.value);
+      if (active.includes(service.value)) continue;
+      active.push(service.value);
       try {
         const handler = service.value[meta.activator.method] as Function;
         await handler.call(service.value, ctx);
@@ -493,6 +469,8 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async release(ctx: Context): Promise<void> {
+    // TODO: Error message
+    if (this.context !== ctx) throw new InternalServerError('Invalid container state, no context');
     const done: any[] = [];
     const services: ServiceInfo[] = (this.container as any).services;
     for (let i = 0; i < services.length; i++) {
@@ -512,5 +490,7 @@ export class CoreInstance implements CoreContainer {
         // TODO: Error state for container
       }
     }
+    this.active = [];
+    this.context = undefined;
   }
 }

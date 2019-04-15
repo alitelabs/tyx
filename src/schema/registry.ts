@@ -131,7 +131,7 @@ export class CoreSchema implements MetadataRegistry {
       return Lodash.filter(info, args);
     },
     Pool: (obj, args, ctx) => {
-      return (ctx.container.name === 'Core') ? ctx.container.instances() : undefined;
+      return ctx.container.instances();
     }
   };
 }

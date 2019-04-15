@@ -1,6 +1,5 @@
 import { Utils } from 'exer';
-import { CoreInstance } from '../core/instance';
-import { Class, ClassRef, Context, Prototype, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
+import { Class, ClassRef, Context, CoreStatic, Prototype, ResolverArgs, ResolverInfo, ResolverQuery } from '../types/core';
 import { HttpCode } from '../types/http';
 import { Roles } from '../types/security';
 import { ApiMetadata, IApiMetadata } from './api';
@@ -303,9 +302,6 @@ export class MethodMetadata implements IMethodMetadata {
       const descriptor = Object.getOwnPropertyDescriptor(this.target.prototype, this.name);
       // TODO: Resolve non-async init method problem
       this.mustBeEmpty(descriptor.value);
-      // descriptor.writable = false;
-      // descriptor.configurable = false;
-      this.target.prototype[this.name] = this.core();
     }
     return this;
   }
@@ -354,24 +350,15 @@ export class MethodMetadata implements IMethodMetadata {
     return this;
   }
 
-  public core(): Function {
+  public activate(core: CoreStatic): void {
     const fun = this.args.map(a => a.name);
-    fun.push(`return function ${this.name}(${fun.join(',')}) {
-      return global.Core.invoke('${this.api.name}', '${this.name}', ...arguments);
-    }`);
+    const body = `return function ${this.name}(${fun.join(',')}) {
+      return Core.invoke('${this.api.name}.${this.name}', ...arguments);
+    }`;
     // tslint:disable-next-line:no-function-constructor-with-string-args
-    const gen = new Function(...fun);
-    return gen();
-  }
-
-  public local(container: CoreInstance): Function {
-    const fun = this.args.map(a => a.name);
-    fun.push(`return function ${this.name}(${fun.join(',')}) {
-      return this.invoke('${this.api.name}', '${this.name}', ...arguments);
-    }`);
-    // tslint:disable-next-line:no-function-constructor-with-string-args
-    const gen = new Function(...fun);
-    return gen().bind(container);
+    const value = new Function('Core', body).call(null, core);
+    // this.target.prototype[this.name] = value;
+    Object.defineProperty(this.target.prototype, this.name, { configurable: false, writable: false, value });
   }
 
   public resolve(

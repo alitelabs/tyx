@@ -1,7 +1,6 @@
 import { IMethodMetadata } from '../metadata/method';
 import { Context, CoreContainer } from './core';
 import { EventRequest, PingRequest } from './event';
-import { GraphRequest } from './graphql';
 import { HttpRequest } from './http';
 import { RemoteRequest } from './proxy';
 
@@ -106,8 +105,9 @@ export const Security = 'Security';
 
 export interface Security {
   apiAuth(container: CoreContainer, method: IMethodMetadata, ctx: Context): Promise<Context>;
+  graphAuth(container: CoreContainer, method: IMethodMetadata, ctx: Context): Promise<Context>;
+
   httpAuth(container: CoreContainer, method: IMethodMetadata, req: HttpRequest): Promise<Context>;
-  graphAuth(container: CoreContainer, method: IMethodMetadata, req: GraphRequest): Promise<Context>;
   remoteAuth(container: CoreContainer, method: IMethodMetadata, req: RemoteRequest): Promise<Context>;
   eventAuth(container: CoreContainer, method: IMethodMetadata, req: EventRequest | PingRequest): Promise<Context>;
   issueToken(req: IssueRequest): string;

@@ -133,7 +133,7 @@ export class ThriftToolkit {
     const enums = Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name));
 
     let thrift = this.prolog() + '\n';
-    let proxy = `import { Context, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
+    let proxy = `import { Context, Core, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
 
     const patch = this.genPatch();
     let proto = patch.patch;
@@ -445,7 +445,7 @@ export class ThriftToolkit {
 
       script += `  public async ${esc(method.name)}(${jsArgs}) {\n`;
       // `: Promise<${VarKind.isScalar(result.kind) ? '' : `${GEN}.`}${result.js}> {\n`;
-      script += `    const res = await (ctx || this.ctx).execute(${api.name}Proxy.${gql}, { ${params} });\n`;
+      script += `    const res = await Core.execute(ctx, ${api.name}Proxy.${gql}, { ${params} });\n`;
       script += `    return res;\n`;
       script += `  }\n`;
 
@@ -622,31 +622,31 @@ export class ThriftToolkit {
       inputs,
       // search
     };
-    const id = `'${db.name}.${entity.name}'`;
+    // const id = `'${db.name}.${entity.name}'`;
     db.queries = {
       ...db.queries,
       [`${GET}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${entity.name}> {
-        return (ctx || this.ctx).provider.get(${id}, null, { ${keyNames} }, ctx);
+        return Core.findResolve('${db.name}.${entity.name}', null, { ${keyNames} }, ctx);
       }`,
       [`${SEARCH}${name}`]: `
       (query: ${GEN}.${ARGS}${name}QueryExpr, ctx?: Context): Promise<${GEN}.${entity.name}[]> {
-        return (ctx || this.ctx).provider.search(${id}, null, { query }, ctx);
+        return Core.searchResolve('${db.name}.${entity.name}', null, { query }, ctx);
       }`,
     };
     db.mutations = this.crud ? {
       ...db.mutations,
       [`${CREATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}CreateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return (ctx || this.ctx).provider.create(${id}, null, record, ctx);
+        return Core.createResolve('${db.name}.${entity.name}', null, record, ctx);
       }`,
       [`${UPDATE}${name}`]: `
       (record: ${GEN}.${ARGS}${name}UpdateRecord, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return (ctx || this.ctx).provider.update(${id}, null, record, ctx);
+        return Core.updateResolve('${db.name}.${entity.name}', null, record, ctx);
       }`,
       [`${REMOVE}${name}`]: `
       (${keyJs}, ctx?: Context): Promise<${GEN}.${name}${ENTITY}> {
-        return (ctx || this.ctx).provider.remove(${id}, null, { ${keyNames} }, ctx);
+        return Core.removeResolve('${db.name}.${entity.name}', null, { ${keyNames} }, ctx);
       }`,
     } : db.mutations;
     db.entities[name] = schema;
@@ -761,7 +761,7 @@ export class ThriftToolkit {
 
       script += `  public async get${esc(reg.name)}(query: ${GEN}.${reg.name}Query, ctx?: Context) {\n`;
       script += `    // if (query.select) ...\n`;
-      script += `    const res = await (ctx || this.ctx).execute(${name}Proxy.${gql}, ${params ? 'query' : '{}'});\n`;
+      script += `    const res = await Core.execute(ctx, ${name}Proxy.${gql}, ${params ? 'query' : '{}'});\n`;
       script += `    return res.select;\n`;
       script += `  }\n`;
 

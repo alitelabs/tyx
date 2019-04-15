@@ -28,6 +28,8 @@ export { PlaygroundRenderPageOptions, PlaygroundConfig };
 @CoreService(GraphQL)
 export class CoreGraphQL implements GraphQL {
 
+  private static executable: GraphQLSchema;
+
   public static init(roles: Roles) {
     Auth(roles)(
       CoreGraphQL.prototype,
@@ -54,7 +56,6 @@ export class CoreGraphQL implements GraphQL {
   private resolvers?: IResolvers<any, Context>;
   private schemaDirectives?: Record<string, typeof SchemaDirectiveVisitor>;
   private logger?: ILogger;
-  private executable: GraphQLSchema;
 
   protected constructor(
     typeDefs?: DocumentNode | string,
@@ -66,6 +67,14 @@ export class CoreGraphQL implements GraphQL {
     this.resolvers = resolvers || Core.schema.resolvers();
     this.schemaDirectives = schemaDirectives || Core.schema.directives();
     this.logger = logger;
+  }
+
+  protected get executable() {
+    return CoreGraphQL.executable;
+  }
+
+  protected set executable(val: GraphQLSchema) {
+    CoreGraphQL.executable = val;
   }
 
   @Initialize()

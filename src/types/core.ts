@@ -1,18 +1,17 @@
-import { String } from 'aws-sdk/clients/rdsdataservice';
 import { ProcessInfo } from 'exer';
 import { DocumentNode, GraphQLResolveInfo } from 'graphql';
+import { Server } from 'http';
 import { ServiceIdentifier, ServiceMetadata as TypeDiServiceMetadata } from 'typedi';
+import { LambdaHandler } from '../aws/types';
+import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
-import { DatabaseMetadata } from '../metadata/database';
-import { EntityMetadata } from '../metadata/entity';
 import { MethodMetadata } from '../metadata/method';
 import { MetadataRegistry, Registry } from '../metadata/registry';
-import { RelationMetadata } from '../metadata/relation';
 import { ServiceMetadata } from '../metadata/service';
 import { EventRequest, EventResult } from './event';
 import { HttpRequest, HttpResponse } from './http';
 import { RemoteRequest, RemoteResponse } from './proxy';
-import { AuthInfo } from './security';
+import { AuthInfo, Roles } from './security';
 
 export interface Class extends Function { }
 export interface Prototype extends Object { }
@@ -28,13 +27,7 @@ export interface Context {
   sourceIp: string;
   method: MethodMetadata;
   auth: AuthInfo;
-
-  resolve?: ResolverFunction;
-  execute?: ExecuteFunction;
-  metadata?: MetadataRegistry;
-
-  provider?: any; // TODO: Type
-  results?: Record<string, any[]>;
+  // results?: Record<string, any[]>;
 }
 
 export class Context {
@@ -47,10 +40,6 @@ export class Context {
   constructor(ctx?: Context) {
     if (ctx) Object.assign(this, ctx);
     if (!this.container) return;
-    this.resolve = this.container.resolve.bind(this.container);
-    this.execute = this.container.execute.bind(this.container, this);
-    this.metadata = this.container.metadata();
-    this.provider = ProviderResolver; // TODO
   }
 }
 
@@ -69,6 +58,55 @@ export enum ContainerState {
   Busy = 2,
 }
 
+export interface CoreOptions {
+  application?: string;
+  container?: string;
+  version?: string;
+  identity?: string;
+  roles?: Roles;
+  register?: Class[];
+  crudAllowed?: boolean;
+}
+
+/* class decorator */
+// TODO: Move to exer
+// https://stackoverflow.com/questions/13955157/how-to-define-static-property-in-typescript-interface
+// tslint:disable-next-line:function-name
+export function CoreStatic() {
+  return (constructor: CoreStatic) => constructor;
+}
+
+export interface CoreStatic extends MetadataRegistry {
+  new(): {};
+
+  config: CoreOptions;
+  log: Logger;
+  schema: any;
+
+  isValidated(): boolean;
+  validate(force?: boolean): Registry;
+  // build(...args: any[]): any;
+  // copy(...args: any[]): any;
+
+  init(options?: CoreOptions): void;
+
+  get(): Promise<CoreContainer>;
+  get<T>(api: ObjectType<T> | string): Promise<T>;
+
+  activate(): Promise<CoreContainer>;
+  invoke(api: string, method: string, ...args: any[]): Promise<any>;
+  resolve(memberId: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info?: ResolverInfo): Promise<any>;
+
+  serviceInfo(): ServiceInfo[];
+  processInfo(level?: number): ProcessInfo;
+
+  lambda(): LambdaHandler;
+  start(port: number, basePath?: string, extraArgs?: any): Server;
+  stop(): void;
+
+  [key: string]: any;
+}
+
 // tslint:disable-next-line:variable-name
 export const CoreContainer = 'container';
 
@@ -85,11 +123,11 @@ export interface CoreContainer {
   has<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): boolean;
   get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T;
 
+  invoke(api: string, method: string, args: any[]): Promise<any>;
   resolve(method: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info: ResolverInfo): Promise<any>;
   execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
   execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
 
-  apiRequest(api: string, method: string, args: any[]): Promise<any>;
   httpRequest(req: HttpRequest): Promise<HttpResponse>;
   eventRequest(req: EventRequest): Promise<EventResult>;
   remoteRequest(req: RemoteRequest): Promise<RemoteResponse>;
@@ -206,162 +244,4 @@ export type InfoSchemaResolvers<T = any, V = any> = { [P in keyof T]?: Resolver<
 
 export interface Resolver<O = any> {
   (obj?: O, args?: ResolverQuery & ResolverArgs, ctx?: Context, info?: ResolverInfo): Promise<any> | any;
-}
-
-export interface EntityResolver {
-  metadata: DatabaseMetadata;
-  get: QueryResolver;
-  search: QueryResolver;
-  create: MutationResolver;
-  update: MutationResolver;
-  remove: MutationResolver;
-  oneToMany: RelationResolver;
-  oneToOne: RelationResolver;
-  manyToOne: RelationResolver;
-  manyToMany: RelationResolver;
-}
-
-export abstract class ProviderResolver {
-
-  private static resolve(ctx: Context, entityId: string, rel?: string) {
-    const [alias, name] = entityId.split('.');
-    const db = ctx.container.get<EntityResolver>(alias);
-    const entity = db.metadata.entities.find(e => e.name === name);
-    const relation = rel && entity.relations.find(r => r.name === rel);
-    return { db, entity, relation };
-  }
-
-  public static async get(
-    entityId: string,
-    obj: ResolverArgs,
-    args: ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo
-  ): Promise<any> {
-    const { db, entity } = this.resolve(ctx, entityId);
-    return db.get(entity, obj, args, ctx, info);
-  }
-
-  public static async search(
-    entityId: string,
-    obj: ResolverArgs,
-    args: ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo
-  ): Promise<any> {
-    const { db, entity } = this.resolve(ctx, entityId);
-    return db.search(entity, obj, args, ctx, info);
-  }
-
-  public static async create(
-    entityId: string,
-    obj: any,
-    args: ResolverQuery & ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo
-  ): Promise<any> {
-    const { db, entity } = this.resolve(ctx, entityId);
-    return db.create(entity, obj, args, ctx, info);
-  }
-
-  public static async update(
-    entityId: string,
-    obj: any,
-    args: ResolverQuery & ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo
-  ): Promise<any> {
-    const { db, entity } = this.resolve(ctx, entityId);
-    return db.update(entity, obj, args, ctx, info);
-  }
-
-  public static async remove(
-    entityId: String,
-    obj: any,
-    args: ResolverQuery & ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo
-  ): Promise<any> {
-    const { db, entity } = this.resolve(ctx, entityId);
-    return db.remove(entity, obj, args, ctx, info);
-  }
-
-  public static async oneToMany(
-    entityId: string,
-    relId: string,
-    root: ResolverArgs,
-    query: ResolverQuery,
-    ctx?: Context,
-    info?: ResolverInfo,
-  ): Promise<any[]> {
-    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
-    return db.oneToMany(entity, relation, root, query, ctx, info);
-  }
-
-  public static oneToOne(
-    entityId: string,
-    relId: string,
-    root: ResolverArgs,
-    query: ResolverQuery,
-    ctx?: Context,
-    info?: ResolverInfo,
-  ): Promise<any> {
-    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
-    return db.oneToOne(entity, relation, root, query, ctx, info);
-  }
-
-  public static manyToOne(
-    entityId: string,
-    relId: string,
-    root: ResolverArgs,
-    query: ResolverQuery,
-    ctx?: Context,
-    info?: ResolverInfo,
-  ): Promise<any> {
-    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
-    return db.manyToOne(entity, relation, root, query, ctx, info);
-  }
-
-  public static manyToMany(
-    entityId: string,
-    relId: string,
-    root: ResolverArgs,
-    query: ResolverQuery,
-    ctx?: Context,
-    info?: ResolverInfo,
-  ): Promise<any[]> {
-    const { db, entity, relation } = this.resolve(ctx, entityId, relId);
-    return db.manyToMany(entity, relation, root, query, ctx, info);
-  }
-}
-
-export interface MutationResolver {
-  (
-    entity: EntityMetadata,
-    obj: any,
-    args: ResolverQuery & ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo,
-  ): Promise<any>;
-}
-
-export interface QueryResolver {
-  (
-    entity: EntityMetadata,
-    obj: ResolverArgs,
-    args: ResolverArgs,
-    ctx: Context,
-    info?: ResolverInfo,
-  ): Promise<any>;
-}
-
-export interface RelationResolver {
-  (
-    entity: EntityMetadata,
-    rel: RelationMetadata,
-    root: ResolverArgs,
-    query: ResolverQuery,
-    ctx?: Context,
-    info?: ResolverInfo,
-  ): Promise<any>;
 }
