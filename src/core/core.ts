@@ -106,7 +106,7 @@ export class Core extends Registry {
     try {
       if (!instance) {
         instance = new CoreInstance(this.config.application, Core.name, This.counter++);
-        this.log.info('Create ->', instance.name);
+        this.log.info('Create:', instance.name);
         await instance.initialize();
         instance.reserve();
         This.pool.push(instance);
