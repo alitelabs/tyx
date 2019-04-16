@@ -1,4 +1,8 @@
 
+Strategic:
+ ☐ WebSocket https://hackernoon.com/websockets-api-gateway-9d4aca493d39 @created(19-04-16 07:47)
+ ☐ REST API swagger & api browser @created(19-04-16 07:47)
+
 Design: 
   ☐ Application concept ???
   ☐ Unified field / http param declarations
@@ -26,9 +30,11 @@ Core:
   ☐ Static state in Di (GraphQL.executable) @created(19-04-15 14:22)
   ☐ CoreOptions.poolSize to initialize core @created(19-04-15 14:18)
   ☐ Object.freeze metadata after init @created(19-04-15 14:18)
+  ☐ Expose GraphQLOptions in Core.init() @created(19-04-16 10:11)
 
 Code Generators:
   ☐ GraphQLToolkit.emit() files ... @created(19-04-15 12:46) @high 
+  ☐ ThriftClient token generator @created(19-04-15 14:35)
 
 Logger:
   ☐ Logger injection

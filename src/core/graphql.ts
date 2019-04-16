@@ -2,6 +2,7 @@ import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
 // tslint:disable-next-line:max-line-length
 import { createPlaygroundOptions, defaultPlaygroundOptions, gql, GraphQLOptions, HttpQueryRequest, PlaygroundConfig, PlaygroundRenderPageOptions, runHttpQuery } from 'apollo-server-core';
 import { GraphiQLData } from 'apollo-server-module-graphiql';
+import { ProcessInfoQuery } from 'exer';
 import { DocumentNode, execute, GraphQLSchema } from 'graphql';
 import { ILogger, IResolvers, makeExecutableSchema, SchemaDirectiveVisitor } from 'graphql-tools';
 import { Auth } from '../decorators/auth';
@@ -85,7 +86,7 @@ export class CoreGraphQL implements GraphQL {
         typeDefs: this.typeDefs,
         resolvers: this.resolvers,
         schemaDirectives: this.schemaDirectives,
-        logger: this.logger,
+        logger: this.logger
       });
     } catch (err) {
       if (err.name === 'GraphQLError' && err.locations) {
@@ -105,9 +106,9 @@ export class CoreGraphQL implements GraphQL {
       document,
       // rootValue?: any,
       contextValue: ctx,
-      variableValues: variables || {}
-      // operationName?: Maybe<string>,
-      // fieldResolver?: Maybe<Gr
+      variableValues: variables || {},
+      // operationName?
+      // fieldResolver?
     });
     if (result.errors) {
       // TODO: Format the error
@@ -139,11 +140,13 @@ export class CoreGraphQL implements GraphQL {
   }
 
   private async request(ctx: Context, req: HttpRequest): Promise<HttpResponse> {
+    // console.log('HEADERS:', req.headers);
+    const tracing = this.config.tracing || (req.headers['tracing'] === 'true' || req.queryStringParameters['tracing'] === 'true');
     const options: GraphQLOptions = {
       schema: this.executable,
       context: ctx,
       debug: true,
-      tracing: this.config.tracing,
+      tracing,
       formatError: (err: any) => {
         err.code = err.originalError && err.originalError.code;
         return err;
@@ -191,11 +194,17 @@ export class CoreGraphQL implements GraphQL {
 
   protected async playground(ctx: Context, req: HttpRequest, custom?: Partial<PlaygroundRenderPageOptions>): Promise<string> {
     const sufix = ctx.auth.token ? ('/' + ctx.auth.token) : '';
+    const endpoint = `${this.config.prefix || ''}/graphql${sufix}`;
+    const tabpoint = `${this.config.prefix || ''}/graphql?token=${ctx.auth.token || 'null'}`;
+    const headers: any = {
+      Tracing: 'true',
+      Authorization: ctx.auth.token || undefined
+    };
     const options = createPlaygroundOptions({
-      endpoint: `${this.config.prefix || ''}/graphql${sufix}`,
+      endpoint,
       settings: {
         'editor.fontSize': 12,
-        'editor.fontFamily': `'Menlo', ${defaultPlaygroundOptions.settings["editor.fontFamily"]}`,
+        'editor.fontFamily': `'Menlo', ${defaultPlaygroundOptions.settings["editor.fontFamily"]} `,
         'editor.theme': 'light'
       },
       // workspaceName: 'SmokeTest',
@@ -204,7 +213,7 @@ export class CoreGraphQL implements GraphQL {
       //   extensions: {
       //     endpoints: {
       //       dev: {
-      //         url: `${this.config.prefix || ''}/graphql`,
+      //         url: `${ this.config.prefix || '' } /graphql`,
       //         headers: {
       //           Authorization: `Bearer ${ctx.auth.token}`
       //         }
@@ -212,9 +221,19 @@ export class CoreGraphQL implements GraphQL {
       //     }
       //   }
       // },
+      tabs: [
+        {
+          endpoint: undefined,
+          query: '# Tracing ON\n' + ProcessInfoQuery
+        }
+      ],
       ...custom
     });
-    if (options.tabs) options.tabs.forEach(tab => tab.endpoint = options.endpoint);
+    options.version = 'latest';
+    options.tabs.forEach((tab) => {
+      tab.endpoint = tabpoint;
+      tab.headers = headers;
+    });
     return renderPlaygroundPage(options || options);
   }
 
