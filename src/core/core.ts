@@ -37,7 +37,8 @@ export class Core extends Registry {
     identity: LambdaAdapter.identity,
     roles: { Public: true },
     register: [],
-    crudAllowed: true
+    crudAllowed: true,
+    initPool: 8
   };
 
   constructor() {
@@ -76,6 +77,12 @@ export class Core extends Registry {
       This.instance.initialize();
       This.pool = [This.instance];
       This.counter = 1;
+      // Init pool
+      for (let i = 0; i < (this.config.initPool || 0); i++) {
+        const ins = new CoreInstance(this.config.application, Core.name, This.counter++);
+        ins.initialize();
+        This.pool.push(ins);
+      }
     } catch (err) {
       this.log.error('Failed to initialize');
       this.log.error(err);
@@ -100,9 +107,9 @@ export class Core extends Registry {
     return api ? ins.get(api) : ins;
   }
 
-  public static async activate(): Promise<CoreInstance> {
+  public static async activate(fresh?: boolean): Promise<CoreInstance> {
     this.init();
-    let instance = This.pool.find(x => x.state === ContainerState.Ready);
+    let instance = !fresh && This.pool.find(x => x.state === ContainerState.Ready);
     try {
       if (!instance) {
         instance = new CoreInstance(this.config.application, Core.name, This.counter++);

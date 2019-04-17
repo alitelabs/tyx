@@ -66,6 +66,7 @@ export interface CoreOptions {
   roles?: Roles;
   register?: Class[];
   crudAllowed?: boolean;
+  initPool?: number;
 }
 
 /* class decorator */

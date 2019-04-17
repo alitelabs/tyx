@@ -72,10 +72,12 @@ export class ProcessInfoSchema implements ProcessInfo {
   @Field() identity: string;
   // Stats
   @Field() created: Date;
+  @Field() zerostamp: number;
   @Field() loadTime: number;
   @Field() initTime: number;
   // Runtime
   @Field() timestamp: Date;
+  @Field() microstamp: number;
   @Field() state: string;
   @Field() serial: number;
   @Field() uptime: number;
