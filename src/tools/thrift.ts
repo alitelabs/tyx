@@ -701,10 +701,15 @@ export class ThriftToolkit {
     const kebab = Utils.kebapCase(name);
 
     let query = `// --- GQL ---\n`;
-    let script = `export class ${name}Proxy implements ${GEN}.${name}.IHandler<Context> {\n`;
-    script += `  public static readonly PATH = '${kebab}';\n`;
-    script += `  public static processor() { return new ${GEN}.${name}.Processor(new ${name}Proxy()); }\n`;
-    script += `  constructor (protected ctx?: Context) { }\n`;
+    let script = Utils.indent(`
+      export class ${name}Proxy implements ${GEN}.${name}.IHandler<Context> {
+        public static readonly PATH = '${kebab}';
+        private static proc: any;
+        public static processor() {
+          return this.proc || (this.proc = new ${GEN}.${name}.Processor(new ${name}Proxy()));
+        }
+        constructor (protected ctx?: Context) { }
+      `).trimLeft();
 
     let ix = 0;
     for (const reg of Object.values(core.members)) {

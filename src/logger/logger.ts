@@ -2,6 +2,7 @@ import { Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { ServiceMetadata } from '../metadata/service';
 import { ConsoleLogger } from './console';
+import { DebugLogger } from './debug';
 
 export interface Logger {
   todo(message: any, ...args: any[]): void;
@@ -12,7 +13,9 @@ export interface Logger {
   debug(message: any, ...args: any[]): void;
   trace(message: any, ...args: any[]): void;
   time(): [number, number];
+  time(label: string, message?: any, ...args: any[]): [number, number];
   timeEnd(start: [number, number], message: any, ...args: any[]): void;
+  timeEnd(label: string, message: any, ...args: any[]): void;
 }
 
 /**
@@ -54,6 +57,6 @@ export namespace Logger {
         emitter = logNameOrEmitter;
       }
     }
-    return new ConsoleLogger(logName || '<log>', emitter);
+    return new DebugLogger(logName || '<log>', emitter);
   }
 }

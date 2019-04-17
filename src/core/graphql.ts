@@ -53,6 +53,9 @@ export class CoreGraphQL implements GraphQL {
   @Inject(alias => Configuration)
   protected config: Configuration;
 
+  // @Memento()
+  // protected executable_: GraphQLSchema;
+
   private typeDefs?: DocumentNode | string;
   private resolvers?: IResolvers<any, Context>;
   private schemaDirectives?: Record<string, typeof SchemaDirectiveVisitor>;
@@ -82,7 +85,7 @@ export class CoreGraphQL implements GraphQL {
   public initialize() {
     this.logger = this.logger || { log: this.log.error.bind(this.log) };
     try {
-      this.executable = makeExecutableSchema<Context>({
+      this.executable = this.executable || makeExecutableSchema<Context>({
         typeDefs: this.typeDefs,
         resolvers: this.resolvers,
         schemaDirectives: this.schemaDirectives,

@@ -49,7 +49,7 @@
     "@creditkarma/thrift-server-core": "^0.13.6",
     "apollo-server-core": "^2.4.8",
     "apollo-server-module-graphiql": "^1.4.0",
-    "exer": "0.0.17",
+    "exer": "0.0.18",
     "graphql-iso-date": "^3.6.1",
     "graphql-tools": "^4.0.4",
     "graphql-type-json": "^0.2.4",

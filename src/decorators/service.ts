@@ -85,6 +85,16 @@ export function Inject(resource?: ClassRef | NameRef | string): PropertyDecorato
   });
 }
 
+// /**
+//  * Injects a service into a class property or constructor parameter.
+//  */
+// export function Inject(serviceName?: string): PropertyDecorator | ParameterDecorator | any;
+export function Memento(alias?: ClassRef | NameRef | string): PropertyDecorator | ParameterDecorator | any {
+  return CoreDecorator.onParameter(Memento, { alias }, (target, propertyKey, index) => {
+    // TODO: Implementation
+  });
+}
+
 /**
  * Decorate method providing service initialization.
  */

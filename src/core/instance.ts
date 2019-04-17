@@ -93,7 +93,7 @@ export class CoreInstance implements CoreContainer {
     // Prioritize services with initializer
     for (const service of Object.values(Registry.ServiceMetadata)) {
       if (!service.final || !service.initializer) continue;
-      this.log.info('Initialize [%s]', service.name);
+      this.log.info('Initialize [%s] ...', service.name);
       this.container.set({ id: service.target, type: service.target });
       const inst = this.get(service.target);
       // TODO: Avoid triple set
@@ -102,6 +102,7 @@ export class CoreInstance implements CoreContainer {
         this.container.set({ id: service.name, type: service.target, value: inst });
       }
       inst[service.initializer.method]();
+      this.log.info('Initialized [%s].', service.name);
     }
 
     // Create private Api instances
@@ -454,7 +455,9 @@ export class CoreInstance implements CoreContainer {
 
   public async activate(ctx: Context): Promise<Context> {
     // TODO: Error message
-    if (this.context && this.context !== ctx) throw new InternalServerError('Invalid container state, context bound');
+    if (this.context && this.context !== ctx) {
+      throw new InternalServerError('Invalid container state, context bound');
+    }
     this.context = ctx;
     const active = this.active = this.active || [];
     const services: ServiceInfo[] = (this.container as any).services;
@@ -470,6 +473,8 @@ export class CoreInstance implements CoreContainer {
         const handler = service.value[meta.activator.method] as Function;
         await handler.call(service.value, ctx);
       } catch (e) {
+        // TODO: Release activated services
+        this.context = undefined;
         this.log.error('Failed to activate service: [%s]', meta.name);
         this.log.error(e);
         throw e;

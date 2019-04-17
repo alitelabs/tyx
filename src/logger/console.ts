@@ -7,7 +7,7 @@ function createLogger(...target: any[]): Logger {
 }
 
 @Di.Service({
-  id: 'Logger',
+  id: 'ConsoleLogger',
   transient: true,
   global: true,
   factory: createLogger
@@ -83,9 +83,9 @@ export class ConsoleLogger implements Logger {
     return process.hrtime();
   }
 
-  public timeEnd(start: [number, number], msg: any, ...args: any[]): void {
+  public timeEnd(start: [number, number] | string, msg: any, ...args: any[]): void {
     if (LogLevel.bellow(LogLevel.INFO)) return;
-    const lapse = process.hrtime(start);
+    const lapse = process.hrtime(start as any);
     const ms = lapse[0] * 1000 + Math.floor(lapse[1] / 1000000);
     const ns = Math.floor((lapse[1] % 1000000) / 1000);
     const message = this.format('TIME', msg, args) + ': ' + ms + '.' + ns + 'ms';
