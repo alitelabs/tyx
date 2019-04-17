@@ -104,6 +104,14 @@ export class CoreInstance implements CoreContainer {
       inst[service.initializer.method]();
     }
 
+    // Create private Api instances
+    for (const api of Object.values(Registry.ApiMetadata)) {
+      if (api.owner || !api.servicer) continue;
+      const proxy = api.proxy(this);
+      // TODO: Recoursive set for inherited api
+      this.container.set(api.target, proxy);
+    }
+
     this.graphql = this.get(GraphQL);
     this.thrift = this.get(Thrift);
 
@@ -177,28 +185,31 @@ export class CoreInstance implements CoreContainer {
     return data.Core.Process;
   }
 
-  public async invoke(apiType: string, apiMethod: string, ...args: any[]): Promise<any> {
+  public async invoke(proxy: any, member: string, ...args: any[]): Promise<any> {
     if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
     let log = this.log;
     try {
       // log.debug('API Request [] %j', req);
-      const api = Registry.ApiMetadata[apiType];
-      if (!api) throw new Forbidden(`Service not found ${apiType}`);
-      const method = api.methods[apiMethod];
-      if (!method) throw new Forbidden(`Method not found [${api.name}.${apiMethod}]`);
+      const api = ApiMetadata.get(proxy);
+      if (!api) throw new Forbidden(`Api metadata not found`);
+      const method = api.methods[member];
+      if (!method) throw new Forbidden(`Method not found [${api.name}.${member}]`);
 
       this.istate = ContainerState.Busy;
-      const ctx = await this.security.apiAuth(this, method, this.context);
+
+      const origin = api.container(proxy);
+      const ctx = await this.security.apiAuth(this, method, origin.context);
 
       log = Logger.get(api.servicer);
       const startTime = log.time();
       const service = this.get(api.servicer);
-      if (!service) throw new InternalServerError(`Service not resolved [${apiType}]`);
+      if (!service) throw new InternalServerError(`Service not resolved [${api.name}]`);
       await this.activate(ctx);
       try {
         const handler: Function = service[method.name];
+        // TODO: Replace context in args
         // if (handler === apiMethod) throw new NotImplemented(`Method not implemented [${api.name}.${method.name}]`);
-        const result = await handler.apply(service, args);
+        const result = await handler.call(service, ...args);
         return result;
       } finally {
         log.timeEnd(startTime, `${method.name}`);

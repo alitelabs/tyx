@@ -123,9 +123,9 @@ export class Core extends Registry {
     return instance;
   }
 
-  public static async invoke(api: string, method: string, ...args: any[]): Promise<any> {
+  public static async invoke(proxy: any, method: string, ...args: any[]): Promise<any> {
     const instance = await this.activate();
-    return instance.invoke(api, method, args);
+    return instance.invoke(proxy, method, ...args);
   }
 
   public static async resolve(

@@ -353,7 +353,7 @@ export class MethodMetadata implements IMethodMetadata {
   public activate(core: CoreStatic): void {
     const fun = this.args.map(a => a.name);
     const body = `return function ${this.name}(${fun.join(',')}) {
-      return Core.invoke('${this.api.name}', '${this.name}', ...arguments);
+      return Core.invoke(this, '${this.name}', ...arguments);
     }`;
     // tslint:disable-next-line:no-function-constructor-with-string-args
     const value = new Function('Core', body).call(null, core);

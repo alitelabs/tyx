@@ -75,7 +75,7 @@
     "express": "^4.16.4"
   },
   "devDependencies": {
-    "@creditkarma/thrift-typescript": "^3.4.2",
+    "@creditkarma/thrift-typescript": "^3.5.0",
     "@types/aws-lambda": "^8.10.24",
     "@types/aws-serverless-express": "^3.3.0",
     "@types/body-parser": "^1.17.0",
@@ -95,7 +95,7 @@
     "apollo-server-lambda": "^2.4.8",
     "graphql": "14.1.1",
     "ts-node": "^8.1.0",
-    "tslint": "^5.15.0",
+    "tslint": "^5.16.0",
     "tslint-config-airbnb": "^5.11.1",
     "typeorm": "^0.2.16",
     "typescript": "^3.4.3"

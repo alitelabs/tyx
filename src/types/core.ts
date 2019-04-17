@@ -69,7 +69,7 @@ export interface CoreOptions {
 }
 
 /* class decorator */
-// TODO: Move to exer
+// TODO: Move as StaticImplements to exer
 // https://stackoverflow.com/questions/13955157/how-to-define-static-property-in-typescript-interface
 // tslint:disable-next-line:function-name
 export function CoreStatic() {
@@ -94,7 +94,7 @@ export interface CoreStatic extends MetadataRegistry {
   get<T>(api: ObjectType<T> | string): Promise<T>;
 
   activate(): Promise<CoreContainer>;
-  invoke(api: string, method: string, ...args: any[]): Promise<any>;
+  invoke(proxy: any, method: string, ...args: any[]): Promise<any>;
   resolve(memberId: string, obj: any, args: ResolverQuery & ResolverArgs, ctx: Context, info?: ResolverInfo): Promise<any>;
 
   serviceInfo(): ServiceInfo[];

@@ -1,4 +1,5 @@
 import { Utils } from 'exer';
+import { CoreInstance } from '../core/instance';
 import { Configuration } from '../types/config';
 import { Class, CoreStatic, Prototype } from '../types/core';
 import { GraphQL } from '../types/graphql';
@@ -9,6 +10,8 @@ import { IHttpRouteMetadata } from './http';
 import { IMethodMetadata, MethodMetadata } from './method';
 import { MetadataRegistry, Registry } from './registry';
 import { IServiceMetadata, ServiceMetadata } from './service';
+
+const CONTAINER = Symbol('container');
 
 export interface IApiMetadata {
   target: Class;
@@ -146,5 +149,16 @@ export class ApiMetadata implements IApiMetadata {
       method.activate(core);
     }
     // TODO: Recoursive set for inherited api
+  }
+
+  public proxy(container: CoreInstance): any {
+    if (this.owner) return undefined;
+    const proxy: any = new (this.target as any)();
+    Object.defineProperty(proxy, CONTAINER, { configurable: false, writable: false, value: container });
+    return proxy;
+  }
+
+  public container(proxy: any): CoreInstance {
+    return proxy && proxy[CONTAINER];
   }
 }
