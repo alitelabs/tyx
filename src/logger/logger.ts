@@ -1,7 +1,6 @@
 import { Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { ServiceMetadata } from '../metadata/service';
-import { ConsoleLogger } from './console';
 import { DebugLogger } from './debug';
 
 export interface Logger {
@@ -27,7 +26,7 @@ export interface Logger {
 // }
 
 export namespace Logger {
-  export const sys: Logger = new ConsoleLogger('tyx', 'log');
+  // export const sys: Logger = new DebugLogger('tyx', 'log');
   // TODO: Simplify, remove depenency on metadata
   export function get(emitter: object): Logger;
   export function get(logName: string, emitter?: any): Logger;

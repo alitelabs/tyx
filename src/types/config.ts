@@ -33,11 +33,10 @@ export interface Configuration {
   stage: string;
   prefix: string;
 
-  database: string;
-
   logLevel: LogLevel;
   tracing: boolean;
 
+  database(alias: string): string;
   resources: Record<string, string>;
   aliases: Record<string, string>;
 
@@ -47,8 +46,8 @@ export interface Configuration {
   httpStrictIpCheck: string;
   internalSecret: string;
   internalTimeout: string;
-  remoteTimeout: string;
 
+  remoteTimeout: string;
   remoteSecret(appId: string): string;
   remoteStage(appId: string): string;
 }

@@ -1,37 +1,26 @@
 import { Utils } from 'exer';
-import { CoreService } from '../decorators/service';
+import { Activate, CoreService } from '../decorators/service';
 import { Configuration, LogLevel } from '../types/config';
-
-const REMOTE_STAGE_PREFIX = 'REMOTE_STAGE_';
-const REMOTE_SECRET_PREFIX = 'REMOTE_SECRET_';
+import { Core } from './core';
 
 @CoreService(Configuration)
 export class CoreConfiguration implements Configuration {
 
-  // tslint:disable-next-line:variable-name
-  private _appId: string;
-  protected config: Record<string, any>;
-
-  constructor() {
-    this.config = process.env;
+  @Activate()
+  public activate() {
   }
 
-  public init(appId: string) {
-    this._appId = appId;
+  get appId(): string { return Core.config.application; }
+  get stage(): string { return Core.config.stage; }
+  get prefix(): string { return ('/' + this.stage); }
+
+  public database(alias: string): string {
+    return this.secret('db', alias);
   }
-
-  get appId(): string { return this._appId; }
-
-  get stage(): string { return this.config.STAGE || 'local'; }
-
-  get prefix(): string { return this.config.PREFIX || ('/' + this.stage); }
-
-  get database(): string { return this.config.DATABASE; }
-
-  get tracing(): boolean { return this.config.TRACING === 'true'; }
 
   get logLevel(): LogLevel {
-    switch (this.config.LOG_LEVEL) {
+    const level = this.setting('app', 'log', 'level');
+    switch (level) {
       case 'ALL': return LogLevel.ALL;
       case 'TRACE': return LogLevel.TRACE;
       case 'DEBUG': return LogLevel.DEBUG;
@@ -44,8 +33,10 @@ export class CoreConfiguration implements Configuration {
     }
   }
 
+  get tracing(): boolean { return this.setting('core', 'graphql', 'tracing') === 'true'; }
+
   get aliases(): Record<string, string> {
-    const cfg = this.config.RESOURCES;
+    const cfg = this.setting('core', 'resources');
     if (!cfg) return {};
     const res = Utils.parseMap(cfg, '$');
     return res;
@@ -58,29 +49,64 @@ export class CoreConfiguration implements Configuration {
     return res;
   }
 
-  get httpSecret(): string { return this.config.HTTP_SECRET || undefined; }
+  get httpSecret(): string { return this.secret('core', 'http', 'secret'); }
+  get httpTimeout(): string { return this.secret('core', 'http', 'timeout') || '10min'; }
+  get httpLifetime(): string { return this.secret('core', 'http', 'lifetime') || '1h'; }
+  get httpStrictIpCheck(): string { return this.secret('core', 'http', 'strictIpCheck') || 'false'; }
 
-  get httpTimeout(): string { return this.config.HTTP_TIMEOUT || '10min'; }
+  get internalSecret(): string { return this.secret('core', 'internal', 'secret') || undefined; }
+  get internalTimeout(): string { return this.secret('core', 'internal', 'timeout') || '5s'; }
 
-  get httpLifetime(): string { return this.config.HTTP_LIFETIME || '1h'; }
+  get remoteTimeout(): string { return this.secret('core', 'remote', 'timeout') || '5s'; }
+  public remoteSecret(appId: string): string { return appId && this.secret('core', 'remote', 'secret', appId); }
+  public remoteStage(appId: string): string { return appId && this.secret('core', 'remote', 'stage', appId); }
 
-  get httpStrictIpCheck(): string { return this.config.HTTP_STRICT_IP_CHECK || 'false'; }
-
-  get internalSecret(): string { return this.config.INTERNAL_SECRET || undefined; }
-
-  get internalTimeout(): string { return this.config.INTERNAL_TIMEOUT || '5s'; }
-
-  get remoteTimeout(): string { return this.config.REMOTE_TIMEOUT || '5s'; }
-
-  public remoteSecret(appId: string): string {
-    if (!appId) return undefined;
-    const id = appId && appId.split('-').join('_').toUpperCase();
-    return this.config[REMOTE_SECRET_PREFIX + id];
+  get warmer() {
+    return {
+      key: this.setting('service', 'warmPool', 'key') || 'WARM_POOL_KEY',
+      step: Number(this.setting('service', 'warmPool', 'step') || 100),
+      flush: Number(this.setting('service', 'warmPool', 'flush') || 15) * 60000,
+      rate: Number(this.setting('service', 'warmPool', 'flush') || 2) * 60000
+    };
   }
 
-  public remoteStage(appId: string): string {
-    if (!appId) return undefined;
-    const id = appId && appId.split('-').join('_').toUpperCase();
-    return this.config[REMOTE_STAGE_PREFIX + id];
+  public static envKey(group: 'core' | 'app' | 'db' | 'service' | 'dev', name: string, key?: string, prop?: string) {
+    let env = name + (key ? ('_' + key) + (prop ? ('_' + prop) : '') : '');
+    env = (group === 'dev' ? 'DEV_' : '') + Utils.snakeCase(env).toUpperCase();
+    return env;
+  }
+
+  public static nameKey(group: 'core' | 'app' | 'db' | 'service' | 'dev', name: string) {
+    const obj = `${Core.config.application}/${Core.config.stage}/${group}/${name}`;
+    return obj;
+  }
+
+  public static objKey(group: 'core' | 'app' | 'db' | 'service' | 'dev', name: string, key?: string, prop?: string) {
+    const obj = `${Core.config.application}/${Core.config.stage}/${group}/${name}${key ? ':' + key : ''}${prop ? '.' + prop : ''}`;
+    return obj;
+  }
+
+  protected secret<T = string>(group: 'core' | 'app' | 'db' | 'service', name: string, key?: string, prop?: string): T {
+    const path = CoreConfiguration.nameKey(group, name);
+    const env = CoreConfiguration.envKey(group, name, key, prop);
+    const tmp = CoreConfiguration.objKey(group, name, key, prop);
+    const data = this.retrive(path);
+    Core.log.debug('Retrive secret:', tmp);
+    if (data) {
+      return key ? (prop ? data[key] && data[key][prop] : data[key]) : data;
+    } else {
+      return process.env[env] as any;
+    }
+  }
+
+  protected setting<T = string>(group: 'core' | 'app' | 'dev' | 'service', name: string, key?: string, prop?: string): T {
+    const env = CoreConfiguration.envKey(group, name, key, prop);
+    const obj = CoreConfiguration.objKey(group, name, key, prop);
+    Core.log.debug('Retrive secret:', obj);
+    return process.env[env.toUpperCase()] as any;
+  }
+
+  protected retrive(obj: string): any {
+    return undefined;
   }
 }

@@ -10,6 +10,7 @@ import { EntityResolver } from '../orm/types';
 import { GraphQLToolkit } from '../tools/graphql';
 // tslint:disable-next-line:max-line-length
 import { ContainerState, Context, CoreOptions, ObjectType, ResolverArgs, ResolverInfo, ResolverQuery, ServiceInfo } from '../types/core';
+import { Env } from '../types/env';
 import { CoreGraphQL } from './graphql';
 import { CoreInstance } from './instance';
 import { CoreServer } from './server';
@@ -19,6 +20,7 @@ const LOAD_TIME = Math.round(process.uptime() * 1000);
 const CREATED = new Date(Date.now() - Math.round(LOAD_TIME));
 
 class This {
+  public static init: Promise<void>;
   public static graphql: GraphQLToolkit;
   public static instance: CoreInstance;
   public static pool: CoreInstance[];
@@ -32,13 +34,14 @@ export class Core extends Registry {
 
   public static readonly config: CoreOptions = {
     application: 'Core',
-    container: LambdaAdapter.functionName,
-    version: LambdaAdapter.functionVersion,
-    identity: LambdaAdapter.identity,
+    stage: 'default',
+    container: Env.lambdaFunctionName,
+    version: Env.lambdaFunctionVersion,
+    identity: Env.identity,
     roles: { Public: true },
     register: [],
     crudAllowed: true,
-    initPool: 8
+    initPool: 0
   };
 
   constructor() {
@@ -50,10 +53,16 @@ export class Core extends Registry {
     return (This.graphql = This.graphql || new GraphQLToolkit(Core.validate(), this.config.crudAllowed));
   }
 
-  public static init(options?: CoreOptions): void {
+  public static async init(options?: CoreOptions) {
+    // Avoid init reentry
+    return await (This.init = This.init || this.initPromise(options));
+  }
+
+  public static async initPromise(options?: CoreOptions) {
     if (This.instance) return;
 
     this.config.application = options.application || this.config.application;
+    this.config.stage = options.stage || this.config.stage;
     this.config.roles = options.roles || this.config.roles;
     this.config.register = options.register || this.config.register;
     this.config.crudAllowed = options.crudAllowed !== undefined ? !!options.crudAllowed : this.config.crudAllowed;
@@ -74,13 +83,13 @@ export class Core extends Registry {
       CoreGraphQL.init(this.config.roles);
       CoreThrift.init(this.config.roles);
       This.instance = new CoreInstance(this.config.application, Core.name);
-      This.instance.initialize();
+      await This.instance.init();
       This.pool = [This.instance];
       This.counter = 1;
       // Init pool
       for (let i = 0; i < (this.config.initPool || 0); i++) {
         const ins = new CoreInstance(this.config.application, Core.name, This.counter++);
-        ins.initialize();
+        await ins.init();
         This.pool.push(ins);
       }
     } catch (err) {
@@ -92,7 +101,7 @@ export class Core extends Registry {
     }
   }
 
-  public static start(port: number, basePath?: string, extraArgs?: any): Server {
+  public static async start(port: number, basePath?: string, extraArgs?: any): Promise<Server> {
     return CoreServer.start(port, basePath, extraArgs);
   }
 
@@ -108,13 +117,13 @@ export class Core extends Registry {
   }
 
   public static async activate(fresh?: boolean): Promise<CoreInstance> {
-    this.init();
+    await this.init();
     let instance = !fresh && This.pool.find(x => x.state === ContainerState.Ready);
     try {
       if (!instance) {
         instance = new CoreInstance(this.config.application, Core.name, This.counter++);
         this.log.info('Create:', instance.name);
-        await instance.initialize();
+        await instance.init();
         instance.reserve();
         This.pool.push(instance);
         This.instance = This.instance || instance;
@@ -163,8 +172,8 @@ export class Core extends Registry {
     return instance.execute(ctx, oper as any, variables);
   }
 
-  public static lambda(): LambdaHandler {
-    return LambdaAdapter.export();
+  public static lambda(options?: CoreOptions): LambdaHandler {
+    return LambdaAdapter.export(options);
   }
 
   public static serviceInfo(): ServiceInfo[] {

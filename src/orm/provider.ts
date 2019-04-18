@@ -1,5 +1,5 @@
 import { Database } from '../decorators/database';
-import { Activate, CoreService, Initialize, Inject, Release } from '../decorators/service';
+import { Activate, CoreService, Inject, Release } from '../decorators/service';
 import { TypeOrm } from '../import';
 import { Logger } from '../logger';
 import { DatabaseMetadata } from '../metadata/database';
@@ -7,6 +7,7 @@ import { EntityMetadata } from '../metadata/entity';
 import { Registry } from '../metadata/registry';
 import { Configuration } from '../types/config';
 import { Class, ObjectType } from '../types/core';
+import { Env } from '../types/env';
 import { TypeOrmProvider } from './typeorm';
 
 @CoreService()
@@ -35,65 +36,78 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
     return this.connection.getRepository<T>(type);
   }
 
-  // TODO: Connection string in Configuration service
-  @Initialize()
+  // @Initialize()
   protected initialize() {
+    if (this.connection) return;
+
     this.alias = DatabaseMetadata.get(this).alias;
-    const cfg: string = process.env.DATABASE;
+    const cfg: string | any = this.config.database(this.alias);
     if (this.options || !cfg) return;
 
-    // this.label = options.substring(options.indexOf("@") + 1);
-    const tokens = cfg.split(/:|@|\/|;/);
-    const logQueries = tokens.findIndex(x => x === 'logall') > 5;
-    // let name = (this.config && this.config.appId || "tyx") + "#" + (++DatabaseProvider.instances);
+    // TODO: Temporary solution, support Options | string
+    let tokens: string[] = [];
+    let logQueries: Boolean;
+    if (typeof cfg === 'string') {
+      tokens = cfg.split(/:|@|\/|;/);
+      logQueries = tokens.findIndex(x => x === 'logall') > 5;
+    } else {
+      tokens[0] = cfg.username;
+      tokens[1] = cfg.password;
+      tokens[2] = cfg.engine;
+      tokens[3] = cfg.host;
+      tokens[4] = cfg.port;
+      tokens[5] = cfg.database;
+    }
 
     // invalid connection
     if (tokens.length < 5) {
       return;
     }
 
-    const slavesConfig: string = process.env.DB_SLAVES;
+    // TODO: Check how slaves are handled with AWS SM
 
-    if (slavesConfig) {
-      const slaves = slavesConfig.split(';').map(host => ({
-        username: tokens[0],
-        password: tokens[1],
-        host,
-        port: +tokens[4],
-        database: tokens[5],
-      }));
+    // const slavesConfig: string = process.env.DB_SLAVES;
+    // if (slavesConfig) {
+    //   const slaves = slavesConfig.split(';').map(host => ({
+    //     username: tokens[0],
+    //     password: tokens[1],
+    //     host,
+    //     port: +tokens[4],
+    //     database: tokens[5],
+    //   }));
 
-      this.options = {
-        type: tokens[2] as any,
-        name: this.alias,
-        replication: {
-          master: {
-            username: tokens[0],
-            password: tokens[1],
-            host: tokens[3],
-            port: +tokens[4],
-            database: tokens[5],
-          },
-          slaves,
-        },
-        // timezone: "Z",
-        logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
-      };
-    } else {
-      this.options = {
-        name: this.alias,
-        username: tokens[0],
-        password: tokens[1],
-        type: tokens[2] as any,
-        host: tokens[3],
-        port: +tokens[4],
-        database: tokens[5],
-        // timezone: "Z",
-        logging: logQueries ? 'all' : ['error'],
-        entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
-      };
-    }
+    //   this.options = {
+    //     type: tokens[2] as any,
+    //     name: this.alias,
+    //     replication: {
+    //       master: {
+    //         username: tokens[0],
+    //         password: tokens[1],
+    //         host: tokens[3],
+    //         port: +tokens[4],
+    //         database: tokens[5],
+    //       },
+    //       slaves,
+    //     },
+    //     // timezone: "Z",
+    //     logging: logQueries ? 'all' : ['error'],
+    //     entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
+    //   };
+    // } else {
+
+    this.options = {
+      name: this.alias,
+      username: tokens[0],
+      password: tokens[1],
+      type: tokens[2] as any,
+      host: tokens[3],
+      port: +tokens[4],
+      database: tokens[5],
+      // timezone: "Z",
+      logging: logQueries ? 'all' : ['error'],
+      entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
+    };
+
     if (!TypeOrm.getConnectionManager().has(this.alias)) {
       this.connection = TypeOrm.getConnectionManager().create(this.options);
       this.log.info('Connection created');
@@ -102,6 +116,8 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   @Activate()
   protected async activate() {
+    this.initialize();
+
     if (!this.connection) {
       this.log.info('Connecting');
       this.connection = TypeOrm.getConnection(this.alias);
@@ -119,8 +135,8 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   protected async release() {
     if (!this.connection
       || !this.connection.isConnected
-      || process.env.IS_OFFLINE
-      || !process.env.LAMBDA_WAIT_FOR_EMPTY_EVENT_LOOP) return;
+      || Env.isOffline
+      || !Env.waitForEmptyEventLoop) return;
     await this.connection.close();
     this.log.info('Connection closed');
   }

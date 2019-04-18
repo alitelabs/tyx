@@ -52,7 +52,7 @@ export class CoreInstance implements CoreContainer {
     this.istate = ContainerState.Pending;
   }
 
-  public initialize(): this {
+  public async init(): Promise<void> {
     if (this.istate !== ContainerState.Pending) throw new InternalServerError("Invalid container state");
 
     // TODO: Why config and security are .get() before graph and thrift??
@@ -62,7 +62,7 @@ export class CoreInstance implements CoreContainer {
     }
     this.config = this.container.get(Configuration);
     if (this.config instanceof CoreConfiguration) {
-      this.config.init(this.application);
+      await this.config.activate();
     } else if (!ServiceMetadata.has(this.config)) {
       throw new TypeError(`Configuration must be a service`);
     }
@@ -101,7 +101,7 @@ export class CoreInstance implements CoreContainer {
       if (service.name !== service.alias) {
         this.container.set({ id: service.name, type: service.target, value: inst });
       }
-      inst[service.initializer.method]();
+      await inst[service.initializer.method]();
       this.log.info('Initialized [%s].', service.name);
     }
 
@@ -117,7 +117,6 @@ export class CoreInstance implements CoreContainer {
     this.thrift = this.get(Thrift);
 
     this.istate = ContainerState.Ready;
-    return this;
   }
 
   public get state() {
@@ -167,10 +166,6 @@ export class CoreInstance implements CoreContainer {
   }
 
   // --------------------------------------------------
-
-  public metadata(): Registry {
-    return Registry as any;
-  }
 
   public async execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
   public async execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;

@@ -1,5 +1,6 @@
 import { Utils } from 'exer';
 import { Class, Prototype } from '../types/core';
+import { Env } from '../types/env';
 import { FieldMetadata, IFieldMetadata } from './field';
 import { MetadataRegistry, Registry } from './registry';
 import { FieldType, IVarMetadata, IVarResolution, VarKind, VarMetadata, VarResolution, VarRole } from './var';
@@ -114,7 +115,7 @@ export class TypeMetadata implements ITypeMetadata {
       throw TypeError(`Design type of [${this.target.name}.${propertyKey}]: `
         + `[${design && design.name}] not in [String, Number, Boolean, Date]`);
     }
-    if (process.env.NODE_ENV === 'development' && type && VarMetadata.DESIGN_TYPES.includes(design)) {
+    if (Env.node === 'development' && type && VarMetadata.DESIGN_TYPES.includes(design)) {
       const dt = VarMetadata.of(design);
       if (
         dt.kind !== meta.kind

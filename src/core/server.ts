@@ -7,6 +7,7 @@ import { Express } from '../import/express';
 import { Koa } from '../import/koa';
 import { Logger } from '../logger';
 import { Registry } from '../metadata/registry';
+import { Env } from '../types/env';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 
 export interface CoreServerPath {
@@ -29,9 +30,9 @@ export abstract class CoreServer {
 
   private static server: Server;
 
-  public static start(port: number, basePath?: string, extraArgs?: any): Server {
-    process.env.IS_OFFLINE = 'true';
-    Core.init();
+  public static async start(port: number, basePath?: string, extraArgs?: any): Promise<Server> {
+    Env.isOffline = true;
+    await Core.init();
     const paths = CoreServer.paths(basePath);
     if (Koa.load()) {
       const app = CoreServer.koa(paths);
@@ -47,12 +48,11 @@ export abstract class CoreServer {
     this.log.info('👌  Server initialized.');
     paths.forEach(p => this.log.info(`${p.httpMethod} http://localhost:${port}${p.path}`));
     this.log.info('🚀  Server started at %s ...', port);
-
     return this.server;
   }
 
   public static stop() {
-    process.env.IS_OFFLINE = null;
+    Env.isOffline = null;
     if (this.server) this.server.close();
   }
 

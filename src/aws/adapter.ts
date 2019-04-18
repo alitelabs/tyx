@@ -4,6 +4,8 @@ import { HttpUtils } from '../core/http';
 import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
 import { LogLevel } from '../types/config';
+import { CoreOptions } from '../types/core';
+import { Env } from '../types/env';
 import { EventRequest, EventResult } from '../types/event';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { LambdaError } from './error';
@@ -14,42 +16,21 @@ export abstract class LambdaAdapter {
 
   private static log = Logger.get('TYX', LambdaAdapter);
 
-  public static get functionName() {
-    return process.env.AWS_LAMBDA_FUNCTION_NAME || '<script>';
-  }
-
-  public static get functionVersion() {
-    return process.env.AWS_LAMBDA_FUNCTION_VERSION || '$VER';
-  }
-
-  public static get logStream() {
-    return (process.env.AWS_LAMBDA_LOG_STREAM_NAME || '<console>');
-  }
-
-  public static get identity() {
-    let id = process.env.AWS_LAMBDA_LOG_STREAM_NAME || Utils.uuid();
-    id = id.substring(id.indexOf(']') + 1);
-    if (id.length === 32) {
-      id = id.substr(0, 8) + '-' +
-        id.substr(8, 4) + '-' +
-        id.substr(12, 4) + '-' +
-        id.substr(16, 4) + '-' +
-        id.substring(20);
-    }
-    return id;
-  }
-
-  public static export(): LambdaHandler {
-    LogLevel.set(process.env.LOG_LEVEL as any);
-    return (event, context, callback) => {
-      this.handler(event, context as any)
-        .then(res => callback(null, res))
-        .catch(err => callback(new LambdaError(err), null));
+  public static export(options?: CoreOptions): LambdaHandler {
+    LogLevel.set(Env.logLevel as any);
+    return async (event, context) => {
+      await Core.init(options);
+      try {
+        return this.handler(event, context as any);
+      } catch (err) {
+        // TODO: Why was this needed, aws wraps the exceptions already
+        throw new LambdaError(err);
+      }
     };
   }
 
   public static async handler(event: Partial<LambdaEvent>, context: LambdaContext): Promise<any> {
-    context.callbackWaitsForEmptyEventLoop = !!process.env.LAMBDA_WAIT_FOR_EMPTY_EVENT_LOOP;
+    context.callbackWaitsForEmptyEventLoop = Env.waitForEmptyEventLoop;
     this.log.debug('Event: %j', event);
     this.log.debug('Context: %j', context);
 
@@ -131,7 +112,7 @@ export abstract class LambdaAdapter {
 
   private static async http(event: LambdaHttpEvent, context: LambdaContext): Promise<HttpResponse> {
     let resource = event.resource;
-    const prefix = process.env.PREFIX || ('/' + process.env.STAGE);
+    const prefix = Env.prefix;
     if (event.resource && prefix && resource.startsWith(prefix)) resource = resource.replace(prefix, '');
     const requestId = Utils.isUUID(context && context.awsRequestId) ? context.awsRequestId : Utils.uuid();
     const req: HttpRequest = {

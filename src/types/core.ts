@@ -60,6 +60,7 @@ export enum ContainerState {
 
 export interface CoreOptions {
   application?: string;
+  stage?: string;
   container?: string;
   version?: string;
   identity?: string;
@@ -102,7 +103,7 @@ export interface CoreStatic extends MetadataRegistry {
   processInfo(level?: number): ProcessInfo;
 
   lambda(): LambdaHandler;
-  start(port: number, basePath?: string, extraArgs?: any): Server;
+  start(port: number, basePath?: string, extraArgs?: any): Promise<Server>;
   stop(): void;
 
   [key: string]: any;
@@ -115,7 +116,7 @@ export interface CoreContainer {
   state: ContainerState;
   name: string;
 
-  metadata(): Registry;
+  init(): Promise<void>;
 
   serviceInfo(core?: boolean): ServiceInfo[];
   processInfo(): ProcessInfo;

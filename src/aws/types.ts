@@ -166,7 +166,7 @@ export type LambdaEvent = (
 export interface LambdaHandler {
   (
     event: Partial<LambdaEvent>,
-    context: Partial<LambdaContext>,
-    callback: LambdaCallback,
-  ): boolean | void;
+    context: Partial<LambdaContext>
+    // callback?: LambdaCallback,
+  ): Promise<any>;
 }
