@@ -15,11 +15,10 @@ import MS = require('ms');
 
 @CoreService(Security)
 export class CoreSecurity implements Security {
-  public readonly log: Logger;
+  @Logger()
+  protected log: Logger;
 
-  constructor() {
-    this.log = Logger.get(Security, this);
-  }
+  constructor() { }
 
   @Inject(alias => Configuration)
   protected config: Configuration;

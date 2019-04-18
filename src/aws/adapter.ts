@@ -4,7 +4,6 @@ import { HttpUtils } from '../core/http';
 import { BadRequest, InternalServerError } from '../errors';
 import { Logger } from '../logger';
 import { LogLevel } from '../types/config';
-import { CoreOptions } from '../types/core';
 import { Env } from '../types/env';
 import { EventRequest, EventResult } from '../types/event';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
@@ -14,13 +13,14 @@ import { LambdaApiEvent as LambdaHttpEvent, LambdaContext, LambdaDynamoEvent, La
 
 export abstract class LambdaAdapter {
 
-  private static log = Logger.get('TYX', LambdaAdapter);
+  @Logger('TYX', LambdaAdapter.name)
+  private static log: Logger;
 
-  public static export(options?: CoreOptions): LambdaHandler {
+  public static export(init?: Promise<boolean>): LambdaHandler {
     LogLevel.set(Env.logLevel as any);
     return async (event, context) => {
-      await Core.init(options);
       try {
+        init && await init;
         return this.handler(event, context as any);
       } catch (err) {
         // TODO: Why was this needed, aws wraps the exceptions already

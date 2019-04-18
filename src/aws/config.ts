@@ -13,6 +13,7 @@ class This {
 
 @CoreService()
 export class SecretsManagerConfig extends CoreConfiguration {
+
   constructor(
     private names: string[]
   ) {
@@ -29,11 +30,13 @@ export class SecretsManagerConfig extends CoreConfiguration {
     This.cache = This.cache || {};
     for (const name of this.names) {
       const id = `${this.appId}/${this.stage}/${name}`.toLowerCase();
+      this.log.info('Load: %s', id);
       try {
         const data = await this.load(id);
         This.cache[id] = data;
       } catch (err) {
-        throw err;
+        this.log.info('Failed to load: %s', id, err);
+        // throw err;
       }
     }
   }

@@ -128,7 +128,8 @@ interface EnumSchema {
 
 export class GraphQLToolkit {
 
-  private static log: Logger = Logger.get('TYX', GraphQLToolkit.name);
+  @Logger('TYX', GraphQLToolkit.name)
+  private static log: Logger;
 
   private crud: boolean;
 

@@ -1,4 +1,5 @@
 import { Utils } from 'exer';
+import { Di } from '../import';
 import { ApiMetadata } from '../metadata/api';
 import { ServiceMetadata } from '../metadata/service';
 import { DebugLogger } from './debug';
@@ -21,9 +22,20 @@ export interface Logger {
  * Injects logger into a class property or constructor parameter.
  */
 // tslint:disable-next-line:function-name
-// export function Logger(): PropertyDecorator | ParameterDecorator | any {
-//   return Inject(alias => 'Logger');
-// }
+export function Logger(logName?: string, emitter?: string): Function {
+  return (target: Object, propertyKey: string | symbol, index?: number) => {
+    if (target.constructor && target.constructor.prototype === target) {
+      Di.Container.registerHandler({
+        object: target,
+        propertyName: propertyKey as string,
+        index,
+        value: () => logName ? Logger.get(logName, emitter) : Logger.get(target)
+      });
+    } else {
+      (target as any)[propertyKey] = Logger.get(logName, emitter);
+    }
+  };
+}
 
 export namespace Logger {
   // export const sys: Logger = new DebugLogger('tyx', 'log');

@@ -7,7 +7,8 @@ import { Security } from '../types/security';
 
 export abstract class BaseProxy {
 
-  public readonly log: Logger;
+  @Logger()
+  protected log: Logger;
 
   @Inject(alias => Configuration)
   protected config: Configuration;
@@ -16,7 +17,6 @@ export abstract class BaseProxy {
   protected security: Security;
 
   constructor() {
-    this.log = Logger.get('proxy', this);
   }
 
   protected async proxy(method: Function, params: IArguments): Promise<any> {

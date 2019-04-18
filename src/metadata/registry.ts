@@ -80,7 +80,8 @@ const validated = Symbol('validated');
 // tslint:disable:variable-name
 export abstract class Registry implements MetadataRegistry {
 
-  public static log: Logger = Logger.get('TYX', Registry.name);
+  @Logger('TYX', Registry.name)
+  public static log: Logger;
 
   public static readonly CoreMetadata: Record<string, TypeMetadata> = {};
   public static readonly DecoratorMetadata: Record<string, IDecoratorMetadata> = {};

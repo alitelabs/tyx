@@ -20,7 +20,7 @@ const LOAD_TIME = Math.round(process.uptime() * 1000);
 const CREATED = new Date(Date.now() - Math.round(LOAD_TIME));
 
 class This {
-  public static init: Promise<void>;
+  public static init: Promise<boolean>;
   public static graphql: GraphQLToolkit;
   public static instance: CoreInstance;
   public static pool: CoreInstance[];
@@ -30,7 +30,8 @@ class This {
 
 // @CoreStatic()
 export class Core extends Registry {
-  public static readonly log = Logger.get('TYX', Core.name);
+  @Logger('TYX', 'Core')
+  public static readonly log: Logger;
 
   public static readonly config: CoreOptions = {
     application: 'Core',
@@ -53,35 +54,32 @@ export class Core extends Registry {
     return (This.graphql = This.graphql || new GraphQLToolkit(Core.validate(), this.config.crudAllowed));
   }
 
-  public static async init(options?: CoreOptions) {
+  public static init(options?: CoreOptions): Promise<boolean> {
     // Avoid init reentry
-    return await (This.init = This.init || this.initPromise(options));
-  }
-
-  public static async initPromise(options?: CoreOptions) {
-    if (This.instance) return;
+    if (This.init) return This.init;
 
     this.config.application = options.application || this.config.application;
     this.config.stage = options.stage || this.config.stage;
     this.config.roles = options.roles || this.config.roles;
     this.config.register = options.register || this.config.register;
     this.config.crudAllowed = options.crudAllowed !== undefined ? !!options.crudAllowed : this.config.crudAllowed;
-
     Object.freeze(this.config);
     Object.freeze(this.config.register);
 
     Core.validate();
-
+    // TODO: Freeze registry metadata
     // Activate API classes
     for (const api of Object.values(Registry.ApiMetadata)) {
       api.activate(this);
     }
+    CoreGraphQL.init(this.config.roles);
+    CoreThrift.init(this.config.roles);
 
-    // TODO: Freeze registry metadata
+    return (This.init = this.asyncInit(options));
+  }
 
+  public static async asyncInit(options?: CoreOptions): Promise<boolean> {
     try {
-      CoreGraphQL.init(this.config.roles);
-      CoreThrift.init(this.config.roles);
       This.instance = new CoreInstance(this.config.application, Core.name);
       await This.instance.init();
       This.pool = [This.instance];
@@ -99,6 +97,7 @@ export class Core extends Registry {
     } finally {
       This.initTime = Math.round(process.uptime() * 1000) - LOAD_TIME;
     }
+    return true;
   }
 
   public static async start(port: number, basePath?: string, extraArgs?: any): Promise<Server> {
@@ -173,7 +172,7 @@ export class Core extends Registry {
   }
 
   public static lambda(options?: CoreOptions): LambdaHandler {
-    return LambdaAdapter.export(options);
+    return LambdaAdapter.export(Core.init(options));
   }
 
   public static serviceInfo(): ServiceInfo[] {

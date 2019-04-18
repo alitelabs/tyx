@@ -17,7 +17,8 @@ export interface CoreServerPath {
 }
 
 export abstract class CoreServer {
-  public static log: Logger = Logger.get('TYX', 'Server');
+  @Logger('TYX', 'Server')
+  public static log: Logger;
 
   public static HEADERS = {
     'Access-Control-Allow-Origin': '*',

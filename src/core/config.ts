@@ -1,10 +1,14 @@
 import { Utils } from 'exer';
 import { Activate, CoreService } from '../decorators/service';
+import { Logger } from '../logger';
 import { Configuration, LogLevel } from '../types/config';
 import { Core } from './core';
 
 @CoreService(Configuration)
 export class CoreConfiguration implements Configuration {
+
+  @Logger()
+  protected log: Logger;
 
   @Activate()
   public activate() {
@@ -91,7 +95,7 @@ export class CoreConfiguration implements Configuration {
     const env = CoreConfiguration.envKey(group, name, key, prop);
     const tmp = CoreConfiguration.objKey(group, name, key, prop);
     const data = this.retrive(path);
-    Core.log.debug('Retrive secret:', tmp);
+    this.log.debug('Retrive secret:', tmp);
     if (data) {
       return key ? (prop ? data[key] && data[key][prop] : data[key]) : data;
     } else {
@@ -102,7 +106,7 @@ export class CoreConfiguration implements Configuration {
   protected setting<T = string>(group: 'core' | 'app' | 'dev' | 'service', name: string, key?: string, prop?: string): T {
     const env = CoreConfiguration.envKey(group, name, key, prop);
     const obj = CoreConfiguration.objKey(group, name, key, prop);
-    Core.log.debug('Retrive secret:', obj);
+    this.log.debug('Retrive secret:', obj);
     return process.env[env.toUpperCase()] as any;
   }
 

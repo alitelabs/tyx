@@ -12,11 +12,11 @@ import { TypeOrmProvider } from './typeorm';
 
 @CoreService()
 export class DatabaseProvider extends TypeOrmProvider implements Database {
+  @Logger()
+  protected log: Logger;
 
   @Inject(alias => Configuration)
   public config: Configuration;
-
-  public log = Logger.get(this);
 
   protected alias: string;
   protected options: TypeOrm.ConnectionOptions;

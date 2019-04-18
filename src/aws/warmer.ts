@@ -52,7 +52,8 @@ export class CoreWarmer {
 
   private static state: CoreWarmerState[];
 
-  private log = Logger.get(this);
+  @Logger()
+  protected log: Logger;
 
   private nextFlush = 0;
   private nextPing = 0;

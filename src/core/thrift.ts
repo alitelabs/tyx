@@ -33,8 +33,9 @@ export class CoreThrift implements Thrift {
     ServiceMetadata.get(this).final = true;
   }
 
-  // @Logger()
-  protected log = Logger.get(this);
+  @Logger()
+  protected log: Logger;
+
   private readonly handlers: Record<string, CoreThriftHandler<any>> = {};
 
   protected constructor(handlers: Record<string, IThriftProcessor<ThriftContext>>) {

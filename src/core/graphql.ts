@@ -47,8 +47,8 @@ export class CoreGraphQL implements GraphQL {
     return ApiMetadata.get(CoreGraphQL).methods['process'];
   }
 
-  // @Logger()
-  private log = Logger.get(this);
+  @Logger()
+  private log: Logger;
 
   @Inject(alias => Configuration)
   protected config: Configuration;
