@@ -177,7 +177,7 @@ export class CoreWarmer {
 
   private async invoke(fun: CoreWarmerState, index: number, resolve: (res: any) => void, reject: (err: any) => any) {
     // this.log.info('Invoked [%s:%s]', fun, index);
-    const time = Utils.time();
+    const time = this.log.time();
     const lambda = new Lambda();
     try {
       const res = await lambda.invoke({
