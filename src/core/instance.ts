@@ -140,7 +140,7 @@ export class CoreInstance implements CoreContainer {
   public get<T = any>(id: Class | ApiMetadata | ServiceMetadata | string): T {
     if (typeof id === 'string') return this.container.get(id);
     if (id instanceof ApiMetadata) return id.servicer && this.get(id.servicer);
-    if (id instanceof ServiceMetadata) return this.container.get(id.inline ? id.alias : id.target as any);
+    if (id instanceof ServiceMetadata) return this.container.get(id.inline ? id.alias || id.target : id.target as any);
     return this.container.get<T>(id);
   }
 

@@ -5,6 +5,9 @@ Strategic:
  ☐ Static state in services @created(19-04-17 09:30)
  ☐ Execution stack in Context @created(19-04-17 09:33)
 
+Fix:
+  ☐ Event inheritance @created(19-04-19 03:02)
+
 Design: 
   ☐ Application concept ???
   ☐ Unified field / http param declarations

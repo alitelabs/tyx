@@ -85,6 +85,7 @@ export class CoreWarmer {
 
     const poolKey = Env.warmPoolKey || (this.config.appId.toUpperCase() + '_WARM_POOL');
     this.log.info('Using pool key: %s', poolKey);
+    this.state = this.state || [];
     try {
       const lambda = new Lambda();
       let res: Lambda.ListFunctionsResponse;
@@ -93,7 +94,6 @@ export class CoreWarmer {
         for (const fun of res.Functions) {
           const pool = fun.Environment && +fun.Environment.Variables[poolKey];
           if (!pool) continue;
-          this.state = this.state || [];
           this.state.push({
             name: fun.FunctionName,
             size: +fun.Environment.Variables[poolKey],
