@@ -203,7 +203,8 @@ export class Core extends Registry {
 
   private static prepareResolve(ctx: Context, entityId: string, rel?: string) {
     const [provider, name] = entityId.split('.');
-    const db = ctx.container.get<EntityResolver>(provider);
+    const meta = Registry.DatabaseMetadata[provider];
+    const db = ctx.container.get<EntityResolver>(meta.target);
     const entity = db.metadata.entities.find(e => e.name === name);
     const relation = rel && entity.relations.find(r => r.name === rel);
     return { db, entity, relation };
