@@ -41,18 +41,15 @@
     "beta": "npm run build && npm version patch && git push --follow-tags && npm publish --tag beta"
   },
   "voyagerVersion": "latest",
-  "clientDependencies": {
-    "graphql-voyager": "^1.0.0-rc.19"
-  },
   "dependencies": {
     "@apollographql/graphql-playground-html": "^1.6.6",
     "@creditkarma/thrift-server-core": "^0.13.6",
     "apollo-server-core": "^2.4.8",
     "apollo-server-module-graphiql": "^1.4.0",
-    "exer": "0.0.18",
+    "exer": "0.0.22",
     "graphql-iso-date": "^3.6.1",
     "graphql-tools": "^4.0.4",
-    "graphql-type-json": "^0.2.4",
+    "graphql-type-json": "^0.3.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.11",
     "ms": "^2.1.1",
@@ -62,10 +59,13 @@
     "wtfnode": "^0.8.0"
   },
   "peerDependencies": {
-    "typeorm": "^0.2.15",
+    "typeorm": "^0.2.16",
     "graphql": "^14.0.0"
   },
-  "optionalDependencies": {
+  "clientDependencies": {
+    "graphql-voyager": "^1.0.0-rc.19"
+  },
+  "serverDependencies": {
     "aws-sdk": "^2.438.0",
     "aws-serverless-express": "^3.3.5",
     "koa": "^2.7.0",
@@ -75,7 +75,7 @@
     "express": "^4.16.4"
   },
   "devDependencies": {
-    "@creditkarma/thrift-typescript": "^3.5.0",
+    "@creditkarma/thrift-typescript": "^3.6.0",
     "@types/aws-lambda": "^8.10.24",
     "@types/aws-serverless-express": "^3.3.0",
     "@types/body-parser": "^1.17.0",
@@ -85,20 +85,26 @@
     "@types/graphql-type-json": "^0.1.3",
     "@types/jsonwebtoken": "^8.3.2",
     "@types/koa": "^2.0.48",
-    "@types/koa-bodyparser": "^5.0.1",
     "@types/koa-router": "^7.0.40",
     "@types/lodash": "^4.14.123",
     "@types/ms": "^0.7.30",
-    "@types/node": "^10.14.4",
+    "@types/node": "^10.14.6",
     "@types/uuid": "^3.4.4",
     "@types/wtfnode": "^0.7.0",
     "apollo-server-lambda": "^2.4.8",
-    "graphql": "14.1.1",
+    "aws-sdk": "^2.446.0",
+    "aws-serverless-express": "^3.3.6",
+    "body-parser": "^1.19.0",
+    "express": "^4.16.4",
+    "graphql": "14.2.1",
+    "koa": "^2.7.0",
+    "koa-router": "^7.4.0",
+    "raw-body": "^2.4.0",
     "ts-node": "^8.1.0",
     "tslint": "^5.16.0",
     "tslint-config-airbnb": "^5.11.1",
     "typeorm": "^0.2.16",
-    "typescript": "^3.4.3"
+    "typescript": "^3.4.5"
   },
   "prettier": {
     "singleQuote": true,

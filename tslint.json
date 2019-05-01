@@ -6,6 +6,7 @@
     "import-name": false,
     "trailing-comma": false,
     "no-else-after-return": false,
+    "no-boolean-literal-compare": false,
     "prefer-template": [
       false
     ],
