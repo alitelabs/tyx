@@ -8,9 +8,9 @@ import { IServiceMetadata } from '../metadata/service';
 import { Class, SchemaResolvers } from '../types/core';
 import { EventRouteMetadataSchema } from './event';
 import { HttpRouteMetadataSchema } from './http';
-import { Lodash } from './lodash';
 import { MethodMetadataSchema } from './method';
 import { ServiceMetadataSchema } from './service';
+import { SchemaUtils } from './utils';
 
 @Schema()
 export class ApiMetadataSchema implements IApiMetadata {
@@ -30,11 +30,11 @@ export class ApiMetadataSchema implements IApiMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IApiMetadata> = {
-    target: obj => Lodash.label(obj.target),
-    services: (obj, args) => Lodash.filter(obj.services, args),
-    methods: (obj, args) => Lodash.filter(obj.methods, args),
-    routes: (obj, args) => Lodash.filter(obj.routes, args),
-    events: (obj, args) => Lodash.filter(obj.events, args),
+    target: obj => SchemaUtils.label(obj.target),
+    services: (obj, args) => SchemaUtils.filter(obj.services, args),
+    methods: (obj, args) => SchemaUtils.filter(obj.methods, args),
+    routes: (obj, args) => SchemaUtils.filter(obj.routes, args),
+    events: (obj, args) => SchemaUtils.filter(obj.events, args),
     source: obj => obj.target.toString(),
   };
 }

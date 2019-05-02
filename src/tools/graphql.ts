@@ -256,9 +256,10 @@ export class GraphQLToolkit {
     // const auth = Object.entries(roles || { Public: true }).map(e => `${e[0]}: ${e[1]}`).join(', ');
     let script = '';
     script += Utils.indent(`
+      // tslint:disable:max-line-length
       import { Context, Core, CoreGraphQL, DocumentNode, gql, Resolver, HttpRequest, Service } from 'tyx';
       // import TYPE_DEFS = require('./schema.json');
-    `).trimRight() + '\n';
+    `).trim() + '\n';
     script += Utils.indent(`
       @Service(true)
       export class ${name}GraphQL extends CoreGraphQL {

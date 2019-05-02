@@ -1,6 +1,6 @@
 import { Utils } from 'exer';
 
-export namespace Lodash {
+export namespace SchemaUtils {
   export function label(val: any) {
     if (val instanceof Function) {
       if (Utils.isClass(val)) return `[class: ${val.name || 'inline'}]`;
@@ -14,10 +14,9 @@ export namespace Lodash {
     return val;
   }
   export function filter(rec: Record<string, any> | any[], query: any) {
-    const lo = require('lodash');
     let data = rec;
     if (!Array.isArray(data)) data = rec && Object.values(rec);
-    if (query.eq && data) data = lo.filter(data, query.eq);
+    if (query.eq && data) data = Utils.filter(data, query.eq);
     // TODO: Implement like
     return data;
   }

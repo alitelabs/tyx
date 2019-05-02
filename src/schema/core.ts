@@ -2,7 +2,7 @@ import { Schema } from '../decorators/schema';
 import { Field } from '../decorators/type';
 // tslint:disable-next-line:max-line-length
 import { Class, ContainerState, Context, InfoSchemaResolvers, ServiceInfo } from '../types/core';
-import { Lodash } from './lodash';
+import { SchemaUtils } from './utils';
 
 @Schema()
 export class ServiceInfoSchema {
@@ -14,10 +14,10 @@ export class ServiceInfoSchema {
   @Field() transient: boolean;
 
   constructor(s: ServiceInfo) {
-    this.id = Lodash.label(s.id);
+    this.id = SchemaUtils.label(s.id);
     this.mode = typeof s.id === 'string' ? s.type ? 'alias' : 'value' : 'type';
-    this.type = Lodash.label(s.type);
-    this.value = Lodash.label(s.value);
+    this.type = SchemaUtils.label(s.type);
+    this.value = SchemaUtils.label(s.value);
     this.global = !!s.global;
     this.transient = !!s.transient;
   }
@@ -43,7 +43,7 @@ export class InstanceInfoSchema {
       const info = obj.serviceInfo().map((s: ServiceInfo) => new ServiceInfoSchema(s));
       if (args.target) args.target = `[class: ${args.target}]`;
       if (args.type) args.type = `[class: ${args.type}]`;
-      return Lodash.filter(info, args);
+      return SchemaUtils.filter(info, args);
     }
   };
 }

@@ -3,7 +3,7 @@ import { Schema } from "../decorators/schema";
 import { Field } from "../decorators/type";
 import { Any } from "../metadata/var";
 import { InfoSchemaResolvers, SchemaResolvers } from "../types/core";
-import { Lodash } from "./lodash";
+import { SchemaUtils } from "./utils";
 
 @Schema()
 export class CpuInfoSchema implements CpuInfo {
@@ -46,9 +46,9 @@ export class PackageInfoSchema implements PackageInfo {
   @Field(list => [PackageInfoSchema]) uses: PackageInfo[];
 
   public static RESOLVERS: SchemaResolvers<PackageInfoSchema> = {
-    modules: (obj, args) => Lodash.filter(obj.modules, args),
-    imports: (obj, args) => Lodash.filter(obj.imports, args),
-    uses: (obj, args) => Lodash.filter(obj.uses, args),
+    modules: (obj, args) => SchemaUtils.filter(obj.modules, args),
+    imports: (obj, args) => SchemaUtils.filter(obj.imports, args),
+    uses: (obj, args) => SchemaUtils.filter(obj.uses, args),
   };
 }
 

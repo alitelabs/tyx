@@ -9,9 +9,9 @@ import { VarKind } from '../metadata/var';
 import { Class, SchemaResolvers } from '../types/core';
 import { ColumnMetadataSchema } from './column';
 import { DatabaseMetadataSchema } from './database';
-import { Lodash } from './lodash';
 import { RelationMetadataSchema } from './relation';
 import { FieldMetadataSchema } from './type';
+import { SchemaUtils } from './utils';
 
 @Schema()
 export class EntityMetadataSchema implements IEntityMetadata {
@@ -25,10 +25,10 @@ export class EntityMetadataSchema implements IEntityMetadata {
   @Field(list => [RelationMetadataSchema]) relations: IRelationMetadata[];
 
   public static RESOLVERS: SchemaResolvers<IEntityMetadata> = {
-    target: obj => Lodash.label(obj.target),
-    members: (obj, args) => Lodash.filter(obj.members, args),
-    columns: (obj, args) => Lodash.filter(obj.columns, args),
-    primaryColumns: (obj, args) => Lodash.filter(obj.primaryColumns, args),
-    relations: (obj, args) => Lodash.filter(obj.relations, args),
+    target: obj => SchemaUtils.label(obj.target),
+    members: (obj, args) => SchemaUtils.filter(obj.members, args),
+    columns: (obj, args) => SchemaUtils.filter(obj.columns, args),
+    primaryColumns: (obj, args) => SchemaUtils.filter(obj.primaryColumns, args),
+    relations: (obj, args) => SchemaUtils.filter(obj.relations, args),
   };
 }

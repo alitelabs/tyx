@@ -12,8 +12,8 @@ import { Roles } from '../types/security';
 import { ApiMetadataSchema } from './api';
 import { EventRouteMetadataSchema } from './event';
 import { HttpBindingMetadataSchema, HttpRouteMetadataSchema } from './http';
-import { Lodash } from './lodash';
 import { ArgMetadataSchema as ArgMetadataSchema, ResultMetadataSchema } from './type';
+import { SchemaUtils } from './utils';
 
 @Schema()
 export class MethodMetadataSchema implements IMethodMetadata {
@@ -45,12 +45,12 @@ export class MethodMetadataSchema implements IMethodMetadata {
   @Field() source: string;
 
   public static RESOLVERS: SchemaResolvers<IMethodMetadata> = {
-    target: obj => Lodash.label(obj.target),
-    scope: obj => Lodash.label(obj.scope),
-    args: (obj, args) => Lodash.filter(obj.args, args),
-    bindings: (obj, args) => Lodash.filter(obj.bindings, args),
-    http: (obj, args) => Lodash.filter(obj.http, args),
-    events: (obj, args) => Lodash.filter(obj.events, args),
+    target: obj => SchemaUtils.label(obj.target),
+    scope: obj => SchemaUtils.label(obj.scope),
+    args: (obj, args) => SchemaUtils.filter(obj.args, args),
+    bindings: (obj, args) => SchemaUtils.filter(obj.bindings, args),
+    http: (obj, args) => SchemaUtils.filter(obj.http, args),
+    events: (obj, args) => SchemaUtils.filter(obj.events, args),
     source: obj => obj.target.prototype[obj.name].toString(),
   };
 }

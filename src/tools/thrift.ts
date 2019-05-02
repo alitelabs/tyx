@@ -133,7 +133,7 @@ export class ThriftToolkit {
     const enums = Object.values(registry.EnumMetadata).sort((a, b) => a.name.localeCompare(b.name));
 
     let thrift = this.prolog() + '\n';
-    let proxy = `import { Context, Core, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
+    let proxy = `// tslint:disable:max-line-length\nimport { Context, Core, DocumentNode, gql } from 'tyx';\nimport * as gen from './protocol';\n`;
 
     const patch = this.genPatch();
     let proto = patch.patch;
@@ -290,12 +290,12 @@ export class ThriftToolkit {
       ${GEN}.${meta.name}Codec.encode = (obj: ${GEN}.I${meta.name}Args, output: thrift.TProtocol) => {
         ${Utils.indent(enmap.trim(), 8).trimLeft() || '// NOP'}
         codec.encode(obj, output);
-      }
+      };
       ${GEN}.${meta.name}Codec.decode = (input: thrift.TProtocol): ${GEN}.I${meta.name} => {
         const obj = codec.decode(input);
         ${Utils.indent(demap.trim(), 8).trimLeft() || '// NOP'}
         return obj;
-      }
+      };
     }\n`) : '';
     return { thrift, patch, replace };
   }
@@ -303,6 +303,7 @@ export class ThriftToolkit {
   // TODO: Patch Tson, Timestamp constructors !!!!
   private genPatch(): Partial<ThriftToolkitResult> {
     const patch = Utils.indent(`
+      // tslint:disable:no-parameter-reassignment
       import * as thrift from "@creditkarma/thrift-server-core";
       import * as ${GEN} from './gen';
       export * from './gen';
@@ -381,7 +382,7 @@ export class ThriftToolkit {
   }
 
   private genApi(api: ApiMetadata): Partial<ThriftToolkitResult> {
-    const kebab = Utils.kebapCase(api.name);
+    const kebab = Utils.kebabCase(api.name);
     let thrift = `service ${api.name} {`;
     let query = `// --- GQL ---\n`;
     let script = `export class ${api.name}Proxy implements ${GEN}.${api.name}.IHandler<Context> {\n`;
@@ -422,7 +423,7 @@ export class ThriftToolkit {
       //   script += `\n  ${result.idl} ${method.name}(${idlArgs}${idlArgs ? ', ' : ''}refresh: bool)`;
       // }
 
-      const gql = Utils.snakeCase(method.name, true) + '_GQL';
+      const gql = Utils.snakeUpperCase(method.name) + '_GQL';
       query += `public static readonly ${gql}: DocumentNode = gql\`\n`;
       if (method.mutation) {
         query += `  mutation request${reqArgs} {\n`;
@@ -488,7 +489,7 @@ export class ThriftToolkit {
       thrift += "\n";
     }
 
-    const kebab = Utils.kebapCase(db.name);
+    const kebab = Utils.kebabCase(db.name);
 
     let script = `export class ${db.name}Proxy implements ${GEN}.${db.name}.IHandler<Context> {\n`;
     script += `  public static readonly PATH = '${kebab}';\n`;
@@ -698,7 +699,7 @@ export class ThriftToolkit {
     let queries = '';
 
     let thrift = `service ${name} {\n`;
-    const kebab = Utils.kebapCase(name);
+    const kebab = Utils.kebabCase(name);
 
     let query = `// --- GQL ---\n`;
     let script = Utils.indent(`
@@ -730,7 +731,7 @@ export class ThriftToolkit {
       queries += `    3: optional ${target.name}Selector selector\n`;
       queries += '} (kind = "Query")\n';
 
-      const gql = Utils.snakeCase(reg.name, true) + '_GQL';
+      const gql = Utils.snakeUpperCase(reg.name) + '_GQL';
 
       let params = '';
       if (VarKind.isArray(type.kind)) {
