@@ -23,7 +23,7 @@ export class SecretsManagerConfig extends CoreConfiguration {
 
   @Initialize()
   @Activate()
-  public async refresh() {
+  public async activate() {
     // tslint:disable-next-line:variable-name
     if (This.expiry && This.expiry > Date.now()) return;
     This.expiry = Date.now() + LIFETIME;
@@ -39,6 +39,7 @@ export class SecretsManagerConfig extends CoreConfiguration {
         // throw err;
       }
     }
+    await super.activate();
   }
 
   protected retrive(name: string) {
