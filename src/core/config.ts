@@ -1,5 +1,5 @@
 import { Utils } from 'exer';
-import { Activate, CoreService } from '../decorators/service';
+import { CoreService } from '../decorators/service';
 import { Logger } from '../logger';
 import { Configuration, LogLevel } from '../types/config';
 import { Core } from './core';
@@ -9,10 +9,6 @@ export class CoreConfiguration implements Configuration {
 
   @Logger()
   protected log: Logger;
-
-  @Activate()
-  public activate() {
-  }
 
   get appId(): string { return Core.config.application; }
   get stage(): string { return Core.config.stage; }
