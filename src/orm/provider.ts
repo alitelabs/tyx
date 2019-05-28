@@ -20,6 +20,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   protected alias: string;
   protected options: TypeOrm.ConnectionOptions;
+  protected owner: boolean;
   protected connection: TypeOrm.Connection;
   public manager: TypeOrm.EntityManager;
 
@@ -110,18 +111,18 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
     if (!TypeOrm.getConnectionManager().has(this.alias)) {
       this.connection = TypeOrm.getConnectionManager().create(this.options);
+      this.owner = true;
       this.log.info('Connection created');
+    } else {
+      this.connection = TypeOrm.getConnection(this.alias);
+      this.log.info('Connection shared');
+      this.owner = false;
     }
   }
 
   @Activate()
   protected async activate() {
     this.initialize();
-
-    if (!this.connection) {
-      this.log.info('Connecting');
-      this.connection = TypeOrm.getConnection(this.alias);
-    }
     if (!this.connection.isConnected) {
       await this.connection.connect();
       this.log.info('Connected');
@@ -137,7 +138,16 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
       || !this.connection.isConnected
       || Env.isOffline
       || !Env.waitForEmptyEventLoop) return;
-    await this.connection.close();
+    if (!this.owner) {
+      this.log.info('Connection shared');
+      return;
+    }
+    try {
+      await this.connection.close();
+    } catch (err) {
+      this.log.error(err);
+    }
+    this.connection = null;
     this.log.info('Connection closed');
   }
 }

@@ -150,9 +150,12 @@ export namespace TypeOrm {
 
   // XX
 
-  export function createConnection() {
+  export function createConnection(): Promise<Connection>;
+  export function createConnection(name: string): Promise<Connection>;
+  export function createConnection(options: ConnectionOptions): Promise<Connection>;
+  export function createConnection(options?: string | ConnectionOptions): Promise<Connection> {
     load(true);
-
+    return orm.createConnection(options);
   }
 
   export function getConnection(name?: string): Connection {
