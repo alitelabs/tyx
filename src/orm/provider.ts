@@ -111,12 +111,9 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
     if (!TypeOrm.getConnectionManager().has(this.alias)) {
       this.connection = TypeOrm.getConnectionManager().create(this.options);
-      this.owner = true;
       this.log.info('Connection created');
     } else {
       this.connection = TypeOrm.getConnection(this.alias);
-      this.log.info('Connection shared');
-      this.owner = false;
     }
   }
 
@@ -125,7 +122,11 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
     this.initialize();
     if (!this.connection.isConnected) {
       await this.connection.connect();
+      this.owner = true;
       this.log.info('Connected');
+    } else {
+      this.owner = false;
+      this.log.info('Connection shared');
     }
     if (!this.manager) {
       this.manager = this.connection.manager;
