@@ -56,6 +56,6 @@ export abstract class Env {
   }
 
   public static get waitForEmptyEventLoop() {
-    return process.env.WAIT_FOR_EMPTY_EVENT_LOOP === 'true';
+    return process.env.WAIT_FOR_EMPTY_EVENT_LOOP !== 'false';
   }
 }
