@@ -141,6 +141,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
       || !Env.waitForEmptyEventLoop) return;
     if (!this.owner) {
       this.log.info('Connection shared');
+      this.connection = null;
       return;
     }
     try {
