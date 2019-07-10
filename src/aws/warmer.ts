@@ -66,7 +66,6 @@ export class CoreWarmer {
   @Initialize()
   protected init() {
     // NOP
-    this.log.info('Initialize');
   }
 
   protected get state(): CoreWarmerState[] {
@@ -84,7 +83,7 @@ export class CoreWarmer {
     if (this.state) return;
 
     const poolKey = Env.warmPoolKey || (this.config.appId.toUpperCase() + '_WARM_POOL');
-    this.log.info('Using pool key: %s', poolKey);
+    this.log.debug('Using pool key: %s', poolKey);
     this.state = this.state || [];
     try {
       const lambda = new Lambda();
@@ -110,7 +109,7 @@ export class CoreWarmer {
     }
     this.nextFlush = 0;
     this.nextPing = Date.now() + this.settings.rate;
-    this.log.info('Initialized: %j', this.state);
+    this.log.debug('Initialized: %j', this.state);
   }
 
   @Internal()

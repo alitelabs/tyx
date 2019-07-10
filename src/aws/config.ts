@@ -1,6 +1,6 @@
 import { config, SecretsManager } from 'aws-sdk';
 import { CoreConfiguration } from '../core/config';
-import { Activate, CoreService, Initialize } from '../decorators/service';
+import { Activate, CoreService } from '../decorators/service';
 
 const LIFETIME = 120000;
 // Temporary fix
@@ -21,7 +21,6 @@ export class SecretsManagerConfig extends CoreConfiguration {
     this.names = ['core/http', 'core/internal', 'core/remote', ...names];
   }
 
-  @Initialize()
   @Activate()
   public async activate() {
     // tslint:disable-next-line:variable-name
@@ -30,12 +29,12 @@ export class SecretsManagerConfig extends CoreConfiguration {
     This.cache = This.cache || {};
     for (const name of this.names) {
       const id = `${this.appId}/${this.stage}/${name}`.toLowerCase();
-      this.log.info('Load: %s', id);
+      this.log.debug('Load: %s', id);
       try {
         const data = await this.load(id);
         This.cache[id] = data;
       } catch (err) {
-        this.log.info('Failed to load: %s', id, err);
+        this.log.error('Failed to load: %s', id, err);
         // throw err;
       }
     }

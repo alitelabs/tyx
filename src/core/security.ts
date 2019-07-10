@@ -1,5 +1,5 @@
 import { Utils } from 'exer';
-import { CoreService, Inject } from '../decorators/service';
+import { Activate, CoreService, Inject } from '../decorators/service';
 import { BadRequest, Forbidden, Unauthorized } from '../errors';
 import { Logger } from '../logger';
 import { MethodMetadata } from '../metadata/method';
@@ -22,6 +22,10 @@ export class CoreSecurity implements Security {
 
   @Inject(alias => Configuration)
   protected config: Configuration;
+
+  @Activate()
+  public async activate() {
+  }
 
   public async httpAuth(container: CoreContainer, method: MethodMetadata, req: HttpRequest): Promise<Context> {
     const token = req.headers && (req.headers['Authorization'] || req.headers['authorization'])

@@ -1,20 +1,7 @@
 import { Debug, Debugger } from 'exer';
-import { Di } from '../import';
 import { LogLevel } from '../types/config';
 import { Logger } from './logger';
 
-Debug.inspectOpts.alwaysDiff = true;
-
-function createLogger(...target: any[]): Logger {
-  return new DebugLogger('tyx');
-}
-
-@Di.Service({
-  id: 'DebugLogger',
-  transient: true,
-  global: true,
-  factory: createLogger
-})
 export class DebugLogger implements Logger {
   protected logName: string;
   protected logEmitter: string;

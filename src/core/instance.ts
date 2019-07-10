@@ -73,7 +73,7 @@ export class CoreInstance implements CoreContainer {
     }
     this.security = this.container.get(Security);
     if (this.security instanceof CoreSecurity) {
-      // OK
+      await this.security.activate();
     } else if (!ServiceMetadata.has(this.security)) {
       throw new TypeError(`Security must be a service`);
     }
@@ -93,7 +93,7 @@ export class CoreInstance implements CoreContainer {
     // Prioritize services with initializer
     for (const service of Object.values(Registry.ServiceMetadata)) {
       if (!service.final || !service.initializer) continue;
-      this.log.info('Initialize [%s] ...', service.name);
+      this.log.debug('Initialize [%s] ...', service.name);
       this.container.set({ id: service.target, type: service.target });
       const inst = this.get(service.target);
       // TODO: Avoid triple set
@@ -101,8 +101,13 @@ export class CoreInstance implements CoreContainer {
       if (service.name !== service.alias) {
         this.container.set({ id: service.name, type: service.target, value: inst });
       }
-      await inst[service.initializer.method]();
-      this.log.info('Initialized [%s].', service.name);
+      try {
+        await inst[service.initializer.method]();
+        this.log.info('Initialized [%s].', service.name);
+      } catch (err) {
+        this.log.error('Failed to initialize [%s].', service.name, err);
+        throw err;
+      }
     }
 
     // Create private Api instances
@@ -490,8 +495,8 @@ export class CoreInstance implements CoreContainer {
       const meta = ServiceMetadata.get(service.type || service.value);
       if (!meta || !meta.releasor) continue;
       // Avoid double release of the same value under different ids
-      if (done.includes(service)) continue;
-      done.push(service);
+      if (done.includes(service.value)) continue;
+      done.push(service.value);
       try {
         const handler = service.value[meta.releasor.method] as Function;
         await handler.call(service.value, ctx);

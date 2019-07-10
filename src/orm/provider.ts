@@ -1,5 +1,5 @@
 import { Database } from '../decorators/database';
-import { Activate, CoreService, Inject, Release } from '../decorators/service';
+import { Activate, CoreService, Initialize, Inject, Release } from '../decorators/service';
 import { TypeOrm } from '../import';
 import { Logger } from '../logger';
 import { DatabaseMetadata } from '../metadata/database';
@@ -10,8 +10,12 @@ import { Class, ObjectType } from '../types/core';
 import { Env } from '../types/env';
 import { TypeOrmProvider } from './typeorm';
 
+let COUNTER = 0;
+
 @CoreService()
 export class DatabaseProvider extends TypeOrmProvider implements Database {
+  public readonly id = COUNTER++;
+
   @Logger()
   protected log: Logger;
 
@@ -37,7 +41,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
     return this.connection.getRepository<T>(type);
   }
 
-  // @Initialize()
+  @Initialize()
   protected initialize() {
     if (this.connection) return;
 
@@ -119,29 +123,28 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   @Activate()
   protected async activate() {
+    this.log.info('Activate: %s', this.id);
     this.initialize();
     if (!this.connection.isConnected) {
       await this.connection.connect();
       this.owner = true;
-      this.log.info('Connected');
+      this.log.info('Connected:', this.id);
     } else {
       this.owner = false;
-      this.log.info('Connection shared');
+      this.log.info('Connection shared:', this.id);
     }
-    if (!this.manager) {
-      this.manager = this.connection.manager;
-    }
+    this.manager = this.connection.manager;
   }
 
   @Release()
   protected async release() {
+    this.log.info('Release: %s', this.id);
     if (!this.connection
       || !this.connection.isConnected
       || Env.isOffline
       || !Env.waitForEmptyEventLoop) return;
     if (!this.owner) {
-      this.log.info('Connection shared');
-      this.connection = null;
+      this.log.info('Connection shared: %s', this.id);
       return;
     }
     try {
@@ -149,7 +152,6 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
     } catch (err) {
       this.log.error(err);
     }
-    this.connection = null;
-    this.log.info('Connection closed');
+    this.log.info('Connection closed: %s', this.id);
   }
 }

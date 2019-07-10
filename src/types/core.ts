@@ -21,25 +21,25 @@ export type NameRef = (type?: any) => string;
 export type ClassRef<T = any> = (type?: any) => ObjectType<T>;
 export type TypeRef<T = any> = (type?: any) => (ObjectType<T> | [ObjectType<T>]);
 
-export interface Context {
-  container: CoreContainer;
-  requestId: string;
-  sourceIp: string;
-  method: MethodMetadata;
-  auth: AuthInfo;
-  // results?: Record<string, any[]>;
-}
+// export interface Context {
+//   container: CoreContainer;
+//   requestId: string;
+//   sourceIp: string;
+//   method: MethodMetadata;
+//   auth: AuthInfo;
+//   // results?: Record<string, any[]>;
+// }
 
 export class Context {
+  public parent?: Context;
   public container: CoreContainer = undefined;
   public requestId: string;
   public sourceIp: string;
   public method: MethodMetadata;
   public auth: AuthInfo;
 
-  constructor(ctx?: Context) {
-    if (ctx) Object.assign(this, ctx);
-    if (!this.container) return;
+  constructor(set?: Context) {
+    if (set) Object.assign(this, set);
   }
 }
 
