@@ -113,7 +113,7 @@ export class CoreWarmer {
   }
 
   @Internal()
-  @Schedule()
+  @Schedule('warm')
   public async warm(ctx: Context, req: EventRequest): Promise<string> {
     this.log.info('Ctx: %j', ctx);
     this.log.info('Req: %j', req);
