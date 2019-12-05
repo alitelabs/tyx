@@ -175,7 +175,7 @@ export class CoreInstance implements CoreContainer {
   public async execute(ctx: Context, source: string, variables?: Record<string, any>): Promise<any>;
   public async execute(ctx: Context, document: DocumentNode, variables?: Record<string, any>): Promise<any>;
   public async execute(ctx: Context, oper: DocumentNode | string, variables?: Record<string, any>): Promise<any> {
-    this.log('Execute:', oper);
+    this.log.debug('Execute:', oper);
     const data = await this.graphql.execute(ctx, oper as any, variables);
     return data.result || data;
   }
