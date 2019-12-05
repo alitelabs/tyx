@@ -1,4 +1,4 @@
-import { Debug, Utils } from 'exer';
+import { Log, Utils } from 'exer';
 import { ApiMetadata } from '../metadata/api';
 import { DatabaseMetadata } from '../metadata/database';
 import { EntityMetadata } from '../metadata/entity';
@@ -74,7 +74,7 @@ export class ThriftToolkit {
   protected crud: boolean = false;
 
   public static async emit(opts: ThriftToolkitOptions = {}): Promise<ThriftToolkitResult> {
-    const log = Debug('thrift', true);
+    const log = Log.get('thrift', true);
     log.time('thrift', 'Generate Thrift IDL ...');
     opts.name = opts.name || 'App';
     const result = new ThriftToolkit(opts.crud).emit(opts.name || 'App');

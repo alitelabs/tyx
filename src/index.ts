@@ -86,4 +86,17 @@ export * from './tools/tson';
 export * from './aws';
 export * from './import';
 
-export * from 'exer';
+export {
+  Utils,
+  NanoTimer,
+  ProcessInfo,
+  Callback,
+  CommonModule,
+  CpuInfo,
+  Format,
+  Task,
+  ProcessInfoQuery,
+  ModuleInfo,
+  NetworkInfo,
+  PackageInfo
+} from 'exer';

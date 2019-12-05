@@ -1,11 +1,11 @@
-import { Debug, Debugger } from 'exer';
+import { Log, Logger as ILogger } from 'exer';
 import { LogLevel } from '../types/config';
 import { Logger } from './logger';
 
 export class DebugLogger implements Logger {
   protected logName: string;
   protected logEmitter: string;
-  protected log: Debugger;
+  protected log: ILogger;
 
   constructor(logName: string, emitter?: any) {
     this.logName = logName;
@@ -22,7 +22,7 @@ export class DebugLogger implements Logger {
     }
 
     this.logEmitter = n;
-    this.log = Debug(`${this.logName}:${this.logEmitter}`, true);
+    this.log = Log.get(`${this.logName}:${this.logEmitter}`, true);
   }
 
   public todo(msg: any, ...args: any[]): void {
