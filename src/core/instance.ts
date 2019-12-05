@@ -132,6 +132,7 @@ export class CoreInstance implements CoreContainer {
     if (this.istate !== ContainerState.Ready) {
       throw new InternalServerError('Invalid container state');
     }
+    this.log.debug('Reserve:', this.name);
     this.istate = ContainerState.Reserved;
   }
 
@@ -192,6 +193,7 @@ export class CoreInstance implements CoreContainer {
       log.error(err);
       throw err;
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
@@ -230,6 +232,7 @@ export class CoreInstance implements CoreContainer {
       log.error(err);
       throw err;
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
@@ -286,6 +289,7 @@ export class CoreInstance implements CoreContainer {
       log.error(err);
       throw err;
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
@@ -344,6 +348,7 @@ export class CoreInstance implements CoreContainer {
       log.error(err);
       throw InternalServerError.wrap(err);
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
@@ -382,6 +387,7 @@ export class CoreInstance implements CoreContainer {
       log.error(err);
       throw err;
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
@@ -459,6 +465,7 @@ export class CoreInstance implements CoreContainer {
       this.log.error(err);
       throw err;
     } finally {
+      this.log.debug('Return:', this.name);
       this.istate = ContainerState.Ready;
     }
   }
