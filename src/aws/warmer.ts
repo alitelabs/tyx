@@ -34,7 +34,7 @@ export interface CoreWarmerStat {
 export interface CoreWarmerState extends CoreWarmerStat {
   name: string;
   size: number;
-  length: number;
+  dist: number;
   warm: number;
   cold: number;
   error?: any;
@@ -96,7 +96,7 @@ export class CoreWarmer {
           this.state.push({
             name: fun.FunctionName,
             size: +fun.Environment.Variables[poolKey],
-            length: 0,
+            dist: 0,
             cold: 0,
             warm: 0,
             pool: {},
@@ -126,36 +126,41 @@ export class CoreWarmer {
     }
     this.nextPing = now + this.settings.rate;
 
-    const promises: [CoreWarmerState, Promise<ProcessInfo>][] = [];
     for (const fun of this.state) {
-      const many = full ? fun.size : (Math.random() + 1) * fun.size / 2;
-      for (let index = 0; index <= many; index++) {
-        const delay = index * this.settings.step + Math.round(Math.random() * this.settings.step / 4);
+      const promises: [CoreWarmerState, Promise<ProcessInfo>][] = [];
+      Object.assign(fun, { dist: 0, cold: 0, warm: 0, pool: {} }, this.stat(undefined, 0));
+      const many = full ? fun.size : Math.min((Math.random() + 1) * fun.size / 2, fun.size);
+      for (let index = 0; index < many; index++) {
+        const delay = index * this.settings.step + Math.round(Math.random() * this.settings.step / 2);
         this.log.debug('Invoking [%s:%s] after %s ms ...', fun.name, index, delay);
-        const prom = new Promise<ProcessInfo>((resolve, reject) => {
-          NanoTimer.setTimeout(() => this.invoke(fun, index, resolve, reject), delay);
+        const prom = new Promise<ProcessInfo>((resolve) => {
+          NanoTimer.setTimeout(() => this.invoke(fun, index).then(resolve).catch(resolve), delay);
         });
         promises.push([fun, prom]);
       }
-    }
 
-    const infos: ProcessInfo[] = [];
-    for (const [fun, prom] of promises) {
-      try {
-        infos.push(await prom);
-      } catch (err) {
-        // TODO: Push error response
-        fun.error = err;
-        this.log.error(err);
+      const infos: ProcessInfo[] = [];
+      for (const [fun, prom] of promises) {
+        try {
+          infos.push(await prom);
+        } catch (err) {
+          // TODO: Push error response
+          fun.error = err;
+          this.log.error('NEVER:', err);
+        }
       }
+
+      this.log.info('Wait ...');
+      await new Promise(resolve => setTimeout(() => resolve(), 1000));
     }
 
+    let report = '';
     for (const fun of this.state) {
-      const cols = ['', ':', 'len', 'invokes', 'cold', 'warm', 'max', 'min', 'avg', 'dev'];
+      const cols = ['', ':', 'dist', 'invokes', 'cold', 'warm', 'max', 'min', 'avg', 'dev'];
       const raw = [
         fun.name,
         fun.size,
-        fun.length,
+        fun.dist,
         fun.count,
         fun.cold,
         fun.warm,
@@ -164,9 +169,9 @@ export class CoreWarmer {
         fun.duravg.toFixed(2),
         fun.durdev.toFixed(2)
       ];
-      const report = raw.map((t, i) => cols[i] ? cols[i] + ': ' + t : t).join('\t');
-      this.log.info('STAT:', report);
+      report += raw.map((t, i) => cols[i] ? cols[i] + ': ' + t : t).join('\t') + '\n';
     }
+    this.log.info('---------------- STAT --------------\n%s\n', report);
 
     // TODO: Colate by function identity
     // infos.sort((a, b) => (a.container + a.identity).localeCompare(b.container + b.identity));
@@ -174,7 +179,7 @@ export class CoreWarmer {
     return 'Ok';
   }
 
-  private async invoke(fun: CoreWarmerState, index: number, resolve: (res: any) => void, reject: (err: any) => any) {
+  private async invoke(fun: CoreWarmerState, index: number): Promise<ProcessInfo> {
     // this.log.info('Invoked [%s:%s]', fun, index);
     const time = this.log.time();
     const lambda = new Lambda();
@@ -206,19 +211,19 @@ export class CoreWarmer {
           info,
           ...this.stat(null, dur, !info.serial)
         };
-        fun.length++;
+        fun.dist++;
         fun.pool[info.identity] = acc;
       }
       this.stat(fun, dur);
       if (info.serial) fun.warm++; else fun.cold++;
-      resolve(info);
+      return info;
     } catch (err) {
       this.log.timeEnd(
         time,
         'Error [%s:%s]:',
-        fun, index, err
+        fun.name, index, err
       );
-      reject(err);
+      throw err;
     }
   }
 
