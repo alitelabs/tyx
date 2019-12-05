@@ -180,10 +180,19 @@ export class CoreInstance implements CoreContainer {
   }
 
   public async ping(req: PingRequest): Promise<ProcessInfo> {
-    const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
-    const data = await this.graphql.execute(ctx, ProcessInfoQuery);
-    this.log.debug('PING: %j', data);
-    return data.Core.Process;
+    if (this.istate !== ContainerState.Reserved) throw new InternalServerError('Invalid container state');
+    const log = this.log;
+    try {
+      const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
+      const data = await this.graphql.execute(ctx, ProcessInfoQuery);
+      this.log.debug('PING: %j', data);
+      return data.Core.Process;
+    } catch (err) {
+      log.error(err);
+      throw err;
+    } finally {
+      this.istate = ContainerState.Ready;
+    }
   }
 
   public async invoke(proxy: any, member: string, ...args: any[]): Promise<any> {
