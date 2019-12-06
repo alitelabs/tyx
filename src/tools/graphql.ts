@@ -2,6 +2,7 @@ import { Utils } from 'exer';
 import { GraphQLScalarType, GraphQLSchema } from 'graphql';
 import { GraphQLDate, GraphQLDateTime, GraphQLTime } from 'graphql-iso-date';
 import { ILogger, makeExecutableSchema } from 'graphql-tools';
+import { GraphQLJSON } from 'graphql-type-json';
 import { Core } from '../core/core';
 import { Logger } from '../logger';
 import { ApiMetadata } from '../metadata/api';
@@ -18,7 +19,6 @@ import { Roles } from '../types/security';
 import { gql } from './tag';
 
 import Reg = require('../schema/registry');
-import GraphQLJSON = require('graphql-type-json');
 
 export { GraphQLSchema } from 'graphql';
 
