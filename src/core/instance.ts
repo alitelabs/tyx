@@ -188,7 +188,7 @@ export class CoreInstance implements CoreContainer {
       const ctx = await this.security.eventAuth(this, CoreGraphQL.process, req);
       const data = await this.graphql.execute(ctx, ProcessInfoQuery);
       this.log.debug('PING: %j', data);
-      return new Promise(resolve => setTimeout(() => resolve(data.Core.Process), 1000));
+      return new Promise(resolve => setTimeout(() => resolve(data.Core.Process), req.delay || 10));
     } catch (err) {
       log.error(err);
       throw err;

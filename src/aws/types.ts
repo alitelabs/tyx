@@ -5,6 +5,7 @@ import { LambdaError } from "./error";
 
 export interface PingEvent {
   type?: 'ping';
+  delay?: number;
 }
 
 export interface RemoteEvent extends RemoteRequest {

@@ -6,6 +6,7 @@ export interface PingRequest extends Request {
   action: 'ping';
   service: 'GraphQL';
   method: 'process';
+  delay: number;
   event: any;
   context: any;
 }

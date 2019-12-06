@@ -105,6 +105,7 @@ export abstract class LambdaAdapter {
       action: 'ping',
       service: 'GraphQL',
       method: 'process',
+      delay: event.delay || 0,
       event,
       context
     });

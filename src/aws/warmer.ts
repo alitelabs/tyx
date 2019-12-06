@@ -134,7 +134,7 @@ export class CoreWarmer {
         const delay = index * this.settings.step + Math.round(Math.random() * this.settings.step / 2);
         this.log.debug('Invoking [%s:%s] after %s ms ...', fun.name, index, delay);
         const prom = new Promise<ProcessInfo>((resolve) => {
-          NanoTimer.setTimeout(() => this.invoke(fun, index).then(resolve).catch(resolve), delay);
+          NanoTimer.setTimeout(() => this.invoke(fun, index, this.settings.step).then(resolve).catch(resolve), delay);
         });
         promises.push([fun, prom]);
       }
@@ -179,17 +179,18 @@ export class CoreWarmer {
     return 'Ok';
   }
 
-  private async invoke(fun: CoreWarmerState, index: number): Promise<ProcessInfo> {
+  private async invoke(fun: CoreWarmerState, index: number, delay: number): Promise<ProcessInfo> {
     // this.log.info('Invoked [%s:%s]', fun, index);
     const time = this.log.time();
     const lambda = new Lambda();
     try {
       const res = await lambda.invoke({
         FunctionName: fun.name,
-        Payload: `{
-            "type":"ping",
-            "warmer": "${Core.config.identity}"
-          }`
+        Payload: JSON.stringify({
+          type: 'ping',
+          delay,
+          warmer: Core.config.identity
+        })
       }).promise();
       const dur = +Utils.span(time);
       const info: ProcessInfo = JSON.parse(res.Payload.toString());
