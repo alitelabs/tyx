@@ -10,6 +10,50 @@ import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { LambdaError } from './error';
 // tslint:disable-next-line:max-line-length
 import { LambdaApiEvent as LambdaHttpEvent, LambdaContext, LambdaDynamoEvent, LambdaEvent, LambdaHandler, LambdaS3Event, LambdaScheduleEvent, LambdaSQSEvent, PingEvent, RemoteEvent } from './types';
+// tslint:disable-next-line:max-line-length
+
+function isPingEvent(event: Partial<LambdaEvent>): event is PingEvent {
+  return (
+    !event ||
+    !Object.keys(event).length ||
+    (event as unknown as PingEvent).type === 'ping'
+  );
+}
+
+function isHttpEvent(event: Partial<LambdaEvent>): event is LambdaHttpEvent {
+  return !!(event as LambdaHttpEvent).httpMethod;
+}
+
+function isRemoteEvent(event: Partial<LambdaEvent>): event is RemoteEvent {
+  return (
+    ((event as RemoteEvent).type === 'remote' || (event as RemoteEvent).type === 'internal') &&
+    (event as RemoteEvent).service &&
+    !!(event as RemoteEvent).method
+  );
+}
+
+function isScheduleEvent(event: Partial<LambdaEvent>): event is LambdaScheduleEvent {
+  return (
+    (event as unknown as LambdaScheduleEvent).type === 'schedule' &&
+    !!(event as unknown as LambdaScheduleEvent).action
+  );
+}
+
+function isRecordEvent(event: Partial<LambdaEvent>): event is (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent) {
+  return !!(event as unknown as (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent)).Records;
+}
+
+function isLambdaSqsEvent(event: Partial<LambdaEvent>): event is LambdaSQSEvent {
+  return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:sqs';
+}
+
+function isLambdaS3Event(event: Partial<LambdaEvent>): event is LambdaS3Event {
+  return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:s3';
+}
+
+function isLambdaDynamoEvent(event: Partial<LambdaEvent>): event is LambdaDynamoEvent {
+  return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:dynamodb';
+}
 
 export abstract class LambdaAdapter {
 
@@ -34,56 +78,56 @@ export abstract class LambdaAdapter {
     this.log.debug('Event: %j', event);
     this.log.debug('Context: %j', context);
 
-    if (!event || !Object.keys(event).length || event.type === 'ping') {
+    if (isPingEvent(event)) {
       try {
-        const res = await this.ping(event as PingEvent, context);
+        const res = await this.ping(event, context);
         return res;
       } catch (err) {
         this.log.error(err);
         return err;
       }
-    } else if (event.httpMethod) {
+    } else if (isHttpEvent(event)) {
       this.log.debug('HTTP event detected');
       try {
-        const res = await this.http(event as LambdaHttpEvent, context);
+        const res = await this.http(event, context);
         return HttpUtils.prepare(res);
       } catch (err) {
         this.log.error(err);
         return HttpUtils.error(err);
       }
-    } else if ((event.type === 'remote' || event.type === 'internal') && event.service && event.method) {
+    } else if (isRemoteEvent(event)) {
       this.log.debug('Remote event detected');
       try {
-        return await this.remote(event as RemoteEvent, context);
+        return await this.remote(event, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
       }
-    } else if (event.type === 'schedule' && event.action) {
+    } else if (isScheduleEvent(event)) {
       this.log.debug('Schedule event detected');
       try {
-        return await this.schedule(event as LambdaScheduleEvent, context);
+        return await this.schedule(event, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
       }
-    } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:sqs') {
+    } else if (isLambdaSqsEvent(event)) {
       this.log.debug('SQS event detected');
       try {
-        return await this.sqs(event as LambdaSQSEvent, context);
+        return await this.sqs(event, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
       }
-    } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:s3') {
+    } else if (isLambdaS3Event(event)) {
       this.log.debug('S3 event detected');
       try {
-        return await this.s3(event as LambdaS3Event, context);
+        return await this.s3(event, context);
       } catch (err) {
         this.log.error(err);
         throw InternalServerError.wrap(err);
       }
-    } else if (event.Records && event.Records[0] && event.Records[0].eventSource === 'aws:dynamodb') {
+    } else if (isLambdaDynamoEvent(event)) {
       this.log.debug('DynamoDB event detected');
       try {
         return await this.dynamo(event as LambdaDynamoEvent, context);

@@ -156,12 +156,12 @@ export interface LambdaCallback {
 
 export type LambdaEvent = (
   PingEvent
-  & RemoteEvent
-  & LambdaApiEvent
-  & LambdaS3Event
-  & LambdaSQSEvent
-  & LambdaDynamoEvent
-  & LambdaScheduleEvent
+  | RemoteEvent
+  | LambdaApiEvent
+  | LambdaS3Event
+  | LambdaSQSEvent
+  | LambdaDynamoEvent
+  | LambdaScheduleEvent
 );
 
 export interface LambdaHandler {
