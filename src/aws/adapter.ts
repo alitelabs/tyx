@@ -9,53 +9,7 @@ import { EventRequest, EventResult } from '../types/event';
 import { HttpMethod, HttpRequest, HttpResponse } from '../types/http';
 import { LambdaError } from './error';
 // tslint:disable-next-line:max-line-length
-import { LambdaApiEvent as LambdaHttpEvent, LambdaContext, LambdaDynamoEvent, LambdaEvent, LambdaHandler, LambdaS3Event, LambdaScheduleEvent, LambdaSQSEvent, PingEvent, RemoteEvent } from './types';
-// tslint:disable-next-line:max-line-length
-
-namespace LambdaEvent {
-  export function isPingEvent(event: Partial<LambdaEvent>): event is PingEvent {
-    return (
-      !event ||
-      !Object.keys(event).length ||
-      (event as unknown as PingEvent).type === 'ping'
-    );
-  }
-
-  export function isHttpEvent(event: Partial<LambdaEvent>): event is LambdaHttpEvent {
-    return !!(event as LambdaHttpEvent).httpMethod;
-  }
-
-  export function isRemoteEvent(event: Partial<LambdaEvent>): event is RemoteEvent {
-    return (
-      ((event as RemoteEvent).type === 'remote' || (event as RemoteEvent).type === 'internal') &&
-      (event as RemoteEvent).service &&
-      !!(event as RemoteEvent).method
-    );
-  }
-
-  export function isScheduleEvent(event: Partial<LambdaEvent>): event is LambdaScheduleEvent {
-    return (
-      (event as unknown as LambdaScheduleEvent).type === 'schedule' &&
-      !!(event as unknown as LambdaScheduleEvent).action
-    );
-  }
-
-  export function isRecordEvent(event: Partial<LambdaEvent>): event is (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent) {
-    return !!(event as unknown as (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent)).Records;
-  }
-
-  export function isSqsEvent(event: Partial<LambdaEvent>): event is LambdaSQSEvent {
-    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:sqs';
-  }
-
-  export function isS3Event(event: Partial<LambdaEvent>): event is LambdaS3Event {
-    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:s3';
-  }
-
-  export function isDynamoEvent(event: Partial<LambdaEvent>): event is LambdaDynamoEvent {
-    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:dynamodb';
-  }
-}
+import { LambdaContext, LambdaDynamoEvent, LambdaEvent, LambdaHandler, LambdaHttpEvent, LambdaS3Event, LambdaScheduleEvent, LambdaSQSEvent, PingEvent, RemoteEvent } from './types';
 
 export abstract class LambdaAdapter {
 

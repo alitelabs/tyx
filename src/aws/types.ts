@@ -92,7 +92,7 @@ export interface LambdaScheduleEvent {
   [prop: string]: string;
 }
 
-export interface LambdaApiEvent {
+export interface LambdaHttpEvent {
   resource: string;
   path: string;
   httpMethod: string;
@@ -154,20 +154,65 @@ export interface LambdaCallback {
   (err: LambdaError, response?: HttpResponse | Object): void;
 }
 
-export type LambdaEvent = (
-  PingEvent
-  | RemoteEvent
-  | LambdaApiEvent
-  | LambdaS3Event
-  | LambdaSQSEvent
-  | LambdaDynamoEvent
-  | LambdaScheduleEvent
-);
-
 export interface LambdaHandler {
   (
     event: Partial<LambdaEvent>,
     context: Partial<LambdaContext>
     // callback?: LambdaCallback,
   ): Promise<any>;
+}
+
+export type LambdaEvent = (
+  PingEvent
+  | RemoteEvent
+  | LambdaHttpEvent
+  | LambdaS3Event
+  | LambdaSQSEvent
+  | LambdaDynamoEvent
+  | LambdaScheduleEvent
+);
+
+export namespace LambdaEvent {
+  export function isPingEvent(event: Partial<LambdaEvent>): event is PingEvent {
+    return (
+      !event ||
+      !Object.keys(event).length ||
+      (event as unknown as PingEvent).type === 'ping'
+    );
+  }
+
+  export function isHttpEvent(event: Partial<LambdaEvent>): event is LambdaHttpEvent {
+    return !!(event as LambdaHttpEvent).httpMethod;
+  }
+
+  export function isRemoteEvent(event: Partial<LambdaEvent>): event is RemoteEvent {
+    return (
+      ((event as RemoteEvent).type === 'remote' || (event as RemoteEvent).type === 'internal') &&
+      (event as RemoteEvent).service &&
+      !!(event as RemoteEvent).method
+    );
+  }
+
+  export function isScheduleEvent(event: Partial<LambdaEvent>): event is LambdaScheduleEvent {
+    return (
+      (event as unknown as LambdaScheduleEvent).type === 'schedule' &&
+      !!(event as unknown as LambdaScheduleEvent).action
+    );
+  }
+
+  export function isRecordEvent(event: Partial<LambdaEvent>): event is (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent) {
+    return !!(event as unknown as (LambdaS3Event | LambdaSQSEvent | LambdaDynamoEvent)).Records;
+  }
+
+  export function isSqsEvent(event: Partial<LambdaEvent>): event is LambdaSQSEvent {
+    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:sqs';
+  }
+
+  export function isS3Event(event: Partial<LambdaEvent>): event is LambdaS3Event {
+    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:s3';
+  }
+
+  export function isDynamoEvent(event: Partial<LambdaEvent>): event is LambdaDynamoEvent {
+    return isRecordEvent(event) && event.Records[0]?.eventSource === 'aws:dynamodb';
+  }
 }
