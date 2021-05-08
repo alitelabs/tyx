@@ -38,7 +38,7 @@
     "jsonwebtoken": "^8.2.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
-    "typeorm": "^0.2.5",
+    "typeorm": "^0.2.25",
     "uuid": "^3.2.1"
   },
   "devDependencies": {
