@@ -401,11 +401,13 @@ export class CoreInstance implements CoreContainer {
       let route = EventRouteMetadata.route(req.source, req.resource);
       const alias = this.config.resources && this.config.resources[req.resource];
       let targets = Registry.EventRouteMetadata[route];
-      if (!targets) {
+      if (!targets && alias) {
         route = EventRouteMetadata.route(req.source, alias);
         targets = Registry.EventRouteMetadata[route];
       }
-      if (!targets) new Forbidden(`Event handler not found [${route}] [${req.object}]`);
+      if (!targets) {
+        throw new Forbidden(`Event handler not found [${route}] [${req.object}]`);
+      }
 
       const result: EventResult = {
         status: null,
