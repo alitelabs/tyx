@@ -81,6 +81,7 @@ export namespace HttpUtils {
 
   export function request(req: HttpRequest): HttpRequest {
     req.contentType = req.contentType || contentType(req.headers, req.body);
+    req.model = req.pathParameters['model'] || req.contentType.domainModel;
     // TODO: isBase64 encoding etc ...
     if (req.contentType.isJson) {
       try {

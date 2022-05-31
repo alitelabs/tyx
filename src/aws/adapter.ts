@@ -128,6 +128,7 @@ export abstract class LambdaAdapter {
 
       httpMethod: event.httpMethod as HttpMethod,
       resource,
+      model: undefined,
       path: event.path,
       pathParameters: event.pathParameters || {},
       queryStringParameters: event.queryStringParameters || {},

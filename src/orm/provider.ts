@@ -148,7 +148,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
       return;
     }
     try {
-      await this.connection.close();
+      await (this.connection as any).destroy();
     } catch (err) {
       this.log.error(err);
     }

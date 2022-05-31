@@ -8,6 +8,7 @@ export interface HttpRequest extends Request {
   httpMethod: HttpMethod;
   resource: string;
   path: string;
+  model: string;
   sourceIp: string;
 
   headers?: Record<string, string>;

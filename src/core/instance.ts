@@ -303,7 +303,7 @@ export class CoreInstance implements CoreContainer {
 
       HttpUtils.request(req);
 
-      const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.contentType.domainModel);
+      const route = HttpRouteMetadata.route(req.httpMethod, req.resource, req.model);
       const target = Registry.HttpRouteMetadata[route];
       if (!target) throw new Forbidden(`Route not found [${route}]`);
       if (!target.method.roles) throw new Forbidden(`Method [${target.api.name}.${target.method.name}] not available`);
