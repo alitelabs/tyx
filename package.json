@@ -1,7 +1,7 @@
 {
   "name": "tyx",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.2.3",
+  "version": "0.2.9",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
@@ -38,7 +38,7 @@
     "build": "tsc -p . && tslint -p .",
     "watch": "rm -rf ./lib ; tsc -p . --watch",
     "release": "npm run build && npm version patch && git push --follow-tags && npm publish",
-    "beta": "npm run build && npm version patch && git push --follow-tags && npm publish --tag beta"
+    "beta": "npm run build && npm version patch && git push --follow-tags && npm publish --tag 0.2.6"
   },
   "voyagerVersion": "latest",
   "dependencies": {
