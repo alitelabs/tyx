@@ -24,8 +24,10 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   protected alias: string;
   protected options: TypeOrm.ConnectionOptions;
+  protected readoptions: TypeOrm.ConnectionOptions;
   protected owner: boolean;
   protected connection: TypeOrm.Connection;
+  protected readconnection: TypeOrm.Connection;
   public manager: TypeOrm.EntityManager;
 
   public get entities(): Class[] { return DatabaseMetadata.get(this).targets; }
@@ -39,6 +41,13 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
 
   public getRepository<T>(type: ObjectType<T>) {
     return this.connection.getRepository<T>(type);
+  }
+  public getReadMetadata(entity: string | Function): EntityMetadata {
+    return this.readconnection.getMetadata(entity) as any;
+  }
+
+  public getReadRepository<T>(type: ObjectType<T>) {
+    return this.readconnection.getRepository<T>(type);
   }
 
   @Initialize()
@@ -62,6 +71,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
       tokens[3] = cfg.host;
       tokens[4] = cfg.port;
       tokens[5] = cfg.database;
+      tokens[6] = cfg.readhost;
     }
 
     // invalid connection
@@ -112,12 +122,26 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
       logging: logQueries ? 'all' : ['error'],
       entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
     };
+    this.readoptions = {
+      name: this.alias + "read",
+      username: tokens[0],
+      password: tokens[1],
+      type: tokens[2] as any,
+      host: cfg.readhost,
+      port: +tokens[4],
+      database: tokens[5],
+      // timezone: "Z",
+      logging: logQueries ? 'all' : ['error'],
+      entities: Object.values(Registry.EntityMetadata).map(meta => meta.target),
+    };
 
     if (!TypeOrm.getConnectionManager().has(this.alias)) {
       this.connection = TypeOrm.getConnectionManager().create(this.options);
-      this.log.info('Connection created');
+      this.readconnection = TypeOrm.getConnectionManager().create(this.readoptions);
+      this.log.info('Connections created');
     } else {
       this.connection = TypeOrm.getConnection(this.alias);
+      this.readconnection = TypeOrm.getConnection(this.alias + "read");
     }
   }
 
@@ -127,6 +151,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
     this.initialize();
     if (!this.connection.isConnected) {
       await this.connection.connect();
+      await this.readconnection.connect();
       this.owner = true;
       this.log.info('Connected:', this.id);
     } else {
