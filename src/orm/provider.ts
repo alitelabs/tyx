@@ -181,6 +181,17 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
         this.log.error(err);
       }
     }
+
+    // separated try/catch block on purpuse
+    try {
+      await (this.readconnection as any).desroy();
+    } catch (err) {
+      try {
+        await (this.readconnection).close();
+      } catch (error) {
+        this.log.error(err);
+      }
+    }
     this.log.info('Connection closed: %s', this.id);
   }
 }
