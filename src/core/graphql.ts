@@ -96,7 +96,7 @@ export class CoreGraphQL implements GraphQL {
         const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
         err.message = err.message.replace('Error:', `Error: ${loc}`);
       }
-      throw err;
+      console.warn("GraphQL", err);
     }
   }
 
