@@ -34,7 +34,7 @@
   "dependencies": {
     "aws-serverless-express": "^3.2.0",
     "body-parser": "^1.18.3",
-    "express": "^4.16.3",
+    "express": "^4.17.3",
     "jsonwebtoken": "^8.2.1",
     "ms": "^2.1.1",
     "reflect-metadata": "^0.1.12",
