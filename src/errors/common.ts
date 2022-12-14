@@ -25,7 +25,7 @@ export class ApiError extends Error {
     ApiError.popStack(this, F === ApiError ? 1 : 2);
 
     this.code = code || 500;
-    if (cause) this.cause = cause;
+    if (cause && process.env.LOG_LEVEL === "DEBUG") this.cause = cause;
   }
 
   public static builder(): ApiErrorBuilder {
@@ -33,6 +33,10 @@ export class ApiError extends Error {
   }
 
   public static popStack(err: Error, lines: number) {
+    if (process.env.LOG_LEVEL !== "DEBUG") {
+      delete err.stack;
+      return;
+    }
     err.stack = err.stack.split('\n    at ')
       .filter((z, i) => { return i === 0 || i > lines; })
       .join('\n    at ');
@@ -71,7 +75,7 @@ export class ApiError extends Error {
           alt[key] = data[key];
         }
       });
-      if (data.constructor !== Object) {
+      if (data.constructor !== Object && process.env.LOG_LEVEL === "DEBUG") {
         alt['__class__'] = data.constructor.name;
       }
     }
