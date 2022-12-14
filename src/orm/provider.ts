@@ -149,7 +149,7 @@ export class DatabaseProvider extends TypeOrmProvider implements Database {
   protected async activate() {
     this.log.info('Activate: %s', this.id);
     this.initialize();
-    if (!this.connection.isConnected) {
+    if (!this.connection.isConnected || !this.readconnection.isConnected) {
       await this.connection.connect();
       await this.readconnection.connect();
       this.owner = true;
