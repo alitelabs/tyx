@@ -79,6 +79,7 @@ export class ApiError extends Error {
         alt['__class__'] = data.constructor.name;
       }
     }
+    if (alt.code === 500 && process.env.LOG_LEVEL !== "DEBUG") alt.message = "Something went wrong, please try again later";
     return alt;
   }
 
@@ -116,7 +117,6 @@ export class ApiError extends Error {
         instance[prop] = val;
       }
     }
-
     return instance;
   }
 
