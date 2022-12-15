@@ -168,6 +168,7 @@ export class CoreSecurity implements Security {
         ist: Math.floor(serial / 1000),
         email: req.email,
         ipaddr: req.ipAddress,
+        tenantId : req.tenantId || ""
       } as any,
       secret,
       {
@@ -260,6 +261,8 @@ export class CoreSecurity implements Security {
 
   protected secret(sub: string, iss: string, aud: string): string {
     let secret: string;
+    this.log.debug("Tyx config", this.config);
+    this.log.debug("Tyx config", JSON.stringify(this.config));
     if (sub && sub.startsWith('user:')) secret = this.config.httpSecret;
     else if (sub === 'internal' && aud === this.config.appId && iss === aud) secret = this.config.internalSecret;
     else if (sub === 'remote' && aud === this.config.appId && iss === aud) secret = this.config.internalSecret;

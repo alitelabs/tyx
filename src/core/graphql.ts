@@ -83,6 +83,7 @@ export class CoreGraphQL implements GraphQL {
 
   @Initialize()
   public initialize() {
+    return;
     this.logger = this.logger || { log: this.log.error.bind(this.log) };
     try {
       this.executable = this.executable || makeExecutableSchema<Context>({
@@ -96,7 +97,7 @@ export class CoreGraphQL implements GraphQL {
         const loc = err.locations.map((item: any) => JSON.stringify(item)).join(',').replace(/"/g, '').replace(/,/g, ', ');
         err.message = err.message.replace('Error:', `Error: ${loc}`);
       }
-      throw err;
+      console.warn("GraphQL", err);
     }
   }
 

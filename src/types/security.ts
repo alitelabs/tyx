@@ -24,6 +24,7 @@ export interface IssueRequest {
   serial?: number | Date;
   email?: string;
   ipAddress?: string;
+  tenantId? : string;
 }
 
 export interface AuthInfo {
