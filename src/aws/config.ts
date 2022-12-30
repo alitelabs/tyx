@@ -46,6 +46,8 @@ export class SecretsManagerConfig extends CoreConfiguration {
   }
 
   private async load(id: string) {
+    this.log.info("Load",id);
+    this.log.info("Load names",this.names);
     const client = new SecretsManager();
     let data: SecretsManager.GetSecretValueResponse;
     try {

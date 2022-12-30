@@ -63,7 +63,7 @@ export class CoreConfiguration implements Configuration {
 
   get remoteTimeout(): string { return this.secret('core', 'remote', 'timeout') || '5s'; }
   public remoteSecret(appId: string): string { return appId && this.secret('core', 'remote', 'secret', appId); }
-  public remoteStage(appId: string): string { return appId && this.secret('core', 'remote', 'stage', appId); }
+  teStage(appId: string): string { return appId && this.secret('core', 'remote', 'stage', appId); }
 
   get warmer() {
     return {

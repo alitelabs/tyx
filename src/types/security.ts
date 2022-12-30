@@ -29,6 +29,7 @@ export interface IssueRequest {
 
 export interface AuthInfo {
   tokenId?: string;
+  tenantId?: string;
 
   issuer?: string;
   audience?: string;
@@ -99,6 +100,7 @@ export interface WebToken {
   amr?: string[];
   platf?: string;
   uti?: string;
+  tenantId? : string;
 }
 
 // tslint:disable-next-line:variable-name
