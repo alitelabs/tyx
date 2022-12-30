@@ -217,6 +217,7 @@ export class CoreSecurity implements Security {
       expires: new Date(jwt.exp * 1000),
       token,
       renewed: false,
+      tenantId : jwt.tenantId
     };
     if (method) this.authorize(method, auth, sourceIp);
     return auth;

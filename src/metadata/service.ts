@@ -190,7 +190,7 @@ export class ServiceMetadata implements IServiceMetadata {
 
     const parent = Utils.baseClass(this.target);
     const base = ServiceMetadata.get(parent);
-    if (base && base.final) console.debug('Base service is final');
+    // if (base && base.final) console.debug('Base service is final');
     if (!base && ApiMetadata.has(parent)) throw new TypeError('Extends Api class');
 
     let api = apiClass && ApiMetadata.get(apiClass);

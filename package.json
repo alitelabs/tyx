@@ -1,19 +1,19 @@
 {
-  "name": "tyx",
+  "name": "tyx-synergi",
   "description": "TyX Core Framework, Serverless back-end in TypeScript for AWS Lambda",
-  "version": "0.3.64",
+  "version": "0.3.69",
   "license": "MIT",
   "readmeFilename": "README.md",
   "author": {
-    "name": "Alite Labs",
-    "email": "labs@alite-international.com"
+    "name": "Synergi",
+    "email": "team@sinargy.se"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/alitelabs/tyx.git"
+    "url": "https://github.com/synergi-team/synergy-tyx.git"
   },
   "bugs": {
-    "url": "https://github.com/alitelabs/tyx/issues"
+    "url": "https://github.com/synergi-team/synergy-tyx/issues"
   },
   "tags": [
     "aws",
